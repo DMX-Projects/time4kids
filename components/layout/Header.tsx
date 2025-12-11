@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, X, ChevronDown, User, Building2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
@@ -25,13 +26,16 @@ const Header = () => {
             <div className="container mx-auto px-4">
                 <div className="flex items-center justify-between h-20">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center space-x-3 group">
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-110 transition-transform">
-                            TK
-                        </div>
-                        <div className="hidden md:block">
-                            <div className="font-display font-bold text-xl gradient-text">T.I.M.E. Kids</div>
-                            <div className="text-xs text-gray-600">The Preschool That Cares</div>
+                    <Link href="/" className="flex items-center group">
+                        <div className="relative h-12 w-auto group-hover:scale-105 transition-transform">
+                            <Image
+                                src="/logo.jpg"
+                                alt="T.I.M.E. Kids - The Preschool That Cares"
+                                width={200}
+                                height={48}
+                                className="object-contain"
+                                priority
+                            />
                         </div>
                     </Link>
 
