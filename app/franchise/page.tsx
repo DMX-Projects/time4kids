@@ -161,9 +161,15 @@ export default function FranchisePage() {
                         <p className="text-xl text-white/90 mb-8">
                             Get detailed information about investment, support, and franchise benefits
                         </p>
-                        <button className="bg-white text-primary-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-xl hover:shadow-2xl">
+                        <a
+                            href="https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="inline-block bg-white text-primary-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-xl hover:shadow-2xl"
+                        >
                             Download Brochure (PDF)
-                        </button>
+                        </a>
                     </div>
                 </div>
             </section>

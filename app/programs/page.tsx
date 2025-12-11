@@ -2,7 +2,8 @@ import React from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
-import { Baby, Users2, GraduationCap, Sun, Clock, BookOpen } from 'lucide-react';
+import Image from 'next/image';
+import { Clock, BookOpen } from 'lucide-react';
 
 export const metadata = {
     title: 'Our Programs - T.I.M.E. Kids Preschool',
@@ -12,7 +13,7 @@ export const metadata = {
 export default function ProgramsPage() {
     const programs = [
         {
-            icon: Baby,
+            image: '/playgroup.jpg',
             name: 'Play Group',
             ageGroup: '1.5 - 2.5 years',
             duration: '2-3 hours/day',
@@ -27,7 +28,7 @@ export default function ProgramsPage() {
             color: 'from-pink-500 to-pink-600',
         },
         {
-            icon: Users2,
+            image: '/nursery.jpg',
             name: 'Nursery',
             ageGroup: '2.5 - 3.5 years',
             duration: '3-4 hours/day',
@@ -42,7 +43,7 @@ export default function ProgramsPage() {
             color: 'from-blue-500 to-blue-600',
         },
         {
-            icon: GraduationCap,
+            image: '/pp1.jpg',
             name: 'Pre-Primary 1 (PP-1)',
             ageGroup: '3.5 - 4.5 years',
             duration: '4 hours/day',
@@ -57,7 +58,7 @@ export default function ProgramsPage() {
             color: 'from-purple-500 to-purple-600',
         },
         {
-            icon: GraduationCap,
+            image: '/pp2.jpg',
             name: 'Pre-Primary 2 (PP-2)',
             ageGroup: '4.5 - 5.5 years',
             duration: '4-5 hours/day',
@@ -72,7 +73,7 @@ export default function ProgramsPage() {
             color: 'from-indigo-500 to-indigo-600',
         },
         {
-            icon: Sun,
+            image: '/playgroup.jpg',
             name: 'Day Care',
             ageGroup: '1.5 - 5.5 years',
             duration: 'Full day/Extended hours',
@@ -111,10 +112,16 @@ export default function ProgramsPage() {
                         {programs.map((program, index) => (
                             <Card key={index} className="max-w-5xl mx-auto">
                                 <div className="grid md:grid-cols-3 gap-8">
-                                    {/* Icon and Basic Info */}
+                                    {/* Image and Basic Info */}
                                     <div className="text-center md:text-left">
-                                        <div className={`w-24 h-24 bg-gradient-to-br ${program.color} rounded-3xl flex items-center justify-center mx-auto md:mx-0 mb-6 shadow-xl`}>
-                                            <program.icon className="w-12 h-12 text-white" />
+                                        <div className="relative w-48 h-48 mx-auto md:mx-0 mb-6 rounded-2xl overflow-hidden shadow-xl">
+                                            <Image
+                                                src={program.image}
+                                                alt={program.name}
+                                                fill
+                                                className="object-cover"
+                                                sizes="192px"
+                                            />
                                         </div>
                                         <h3 className="font-display font-bold text-2xl mb-2 text-gray-900">{program.name}</h3>
                                         <div className="inline-block px-4 py-2 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold mb-3">

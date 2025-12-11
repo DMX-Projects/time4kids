@@ -47,7 +47,11 @@ const AdmissionForm = () => {
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                    <h3 className="font-display font-bold text-2xl mb-6 text-gray-900">Admission Enquiry Form</h3>
+                    <div className="mb-8">
+                        <div className="inline-block bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-300 px-12 py-4 rounded-full shadow-lg border-2 border-amber-400">
+                            <h3 className="font-display font-bold text-3xl text-gray-900 text-center">Admission Enquiry</h3>
+                        </div>
+                    </div>
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-6">

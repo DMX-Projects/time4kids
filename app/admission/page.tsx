@@ -194,11 +194,17 @@ export default function AdmissionPage() {
                     <div className="max-w-4xl mx-auto text-center">
                         <h2 className="font-display font-bold text-4xl mb-8">Download Resources</h2>
                         <div className="grid md:grid-cols-2 gap-6">
-                            <button className="bg-white/10 backdrop-blur-md hover:bg-white/20 rounded-2xl p-8 transition-all hover:scale-105">
+                            <a 
+                                href="https://www.timekidspreschools.in/uploads/pc/TIME-KIDS-BROCHURE.pdf"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                                className="block bg-white/10 backdrop-blur-md hover:bg-white/20 rounded-2xl p-8 transition-all hover:scale-105"
+                            >
                                 <Download className="w-12 h-12 mx-auto mb-4" />
                                 <h3 className="font-display font-bold text-xl mb-2">Admission Brochure</h3>
                                 <p className="text-white/80 text-sm">Complete information about our programs and facilities</p>
-                            </button>
+                            </a>
                             <button className="bg-white/10 backdrop-blur-md hover:bg-white/20 rounded-2xl p-8 transition-all hover:scale-105">
                                 <Video className="w-12 h-12 mx-auto mb-4" />
                                 <h3 className="font-display font-bold text-xl mb-2">School Tour Video</h3>
