@@ -1,16 +1,14 @@
+'use client';
+
 import React from 'react';
 import AdmissionForm from '@/components/admission/AdmissionForm';
 import KeySkills from '@/components/admission/KeySkills';
 import FAQAccordion from '@/components/admission/FAQAccordion';
 import TestimonialVideo from '@/components/shared/TestimonialVideo';
+import TwinklingStars from '@/components/animations/TwinklingStars';
 import { Shield, Users, BookOpen, Download, Video } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-
-export const metadata = {
-    title: 'Admission - T.I.M.E. Kids Preschool',
-    description: 'Start your child\'s educational journey with T.I.M.E. Kids. Learn about our admission process, curriculum, infrastructure, and why we are the preschool that cares.',
-};
 
 export default function AdmissionPage() {
     const whyPreschool = [
@@ -33,11 +31,15 @@ export default function AdmissionPage() {
     return (
         <div className="min-h-screen">
             {/* Hero Section */}
-            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 py-20">
-                <div className="container mx-auto px-4">
+            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 py-20 relative overflow-hidden">
+                {/* Kid-Friendly Animations - Envelope Theme */}
+                <TwinklingStars count={20} />
+
+
+                <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
                         <h1 className="font-display font-bold text-5xl md:text-6xl mb-6">
-                            Start Your Child's <span className="gradient-text">Learning Journey</span>
+                            Start Your Child&apos;s <span className="gradient-text">Learning Journey</span>
                         </h1>
                         <p className="text-xl text-gray-700 leading-relaxed">
                             Join T.I.M.E. Kids family and give your child the best foundation for a bright future
@@ -46,9 +48,11 @@ export default function AdmissionPage() {
                 </div>
             </section>
 
-            {/* Admission Form */}
-            <section className="py-20 bg-white">
-                <div className="container mx-auto px-4">
+            {/* Admission Form - Envelope Theme */}
+            <section className="py-20 bg-white relative overflow-hidden">
+
+
+                <div className="container mx-auto px-4 relative z-10">
                     <AdmissionForm />
                 </div>
             </section>
@@ -194,7 +198,7 @@ export default function AdmissionPage() {
                     <div className="max-w-4xl mx-auto text-center">
                         <h2 className="font-display font-bold text-4xl mb-8">Download Resources</h2>
                         <div className="grid md:grid-cols-2 gap-6">
-                            <a 
+                            <a
                                 href="https://www.timekidspreschools.in/uploads/pc/TIME-KIDS-BROCHURE.pdf"
                                 target="_blank"
                                 rel="noopener noreferrer"

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Facebook, Instagram, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 import QRCode from '@/components/ui/QRCode';
 
@@ -15,12 +16,13 @@ const Footer = () => {
                     {/* About Section */}
                     <div>
                         <div className="flex items-center space-x-3 mb-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                                TK
-                            </div>
-                            <div>
-                                <div className="font-display font-bold text-xl">T.I.M.E. Kids</div>
-                                <div className="text-sm text-gray-400">The Preschool That Cares</div>
+                            <div className="relative w-40 h-12">
+                                <Image
+                                    src="/logo.jpg"
+                                    alt="T.I.M.E. Kids Logo"
+                                    fill
+                                    className="object-contain object-left"
+                                />
                             </div>
                         </div>
                         <p className="text-gray-300 text-sm leading-relaxed">

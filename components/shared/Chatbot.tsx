@@ -64,7 +64,7 @@ const Chatbot = () => {
                             </div>
                             <div>
                                 <h3 className="font-semibold">T.I.M.E. Kids Support</h3>
-                                <p className="text-xs text-white/80">We're here to help!</p>
+                                <p className="text-xs text-white/80">We&apos;re here to help!</p>
                             </div>
                         </div>
                         <button
@@ -84,8 +84,8 @@ const Chatbot = () => {
                             >
                                 <div
                                     className={`max-w-[80%] p-3 rounded-2xl ${message.isBot
-                                            ? 'bg-gray-100 text-gray-800'
-                                            : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
+                                        ? 'bg-gray-100 text-gray-800'
+                                        : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
                                         }`}
                                 >
                                     <p className="text-sm">{message.text}</p>

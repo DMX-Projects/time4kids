@@ -1,13 +1,12 @@
+'use client';
+
 import React from 'react';
 import FranchiseForm from '@/components/franchise/FranchiseForm';
 import TestimonialVideo from '@/components/shared/TestimonialVideo';
 import Card from '@/components/ui/Card';
+import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
+import TwinklingStars from '@/components/animations/TwinklingStars';
 import { TrendingUp, Users, BookOpen, Headphones, Award, DollarSign, Download } from 'lucide-react';
-
-export const metadata = {
-    title: 'Franchise Opportunity - T.I.M.E. Kids Preschool',
-    description: 'Partner with T.I.M.E. Kids and start your own preschool. Low investment, high returns, complete support, and strong brand name.',
-};
 
 export default function FranchisePage() {
     const benefits = [
@@ -54,15 +53,20 @@ export default function FranchisePage() {
 
     return (
         <div className="min-h-screen">
-            {/* Hero Section */}
-            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 py-20">
-                <div className="container mx-auto px-4">
+            {/* Hero Section - Cloud Theme */}
+            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 py-20 relative overflow-hidden">
+                {/* Kid-Friendly Animations - Business Dreams */}
+                <AnimatedNumbers />
+
+                <TwinklingStars count={15} />
+
+                <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
                         <h1 className="font-display font-bold text-5xl md:text-6xl mb-6">
                             <span className="gradient-text">Franchise</span> Opportunity
                         </h1>
                         <p className="text-xl text-gray-700 leading-relaxed">
-                            Partner with India's trusted preschool brand and build a rewarding business
+                            Partner with India&apos;s trusted preschool brand and build a rewarding business
                         </p>
                     </div>
                 </div>

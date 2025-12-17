@@ -1,10 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Star, Quote } from 'lucide-react';
+import FloatingShapes from '@/components/animations/FloatingShapes';
+import TwinklingStars from '@/components/animations/TwinklingStars';
+import AnimatedLetters from '@/components/animations/AnimatedLetters';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+if (typeof window !== 'undefined') {
+    gsap.registerPlugin(ScrollTrigger);
+}
 
 const TestimonialSlider = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
+    const sectionRef = useRef<HTMLDivElement>(null);
+    const titleRef = useRef<HTMLHeadingElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     const testimonials = [
         {
@@ -50,6 +62,40 @@ const TestimonialSlider = () => {
         return () => clearInterval(timer);
     }, [testimonials.length]);
 
+    // Scroll-triggered animations
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            if (titleRef.current) {
+                gsap.from(titleRef.current, {
+                    scrollTrigger: {
+                        trigger: titleRef.current,
+                        start: 'top 85%',
+                    },
+                    scale: 0.9,
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    ease: 'power3.out',
+                });
+            }
+
+            if (contentRef.current) {
+                gsap.from(contentRef.current, {
+                    scrollTrigger: {
+                        trigger: contentRef.current,
+                        start: 'top 85%',
+                    },
+                    x: -80,
+                    opacity: 0,
+                    duration: 0.8,
+                    ease: 'back.out(1.4)',
+                });
+            }
+        }, sectionRef);
+
+        return () => ctx.revert();
+    }, []);
+
     const nextSlide = () => {
         setCurrentSlide((prev) => (prev + 1) % testimonials.length);
     };
@@ -59,7 +105,10 @@ const TestimonialSlider = () => {
     };
 
     return (
-        <div className="relative min-h-[70vh] flex items-center overflow-hidden bg-gradient-to-br from-gray-50 to-white py-20">
+        <div ref={sectionRef} className="relative min-h-[70vh] flex items-center overflow-hidden bg-gradient-to-br from-gray-50 to-white py-20">
+            {/* Floating Shapes */}
+            <FloatingShapes count={8} />
+
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-5">
                 <div className="absolute top-20 right-20 w-96 h-96 bg-primary-500 rounded-full blur-3xl animate-pulse"></div>
@@ -77,8 +126,8 @@ const TestimonialSlider = () => {
                         </div>
 
                         {/* Slide Content */}
-                        <div className="space-y-6">
-                            <h2 className="font-display font-bold text-4xl md:text-5xl lg:text-6xl leading-tight text-gray-900">
+                        <div ref={contentRef} className="space-y-6">
+                            <h2 ref={titleRef} className="font-display font-bold text-4xl md:text-5xl lg:text-6xl leading-tight text-gray-900">
                                 What <span className="gradient-text">Parents Say</span>
                             </h2>
 
@@ -93,7 +142,7 @@ const TestimonialSlider = () => {
                             </div>
 
                             <p className="text-lg text-gray-600 leading-relaxed max-w-xl italic">
-                                "{testimonials[currentSlide].text}"
+                                &quot;{testimonials[currentSlide].text}&quot;
                             </p>
 
                             <div className="text-gray-600">
@@ -110,8 +159,8 @@ const TestimonialSlider = () => {
                                     key={index}
                                     onClick={() => setCurrentSlide(index)}
                                     className={`h-2 rounded-full transition-all ${index === currentSlide
-                                            ? 'w-8 bg-primary-500'
-                                            : 'w-2 bg-gray-300 hover:bg-primary-300'
+                                        ? 'w-8 bg-primary-500'
+                                        : 'w-2 bg-gray-300 hover:bg-primary-300'
                                         }`}
                                 />
                             ))}

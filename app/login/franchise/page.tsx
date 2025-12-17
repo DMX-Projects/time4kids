@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { Building2, Lock, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function FranchiseLoginPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -20,8 +21,14 @@ export default function FranchiseLoginPage() {
             <div className="max-w-md w-full">
                 {/* Logo and Title */}
                 <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-2xl flex items-center justify-center text-white font-bold text-3xl shadow-xl mx-auto mb-4">
-                        TK
+                    <div className="relative w-48 h-20 mx-auto mb-4">
+                        <Image
+                            src="/logo.jpg"
+                            alt="T.I.M.E. Kids Logo"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
                     </div>
                     <h1 className="font-display font-bold text-3xl mb-2">Franchise Login</h1>
                     <p className="text-gray-600">Access your franchise portal</p>

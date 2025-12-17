@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function ParentLoginPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -20,11 +21,17 @@ export default function ParentLoginPage() {
             <div className="max-w-md w-full">
                 {/* Logo and Title */}
                 <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center text-white font-bold text-3xl shadow-xl mx-auto mb-4">
-                        TK
+                    <div className="relative w-48 h-20 mx-auto mb-4">
+                        <Image
+                            src="/logo.jpg"
+                            alt="T.I.M.E. Kids Logo"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
                     </div>
                     <h1 className="font-display font-bold text-3xl mb-2">Parent Login</h1>
-                    <p className="text-gray-600">Access your child's learning portal</p>
+                    <p className="text-gray-600">Access your child&apos;s learning portal</p>
                 </div>
 
                 {/* Login Card */}
@@ -98,7 +105,7 @@ export default function ParentLoginPage() {
                     {/* Divider */}
                     <div className="mt-6 text-center">
                         <p className="text-sm text-gray-600">
-                            Don't have an account?{' '}
+                            Don&apos;t have an account?{' '}
                             <Link href="/admission" className="text-primary-600 font-semibold hover:underline">
                                 Enquire for Admission
                             </Link>
