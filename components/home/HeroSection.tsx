@@ -182,7 +182,7 @@ const HeroSection = () => {
             <div className="container mx-auto px-4 relative z-20">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     {/* Left Content */}
-                    <div className="space-y-8 relative z-20">
+                    <div className="space-y-10 relative z-20">
                         {/* Legacy Badge */}
                         <div ref={badgeRef} className="inline-flex items-center space-x-2 bg-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform">
                             <Award className="w-5 h-5 text-primary-600" />
@@ -191,15 +191,15 @@ const HeroSection = () => {
 
                         {/* Slide Content */}
                         <div className="space-y-4">
-                            <h1 ref={titleRef} className="font-fredoka font-bold text-6xl md:text-7xl lg:text-8xl leading-tight text-black " style={{ textShadow: '0 3px 6px rgba(0,0,0,0.12)' }}>
+                            <h1 ref={titleRef} className="font-fredoka font-bold text-4xl md:text-5xl lg:text-6xl leading-tight text-[#003366]" style={{ textShadow: '0 3px 6px rgba(0,0,0,0.12)' }}>
                                 {slides[currentSlide].title}
                             </h1>
 
-                            <p ref={subtitleRef} className="text-4xl md:text-5xl font-baloo font-bold text-primary-600" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                            <p ref={subtitleRef} className="text-2xl md:text-3xl font-baloo font-bold text-[#E67E22]" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                                 {slides[currentSlide].subtitle}
                             </p>
 
-                            <p ref={descRef} className="text-xl text-black leading-relaxed max-w-xl font-comic font-medium">
+                            <p ref={descRef} className="text-xl text-gray-700 leading-relaxed max-w-xl font-medium">
                                 {slides[currentSlide].description}
                             </p>
                         </div>
@@ -285,7 +285,7 @@ const HeroSection = () => {
 
                         <div className="absolute -top-8 -right-8 bg-white rounded-2xl shadow-xl p-6 animate-float hidden lg:block" style={{ animationDelay: '0.5s' }}>
                             <div className="text-4xl font-bold gradient-text">17+</div>
-                            <div className="text-sm text-gray-600 font-medium">Years Legacy</div>
+                            <div className="text-sm text-gray-700 font-medium">Years Legacy</div>
                         </div>
                     </div>
                 </div>

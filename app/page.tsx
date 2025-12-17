@@ -7,6 +7,8 @@ import TestimonialSlider from '@/components/home/TestimonialSlider';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
 import CTASection from '@/components/home/CTASection';
 
+import LocationsLadder from '@/components/home/LocationsLadder';
+
 export default function Home() {
     return (
         <div className="overflow-hidden">
@@ -17,6 +19,7 @@ export default function Home() {
             <CountUpSection />
             <TestimonialsSection />
             <CTASection />
+            <LocationsLadder />
         </div>
     );
 }

@@ -56,7 +56,7 @@ const CTASection = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-20 relative overflow-hidden">
+    <section ref={sectionRef} className="py-10 relative overflow-hidden">
       {/* Floating Shapes behind cards */}
       <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
         <FloatingShapes count={10} />
@@ -66,8 +66,8 @@ const CTASection = () => {
 
       {/* Foreground content */}
       <div className="container mx-auto px-4 relative z-10">
-        <div className="text-center mb-12">
-          <h2 ref={titleRef} className="font-fredoka font-bold text-5xl md:text-6xl mb-4 text-gray-900">
+        <div className="text-center mb-6">
+          <h2 ref={titleRef} className="font-fredoka font-bold text-5xl md:text-6xl mb-4 text-[#003366]">
             Ready to Get Started?
           </h2>
           <p className="text-2xl text-gray-700 max-w-2xl mx-auto font-baloo">
@@ -80,7 +80,7 @@ const CTASection = () => {
             <div className="w-16 h-16 bg-primary-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
               <ArrowRight className="w-8 h-8 text-primary-600" />
             </div>
-            <h3 className="font-fredoka font-bold text-2xl mb-3 text-center text-gray-900">Admission Enquiry</h3>
+            <h3 className="font-fredoka font-bold text-2xl mb-3 text-center text-[#003366]">Admission Enquiry</h3>
             <p className="text-gray-600 mb-6 text-center font-comic">Start your child&apos;s learning journey with us today.</p>
             <MagneticButton strength={0.3} className="block">
               <Link href="/admission" className="block">
@@ -95,7 +95,7 @@ const CTASection = () => {
             <div className="w-16 h-16 bg-primary-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
               <MapPin className="w-8 h-8 text-primary-600" />
             </div>
-            <h3 className="font-fredoka font-bold text-2xl mb-3 text-center text-gray-900">Find a Centre</h3>
+            <h3 className="font-fredoka font-bold text-2xl mb-3 text-center text-[#003366]">Find a Centre</h3>
             <p className="text-gray-600 mb-6 text-center font-comic">Locate the nearest T.I.M.E. Kids centre in your area.</p>
             <MagneticButton strength={0.3} className="block">
               <Link href="/locate-centre" className="block">
@@ -110,7 +110,7 @@ const CTASection = () => {
             <div className="w-16 h-16 bg-primary-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
               <Briefcase className="w-8 h-8 text-primary-600" />
             </div>
-            <h3 className="font-fredoka font-bold text-2xl mb-3 text-center text-gray-900">Franchise Opportunity</h3>
+            <h3 className="font-fredoka font-bold text-2xl mb-3 text-center text-[#003366]">Franchise Opportunity</h3>
             <p className="text-gray-600 mb-6 text-center font-comic">Partner with us and start your own preschool.</p>
             <MagneticButton strength={0.3} className="block">
               <Link href="/franchise" className="block">
