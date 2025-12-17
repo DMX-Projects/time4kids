@@ -2,6 +2,8 @@ import Image from 'next/image';
 import GooeyNav from '@/components/ui/GooeyNav';
 import Link from 'next/link';
 
+
+
 const Header = () => {
     const navItems = [
         { label: 'Home', href: '/' },
@@ -45,8 +47,13 @@ const Header = () => {
 
                 {/* Mobile Menu Toggle could go here */}
             </div>
+
+            {/* Wavy Border at the bottom */}
+
+
         </header>
     );
 };
 
 export default Header;
+

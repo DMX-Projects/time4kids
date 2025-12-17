@@ -161,19 +161,25 @@ export default function AdmissionPage() {
 
                     <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                         <TestimonialVideo
-                            title="Best decision for our child"
-                            author="Mother of Mugil"
-                            location="Hyderabad"
+                            title="Annual Day Celebrations"
+                            author="T.I.M.E. Kids Kilpauk"
+                            location="Chennai"
+                            videoUrl="/chaninai kilpauk-AnnualDay-Video-2018-19.mp4"
+                            thumbnailUrl="/day care.png"
                         />
                         <TestimonialVideo
-                            title="Remarkable development"
-                            author="Roma Majumdar"
-                            location="Hyderabad"
+                            title="Fun Time at School"
+                            author="T.I.M.E. Kids Chennai"
+                            location="Chennai"
+                            videoUrl="/chennai2.mp4"
+                            thumbnailUrl="/infra.jpg"
                         />
                         <TestimonialVideo
-                            title="My kid loves it here!"
-                            author="Deepa Bahukhandi"
-                            location="Hyderabad"
+                            title="Raja Colony Highlights"
+                            author="T.I.M.E. Kids Trichy"
+                            location="Trichy"
+                            videoUrl="/trichy-rajacolony.mp4"
+                            thumbnailUrl="/5.jpeg"
                         />
                     </div>
                 </div>
