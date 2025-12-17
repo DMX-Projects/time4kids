@@ -118,7 +118,7 @@ const WhyChooseUs = () => {
     ];
 
     return (
-        <section ref={sectionRef} className="py-20 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+        <section ref={sectionRef} className="py-10 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
             {/* Floating Shapes Background */}
             <FloatingShapes count={10} />
 
@@ -126,11 +126,11 @@ const WhyChooseUs = () => {
             <WaveBackground position="top" color="#f97316" opacity={0.05} />
 
             <div className="container mx-auto px-4 relative z-10">
-                <div className="text-center mb-16">
-                    <h2 ref={titleRef} className="font-fredoka font-bold text-5xl md:text-6xl mb-4">
-                        Why Choose <span className="gradient-text">T.I.M.E. Kids?</span>
+                <div className="text-center mb-8">
+                    <h2 ref={titleRef} className="font-fredoka font-bold text-4xl md:text-5xl mb-4 text-[#003366]">
+                        Why Choose <span className="text-[#E67E22]">T.I.M.E. Kids?</span>
                     </h2>
-                    <p ref={descRef} className="text-xl text-gray-600 max-w-2xl mx-auto font-baloo">
+                    <p ref={descRef} className="text-lg text-gray-700 max-w-2xl mx-auto font-medium">
                         We provide the perfect foundation for your child&apos;s educational journey with our proven approach and caring environment.
                     </p>
                 </div>
@@ -153,8 +153,8 @@ const WhyChooseUs = () => {
                                             priority={false}
                                         />
                                     </div>
-                                    <h3 className="font-fredoka font-bold text-2xl mb-3 text-gray-900">{feature.title}</h3>
-                                    <p className="text-gray-600 leading-relaxed font-comic">{feature.description}</p>
+                                    <h3 className="font-fredoka font-bold text-2xl mb-3 text-[#003366]">{feature.title}</h3>
+                                    <p className="text-gray-700 leading-relaxed font-medium">{feature.description}</p>
                                 </Card>
                             </div>
                         </TiltCard>

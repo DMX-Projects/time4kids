@@ -181,16 +181,11 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             color: black;
           }
           .effect.filter {
-            filter: blur(7px) contrast(100) blur(0);
-            mix-blend-mode: lighten;
+            /* filter: blur(7px) contrast(100) blur(0); */
+            /* mix-blend-mode: lighten; */
+            filter: none;
           }
-          .effect.filter::before {
-            content: "";
-            position: absolute;
-            inset: -20px;
-            z-index: -2;
-            background: black;
-          }
+          /* .effect.filter::before removed to fix black shade */
           .effect.filter::after {
             content: "";
             position: absolute;

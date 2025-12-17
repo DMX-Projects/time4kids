@@ -112,13 +112,13 @@ const ProgramsPreview = () => {
     }, []);
 
     return (
-        <section ref={sectionRef} className="py-20 bg-white relative overflow-hidden">
+        <section ref={sectionRef} className="py-10 bg-gray-50 relative overflow-hidden">
             {/* Floating Decorative Dots */}
             <FloatingDots count={6} colors={['bg-pink-200', 'bg-blue-200', 'bg-orange-200', 'bg-green-200']} />
 
             <div className="container mx-auto px-4 relative z-10">
-                <div className="text-center mb-16">
-                    <h2 ref={headingRef} className="font-display font-bold text-4xl md:text-5xl mb-4 text-gray-900">
+                <div className="text-center mb-8">
+                    <h2 ref={headingRef} className="font-display font-bold text-4xl md:text-5xl mb-4 text-[#003366]">
                         Our <span className="text-[#ef5f5f]">Programs</span>
                     </h2>
                     <p ref={descriptionRef} className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -126,45 +126,41 @@ const ProgramsPreview = () => {
                     </p>
                 </div>
 
-                <div ref={cardsRef} className="grid md:grid-cols-2 lg:grid-cols-4 gap-0 mb-20">
+                <div ref={cardsRef} className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
                     {programs.map((program, index) => (
-                        <div key={index} className="flex flex-col h-full hover-lift transition-transform duration-300">
+                        <div key={index} className="group relative h-full">
                             {/* Image Section */}
-                            <div className="relative w-full aspect-[4/3] overflow-hidden">
+                            <div className="relative w-full aspect-[4/5] overflow-hidden rounded-3xl shadow-lg">
                                 <Image
                                     src={program.image}
                                     alt={program.programName}
                                     fill
-                                    className="object-cover transition-transform duration-500 hover:scale-110"
+                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
                                 />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             </div>
 
-                            {/* Content Section */}
-                            <div className={`${program.bgColor} p-6 flex-1 flex flex-col items-start text-white`}>
-                                <h3 className="font-display font-bold text-2xl mb-1 shimmer-text" style={{ fontFamily: '"Lobster", cursive' }}>
-                                    {/* Using original name if user wants specific titles, but falling back to program name to make sense */}
+                            {/* Content Card - Overlapping */}
+                            <div className="absolute -bottom-12 left-4 right-4 bg-white rounded-2xl p-6 text-center shadow-xl transition-transform duration-300 group-hover:-translate-y-2">
+                                <h3 className="font-display font-bold text-xl mb-2 text-[#003366]">
                                     {program.programName}
                                 </h3>
-                                {/* Assuming user might want the 'Experience Yourself' style sub-headers, but keeping it semantic for now */}
 
-                                <p className="text-white/90 text-sm leading-relaxed mb-6 line-clamp-3">
+                                <p className="text-gray-700 text-sm mb-4 line-clamp-2 font-medium">
                                     {program.description}
                                 </p>
 
-                                <div className="mt-auto">
-                                    <Link href="/programs">
-                                        <span className={`inline-block px-6 py-2 ${program.buttonColor} text-white text-sm font-semibold rounded shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5`}>
-                                            Read more
-                                        </span>
-                                    </Link>
+                                <div className="hidden group-hover:block transition-all duration-300"> {/* Optional: Only show button on hover to keep it clean like the reference? Or always show. Reference text is small. Let's keep it clean. */}
                                 </div>
+                                {/* Making the whole card clickable or adding a subtle indicator */}
+                                <div className="w-8 h-1 bg-gray-200 mx-auto rounded-full group-hover:bg-[#ef5f5f] transition-colors duration-300" />
                             </div>
                         </div>
                     ))}
                 </div>
 
-                <div className="text-center mt-16">
+                <div className="text-center mt-8">
                     <Link href="/programs">
                         <Button size="lg" variant="primary">View All Programs</Button>
                     </Link>
