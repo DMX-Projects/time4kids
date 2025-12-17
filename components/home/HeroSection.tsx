@@ -178,13 +178,6 @@ const HeroSection = () => {
             <div className="container mx-auto px-4 relative z-20">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     {/* Left Content */}
-<<<<<<< Updated upstream
-                    <div className="space-y-10 relative z-20">
-                        {/* Legacy Badge */}
-                        <div ref={badgeRef} className="inline-flex items-center space-x-2 bg-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform">
-                            <Award className="w-5 h-5 text-primary-600" />
-                            <span className="text-sm font-bold text-black ">17 Years of Legacy in Early Education</span>
-=======
                     <div className="space-y-8 relative z-20">
                         {/* Legacy Badge - Styled as a pill */}
                         <div ref={badgeRef} className="inline-flex items-center space-x-2 bg-white px-6 py-3 rounded-full shadow-lg transform hover:scale-105 transition-transform border border-gray-100">
@@ -192,12 +185,10 @@ const HeroSection = () => {
                                 <Award className="w-5 h-5 text-orange-600" />
                             </div>
                             <span className="text-sm font-bold text-gray-800">17 Years of Legacy in Early Education</span>
->>>>>>> Stashed changes
                         </div>
 
                         {/* Slide Content */}
                         <div className="space-y-4">
-<<<<<<< Updated upstream
                             <h1 ref={titleRef} className="font-fredoka font-bold text-4xl md:text-5xl lg:text-6xl leading-tight text-[#003366]" style={{ textShadow: '0 3px 6px rgba(0,0,0,0.12)' }}>
                                 {slides[currentSlide].title}
                             </h1>
@@ -207,17 +198,6 @@ const HeroSection = () => {
                             </p>
 
                             <p ref={descRef} className="text-xl text-gray-700 leading-relaxed max-w-xl font-medium">
-=======
-                            <h1 ref={titleRef} className="font-fredoka font-bold text-6xl md:text-7xl lg:text-8xl leading-tight text-gray-900">
-                                {slides[currentSlide].title}
-                            </h1>
-
-                            <p ref={subtitleRef} className="text-4xl md:text-5xl font-baloo font-bold text-primary-500">
-                                {slides[currentSlide].subtitle}
-                            </p>
-
-                            <p ref={descRef} className="text-xl text-gray-700 leading-relaxed max-w-xl font-medium font-comic">
->>>>>>> Stashed changes
                                 {slides[currentSlide].description}
                             </p>
                         </div>
@@ -305,17 +285,11 @@ const HeroSection = () => {
                             </div>
                         </div>
 
-<<<<<<< Updated upstream
-                        <div className="absolute -top-8 -right-8 bg-white rounded-2xl shadow-xl p-6 animate-float hidden lg:block" style={{ animationDelay: '0.5s' }}>
-                            <div className="text-4xl font-bold gradient-text">17+</div>
-                            <div className="text-sm text-gray-700 font-medium">Years Legacy</div>
-=======
                         <div className="absolute top-8 -right-8 bg-white rounded-2xl shadow-xl p-5 animate-float z-30 border-b-4 border-orange-500 rotate-[3deg] hover:rotate-0 transition-transform" style={{ animationDelay: '1.5s' }}>
                             <div className="flex flex-col items-center">
                                 <div className="text-4xl font-black text-orange-500">17+</div>
                                 <div className="text-sm text-gray-600 font-bold">Years Legacy</div>
                             </div>
->>>>>>> Stashed changes
                         </div>
                     </div>
                 </div>
