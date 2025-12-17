@@ -1,9 +1,9 @@
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
-import { Draggable } from 'gsap/Draggable';
-import { Flip } from 'gsap/Flip';
-import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
+import { ScrollTrigger } from 'gsap/dist/ScrollTrigger';
+import { ScrollToPlugin } from 'gsap/dist/ScrollToPlugin';
+import { Draggable } from 'gsap/dist/Draggable';
+import { Flip } from 'gsap/dist/Flip';
+import { MotionPathPlugin } from 'gsap/dist/MotionPathPlugin';
 
 // Register GSAP plugins
 if (typeof window !== 'undefined') {
@@ -259,7 +259,7 @@ export const batchAnimation = (
     animation: (element: HTMLElement) => void
 ) => {
     ScrollTrigger.batch(selector, {
-        onEnter: (elements) => elements.forEach(animation),
+        onEnter: (elements) => (elements as any[]).forEach(animation),
         start: 'top 80%',
     });
 };

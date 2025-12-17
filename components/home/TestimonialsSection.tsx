@@ -30,7 +30,7 @@ const TestimonialsSection = () => {
                         What <span className="gradient-text">Parents Say</span>
                     </h2>
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        Hear from parents who have trusted us with their children's early education.
+                        Hear from parents who have trusted us with their children&apos;s early education.
                     </p>
                 </div>
 

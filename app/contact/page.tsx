@@ -4,6 +4,9 @@ import React, { useState } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import QRCode from '@/components/ui/QRCode';
+import AnimatedLetters from '@/components/animations/AnimatedLetters';
+import TwinklingStars from '@/components/animations/TwinklingStars';
+
 import { Mail, Phone, MapPin, Facebook, Instagram, Youtube, Send, Briefcase } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
@@ -28,15 +31,20 @@ export default function ContactPage() {
 
     return (
         <div className="min-h-screen">
-            {/* Hero Section */}
-            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 py-20">
-                <div className="container mx-auto px-4">
+            {/* Hero Section - Pencil/Creative Theme */}
+            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 py-20 relative overflow-hidden">
+                {/* Kid-Friendly Animations - Creative Communication */}
+                <AnimatedLetters />
+                <TwinklingStars count={18} />
+
+
+                <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
                         <h1 className="font-display font-bold text-5xl md:text-6xl mb-6">
                             Get in <span className="gradient-text">Touch</span>
                         </h1>
                         <p className="text-xl text-gray-700 leading-relaxed">
-                            We'd love to hear from you. Reach out to us for any queries or information.
+                            We&apos;d love to hear from you. Reach out to us for any queries or information.
                         </p>
                     </div>
                 </div>
@@ -136,7 +144,7 @@ export default function ContactPage() {
 
                                 {isSubmitted && (
                                     <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                        <p className="text-green-800 font-medium">Thank you! We'll get back to you soon.</p>
+                                        <p className="text-green-800 font-medium">Thank you! We&apos;ll get back to you soon.</p>
                                     </div>
                                 )}
 

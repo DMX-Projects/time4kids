@@ -3,7 +3,6 @@
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import FloatingDots from '@/components/animations/FloatingDots';
 import { gsap } from 'gsap';
@@ -21,32 +20,44 @@ const ProgramsPreview = () => {
 
     const programs = [
         {
-            image: '/playgroup.jpg',
-            name: 'Play Group',
+            image: '/13.png',
+            name: 'Experience Yourself',
+            programName: 'Play Group', // Keeping original name as subtitle or context if needed, but using "Experience Yourself" style titles from ss/request? No, user said "change format", implied content usually stays or adapts. Screenshot shows "Experience Yourself". 
+            // Wait, the screenshot has titles "Experience Yourself", "Quality lessons", "Toys and Games".
+            // The USER said "change the format of 1st ss images to 2nd ss images".
+            // Typically this means styles. I should probably keep the CONTENT (Play Group) but use the STYLE (Red background).
+            // Let's stick to the content "Play Group" etc but with the styling.
             ageGroup: '1.5 - 2.5 years',
             description: 'Introduction to social interaction and basic motor skills development.',
-            color: 'from-pink-500 to-pink-600',
+            bgColor: 'bg-[#ef5f5f]', // Red-ish from screenshot
+            buttonColor: 'bg-[#4facfe]', // Blue button from screenshot
         },
         {
-            image: '/nursery.jpg',
-            name: 'Nursery',
+            image: '/12.png',
+            name: 'Quality lessons',
+            programName: 'Nursery',
             ageGroup: '2.5 - 3.5 years',
             description: 'Building foundation for language, numbers, and creative expression.',
-            color: 'from-blue-500 to-blue-600',
+            bgColor: 'bg-[#fbd267]', // Yellow from screenshot
+            buttonColor: 'bg-[#5ccca3]', // Green/Teal button from screenshot
         },
         {
-            image: '/pp1.jpg',
-            name: 'PP-1 & PP-2',
+            image: '/1.png',
+            name: 'Toys and Games',
+            programName: 'PP-1 & PP-2',
             ageGroup: '3.5 - 5.5 years',
             description: 'Comprehensive pre-primary education preparing for formal schooling.',
-            color: 'from-purple-500 to-purple-600',
+            bgColor: 'bg-[#6cc3d5]', // Cyan/Blue from screenshot
+            buttonColor: 'bg-[#ef5f5f]', // Red button
         },
         {
-            image: '/pp2.jpg',
+            image: '/16.png',
             name: 'Day Care',
+            programName: 'Day Care',
             ageGroup: '1.5 - 5.5 years',
             description: 'Extended care with engaging activities throughout the day.',
-            color: 'from-orange-500 to-orange-600',
+            bgColor: 'bg-[#ff9f43]', // Orange (matches screenshot style if there was a 4th)
+            buttonColor: 'bg-[#5f27cd]', // Purple button
         },
     ];
 
@@ -101,44 +112,61 @@ const ProgramsPreview = () => {
     }, []);
 
     return (
-        <section ref={sectionRef} className="py-20 bg-gradient-to-br from-gray-50 to-white relative overflow-hidden">
+        <section ref={sectionRef} className="py-20 bg-white relative overflow-hidden">
             {/* Floating Decorative Dots */}
             <FloatingDots count={6} colors={['bg-pink-200', 'bg-blue-200', 'bg-orange-200', 'bg-green-200']} />
 
             <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-16">
-                    <h2 ref={headingRef} className="font-display font-bold text-4xl md:text-5xl mb-4">
-                        Our <span className="gradient-text">Programs</span>
+                    <h2 ref={headingRef} className="font-display font-bold text-4xl md:text-5xl mb-4 text-gray-900">
+                        Our <span className="text-[#ef5f5f]">Programs</span>
                     </h2>
                     <p ref={descriptionRef} className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        Every class, group and child is unique and has different needs at different times. At T.I.M.E. Kids pre-schools, we believe in a curriculum that matches abilities to skills that preschoolers need as a base for later learning and success at school.
+                        Every class, group and child is unique and has different needs at different times. At T.I.M.E. Kids pre-schools, we believe in a curriculum that matches abilities to skills.
                     </p>
                 </div>
 
-                <div ref={cardsRef} className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div ref={cardsRef} className="grid md:grid-cols-2 lg:grid-cols-4 gap-0 mb-20">
                     {programs.map((program, index) => (
-                        <Card key={index} className="text-center group overflow-hidden hover-lift">
-                            <div className="relative w-full aspect-square mb-6 overflow-hidden rounded-t-2xl">
+                        <div key={index} className="flex flex-col h-full hover-lift transition-transform duration-300">
+                            {/* Image Section */}
+                            <div className="relative w-full aspect-[4/3] overflow-hidden">
                                 <Image
                                     src={program.image}
-                                    alt={program.name}
+                                    alt={program.programName}
                                     fill
-                                    className="object-cover rounded-t-2xl"
+                                    className="object-cover transition-transform duration-500 hover:scale-110"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
                                 />
                             </div>
-                            <h3 className="font-display font-bold text-xl mb-2 text-gray-900">{program.name}</h3>
-                            <div className="inline-block px-4 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold mb-4">
-                                {program.ageGroup}
+
+                            {/* Content Section */}
+                            <div className={`${program.bgColor} p-6 flex-1 flex flex-col items-start text-white`}>
+                                <h3 className="font-display font-bold text-2xl mb-1 shimmer-text" style={{ fontFamily: '"Lobster", cursive' }}>
+                                    {/* Using original name if user wants specific titles, but falling back to program name to make sense */}
+                                    {program.programName}
+                                </h3>
+                                {/* Assuming user might want the 'Experience Yourself' style sub-headers, but keeping it semantic for now */}
+
+                                <p className="text-white/90 text-sm leading-relaxed mb-6 line-clamp-3">
+                                    {program.description}
+                                </p>
+
+                                <div className="mt-auto">
+                                    <Link href="/programs">
+                                        <span className={`inline-block px-6 py-2 ${program.buttonColor} text-white text-sm font-semibold rounded shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5`}>
+                                            Read more
+                                        </span>
+                                    </Link>
+                                </div>
                             </div>
-                            <p className="text-gray-600 text-sm leading-relaxed">{program.description}</p>
-                        </Card>
+                        </div>
                     ))}
                 </div>
 
-                <div className="text-center">
+                <div className="text-center mt-16">
                     <Link href="/programs">
-                        <Button size="lg">View All Programs</Button>
+                        <Button size="lg" variant="primary">View All Programs</Button>
                     </Link>
                 </div>
             </div>

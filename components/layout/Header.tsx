@@ -1,159 +1,49 @@
-'use client';
-
-import React, { useState } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, ChevronDown, User, Building2 } from 'lucide-react';
-import Button from '@/components/ui/Button';
+import GooeyNav from '@/components/ui/GooeyNav';
+import Link from 'next/link';
 
 const Header = () => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isParentLoginOpen, setIsParentLoginOpen] = useState(false);
-    const [isFranchiseLoginOpen, setIsFranchiseLoginOpen] = useState(false);
-
-    const navLinks = [
-        { name: 'Home', href: '/' },
-        { name: 'About Us', href: '/about' },
-        { name: 'Programs', href: '/programs' },
-        { name: 'Admission', href: '/admission' },
-        { name: 'Locate Centre', href: '/locate-centre' },
-        { name: 'Franchise', href: '/franchise' },
-        { name: 'Contact', href: '/contact' },
+    const navItems = [
+        { label: 'Home', href: '/' },
+        { label: 'About Us', href: '/about' },
+        { label: 'Programs', href: '/programs' },
+        { label: 'Admission', href: '/admission' },
+        { label: 'Locate Centre', href: '/locate-centre' },
+        { label: 'Franchise', href: '/franchise' },
+        { label: 'Parent Login', href: '/login/parents' },
+        { label: 'Franchise Login', href: '/login/franchise' },
+        { label: 'Contact', href: '/contact' },
     ];
 
     return (
-        <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md shadow-md">
-            <div className="container mx-auto px-4">
-                <div className="flex items-center justify-between h-20">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center group">
-                        <div className="relative h-12 w-auto group-hover:scale-105 transition-transform">
-                            <Image
-                                src="/logo.jpg"
-                                alt="T.I.M.E. Kids - The Preschool That Cares"
-                                width={200}
-                                height={48}
-                                className="object-contain"
-                                priority
-                            />
-                        </div>
-                    </Link>
-
-                    {/* Desktop Navigation */}
-                    <nav className="hidden lg:flex items-center space-x-1">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.name}
-                                href={link.href}
-                                className="px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors rounded-lg hover:bg-primary-50"
-                            >
-                                {link.name}
-                            </Link>
-                        ))}
-                    </nav>
-
-                    {/* Login Buttons */}
-                    <div className="hidden lg:flex items-center space-x-3">
-                        {/* Parent Login Dropdown */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setIsParentLoginOpen(!isParentLoginOpen)}
-                                className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors rounded-lg hover:bg-primary-50"
-                            >
-                                <User className="w-4 h-4" />
-                                <span>Parents</span>
-                                <ChevronDown className="w-4 h-4" />
-                            </button>
-
-                            {isParentLoginOpen && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 animate-slide-down">
-                                    <Link
-                                        href="/login/parents"
-                                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600"
-                                        onClick={() => setIsParentLoginOpen(false)}
-                                    >
-                                        Login
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Franchise Login Dropdown */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setIsFranchiseLoginOpen(!isFranchiseLoginOpen)}
-                                className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors rounded-lg hover:bg-primary-50"
-                            >
-                                <Building2 className="w-4 h-4" />
-                                <span>Franchise</span>
-                                <ChevronDown className="w-4 h-4" />
-                            </button>
-
-                            {isFranchiseLoginOpen && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 animate-slide-down">
-                                    <Link
-                                        href="/login/franchise"
-                                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600"
-                                        onClick={() => setIsFranchiseLoginOpen(false)}
-                                    >
-                                        Login
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-
-                        <Link href="/admission">
-                            <Button size="sm">Enquire Now</Button>
-                        </Link>
+        <header className="sticky top-0 left-0 right-0 z-50 bg-orange-500 shadow-md transition-all duration-300">
+            <div className="container mx-auto px-4 py-2 flex justify-between items-center">
+                <Link href="/" className="flex-shrink-0">
+                    <div className="relative w-32 h-12 md:w-40 md:h-16 bg-white p-1 rounded-lg">
+                        <Image
+                            src="/logo.jpg"
+                            alt="T.I.M.E. Kids Logo"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
                     </div>
+                </Link>
 
-                    {/* Mobile Menu Button */}
-                    <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="lg:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                    >
-                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                    </button>
+                <div className="hidden lg:block">
+                    <GooeyNav
+                        items={navItems}
+                        particleCount={15}
+                        particleDistances={[90, 10]}
+                        particleR={100}
+                        initialActiveIndex={0}
+                        animationTime={600}
+                        timeVariance={300}
+                        colors={[1, 2, 3, 1, 2, 3, 1, 4]}
+                    />
                 </div>
 
-                {/* Mobile Menu */}
-                {isMenuOpen && (
-                    <div className="lg:hidden py-4 border-t border-gray-200 animate-slide-down">
-                        <nav className="flex flex-col space-y-2">
-                            {navLinks.map((link) => (
-                                <Link
-                                    key={link.name}
-                                    href={link.href}
-                                    className="px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg"
-                                    onClick={() => setIsMenuOpen(false)}
-                                >
-                                    {link.name}
-                                </Link>
-                            ))}
-                            <Link
-                                href="/login/parents"
-                                className="px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg flex items-center space-x-2"
-                                onClick={() => setIsMenuOpen(false)}
-                            >
-                                <User className="w-4 h-4" />
-                                <span>Parent Login</span>
-                            </Link>
-                            <Link
-                                href="/login/franchise"
-                                className="px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg flex items-center space-x-2"
-                                onClick={() => setIsMenuOpen(false)}
-                            >
-                                <Building2 className="w-4 h-4" />
-                                <span>Franchise Login</span>
-                            </Link>
-                            <div className="px-4 pt-2">
-                                <Link href="/admission">
-                                    <Button size="sm" className="w-full">Enquire Now</Button>
-                                </Link>
-                            </div>
-                        </nav>
-                    </div>
-                )}
+                {/* Mobile Menu Toggle could go here */}
             </div>
         </header>
     );

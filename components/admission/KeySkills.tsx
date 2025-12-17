@@ -64,7 +64,7 @@ const KeySkills = () => {
                         8 Key <span className="gradient-text">Skills We Develop</span>
                     </h2>
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        Our holistic curriculum focuses on developing these essential skills for your child's overall growth
+                        Our holistic curriculum focuses on developing these essential skills for your child&apos;s overall growth
                     </p>
                 </div>
 

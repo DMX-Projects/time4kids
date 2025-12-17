@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Inter, Poppins, Fredoka, Baloo_2, Comic_Neue, Chewy } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Chatbot from "@/components/shared/Chatbot";
+import ScrollProgress from "@/components/animations/ScrollProgress";
+import SmoothScroll from "@/components/shared/SmoothScroll";
+import BlobBackground from "@/components/animations/BlobBackground";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -15,6 +18,35 @@ const poppins = Poppins({
     weight: ['400', '500', '600', '700', '800'],
     subsets: ["latin"],
     variable: '--font-poppins',
+    display: 'swap',
+});
+
+// Kid-friendly fonts
+const fredoka = Fredoka({
+    weight: ['400', '500', '600', '700'],
+    subsets: ["latin"],
+    variable: '--font-fredoka',
+    display: 'swap',
+});
+
+const baloo2 = Baloo_2({
+    weight: ['400', '500', '600', '700', '800'],
+    subsets: ["latin"],
+    variable: '--font-baloo',
+    display: 'swap',
+});
+
+const comicNeue = Comic_Neue({
+    weight: ['400', '700'],
+    subsets: ["latin"],
+    variable: '--font-comic',
+    display: 'swap',
+});
+
+const chewy = Chewy({
+    weight: ['400'],
+    subsets: ["latin"],
+    variable: '--font-chewy',
     display: 'swap',
 });
 
@@ -36,8 +68,11 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
+        <html lang="en" className={`${inter.variable} ${poppins.variable} ${fredoka.variable} ${baloo2.variable} ${comicNeue.variable} ${chewy.variable}`}>
             <body className="antialiased">
+                <SmoothScroll />
+                <BlobBackground />
+                <ScrollProgress />
                 <Header />
                 <main className="min-h-screen">
                     {children}

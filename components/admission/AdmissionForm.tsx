@@ -41,7 +41,7 @@ const AdmissionForm = () => {
             {isSubmitted && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-3 animate-slide-down">
                     <CheckCircle className="w-6 h-6 text-green-600" />
-                    <p className="text-green-800 font-medium">Thank you! We'll contact you soon.</p>
+                    <p className="text-green-800 font-medium">Thank you! We&apos;ll contact you soon.</p>
                 </div>
             )}
 
@@ -118,13 +118,13 @@ const AdmissionForm = () => {
                             {/* Child Name */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Child's Name *
+                                    Child&apos;s Name *
                                 </label>
                                 <input
                                     {...register('childName', { required: 'Child name is required' })}
                                     type="text"
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                                    placeholder="Enter child's name"
+                                    placeholder="Enter child&apos;s name"
                                 />
                                 {errors.childName && (
                                     <p className="text-red-500 text-sm mt-1">{errors.childName.message}</p>
@@ -134,7 +134,7 @@ const AdmissionForm = () => {
                             {/* Child Age */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Child's Age *
+                                    Child&apos;s Age *
                                 </label>
                                 <select
                                     {...register('childAge', { required: 'Age is required' })}

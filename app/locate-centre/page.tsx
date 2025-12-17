@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Card from '@/components/ui/Card';
+import TwinklingStars from '@/components/animations/TwinklingStars';
 import { MapPin, Phone, Search } from 'lucide-react';
 
 interface Centre {
@@ -107,9 +108,13 @@ export default function LocateCentrePage() {
 
     return (
         <div className="min-h-screen">
-            {/* Hero Section */}
-            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 py-20">
-                <div className="container mx-auto px-4">
+            {/* Hero Section - Fence/Neighborhood Theme */}
+            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 py-20 relative overflow-hidden">
+                {/* Kid-Friendly Animations */}
+
+                <TwinklingStars count={20} />
+
+                <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
                         <h1 className="font-display font-bold text-5xl md:text-6xl mb-6">
                             Locate a <span className="gradient-text">T.I.M.E. Kids Centre</span>
