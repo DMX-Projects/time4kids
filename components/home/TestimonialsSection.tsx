@@ -1,24 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import TestimonialVideo from '@/components/shared/TestimonialVideo';
 
 const TestimonialsSection = () => {
+    const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+
     const testimonials = [
         {
-            title: "Best decision for our child",
-            author: "Mother of Mugil",
-            location: "Hyderabad",
+            title: "Annual Day Celebrations 2018-19",
+            author: "T.I.M.E. Kids Kilpauk",
+            location: "Chennai",
+            videoUrl: "/chaninai kilpauk-AnnualDay-Video-2018-19.mp4",
+            thumbnailUrl: "/day care.png"
         },
         {
-            title: "Remarkable development in 3 months",
-            author: "Roma Majumdar - Mother of Nandika",
-            location: "Hyderabad",
+            title: "Fun Time at School",
+            author: "T.I.M.E. Kids Chennai",
+            location: "Chennai",
+            videoUrl: "/chennai2.mp4",
+            thumbnailUrl: "/infra.jpg"
         },
         {
-            title: "My kid wants to go on Sundays too!",
-            author: "Deepa Bahukhandi - Mother of Diya",
-            location: "Hyderabad",
+            title: "Raja Colony Branch Highlights",
+            author: "T.I.M.E. Kids Trichy",
+            location: "Trichy",
+            videoUrl: "/trichy-rajacolony.mp4",
+            thumbnailUrl: "/5.jpeg"
         },
     ];
 
@@ -41,6 +49,10 @@ const TestimonialsSection = () => {
                             title={testimonial.title}
                             author={testimonial.author}
                             location={testimonial.location}
+                            videoUrl={testimonial.videoUrl}
+                            thumbnailUrl={testimonial.thumbnailUrl}
+                            isPlaying={playingIndex === index}
+                            onPlay={() => setPlayingIndex(index)}
                         />
                     ))}
                 </div>
