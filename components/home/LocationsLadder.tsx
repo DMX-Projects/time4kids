@@ -10,18 +10,18 @@ if (typeof window !== 'undefined') {
 }
 
 const cities = [
-    "Bengaluru (Bangalore)", "Belgaum", "Barasat", "Arcot", "Alleppey",
-    "Chennai", "Chengalpattu", "Bhubaneswar", "Bhadrak", "Bhadohi",
-    "Hosur", "Hooghly", "Ernakulam", "Coimbatore",
-    "Kanchipuram", "Jamnagar", "Idukki", "Hyderabad", "Howrah",
-    "Kozhikode", "Kottayam", "Kollam", "Kolkata", "Keeranur", "Kasargod",
-    "Mumbai", "Malappuram", "Lucknow",
-    "Namakkal", "Nizamabad", "Palakkad", "Paramakudi", "Pathanamthitta",
-    "Patna", "Pudukkottai", "Pune", "Rajapalayam", "Ramanathapuram",
-    "Rangareddy District", "Ranipet District", "Ratlam", "Salem", "Sethumadai",
-    "Sivagangai", "Thiruninravur", "Thiruthangal", "Thrissur",
-    "Trichy", "Trivandrum", "Vallioor", "Vellore", "Visakhapatnam",
-    "Walajabad", "Wanaparthy", "Zirakpur"
+    "Alleppey", "Arcot", "Barasat", "Belgaum", "Bengaluru (Bangalore)",
+    "Bhadohi", "Bhadrak", "Bhubaneswar", "Chennai", "Chengalpattu",
+    "Coimbatore", "Ernakulam", "Hooghly", "Hosur", "Howrah",
+    "Hyderabad", "Idukki", "Jamnagar", "Kanchipuram", "Kasargod",
+    "Keeranur", "Kolkata", "Kollam", "Kottayam", "Kozhikode",
+    "Lucknow", "Malappuram", "Mumbai", "Namakkal", "Nizamabad",
+    "Palakkad", "Paramakudi", "Pathanamthitta", "Patna", "Pudukkottai",
+    "Pune", "Rajapalayam", "Ramanathapuram", "Rangareddy District",
+    "Ranipet District", "Ratlam", "Salem", "Sethumadai", "Sivagangai",
+    "Thiruninravur", "Thiruthangal", "Thrissur", "Trichy", "Trivandrum",
+    "Vallioor", "Vellore", "Visakhapatnam", "Walajabad", "Wanaparthy",
+    "Zirakpur"
 ];
 
 const slatColors = [
@@ -100,7 +100,7 @@ const LocationsLadder = () => {
 
             <div className="container mx-auto px-4">
                 <div className="text-center mb-8">
-                    <h2 className="text-4xl md:text-5xl font-fredoka font-bold text-[#003366] mb-4">Our Presence</h2>
+                    <h2 className="text-4xl md:text-5xl font-bubblegum text-[#003366] mb-4 tracking-wide">Our Presence</h2>
                     <p className="text-xl text-gray-700 font-baloo">Spreading happiness in {cities.length}+ locations across India</p>
                     <p className="text-sm text-gray-500 mt-2">Click on a city to view our centres</p>
                 </div>

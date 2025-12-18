@@ -73,6 +73,7 @@ const config: Config = {
 			},
 			fontFamily: {
 				sans: [
+					'var(--font-quicksand)',
 					'var(--font-inter)',
 					'system-ui',
 					'sans-serif'
@@ -100,6 +101,26 @@ const config: Config = {
 				chewy: [
 					'var(--font-chewy)',
 					'cursive'
+				],
+				bubblegum: [
+					'var(--font-bubblegum)',
+					'cursive'
+				],
+				luckiest: [
+					'var(--font-luckiest)',
+					'cursive'
+				],
+				quicksand: [
+					'var(--font-quicksand)',
+					'sans-serif'
+				],
+				abeezee: [
+					'var(--font-abeezee)',
+					'sans-serif'
+				],
+				andika: [
+					'var(--font-andika)',
+					'sans-serif'
 				]
 			},
 			fontSize: {

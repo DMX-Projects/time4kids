@@ -111,8 +111,8 @@ export default function ProgramsPage() {
 
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
-                        <h1 className="font-display font-bold text-5xl md:text-6xl mb-6">
-                            Our <span className="gradient-text">Programs</span>
+                        <h1 className="font-luckiest text-5xl md:text-7xl mb-6 text-[#003366] tracking-wider">
+                            Our <span className="text-[#ef5f5f]">Programs</span>
                         </h1>
                         <p className="text-xl text-gray-700 leading-relaxed">
                             Age-appropriate programs designed to nurture every child&apos;s unique potential
@@ -154,7 +154,7 @@ export default function ProgramsPage() {
                                             <BookOpen className="w-8 h-8 text-white" />
                                         </div>
 
-                                        <h2 className="font-display font-bold text-3xl mb-2 text-gray-900">
+                                        <h2 className="font-bubblegum text-4xl mb-2 text-[#003366] tracking-wide">
                                             {program.name}
                                         </h2>
 

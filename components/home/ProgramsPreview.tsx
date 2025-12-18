@@ -118,7 +118,7 @@ const ProgramsPreview = () => {
 
             <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-8">
-                    <h2 ref={headingRef} className="font-display font-bold text-4xl md:text-5xl mb-4 text-[#003366]">
+                    <h2 ref={headingRef} className="font-bubblegum text-4xl md:text-5xl mb-4 text-[#003366] tracking-wide">
                         Our <span className="text-[#ef5f5f]">Programs</span>
                     </h2>
                     <p ref={descriptionRef} className="text-lg text-gray-600 max-w-2xl mx-auto">

@@ -30,7 +30,7 @@ export default function ParentLoginPage() {
                             priority
                         />
                     </div>
-                    <h1 className="font-display font-bold text-3xl mb-2">Parent Login</h1>
+                    <h1 className="font-luckiest text-4xl mb-2 text-[#003366] tracking-wide">Parent Login</h1>
                     <p className="text-gray-600">Access your child&apos;s learning portal</p>
                 </div>
 

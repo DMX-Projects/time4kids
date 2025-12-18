@@ -62,8 +62,8 @@ export default function FranchisePage() {
 
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
-                        <h1 className="font-display font-bold text-5xl md:text-6xl mb-6">
-                            <span className="gradient-text">Franchise</span> Opportunity
+                        <h1 className="font-luckiest text-5xl md:text-6xl mb-6 text-[#003366] tracking-wider">
+                            <span className="text-[#E67E22]">Franchise</span> Opportunity
                         </h1>
                         <p className="text-xl text-gray-700 leading-relaxed">
                             Partner with India&apos;s trusted preschool brand and build a rewarding business
@@ -83,8 +83,8 @@ export default function FranchisePage() {
             <section className="py-20 bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16">
-                        <h2 className="font-display font-bold text-4xl mb-4">
-                            Why Choose <span className="gradient-text">T.I.M.E. Kids Franchise?</span>
+                        <h2 className="font-bubblegum text-4xl mb-4 tracking-wide text-[#003366]">
+                            Why Choose <span className="text-[#ef5f5f]">T.I.M.E. Kids Franchise?</span>
                         </h2>
                         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                             Join a proven business model backed by educational excellence
@@ -97,7 +97,7 @@ export default function FranchisePage() {
                                 <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
                                     <benefit.icon className="w-8 h-8 text-white" />
                                 </div>
-                                <h3 className="font-display font-bold text-xl mb-3 text-gray-900">{benefit.title}</h3>
+                                <h3 className="font-bubblegum text-xl mb-3 text-gray-900 tracking-wide">{benefit.title}</h3>
                                 <p className="text-gray-600 leading-relaxed">{benefit.description}</p>
                             </Card>
                         ))}
@@ -109,8 +109,8 @@ export default function FranchisePage() {
             <section className="py-20 bg-white">
                 <div className="container mx-auto px-4">
                     <div className="max-w-4xl mx-auto">
-                        <h2 className="font-display font-bold text-4xl mb-8 text-center">
-                            What We <span className="gradient-text">Offer You</span>
+                        <h2 className="font-bubblegum text-4xl mb-8 text-center text-[#003366] tracking-wide">
+                            What We <span className="text-[#E67E22]">Offer You</span>
                         </h2>
                         <Card className="bg-gradient-to-br from-primary-500 to-primary-600 text-white">
                             <ul className="grid md:grid-cols-2 gap-4">
@@ -130,8 +130,8 @@ export default function FranchisePage() {
             <section className="py-20 bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">
-                        <h2 className="font-display font-bold text-4xl mb-4">
-                            Franchisee <span className="gradient-text">Success Stories</span>
+                        <h2 className="font-bubblegum text-4xl mb-4 text-[#003366] tracking-wide">
+                            Franchisee <span className="text-[#ef5f5f]">Success Stories</span>
                         </h2>
                         <p className="text-lg text-gray-600">Hear from our successful franchise partners</p>
                     </div>
@@ -161,7 +161,7 @@ export default function FranchisePage() {
                 <div className="container mx-auto px-4">
                     <div className="max-w-2xl mx-auto text-center">
                         <Download className="w-16 h-16 mx-auto mb-6" />
-                        <h2 className="font-display font-bold text-4xl mb-6">Download Franchise Brochure</h2>
+                        <h2 className="font-bubblegum text-4xl mb-6 tracking-wide">Download Franchise Brochure</h2>
                         <p className="text-xl text-white/90 mb-8">
                             Get detailed information about investment, support, and franchise benefits
                         </p>
