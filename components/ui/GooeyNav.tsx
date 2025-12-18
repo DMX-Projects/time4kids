@@ -174,11 +174,11 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             z-index: 1;
           }
           .effect.text {
-            color: white;
+            color: #555;
             transition: color 0.3s ease;
           }
           .effect.text.active {
-            color: black;
+            color: #333;
           }
           .effect.filter {
             /* filter: blur(7px) contrast(100) blur(0); */
@@ -298,8 +298,8 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             ref={navRef}
             className="flex gap-8 list-none p-0 px-4 m-0 relative z-[3]"
             style={{
-              color: 'white',
-              textShadow: '0 1px 1px hsl(205deg 30% 10% / 0.2)'
+              color: '#555',
+              textShadow: 'none'
             }}
           >
             {items.map((item, index) => (

@@ -116,8 +116,8 @@ export default function LocateCentrePage() {
 
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
-                        <h1 className="font-display font-bold text-5xl md:text-6xl mb-6">
-                            Locate a <span className="gradient-text">T.I.M.E. Kids Centre</span>
+                        <h1 className="font-luckiest text-5xl md:text-6xl mb-6 text-[#003366] tracking-wider">
+                            Locate a <span className="text-[#E67E22]">T.I.M.E. Kids Centre</span>
                         </h1>
                         <p className="text-xl text-gray-700 leading-relaxed">
                             Find the nearest T.I.M.E. Kids preschool in your area
@@ -190,7 +190,7 @@ export default function LocateCentrePage() {
                     <div className="max-w-5xl mx-auto">
                         <div className="bg-gradient-to-br from-primary-100 to-secondary-100 rounded-2xl p-12 text-center">
                             <MapPin className="w-16 h-16 mx-auto mb-4 text-primary-600" />
-                            <h3 className="font-display font-bold text-2xl mb-2 text-gray-900">Interactive Map</h3>
+                            <h3 className="font-bubblegum text-2xl mb-2 text-gray-900 tracking-wide">Interactive Map</h3>
                             <p className="text-gray-600">
                                 Google Maps integration will display all centres on an interactive map.
                                 <br />
@@ -213,7 +213,7 @@ export default function LocateCentrePage() {
                                             <MapPin className="w-6 h-6 text-white" />
                                         </div>
                                         <div className="flex-1">
-                                            <h3 className="font-display font-bold text-lg mb-2 text-gray-900">{centre.name}</h3>
+                                            <h3 className="font-bubblegum text-lg mb-2 text-gray-900 tracking-wide">{centre.name}</h3>
                                             <p className="text-gray-600 text-sm mb-1">{centre.address}</p>
                                             <p className="text-gray-600 text-sm mb-3">{centre.city}, {centre.state}</p>
                                             <div className="flex items-center space-x-2 text-primary-600">

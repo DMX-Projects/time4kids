@@ -38,8 +38,8 @@ export default function AdmissionPage() {
 
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
-                        <h1 className="font-display font-bold text-5xl md:text-6xl mb-6">
-                            Start Your Child&apos;s <span className="gradient-text">Learning Journey</span>
+                        <h1 className="font-luckiest text-5xl md:text-7xl mb-6 text-[#003366] tracking-wider">
+                            Start Your Child&apos;s <span className="text-[#E67E22]">Learning Journey</span>
                         </h1>
                         <p className="text-xl text-gray-700 leading-relaxed">
                             Join T.I.M.E. Kids family and give your child the best foundation for a bright future
@@ -62,7 +62,7 @@ export default function AdmissionPage() {
                 <div className="container mx-auto px-4">
                     <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
                         <Card>
-                            <h3 className="font-display font-bold text-2xl mb-6 text-gray-900">Why Preschool?</h3>
+                            <h3 className="font-bubblegum text-2xl mb-6 text-gray-900 tracking-wide">Why Preschool?</h3>
                             <ul className="space-y-3">
                                 {whyPreschool.map((item, index) => (
                                     <li key={index} className="flex items-start space-x-3">
@@ -74,7 +74,7 @@ export default function AdmissionPage() {
                         </Card>
 
                         <Card className="bg-gradient-to-br from-primary-500 to-primary-600 text-white">
-                            <h3 className="font-display font-bold text-2xl mb-6">Why T.I.M.E. Kids?</h3>
+                            <h3 className="font-bubblegum text-2xl mb-6 tracking-wide">Why T.I.M.E. Kids?</h3>
                             <ul className="space-y-3">
                                 {whyTimeKids.map((item, index) => (
                                     <li key={index} className="flex items-start space-x-3">
@@ -92,8 +92,8 @@ export default function AdmissionPage() {
             <section className="py-20 bg-white">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">
-                        <h2 className="font-display font-bold text-4xl mb-4">
-                            Safe & Secure <span className="gradient-text">Infrastructure</span>
+                        <h2 className="font-bubblegum text-4xl md:text-5xl mb-4 text-[#003366] tracking-wide">
+                            Safe & Secure <span className="text-[#ef5f5f]">Infrastructure</span>
                         </h2>
                         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                             Child-safe environment designed for optimal learning and development
@@ -105,7 +105,7 @@ export default function AdmissionPage() {
                             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                                 <Shield className="w-8 h-8 text-white" />
                             </div>
-                            <h3 className="font-display font-bold text-xl mb-3">Safe Environment</h3>
+                            <h3 className="font-bubblegum text-xl mb-3 tracking-wide">Safe Environment</h3>
                             <p className="text-gray-600">CCTV surveillance, secure entry/exit, and child-safe furniture</p>
                         </Card>
 
@@ -113,7 +113,7 @@ export default function AdmissionPage() {
                             <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                                 <Users className="w-8 h-8 text-white" />
                             </div>
-                            <h3 className="font-display font-bold text-xl mb-3">Concept Classrooms</h3>
+                            <h3 className="font-bubblegum text-xl mb-3 tracking-wide">Concept Classrooms</h3>
                             <p className="text-gray-600">Colorful, stimulating classrooms designed for active learning</p>
                         </Card>
 
@@ -121,7 +121,7 @@ export default function AdmissionPage() {
                             <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                                 <BookOpen className="w-8 h-8 text-white" />
                             </div>
-                            <h3 className="font-display font-bold text-xl mb-3">Play Areas</h3>
+                            <h3 className="font-bubblegum text-xl mb-3 tracking-wide">Play Areas</h3>
                             <p className="text-gray-600">Safe outdoor play equipment in ample open space</p>
                         </Card>
                     </div>
@@ -136,7 +136,7 @@ export default function AdmissionPage() {
                 <div className="container mx-auto px-4">
                     <div className="max-w-4xl mx-auto text-center">
                         <div className="bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-3xl p-12 shadow-2xl">
-                            <h2 className="font-display font-bold text-4xl mb-6">NEP 2020 Updated Curriculum</h2>
+                            <h2 className="font-bubblegum text-4xl mb-6 tracking-wide">NEP 2020 Updated Curriculum</h2>
                             <p className="text-xl text-white/90 leading-relaxed mb-8">
                                 Our curriculum is aligned with the National Education Policy 2020, ensuring your child receives education that meets the latest national standards and prepares them for future success.
                             </p>
@@ -153,8 +153,8 @@ export default function AdmissionPage() {
             <section className="py-20 bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">
-                        <h2 className="font-display font-bold text-4xl mb-4">
-                            Parent <span className="gradient-text">Testimonials</span>
+                        <h2 className="font-bubblegum text-4xl mb-4 tracking-wide">
+                            Parent <span className="text-[#E67E22]">Testimonials</span>
                         </h2>
                         <p className="text-lg text-gray-600">Hear from parents who trust us with their children</p>
                     </div>
@@ -189,8 +189,8 @@ export default function AdmissionPage() {
             <section className="py-20 bg-white">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">
-                        <h2 className="font-display font-bold text-4xl mb-4">
-                            Frequently Asked <span className="gradient-text">Questions</span>
+                        <h2 className="font-bubblegum text-4xl mb-4 tracking-wide">
+                            Frequently Asked <span className="text-[#ef5f5f]">Questions</span>
                         </h2>
                         <p className="text-lg text-gray-600">Find answers to common admission queries</p>
                     </div>
