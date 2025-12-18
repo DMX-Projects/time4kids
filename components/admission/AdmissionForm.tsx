@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import QRCode from '@/components/ui/QRCode';
 import { useForm } from 'react-hook-form';
 import { CheckCircle } from 'lucide-react';
+import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 
 interface AdmissionFormData {
     parentName: string;
@@ -21,9 +22,16 @@ const AdmissionForm = () => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showQR, setShowQR] = useState(false);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<AdmissionFormData>();
+    const { addEnquiry } = useSchoolData();
 
     const onSubmit = (data: AdmissionFormData) => {
-        console.log('Form submitted:', data);
+        addEnquiry({
+            type: 'admission',
+            name: data.parentName,
+            email: data.email,
+            phone: data.phone,
+            message: `Child: ${data.childName}, Age: ${data.childAge}, Program: ${data.program}, City: ${data.city}${data.message ? ' | Note: ' + data.message : ''}`,
+        });
         setIsSubmitted(true);
         setShowQR(true);
         reset();

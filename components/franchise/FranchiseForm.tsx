@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import QRCode from '@/components/ui/QRCode';
 import { useForm } from 'react-hook-form';
 import { CheckCircle } from 'lucide-react';
+import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 
 interface FranchiseFormData {
     name: string;
@@ -20,9 +21,16 @@ interface FranchiseFormData {
 const FranchiseForm = () => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<FranchiseFormData>();
+    const { addEnquiry } = useSchoolData();
 
     const onSubmit = (data: FranchiseFormData) => {
-        console.log('Franchise form submitted:', data);
+        addEnquiry({
+            type: 'franchise',
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            message: `City: ${data.city}, State: ${data.state}, Investment: ${data.investment}, Experience: ${data.experience || 'n/a'}, Note: ${data.message || ''}`,
+        });
         setIsSubmitted(true);
         reset();
 

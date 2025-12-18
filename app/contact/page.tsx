@@ -9,6 +9,7 @@ import TwinklingStars from '@/components/animations/TwinklingStars';
 
 import { Mail, Phone, MapPin, Facebook, Instagram, Youtube, Send, Briefcase } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 
 interface ContactFormData {
     name: string;
@@ -21,9 +22,17 @@ interface ContactFormData {
 export default function ContactPage() {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormData>();
+    const { addEnquiry } = useSchoolData();
 
     const onSubmit = (data: ContactFormData) => {
-        console.log('Contact form submitted:', data);
+        const type: 'admission' | 'franchise' | 'contact' = data.subject === 'admission' ? 'admission' : data.subject === 'franchise' ? 'franchise' : 'contact';
+        addEnquiry({
+            type,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            message: `${data.subject.toUpperCase()}: ${data.message}`,
+        });
         setIsSubmitted(true);
         reset();
         setTimeout(() => setIsSubmitted(false), 5000);
