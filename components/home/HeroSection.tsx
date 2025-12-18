@@ -189,11 +189,11 @@ const HeroSection = () => {
 
                         {/* Slide Content */}
                         <div className="space-y-4">
-                            <h1 ref={titleRef} className="font-fredoka font-bold text-4xl md:text-5xl lg:text-6xl leading-tight text-[#003366]" style={{ textShadow: '0 3px 6px rgba(0,0,0,0.12)' }}>
+                            <h1 ref={titleRef} className="font-luckiest text-5xl md:text-6xl lg:text-7xl leading-tight text-[#003366] tracking-wide" style={{ textShadow: '2px 4px 6px rgba(0,0,0,0.15)' }}>
                                 {slides[currentSlide].title}
                             </h1>
 
-                            <p ref={subtitleRef} className="text-2xl md:text-3xl font-baloo font-bold text-[#E67E22]" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                            <p ref={subtitleRef} className="text-3xl md:text-4xl font-bubblegum text-[#E67E22]" style={{ textShadow: '1px 2px 3px rgba(0,0,0,0.1)' }}>
                                 {slides[currentSlide].subtitle}
                             </p>
 

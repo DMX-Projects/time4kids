@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Poppins, Fredoka, Baloo_2, Comic_Neue, Chewy } from "next/font/google";
+import { Inter, Poppins, Fredoka, Baloo_2, Comic_Neue, Chewy, Bubblegum_Sans, Luckiest_Guy, Quicksand, ABeeZee, Andika } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -46,6 +46,40 @@ const comicNeue = Comic_Neue({
     display: 'swap',
 });
 
+const bubblegumSans = Bubblegum_Sans({
+    weight: ['400'],
+    subsets: ["latin"],
+    variable: '--font-bubblegum',
+    display: 'swap',
+});
+
+const luckiestGuy = Luckiest_Guy({
+    weight: ['400'],
+    subsets: ["latin"],
+    variable: '--font-luckiest',
+    display: 'swap',
+});
+
+const quicksand = Quicksand({
+    subsets: ["latin"],
+    variable: '--font-quicksand',
+    display: 'swap',
+});
+
+const abeezee = ABeeZee({
+    weight: ['400'],
+    subsets: ["latin"],
+    variable: '--font-abeezee',
+    display: 'swap',
+});
+
+const andika = Andika({
+    weight: ['400', '700'],
+    subsets: ["latin"],
+    variable: '--font-andika',
+    display: 'swap',
+});
+
 const chewy = Chewy({
     weight: ['400'],
     subsets: ["latin"],
@@ -71,7 +105,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={`${inter.variable} ${poppins.variable} ${fredoka.variable} ${baloo2.variable} ${comicNeue.variable} ${chewy.variable}`}>
+        <html lang="en" className={`${inter.variable} ${poppins.variable} ${fredoka.variable} ${baloo2.variable} ${comicNeue.variable} ${chewy.variable} ${bubblegumSans.variable} ${luckiestGuy.variable} ${quicksand.variable} ${abeezee.variable} ${andika.variable}`}>
             <body className="antialiased">
                 <SchoolDataProvider>
                     <AuthProvider>
