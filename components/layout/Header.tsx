@@ -12,8 +12,7 @@ const Header = () => {
         { label: 'Admission', href: '/admission' },
         { label: 'Locate Centre', href: '/locate-centre' },
         { label: 'Franchise', href: '/franchise' },
-        { label: 'Parent Login', href: '/login/parents' },
-        { label: 'Franchise Login', href: '/login/franchise' },
+        { label: 'Login', href: '/login/' },
         { label: 'Contact', href: '/contact' },
     ];
 

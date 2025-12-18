@@ -7,6 +7,9 @@ import Chatbot from "@/components/shared/Chatbot";
 import ScrollProgress from "@/components/animations/ScrollProgress";
 import SmoothScroll from "@/components/shared/SmoothScroll";
 import BlobBackground from "@/components/animations/BlobBackground";
+import ConditionalChrome from "@/components/layout/ConditionalChrome";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -70,15 +73,25 @@ export default function RootLayout({
     return (
         <html lang="en" className={`${inter.variable} ${poppins.variable} ${fredoka.variable} ${baloo2.variable} ${comicNeue.variable} ${chewy.variable}`}>
             <body className="antialiased">
-                <SmoothScroll />
-                <BlobBackground />
-                <ScrollProgress />
-                <Header />
-                <main className="min-h-screen">
-                    {children}
-                </main>
-                <Footer />
-                <Chatbot />
+                <SchoolDataProvider>
+                    <AuthProvider>
+                        <ConditionalChrome>
+                            <SmoothScroll />
+                            <BlobBackground />
+                            <ScrollProgress />
+                            <Header />
+                        </ConditionalChrome>
+
+                        <main className="min-h-screen">
+                            {children}
+                        </main>
+
+                        <ConditionalChrome>
+                            <Footer />
+                            <Chatbot />
+                        </ConditionalChrome>
+                    </AuthProvider>
+                </SchoolDataProvider>
             </body>
         </html>
     );

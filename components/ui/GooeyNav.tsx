@@ -36,8 +36,16 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
   const [activeIndex, setActiveIndex] = useState<number>(initialActiveIndex);
   const pathname = usePathname();
 
+  // Normalize paths to ignore trailing slashes so active state stays correct.
+  const normalize = (path: string | null) => {
+    if (!path) return '/';
+    const trimmed = path.replace(/\/+$/, '');
+    return trimmed === '' ? '/' : trimmed;
+  };
+
   useEffect(() => {
-    const index = items.findIndex(item => item.href === pathname);
+    const current = normalize(pathname);
+    const index = items.findIndex(item => normalize(item.href) === current);
     if (index !== -1) {
       setActiveIndex(index);
     }
