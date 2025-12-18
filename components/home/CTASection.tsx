@@ -67,7 +67,7 @@ const CTASection = () => {
       {/* Foreground content */}
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center mb-6">
-          <h2 ref={titleRef} className="font-fredoka font-bold text-5xl md:text-6xl mb-4 text-[#003366]">
+          <h2 ref={titleRef} className="font-bubblegum text-5xl md:text-6xl mb-4 text-[#003366] tracking-wide">
             Ready to Get Started?
           </h2>
           <p className="text-2xl text-gray-700 max-w-2xl mx-auto font-baloo">

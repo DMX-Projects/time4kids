@@ -3,8 +3,13 @@
 import React from 'react';
 import { Building2, Target, Lightbulb, Award, School, Home, GraduationCap, Users, BookOpen, Heart, Sparkles } from 'lucide-react';
 
+interface CardProps {
+    children: React.ReactNode;
+    className?: string;
+}
+
 // Simple Card Component
-const Card = ({ children, className = '' }) => (
+const Card = ({ children, className = '' }: CardProps) => (
     <div className={`p-6 rounded-2xl ${className}`}>
         {children}
     </div>
@@ -127,8 +132,8 @@ export default function AboutPage() {
                                 Trusted by 250+ Schools Nationwide
                             </span>
                         </div>
-                        <h1 className="font-display font-bold text-4xl md:text-6xl mb-4 animate-fade-in">
-                            About <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">T.I.M.E. Kids</span>
+                        <h1 className="font-luckiest text-5xl md:text-7xl mb-4 animate-fade-in tracking-wider text-[#003366]">
+                            About <span className="text-[#E67E22]">T.I.M.E. Kids</span>
                         </h1>
                         <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-6">
                             Where little dreamers become big achievers!
@@ -148,8 +153,8 @@ export default function AboutPage() {
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-5xl mx-auto">
                         <div className="text-center mb-8">
-                            <h2 className="font-display font-bold text-3xl md:text-4xl mb-3">
-                                Our <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">Magical</span> Story
+                            <h2 className="font-bubblegum text-4xl md:text-5xl mb-3 text-[#003366] tracking-wide">
+                                Our <span className="text-[#ef5f5f]">Magical</span> Story
                             </h2>
                             <p className="text-gray-600 text-base">A journey of love, learning, and laughter!</p>
                         </div>
@@ -232,8 +237,8 @@ export default function AboutPage() {
 
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="text-center mb-8">
-                        <h2 className="font-display font-bold text-3xl md:text-4xl mb-3">
-                            What We <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">Believe In</span>
+                        <h2 className="font-bubblegum text-4xl md:text-5xl mb-3 text-[#003366] tracking-wide">
+                            What We <span className="text-[#ef5f5f]">Believe In</span>
                         </h2>
                         <p className="text-gray-600 text-base">Our guiding stars in nurturing young minds</p>
                     </div>
@@ -315,8 +320,8 @@ export default function AboutPage() {
                                 30+ Years of Excellence
                             </span>
                         </div>
-                        <h2 className="font-display font-bold text-3xl md:text-4xl mb-3">
-                            Part of the <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">T.I.M.E. Group</span>
+                        <h2 className="font-bubblegum text-4xl md:text-5xl mb-3 text-[#003366] tracking-wide">
+                            Part of the <span className="text-[#ef5f5f]">T.I.M.E. Group</span>
                         </h2>
                         <p className="text-base text-gray-600 max-w-2xl mx-auto">
                             Backed by three decades of educational excellence across multiple domains,
