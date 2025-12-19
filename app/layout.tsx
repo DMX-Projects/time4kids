@@ -107,8 +107,8 @@ export default function RootLayout({
     return (
         <html lang="en" className={`${inter.variable} ${poppins.variable} ${fredoka.variable} ${baloo2.variable} ${comicNeue.variable} ${chewy.variable} ${bubblegumSans.variable} ${luckiestGuy.variable} ${quicksand.variable} ${abeezee.variable} ${andika.variable}`}>
             <body className="antialiased">
-                <SchoolDataProvider>
-                    <AuthProvider>
+                <AuthProvider>
+                    <SchoolDataProvider>
                         <ConditionalChrome>
                             <SmoothScroll />
                             <BlobBackground />
@@ -124,8 +124,8 @@ export default function RootLayout({
                             <Footer />
                             <Chatbot />
                         </ConditionalChrome>
-                    </AuthProvider>
-                </SchoolDataProvider>
+                    </SchoolDataProvider>
+                </AuthProvider>
             </body>
         </html>
     );

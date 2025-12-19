@@ -8,26 +8,57 @@ import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider"
 export default function AddEventsPage() {
     const { addEvent, addEventMedia, events } = useSchoolData();
     const [form, setForm] = useState({ title: "", date: "", venue: "", notes: "" });
-    const [mediaForm, setMediaForm] = useState({ title: "", url: "", type: "image", eventId: "", description: "" });
+    const [mediaForm, setMediaForm] = useState<{ title: string; url: string; type: "image" | "video"; eventId: string; description: string }>({
+        title: "",
+        url: "",
+        type: "image",
+        eventId: "",
+        description: "",
+    });
+    const [eventError, setEventError] = useState<string | null>(null);
+    const [mediaError, setMediaError] = useState<string | null>(null);
+    const [eventSubmitting, setEventSubmitting] = useState(false);
+    const [mediaSubmitting, setMediaSubmitting] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!form.title.trim()) return;
-        addEvent(form);
-        setForm({ title: "", date: "", venue: "", notes: "" });
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        setEventError(null);
+        setEventSubmitting(true);
+        try {
+            await addEvent(form);
+            setForm({ title: "", date: "", venue: "", notes: "" });
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err: any) {
+            setEventError(err?.message || "Unable to publish event");
+        } finally {
+            setEventSubmitting(false);
+        }
     };
 
-    const handleMediaSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleMediaSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!mediaForm.url.trim()) return;
-        addEventMedia(mediaForm);
-        setMediaForm({ title: "", url: "", type: "image", eventId: "", description: "" });
+        if (!mediaForm.eventId) {
+            setMediaError("Select an event before adding media");
+            return;
+        }
+        setMediaError(null);
+        setMediaSubmitting(true);
+        try {
+            await addEventMedia(mediaForm);
+            setMediaForm({ title: "", url: "", type: "image", eventId: "", description: "" });
+        } catch (err: any) {
+            setMediaError(err?.message || "Unable to upload media");
+        } finally {
+            setMediaSubmitting(false);
+        }
     };
 
     return (
         <div className="space-y-6">
             <Section id="add-event" title="Add Event" description="Publish new events for parents and staff." icon={<Plus className="w-5 h-5 text-orange-500" />}>
+                {eventError && <p className="text-sm text-red-600">{eventError}</p>}
                 <form className="space-y-3" onSubmit={handleSubmit}>
                     <div className="grid md:grid-cols-2 gap-3">
                         <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
@@ -36,8 +67,8 @@ export default function AddEventsPage() {
                         <Input label="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
                     </div>
                     <div className="flex gap-2">
-                        <Button type="submit" size="sm">Publish</Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => setForm({ title: "", date: "", venue: "", notes: "" })}>Reset</Button>
+                        <Button type="submit" size="sm" disabled={eventSubmitting}>{eventSubmitting ? "Publishing..." : "Publish"}</Button>
+                        <Button type="button" size="sm" variant="outline" disabled={eventSubmitting} onClick={() => setForm({ title: "", date: "", venue: "", notes: "" })}>Reset</Button>
                     </div>
                 </form>
             </Section>
@@ -48,6 +79,7 @@ export default function AddEventsPage() {
                 description="Upload image or video links for events. Parents will view these in their gallery."
                 icon={mediaForm.type === "video" ? <Video className="w-5 h-5 text-orange-500" /> : <Image className="w-5 h-5 text-orange-500" />}
             >
+                {mediaError && <p className="text-sm text-red-600">{mediaError}</p>}
                 <form className="space-y-3" onSubmit={handleMediaSubmit}>
                     <div className="grid md:grid-cols-2 gap-3">
                         <Input label="Title" value={mediaForm.title} onChange={(e) => setMediaForm({ ...mediaForm, title: e.target.value })} />
@@ -56,7 +88,7 @@ export default function AddEventsPage() {
                             <select
                                 className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
                                 value={mediaForm.type}
-                                onChange={(e) => setMediaForm({ ...mediaForm, type: e.target.value })}
+                                onChange={(e) => setMediaForm({ ...mediaForm, type: e.target.value as "image" | "video" })}
                             >
                                 <option value="image">Image</option>
                                 <option value="video">Video</option>
@@ -79,8 +111,8 @@ export default function AddEventsPage() {
                         <Input label="Description (optional)" value={mediaForm.description} onChange={(e) => setMediaForm({ ...mediaForm, description: e.target.value })} />
                     </div>
                     <div className="flex gap-2">
-                        <Button type="submit" size="sm">Add Media</Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => setMediaForm({ title: "", url: "", type: "image", eventId: "", description: "" })}>Reset</Button>
+                        <Button type="submit" size="sm" disabled={mediaSubmitting}>{mediaSubmitting ? "Uploading..." : "Add Media"}</Button>
+                        <Button type="button" size="sm" variant="outline" disabled={mediaSubmitting} onClick={() => setMediaForm({ title: "", url: "", type: "image", eventId: "", description: "" })}>Reset</Button>
                     </div>
                 </form>
             </Section>

@@ -21,25 +21,29 @@ interface AdmissionFormData {
 const AdmissionForm = () => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showQR, setShowQR] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<AdmissionFormData>();
     const { addEnquiry } = useSchoolData();
 
-    const onSubmit = (data: AdmissionFormData) => {
-        addEnquiry({
-            type: 'admission',
-            name: data.parentName,
-            email: data.email,
-            phone: data.phone,
-            message: `Child: ${data.childName}, Age: ${data.childAge}, Program: ${data.program}, City: ${data.city}${data.message ? ' | Note: ' + data.message : ''}`,
-        });
-        setIsSubmitted(true);
-        setShowQR(true);
-        reset();
-
-        // Reset success message after 5 seconds
-        setTimeout(() => {
-            setIsSubmitted(false);
-        }, 5000);
+    const onSubmit = async (data: AdmissionFormData) => {
+        setSubmitError(null);
+        try {
+            await addEnquiry({
+                type: 'admission',
+                name: data.parentName,
+                email: data.email,
+                phone: data.phone,
+                city: data.city,
+                childAge: data.childAge,
+                message: `Child: ${data.childName}, Age: ${data.childAge}, Program: ${data.program}, City: ${data.city}${data.message ? ' | Note: ' + data.message : ''}`,
+            });
+            setIsSubmitted(true);
+            setShowQR(true);
+            reset();
+            setTimeout(() => setIsSubmitted(false), 5000);
+        } catch (err: any) {
+            setSubmitError(err?.message || 'Unable to submit your enquiry. Please try again.');
+        }
     };
 
     const formUrl = typeof window !== 'undefined' ? window.location.href : 'https://timekids.com/admission';
@@ -50,6 +54,11 @@ const AdmissionForm = () => {
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-3 animate-slide-down">
                     <CheckCircle className="w-6 h-6 text-green-600" />
                     <p className="text-green-800 font-medium">Thank you! We&apos;ll contact you soon.</p>
+                </div>
+            )}
+            {submitError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    {submitError}
                 </div>
             )}
 
