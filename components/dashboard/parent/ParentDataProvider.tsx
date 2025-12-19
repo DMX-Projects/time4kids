@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export type StudentProfile = { name: string; grade: string; section: string; blood: string; emergency: string };
 export type GradeRow = { id: string; subject: string; grade: string; term: string };
@@ -39,6 +40,7 @@ export type ParentDataContextValue = {
 const ParentDataContext = createContext<ParentDataContextValue | undefined>(undefined);
 
 export function ParentDataProvider({ children }: { children: React.ReactNode }) {
+    const { user } = useAuth();
     const [studentProfile, setStudentProfile] = useState<StudentProfile>({
         name: "Aarav T.",
         grade: "KG-2",
@@ -69,6 +71,15 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
         city: "Bangalore",
         photo: "",
     });
+
+    useEffect(() => {
+        if (user?.role !== "parent") return;
+        setParentProfile((prev) => ({
+            ...prev,
+            name: user.fullName || prev.name || user.email,
+            email: user.email,
+        }));
+    }, [user]);
 
     const updateStudentProfile = (payload: Partial<StudentProfile>) => setStudentProfile((prev) => ({ ...prev, ...payload }));
 

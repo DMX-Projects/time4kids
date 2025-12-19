@@ -7,7 +7,8 @@ import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
 
 export default function AddFranchisePage() {
     const { addFranchise } = useAdminData();
-
+    const [error, setError] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
     const [franchiseForm, setFranchiseForm] = useState({
         name: "",
         owner: "",
@@ -16,12 +17,20 @@ export default function AddFranchisePage() {
         phone: "",
         status: "Active",
     });
-    const handleFranchiseSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleFranchiseSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!franchiseForm.name.trim()) return;
-        addFranchise(franchiseForm);
-        setFranchiseForm({ name: "", owner: "", region: "", email: "", phone: "", status: "Active" });
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        setError(null);
+        setSubmitting(true);
+        try {
+            await addFranchise(franchiseForm);
+            setFranchiseForm({ name: "", owner: "", region: "", email: "", phone: "", status: "Active" });
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err: any) {
+            setError(err?.message || "Unable to add franchise");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handleFranchiseReset = () => {
@@ -31,6 +40,7 @@ export default function AddFranchisePage() {
     return (
         <div className="space-y-8">
             <Section id="add-franchise" title="Add Franchise" icon={<Plus className="w-5 h-5 text-orange-500" />} description="Create a new franchise entry and assign regional ownership.">
+                {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
                 <form className="space-y-3" onSubmit={handleFranchiseSubmit} onReset={handleFranchiseReset}>
                     <div className="grid md:grid-cols-2 gap-3">
                         <Input label="Franchise Name" value={franchiseForm.name} onChange={(e) => setFranchiseForm({ ...franchiseForm, name: e.target.value })} required />
@@ -52,8 +62,8 @@ export default function AddFranchisePage() {
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <Button type="submit" size="sm">Submit</Button>
-                        <Button type="reset" variant="outline" size="sm">Reset</Button>
+                        <Button type="submit" size="sm" disabled={submitting}>{submitting ? "Saving..." : "Submit"}</Button>
+                        <Button type="reset" variant="outline" size="sm" disabled={submitting}>Reset</Button>
                     </div>
                 </form>
             </Section>

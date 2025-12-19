@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { apiUrl, jsonHeaders, mediaUrl, toApiError } from "@/lib/api-client";
 
 export type SchoolParent = {
     id: string;
@@ -46,6 +48,8 @@ export type EventMedia = {
     studentId?: string;
 };
 
+type AddEventMediaPayload = Omit<EventMedia, "id" | "url"> & { url?: string; file?: File };
+
 export type EnquiryType = "admission" | "franchise" | "contact";
 
 export type Enquiry = {
@@ -83,25 +87,81 @@ export type SchoolDataContextValue = {
     addOrUpdateStudent: (payload: Omit<SchoolStudent, "id"> & { id?: string }) => SchoolStudent;
     addGrade: (payload: Omit<GradeRecord, "id">) => void;
     addGradesBulk: (rows: BulkGradeRow[]) => { inserted: number; skipped: number };
-    addEvent: (payload: Omit<EventRecord, "id">) => void;
-    addEventMedia: (payload: Omit<EventMedia, "id">) => void;
-    addEnquiry: (payload: Omit<Enquiry, "id" | "createdAt" | "status" | "channel"> & { status?: Enquiry["status"]; channel?: Enquiry["channel"] }) => void;
+    addEvent: (payload: Omit<EventRecord, "id">) => Promise<void>;
+    updateEvent: (id: string, payload: Partial<EventRecord>) => Promise<void>;
+    deleteEvent: (id: string) => Promise<void>;
+    addEventMedia: (payload: AddEventMediaPayload) => Promise<void>;
+    addEnquiry: (payload: Omit<Enquiry, "id" | "createdAt" | "status" | "channel"> & { status?: Enquiry["status"]; channel?: Enquiry["channel"] }) => Promise<void>;
 
     getStudentsForParent: (parentId: string) => SchoolStudent[];
     getGradesForParent: (parentId: string) => GradeRecord[];
     getEventMediaForParent: (parentId: string) => EventMedia[];
 };
 
-const STORAGE_KEY = "tk-school-data";
-
 const SchoolDataContext = createContext<SchoolDataContextValue | undefined>(undefined);
 
-function safeUUID() {
-    if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-    return Math.random().toString(36).slice(2);
-}
+const safeUUID = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+
+type ApiEvent = {
+    id: number;
+    title: string;
+    description?: string;
+    start_date?: string;
+    end_date?: string;
+    location?: string;
+    media?: ApiEventMedia[];
+};
+
+type ApiEventMedia = {
+    id: number;
+    file: string;
+    media_type?: string;
+    caption?: string;
+};
+
+type ApiEnquiry = {
+    id: number;
+    enquiry_type: string;
+    name: string;
+    email: string;
+    phone?: string;
+    message?: string;
+    city?: string;
+    child_age?: string;
+    created_at: string;
+};
+
+const mapEvent = (ev: ApiEvent): EventRecord => ({
+    id: String(ev.id),
+    title: ev.title,
+    date: ev.start_date || ev.end_date || "",
+    venue: ev.location || "",
+    notes: ev.description || "",
+});
+
+const mapMedia = (media: ApiEventMedia, eventId?: string): EventMedia => ({
+    id: String(media.id),
+    type: (media.media_type || "image").toLowerCase() === "video" ? "video" : "image",
+    title: media.caption || "",
+    url: mediaUrl(media.file),
+    eventId,
+});
+
+const mapEnquiry = (enq: ApiEnquiry): Enquiry => ({
+    id: String(enq.id),
+    type: (enq.enquiry_type || "contact").toLowerCase() as EnquiryType,
+    name: enq.name,
+    email: enq.email,
+    phone: enq.phone,
+    message: enq.message || "",
+    createdAt: enq.created_at,
+    status: "new",
+    channel: "dashboard",
+});
 
 export function SchoolDataProvider({ children }: { children: React.ReactNode }) {
+    const { user, authFetch } = useAuth();
+
     const [parents, setParents] = useState<SchoolParent[]>([]);
     const [students, setStudents] = useState<SchoolStudent[]>([]);
     const [grades, setGrades] = useState<GradeRecord[]>([]);
@@ -109,62 +169,67 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     const [eventMedia, setEventMedia] = useState<EventMedia[]>([]);
     const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
 
-    // hydrate from localStorage once
     useEffect(() => {
-        try {
-            const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                setParents(parsed.parents || []);
-                setStudents(parsed.students || []);
-                setGrades(parsed.grades || []);
-                setEvents(parsed.events || []);
-                setEventMedia(parsed.eventMedia || []);
-                setEnquiries(parsed.enquiries || []);
-                return;
-            }
-        } catch {
-            // ignore corrupt cache
+        if (!user) {
+            setEvents([]);
+            setEventMedia([]);
+            setEnquiries([]);
+            return;
         }
-        // seed defaults when nothing cached
-        setParents([
-            { id: "parent-1", name: "Tarun Mehta", email: "parent@test.com", phone: "+91 98888 44444" },
-            { id: "parent-2", name: "Meera Rao", email: "meera@example.com", phone: "+91 97777 22222" },
-        ]);
-        setStudents([
-            { id: "stu-1", rollNumber: "A101", name: "Aarav T.", grade: "KG-2", section: "A", parentId: "parent-1" },
-            { id: "stu-2", rollNumber: "A102", name: "Anaya T.", grade: "KG-1", section: "B", parentId: "parent-1" },
-            { id: "stu-3", rollNumber: "B201", name: "Vihaan R.", grade: "KG-2", section: "C", parentId: "parent-2" },
-        ]);
-        setGrades([
-            { id: "g-1", studentId: "stu-1", subject: "Math", term: "Term 1", grade: "A" },
-            { id: "g-2", studentId: "stu-2", subject: "English", term: "Term 1", grade: "B+" },
-        ]);
-        setEvents([
-            { id: "ev-1", title: "Sports Day", date: "2025-02-12", venue: "Main Ground", notes: "Parents welcome" },
-            { id: "ev-2", title: "Science Fair", date: "2025-03-05", venue: "Auditorium" },
-        ]);
-        setEventMedia([
-            { id: "m-1", type: "image", title: "Sports Day Highlights", url: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=60", eventId: "ev-1" },
-            { id: "m-2", type: "video", title: "Annual Day Performance", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", eventId: "ev-2" },
-        ]);
-        setEnquiries([
-            { id: "enq-1", type: "admission", name: "Kavya", email: "kavya@example.com", phone: "+91 90000 12345", message: "Need fee details for KG-1.", createdAt: new Date().toISOString(), status: "new", channel: "web" },
-            { id: "enq-2", type: "franchise", name: "Rohan", email: "rohan@example.com", phone: "+91 93333 44444", message: "Interested in Hyderabad franchise.", createdAt: new Date().toISOString(), status: "new", channel: "web" },
-        ]);
-    }, []);
 
-    // persist on change
-    useEffect(() => {
-        try {
-            const snapshot = { parents, students, grades, events, eventMedia, enquiries };
-            if (typeof window !== "undefined") {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-            }
-        } catch {
-            // ignore write errors
+        if (user.role === "parent") {
+            loadParentEvents();
+        } else if (user.role === "franchise") {
+            loadFranchiseEvents();
+            loadFranchiseEnquiries();
+        } else if (user.role === "admin") {
+            loadAdminEnquiries();
         }
-    }, [parents, students, grades, events, eventMedia, enquiries]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.role]);
+
+    const loadParentEvents = async () => {
+        try {
+            const data = await authFetch<ApiEvent[]>("/events/parent/");
+            ingestEvents(data);
+        } catch {
+            setEvents([]);
+        }
+    };
+
+    const loadFranchiseEvents = async () => {
+        try {
+            const data = await authFetch<ApiEvent[]>("/events/franchise/");
+            ingestEvents(data);
+        } catch {
+            setEvents([]);
+        }
+    };
+
+    const loadAdminEnquiries = async () => {
+        try {
+            const data = await authFetch<ApiEnquiry[]>("/enquiries/admin/");
+            setEnquiries(data.map(mapEnquiry));
+        } catch {
+            setEnquiries([]);
+        }
+    };
+
+    const loadFranchiseEnquiries = async () => {
+        try {
+            const data = await authFetch<ApiEnquiry[]>("/enquiries/franchise/");
+            setEnquiries(data.map(mapEnquiry));
+        } catch {
+            setEnquiries([]);
+        }
+    };
+
+    const ingestEvents = (items: ApiEvent[]) => {
+        const mappedEvents = items.map(mapEvent);
+        const flattenedMedia = items.flatMap((ev) => (ev.media || []).map((m) => mapMedia(m, String(ev.id))));
+        setEvents(mappedEvents);
+        setEventMedia(flattenedMedia);
+    };
 
     const addOrUpdateParent = (payload: SchoolParent) => {
         setParents((prev) => {
@@ -189,9 +254,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         return { id, ...payload } as SchoolStudent;
     };
 
-    const addGrade = (payload: Omit<GradeRecord, "id">) => {
-        setGrades((prev) => [...prev, { id: safeUUID(), ...payload }]);
-    };
+    const addGrade = (payload: Omit<GradeRecord, "id">) => setGrades((prev) => [...prev, { id: safeUUID(), ...payload }]);
 
     const addGradesBulk = (rows: BulkGradeRow[]) => {
         let inserted = 0;
@@ -223,25 +286,99 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         return { inserted, skipped };
     };
 
-    const addEvent = (payload: Omit<EventRecord, "id">) => {
-        setEvents((prev) => [...prev, { id: safeUUID(), ...payload }]);
+    const addEvent = async (payload: Omit<EventRecord, "id">) => {
+        if (user?.role !== "franchise") throw new Error("Only franchise users can create events");
+        const body = {
+            title: payload.title,
+            description: payload.notes || "",
+            start_date: payload.date,
+            end_date: payload.date,
+            location: payload.venue,
+        };
+        const created = await authFetch<ApiEvent>("/events/franchise/", {
+            method: "POST",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        setEvents((prev) => [mapEvent(created), ...prev]);
     };
 
-    const addEventMedia = (payload: Omit<EventMedia, "id">) => {
-        setEventMedia((prev) => [...prev, { id: safeUUID(), ...payload }]);
+    const updateEvent = async (id: string, payload: Partial<EventRecord>) => {
+        if (user?.role !== "franchise") throw new Error("Only franchise users can update events");
+        const body = {
+            title: payload.title,
+            description: payload.notes,
+            start_date: payload.date,
+            end_date: payload.date,
+            location: payload.venue,
+        };
+        const updated = await authFetch<ApiEvent>(`/events/franchise/${id}/`, {
+            method: "PATCH",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        setEvents((prev) => prev.map((ev) => (ev.id === id ? mapEvent(updated) : ev)));
     };
 
-    const addEnquiry = (payload: Omit<Enquiry, "id" | "createdAt" | "status" | "channel"> & { status?: Enquiry["status"]; channel?: Enquiry["channel"] }) => {
-        setEnquiries((prev) => [
-            {
-                id: safeUUID(),
-                createdAt: new Date().toISOString(),
-                status: payload.status || "new",
-                channel: payload.channel || "web",
-                ...payload,
-            },
-            ...prev,
-        ]);
+    const deleteEvent = async (id: string) => {
+        if (user?.role !== "franchise") throw new Error("Only franchise users can delete events");
+        await authFetch(`/events/franchise/${id}/`, { method: "DELETE" });
+        setEvents((prev) => prev.filter((ev) => ev.id !== id));
+        setEventMedia((prev) => prev.filter((m) => m.eventId !== id));
+    };
+
+    const addEventMedia = async (payload: AddEventMediaPayload) => {
+        if (user?.role !== "franchise") throw new Error("Only franchise users can upload media");
+        if (!payload.eventId) throw new Error("Select an event before uploading media");
+        try {
+            const formData = new FormData();
+            if (payload.file) {
+                formData.append("file", payload.file);
+            } else if (payload.url) {
+                const response = await fetch(payload.url);
+                if (!response.ok) throw new Error("Unable to fetch media from the provided URL");
+                const blob = await response.blob();
+                const fileName = payload.url.split("/").pop() || `upload-${Date.now()}`;
+                formData.append("file", new File([blob], fileName, { type: blob.type || "application/octet-stream" }));
+            } else {
+                throw new Error("Upload a file or provide a URL");
+            }
+            formData.append("media_type", payload.type === "video" ? "VIDEO" : "IMAGE");
+            if (payload.description) formData.append("caption", payload.description);
+
+            const saved = await authFetch<ApiEventMedia>(`/events/franchise/${payload.eventId}/media/`, {
+                method: "POST",
+                body: formData,
+            });
+            setEventMedia((prev) => [mapMedia(saved, payload.eventId), ...prev]);
+        } catch (err) {
+            if (err instanceof Error) throw err;
+            throw new Error("Unable to upload media");
+        }
+    };
+
+    const addEnquiry = async (
+        payload: Omit<Enquiry, "id" | "createdAt" | "status" | "channel"> & { status?: Enquiry["status"]; channel?: Enquiry["channel"] },
+    ) => {
+        const enquiry_type = payload.type.toUpperCase();
+        const res = await fetch(apiUrl("/enquiries/submit/"), {
+            method: "POST",
+            headers: jsonHeaders(),
+            body: JSON.stringify({
+                enquiry_type,
+                name: payload.name,
+                email: payload.email,
+                phone: payload.phone,
+                message: payload.message,
+                city: (payload as any).city || "",
+                child_age: (payload as any).childAge || (payload as any).child_age || "",
+                franchise_slug: (payload as any).franchiseSlug || (payload as any).franchise_slug || "",
+            }),
+        });
+        if (!res.ok) throw await toApiError(res);
+        const saved = await res.json();
+        const mapped = mapEnquiry(saved);
+        setEnquiries((prev) => [mapped, ...prev]);
     };
 
     const getStudentsForParent = (parentId: string) => students.filter((s) => s.parentId === parentId);
@@ -268,6 +405,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             addGrade,
             addGradesBulk,
             addEvent,
+            updateEvent,
+            deleteEvent,
             addEventMedia,
             addEnquiry,
             getStudentsForParent,

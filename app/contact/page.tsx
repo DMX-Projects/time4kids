@@ -21,21 +21,27 @@ interface ContactFormData {
 
 export default function ContactPage() {
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormData>();
     const { addEnquiry } = useSchoolData();
 
-    const onSubmit = (data: ContactFormData) => {
+    const onSubmit = async (data: ContactFormData) => {
+        setSubmitError(null);
         const type: 'admission' | 'franchise' | 'contact' = data.subject === 'admission' ? 'admission' : data.subject === 'franchise' ? 'franchise' : 'contact';
-        addEnquiry({
-            type,
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            message: `${data.subject.toUpperCase()}: ${data.message}`,
-        });
-        setIsSubmitted(true);
-        reset();
-        setTimeout(() => setIsSubmitted(false), 5000);
+        try {
+            await addEnquiry({
+                type,
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+                message: `${data.subject.toUpperCase()}: ${data.message}`,
+            });
+            setIsSubmitted(true);
+            reset();
+            setTimeout(() => setIsSubmitted(false), 5000);
+        } catch (err: any) {
+            setSubmitError(err?.message || 'Unable to send your message. Please try again.');
+        }
     };
 
     return (
@@ -154,6 +160,11 @@ export default function ContactPage() {
                                 {isSubmitted && (
                                     <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                                         <p className="text-green-800 font-medium">Thank you! We&apos;ll get back to you soon.</p>
+                                    </div>
+                                )}
+                                {submitError && (
+                                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                                        {submitError}
                                     </div>
                                 )}
 

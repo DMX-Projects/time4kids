@@ -1,6 +1,8 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { jsonHeaders } from "@/lib/api-client";
 
 export type AdminFranchise = {
     id: string;
@@ -10,6 +12,10 @@ export type AdminFranchise = {
     email: string;
     phone: string;
     status: string;
+    city?: string;
+    about?: string;
+    programs?: string;
+    facilities?: string;
 };
 
 export type AdminCareer = {
@@ -18,6 +24,19 @@ export type AdminCareer = {
     dept: string;
     location: string;
     type: string;
+};
+
+export type AdminEvent = {
+    id: string;
+    title: string;
+    description: string;
+    location: string;
+    startDate: string;
+    endDate: string;
+    year?: number | null;
+    franchiseId: string;
+    franchiseName?: string;
+    franchiseCity?: string;
 };
 
 export type AdminProfile = {
@@ -30,70 +49,318 @@ export type AdminProfile = {
     photo: string;
 };
 
+export type AdminStats = {
+    activeUsers: number;
+    franchises: number;
+    enquiries: number;
+    parents: number;
+};
+
 export type AdminDataContextValue = {
     franchises: AdminFranchise[];
-    addFranchise: (payload: Omit<AdminFranchise, "id">) => void;
-    updateFranchise: (id: string, payload: Partial<AdminFranchise>) => void;
-    deleteFranchise: (id: string) => void;
+    addFranchise: (payload: Omit<AdminFranchise, "id">) => Promise<void>;
+    updateFranchise: (id: string, payload: Partial<AdminFranchise>) => Promise<void>;
+    deleteFranchise: (id: string) => Promise<void>;
+    getFranchiseDetail: (id: string) => Promise<AdminFranchise>;
 
     careers: AdminCareer[];
-    addCareer: (payload: Omit<AdminCareer, "id">) => void;
-    updateCareer: (id: string, payload: Partial<AdminCareer>) => void;
-    deleteCareer: (id: string) => void;
+    addCareer: (payload: Omit<AdminCareer, "id">) => Promise<void>;
+    updateCareer: (id: string, payload: Partial<AdminCareer>) => Promise<void>;
+    deleteCareer: (id: string) => Promise<void>;
+
+    events: AdminEvent[];
+    addEvent: (payload: Omit<AdminEvent, "id" | "year" | "franchiseName" | "franchiseCity">) => Promise<void>;
+    updateEvent: (id: string, payload: Partial<Omit<AdminEvent, "id" | "year">>) => Promise<void>;
+    deleteEvent: (id: string) => Promise<void>;
 
     profile: AdminProfile;
     updateProfile: (payload: Partial<AdminProfile>) => void;
+
+    stats: AdminStats;
+    refreshStats: () => Promise<void>;
 };
 
 const AdminDataContext = createContext<AdminDataContextValue | undefined>(undefined);
 
-export function AdminDataProvider({ children }: { children: React.ReactNode }) {
-    const [franchises, setFranchises] = useState<AdminFranchise[]>([
-        { id: "fr-1", name: "Sunrise Kids", owner: "Meera Shah", region: "Bangalore", email: "meera@sunrise.com", phone: "+91 99888 12345", status: "Active" },
-        { id: "fr-2", name: "Bright Minds", owner: "Rahul Verma", region: "Hyderabad", email: "rahul@brightminds.com", phone: "+91 98765 45678", status: "Pending" },
-    ]);
+type ApiFranchise = {
+    id: number;
+    name: string;
+    slug: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    is_active?: boolean;
+    user?: { full_name?: string; email: string };
+    about?: string;
+    programs?: string;
+    facilities?: string;
+};
 
-    const [careers, setCareers] = useState<AdminCareer[]>([
-        { id: "car-1", title: "Centre Manager", dept: "Operations", location: "Bangalore", type: "Full-time" },
-        { id: "car-2", title: "Early Years Educator", dept: "Academics", location: "Hyderabad", type: "Part-time" },
-    ]);
+type ApiCareer = {
+    id: number;
+    title: string;
+    description?: string;
+    location?: string;
+    apply_email?: string;
+    is_active?: boolean;
+};
+
+type ApiEvent = {
+    id: number;
+    franchise: number;
+    franchise_name?: string;
+    franchise_city?: string;
+    title: string;
+    description?: string;
+    start_date?: string;
+    end_date?: string;
+    location?: string;
+    year?: number | null;
+};
+
+const mapFranchise = (fr: ApiFranchise): AdminFranchise => ({
+    id: String(fr.id),
+    name: fr.name,
+    owner: fr.user?.full_name || fr.user?.email || "",
+    region: fr.city || fr.state || fr.country || "",
+    city: fr.city,
+    email: fr.contact_email || fr.user?.email || "",
+    phone: fr.contact_phone || "",
+    status: fr.is_active === false ? "Inactive" : "Active",
+    about: fr.about || "",
+    programs: fr.programs || "",
+    facilities: fr.facilities || "",
+});
+
+const mapCareer = (career: ApiCareer): AdminCareer => ({
+    id: String(career.id),
+    title: career.title,
+    dept: career.description || "",
+    location: career.location || "",
+    type: career.is_active === false ? "Inactive" : "Active",
+});
+
+const mapEvent = (event: ApiEvent): AdminEvent => ({
+    id: String(event.id),
+    title: event.title,
+    description: event.description || "",
+    location: event.location || "",
+    startDate: event.start_date || "",
+    endDate: event.end_date || "",
+    year: event.year ?? (event.start_date ? new Date(event.start_date).getFullYear() : null),
+    franchiseId: String(event.franchise),
+    franchiseName: event.franchise_name,
+    franchiseCity: event.franchise_city,
+});
+
+const unwrapList = <T,>(data: any): T[] => {
+    if (Array.isArray(data)) return data as T[];
+    if (data && Array.isArray(data.results)) return data.results as T[];
+    return [];
+};
+
+export function AdminDataProvider({ children }: { children: React.ReactNode }) {
+    const { user, authFetch } = useAuth();
+
+    const [franchises, setFranchises] = useState<AdminFranchise[]>([]);
+    const [careers, setCareers] = useState<AdminCareer[]>([]);
+    const [events, setEvents] = useState<AdminEvent[]>([]);
 
     const [profile, setProfile] = useState<AdminProfile>({
-        name: "Ananya Rao",
-        email: "admin@time4kids.com",
-        phone: "+91 90000 11111",
+        name: "",
+        email: "",
+        phone: "",
         role: "Administrator",
-        location: "Bangalore",
-        bio: "Oversees all centres and compliance.",
+        location: "",
+        bio: "",
         photo: "",
     });
 
-    const addFranchise = (payload: Omit<AdminFranchise, "id">) => {
-        setFranchises((prev) => [...prev, { id: crypto.randomUUID(), ...payload }]);
+    const [stats, setStats] = useState<AdminStats>({ activeUsers: 0, franchises: 0, enquiries: 0, parents: 0 });
+
+    useEffect(() => {
+        const role = user?.role?.toLowerCase();
+        if (role !== "admin") return;
+        loadFranchises();
+        loadCareers();
+        loadEvents();
+        loadStats();
+        setProfile((prev) => ({
+            ...prev,
+            name: user.fullName || prev.name || user.email,
+            email: user.email,
+        }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.role]);
+
+    const loadFranchises = async () => {
+        try {
+            const data = await authFetch<ApiFranchise[] | { results: ApiFranchise[] }>("/franchises/admin/franchises/");
+            const items = unwrapList<ApiFranchise>(data);
+            setFranchises(items.map(mapFranchise));
+        } catch {
+            setFranchises([]);
+        }
     };
 
-    const updateFranchise = (id: string, payload: Partial<AdminFranchise>) => {
-        setFranchises((prev) => prev.map((f) => (f.id === id ? { ...f, ...payload } : f)));
+    const loadCareers = async () => {
+        try {
+            const data = await authFetch<ApiCareer[] | { results: ApiCareer[] }>("/careers/admin/");
+            const items = unwrapList<ApiCareer>(data);
+            setCareers(items.map(mapCareer));
+        } catch {
+            setCareers([]);
+        }
     };
 
-    const deleteFranchise = (id: string) => {
+    const loadEvents = async () => {
+        try {
+            const data = await authFetch<ApiEvent[] | { results: ApiEvent[] }>("/events/admin/");
+            const items = unwrapList<ApiEvent>(data);
+            setEvents(items.map(mapEvent));
+        } catch {
+            setEvents([]);
+        }
+    };
+
+    const loadStats = async () => {
+        try {
+            const data = await authFetch<{ active_users: number; franchises: number; enquiries: number; parents: number }>("/accounts/admin/stats/");
+            setStats({
+                activeUsers: data.active_users,
+                franchises: data.franchises,
+                enquiries: data.enquiries,
+                parents: data.parents,
+            });
+        } catch {
+            setStats({ activeUsers: 0, franchises: 0, enquiries: 0, parents: 0 });
+        }
+    };
+
+    const addFranchise = async (payload: Omit<AdminFranchise, "id">) => {
+        const body = {
+            name: payload.name,
+            city: payload.region,
+            contact_email: payload.email,
+            contact_phone: payload.phone,
+            franchise_email: payload.email,
+            franchise_password: payload.email,
+            franchise_full_name: payload.owner || payload.name,
+            is_active: payload.status ? payload.status.toLowerCase() === "active" : undefined,
+        };
+        const created = await authFetch<ApiFranchise>("/franchises/admin/franchises/", {
+            method: "POST",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        setFranchises((prev) => [mapFranchise(created), ...prev]);
+    };
+
+    const updateFranchise = async (id: string, payload: Partial<AdminFranchise>) => {
+        const body = {
+            name: payload.title,
+            description: payload.dept || payload.type,
+            location: payload.location,
+            apply_email: user?.email,
+            is_active: payload.type.toLowerCase() !== "inactive",
+        };
+        const updated = await authFetch<ApiFranchise>(`/franchises/admin/franchises/${id}/`, {
+            method: "PATCH",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        setFranchises((prev) => prev.map((f) => (f.id === id ? mapFranchise(updated) : f)));
+    };
+
+    const deleteFranchise = async (id: string) => {
+        await authFetch(`/franchises/admin/franchises/${id}/`, { method: "DELETE" });
         setFranchises((prev) => prev.filter((f) => f.id !== id));
     };
 
-    const addCareer = (payload: Omit<AdminCareer, "id">) => {
-        setCareers((prev) => [...prev, { id: crypto.randomUUID(), ...payload }]);
+    const addCareer = async (payload: Omit<AdminCareer, "id">) => {
+        const body = {
+            title: payload.title,
+            description: payload.dept || payload.type,
+            location: payload.location,
+            apply_email: user?.email,
+            is_active: payload.type.toLowerCase() !== "inactive",
+        };
+        const created = await authFetch<ApiCareer>("/careers/admin/", {
+            method: "POST",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        setCareers((prev) => [mapCareer(created), ...prev]);
     };
 
-    const updateCareer = (id: string, payload: Partial<AdminCareer>) => {
-        setCareers((prev) => prev.map((c) => (c.id === id ? { ...c, ...payload } : c)));
+    const updateCareer = async (id: string, payload: Partial<AdminCareer>) => {
+        const body = {
+            title: payload.title,
+            description: payload.dept,
+            location: payload.location,
+            is_active: payload.type ? payload.type.toLowerCase() !== "inactive" : undefined,
+        };
+        const updated = await authFetch<ApiCareer>(`/careers/admin/${id}/`, {
+            method: "PATCH",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        setCareers((prev) => prev.map((c) => (c.id === id ? mapCareer(updated) : c)));
     };
 
-    const deleteCareer = (id: string) => {
+    const deleteCareer = async (id: string) => {
+        await authFetch(`/careers/admin/${id}/`, { method: "DELETE" });
         setCareers((prev) => prev.filter((c) => c.id !== id));
+    };
+
+    const addEvent = async (payload: Omit<AdminEvent, "id" | "year" | "franchiseName" | "franchiseCity">) => {
+        const body = {
+            title: payload.title,
+            description: payload.description,
+            location: payload.location,
+            start_date: payload.startDate || null,
+            end_date: payload.endDate || null,
+            franchise: payload.franchiseId,
+        };
+        const created = await authFetch<ApiEvent>("/events/admin/", {
+            method: "POST",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        setEvents((prev) => [mapEvent(created), ...prev]);
+    };
+
+    const updateEvent = async (id: string, payload: Partial<Omit<AdminEvent, "id" | "year">>) => {
+        const body = {
+            title: payload.title,
+            description: payload.description,
+            location: payload.location,
+            start_date: payload.startDate || null,
+            end_date: payload.endDate || null,
+            franchise: payload.franchiseId,
+        };
+        const updated = await authFetch<ApiEvent>(`/events/admin/${id}/`, {
+            method: "PATCH",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        setEvents((prev) => prev.map((evt) => (evt.id === id ? mapEvent(updated) : evt)));
+    };
+
+    const deleteEvent = async (id: string) => {
+        await authFetch(`/events/admin/${id}/`, { method: "DELETE" });
+        setEvents((prev) => prev.filter((evt) => evt.id !== id));
     };
 
     const updateProfile = (payload: Partial<AdminProfile>) => {
         setProfile((prev) => ({ ...prev, ...payload }));
+    };
+
+    const getFranchiseDetail = async (id: string) => {
+        const data = await authFetch<ApiFranchise>(`/franchises/admin/franchises/${id}/`);
+        return mapFranchise(data);
     };
 
     const value = useMemo(
@@ -102,14 +369,21 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             addFranchise,
             updateFranchise,
             deleteFranchise,
+            getFranchiseDetail,
             careers,
             addCareer,
             updateCareer,
             deleteCareer,
+            events,
+            addEvent,
+            updateEvent,
+            deleteEvent,
             profile,
             updateProfile,
+            stats,
+            refreshStats: loadStats,
         }),
-        [franchises, careers, profile],
+        [franchises, careers, events, profile, stats],
     );
 
     return <AdminDataContext.Provider value={value}>{children}</AdminDataContext.Provider>;

@@ -20,23 +20,29 @@ interface FranchiseFormData {
 
 const FranchiseForm = () => {
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<FranchiseFormData>();
     const { addEnquiry } = useSchoolData();
 
-    const onSubmit = (data: FranchiseFormData) => {
-        addEnquiry({
-            type: 'franchise',
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            message: `City: ${data.city}, State: ${data.state}, Investment: ${data.investment}, Experience: ${data.experience || 'n/a'}, Note: ${data.message || ''}`,
-        });
-        setIsSubmitted(true);
-        reset();
-
-        setTimeout(() => {
-            setIsSubmitted(false);
-        }, 5000);
+    const onSubmit = async (data: FranchiseFormData) => {
+        setSubmitError(null);
+        try {
+            await addEnquiry({
+                type: 'franchise',
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+                city: data.city,
+                message: `City: ${data.city}, State: ${data.state}, Investment: ${data.investment}, Experience: ${data.experience || 'n/a'}, Note: ${data.message || ''}`,
+            });
+            setIsSubmitted(true);
+            reset();
+            setTimeout(() => {
+                setIsSubmitted(false);
+            }, 5000);
+        } catch (err: any) {
+            setSubmitError(err?.message || 'Unable to submit your enquiry. Please try again.');
+        }
     };
 
     const formUrl = typeof window !== 'undefined' ? window.location.href : 'https://timekids.com/franchise';
@@ -47,6 +53,11 @@ const FranchiseForm = () => {
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-3 animate-slide-down">
                     <CheckCircle className="w-6 h-6 text-green-600" />
                     <p className="text-green-800 font-medium">Thank you! Our franchise team will contact you soon.</p>
+                </div>
+            )}
+            {submitError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    {submitError}
                 </div>
             )}
 
