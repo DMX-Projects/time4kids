@@ -3,8 +3,6 @@
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import Button from '@/components/ui/Button';
-import FloatingDots from '@/components/animations/FloatingDots';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -13,158 +11,160 @@ if (typeof window !== 'undefined') {
 }
 
 const ProgramsPreview = () => {
-    const sectionRef = useRef<HTMLElement>(null);
-    const cardsRef = useRef<HTMLDivElement>(null);
-    const headingRef = useRef<HTMLHeadingElement>(null);
-    const descriptionRef = useRef<HTMLParagraphElement>(null);
+    const sectionRef = useRef(null);
+    const kidRef = useRef(null);
 
     const programs = [
         {
             image: '/13.png',
-            name: 'Experience Yourself',
-            programName: 'Play Group', // Keeping original name as subtitle or context if needed, but using "Experience Yourself" style titles from ss/request? No, user said "change format", implied content usually stays or adapts. Screenshot shows "Experience Yourself". 
-            // Wait, the screenshot has titles "Experience Yourself", "Quality lessons", "Toys and Games".
-            // The USER said "change the format of 1st ss images to 2nd ss images".
-            // Typically this means styles. I should probably keep the CONTENT (Play Group) but use the STYLE (Red background).
-            // Let's stick to the content "Play Group" etc but with the styling.
+            programName: 'Play Group',
             ageGroup: '1.5 - 2.5 years',
-            description: 'Introduction to social interaction and basic motor skills development.',
-            bgColor: 'bg-[#ef5f5f]', // Red-ish from screenshot
-            buttonColor: 'bg-[#4facfe]', // Blue button from screenshot
+            description: 'Introduction to social interaction and basic motor skills.',
+            color: '#ef5f5f',
+            yOffset: '-20px'
         },
         {
             image: '/12.png',
-            name: 'Quality lessons',
             programName: 'Nursery',
             ageGroup: '2.5 - 3.5 years',
-            description: 'Building foundation for language, numbers, and creative expression.',
-            bgColor: 'bg-[#fbd267]', // Yellow from screenshot
-            buttonColor: 'bg-[#5ccca3]', // Green/Teal button from screenshot
+            description: 'Building foundation for language, numbers, and expression.',
+            color: '#fbd267',
+            yOffset: '40px'
         },
         {
             image: '/1.png',
-            name: 'Toys and Games',
             programName: 'PP-1 & PP-2',
             ageGroup: '3.5 - 5.5 years',
-            description: 'Comprehensive pre-primary education preparing for formal schooling.',
-            bgColor: 'bg-[#6cc3d5]', // Cyan/Blue from screenshot
-            buttonColor: 'bg-[#ef5f5f]', // Red button
+            description: 'Preparing for formal schooling with comprehensive education.',
+            color: '#6cc3d5',
+            yOffset: '-30px'
         },
         {
             image: '/16.png',
-            name: 'Day Care',
             programName: 'Day Care',
             ageGroup: '1.5 - 5.5 years',
             description: 'Extended care with engaging activities throughout the day.',
-            bgColor: 'bg-[#ff9f43]', // Orange (matches screenshot style if there was a 4th)
-            buttonColor: 'bg-[#5f27cd]', // Purple button
-        },
+            color: '#ff9f43',
+            yOffset: '30px'
+        }
     ];
+
+    const scallopPath = "M0,0 V12 Q15,24 30,12 T60,12 T90,12 T120,12 T150,12 T180,12 T210,12 T240,12 T270,12 T300,12 T330,12 T360,12 T390,12 T420,12 T450,12 T480,12 T510,12 T540,12 T570,12 T600,12 T630,12 T660,12 T690,12 T720,12 T750,12 T780,12 T810,12 T840,12 T870,12 T900,12 T930,12 T960,12 T990,12 T1020,12 T1050,12 T1080,12 T1110,12 T1140,12 T1170,12 T1200,12 V0 Z";
 
     useEffect(() => {
         const ctx = gsap.context(() => {
-            // Heading animation
-            gsap.from(headingRef.current, {
-                y: 50,
-                opacity: 0,
-                duration: 0.8,
-                ease: 'power3.out',
+            // TARGET ONLY THE KID: Move from left to right based on scroll
+            gsap.to(kidRef.current, {
+                x: "85vw", // Kid travels across the screen
+                ease: "none",
                 scrollTrigger: {
-                    trigger: headingRef.current,
-                    start: 'top 80%',
-                    toggleActions: 'play none none reverse',
-                },
+                    trigger: sectionRef.current,
+                    start: "top center", // Animation starts when section hits middle of screen
+                    end: "bottom center",
+                    scrub: 1, // Smooth movement tied to scroll
+                    onUpdate: (self) => {
+                        // Flip character to face direction of travel
+                        if (self.direction === 1) {
+                            gsap.to(kidRef.current, { scaleX: 1, duration: 0.1 });
+                        } else {
+                            gsap.to(kidRef.current, { scaleX: -1, duration: 0.1 });
+                        }
+                    }
+                }
             });
-
-            // Description animation
-            gsap.from(descriptionRef.current, {
-                y: 30,
-                opacity: 0,
-                duration: 0.8,
-                delay: 0.2,
-                ease: 'power2.out',
-                scrollTrigger: {
-                    trigger: descriptionRef.current,
-                    start: 'top 80%',
-                    toggleActions: 'play none none reverse',
-                },
-            });
-
-            // Cards stagger animation
-            if (cardsRef.current) {
-                const cards = cardsRef.current.children;
-                gsap.from(cards, {
-                    y: 100,
-                    opacity: 0,
-                    duration: 0.8,
-                    stagger: 0.2,
-                    ease: 'power2.out',
-                    scrollTrigger: {
-                        trigger: cardsRef.current,
-                        start: 'top 70%',
-                        toggleActions: 'play none none reverse',
-                    },
-                });
-            }
         }, sectionRef);
-
         return () => ctx.revert();
     }, []);
 
     return (
-        <section ref={sectionRef} className="py-10 bg-gray-50 relative overflow-hidden">
-            {/* Floating Decorative Dots */}
-            <FloatingDots count={6} colors={['bg-pink-200', 'bg-blue-200', 'bg-orange-200', 'bg-green-200']} />
+        <section ref={sectionRef} className="relative py-24 bg-[#FFFAF5] overflow-hidden">
+            
+            {/* Top Border */}
+            <div className="absolute top-0 left-0 w-full z-20 pointer-events-none">
+                <svg viewBox="0 0 1200 24" className="w-full h-12 block fill-white" preserveAspectRatio="none">
+                    <path d={scallopPath} />
+                </svg>
+            </div>
 
             <div className="container mx-auto px-4 relative z-10">
-                <div className="text-center mb-8">
-                    <h2 ref={headingRef} className="font-bubblegum text-4xl md:text-5xl mb-4 text-[#003366] tracking-wide">
+                <div className="text-center mb-16">
+                    <h2 className="font-bubblegum text-5xl md:text-6xl text-[#003366]">
                         Our <span className="text-[#ef5f5f]">Programs</span>
                     </h2>
-                    <p ref={descriptionRef} className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        Every class, group and child is unique and has different needs at different times. At T.I.M.E. Kids pre-schools, we believe in a curriculum that matches abilities to skills.
-                    </p>
+                    <p className="text-gray-400 font-medium italic mt-2">Where learning feels like an adventure...</p>
                 </div>
 
-                <div ref={cardsRef} className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-24">
-                    {programs.map((program, index) => (
-                        <div key={index} className="group relative h-full">
-                            {/* Image Section */}
-                            <div className="relative w-full aspect-[4/5] overflow-hidden rounded-3xl shadow-lg">
-                                <Image
-                                    src={program.image}
-                                    alt={program.programName}
-                                    fill
-                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                            </div>
+                <div className="relative">
+                    {/* Adventure Path Line (Static) */}
+                    <svg className="absolute top-1/2 left-0 w-full h-32 -translate-y-1/2 -z-10 opacity-20" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                        <path 
+                            d="M0,50 Q125,0 250,50 T500,50 T750,50 T1000,50" 
+                            fill="none" 
+                            stroke="#003366" 
+                            strokeWidth="3" 
+                            strokeDasharray="10 10" 
+                        />
+                    </svg>
 
-                            {/* Content Card - Overlapping */}
-                            <div className="absolute -bottom-12 left-4 right-4 bg-white rounded-2xl p-6 text-center shadow-xl transition-transform duration-300 group-hover:-translate-y-2">
-                                <h3 className="font-display font-bold text-xl mb-2 text-[#003366]">
-                                    {program.programName}
-                                </h3>
-
-                                <p className="text-gray-700 text-sm mb-4 line-clamp-2 font-medium">
-                                    {program.description}
-                                </p>
-
-                                <div className="hidden group-hover:block transition-all duration-300"> {/* Optional: Only show button on hover to keep it clean like the reference? Or always show. Reference text is small. Let's keep it clean. */}
+                    {/* Program Cards (Static) */}
+                    <div className="flex flex-nowrap overflow-x-auto pb-32 pt-10 gap-12 no-scrollbar md:justify-between">
+                        {programs.map((program, index) => (
+                            <div 
+                                key={index} 
+                                className="flex-shrink-0 w-72 flex flex-col items-center text-center"
+                                style={{ transform: `translateY(${program.yOffset})` }}
+                            >
+                                <div className="relative group mb-6">
+                                    <div className="absolute inset-0 rounded-full blur-2xl opacity-10" style={{ backgroundColor: program.color }} />
+                                    <div className="relative w-48 h-48 rounded-full border-[10px] border-white shadow-xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                                        <Image src={program.image} alt={program.programName} fill className="object-cover" />
+                                    </div>
+                                    <div className="absolute -bottom-2 right-2 px-4 py-1.5 rounded-full text-white font-black text-[10px] shadow-lg rotate-12" style={{ backgroundColor: program.color }}>
+                                        {program.ageGroup}
+                                    </div>
                                 </div>
-                                {/* Making the whole card clickable or adding a subtle indicator */}
-                                <div className="w-8 h-1 bg-gray-200 mx-auto rounded-full group-hover:bg-[#ef5f5f] transition-colors duration-300" />
+                                <h3 className="font-bubblegum text-3xl text-[#003366] mb-2 leading-tight">{program.programName}</h3>
+                                <p className="text-gray-500 text-sm font-medium leading-relaxed mb-4 px-4 line-clamp-2">{program.description}</p>
+                                <Link href="/programs" className="inline-flex items-center gap-2 font-black text-[10px] uppercase tracking-widest" style={{ color: program.color }}>
+                                    JOIN THE FUN <span className="text-lg">→</span>
+                                </Link>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
 
-                <div className="text-center mt-8">
-                    <Link href="/programs">
-                        <Button size="lg" variant="primary">View All Programs</Button>
+                {/* Explore Button */}
+                <div className="mt-4 text-center">
+                    <Link href="/programs" className="relative inline-block group">
+                        <div className="relative bg-[#ef5f5f] text-white font-bubblegum text-2xl px-12 py-5 rounded-[2rem_4rem_2rem_5rem] shadow-lg hover:shadow-xl transition-all">
+                            Explore All Classes
+                        </div>
                     </Link>
                 </div>
+            </div>
+
+            {/* --- FIXED: THE KID WALKS INDEPENDENTLY AT BOTTOM --- */}
+            <div 
+                ref={kidRef} 
+                className="absolute bottom-6 left-0 z-50 pointer-events-none"
+            >
+                <div className="relative w-36 h-36 md:w-44 md:h-44">
+                    <Image 
+                        src="/kid-character.gif" 
+                        alt="Walking Kid" 
+                        fill
+                        className="object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.15)]"
+                        unoptimized 
+                        priority
+                    />
+                </div>
+            </div>
+
+            {/* Bottom Scallop */}
+            <div className="absolute bottom-0 left-0 w-full z-20 pointer-events-none rotate-180">
+                <svg viewBox="0 0 1200 24" className="w-full h-12 block fill-white" preserveAspectRatio="none">
+                    <path d={scallopPath} />
+                </svg>
             </div>
         </section>
     );

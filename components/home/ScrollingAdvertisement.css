@@ -1,0 +1,29 @@
+.scrolling-advertisement {
+    width: 100%;
+    overflow: hidden;
+    /* background-color: #f8f8f8; */
+    padding: 1rem 0;
+    white-space: nowrap;
+}
+
+.scrolling-text {
+    display: inline-block;
+    animation: scroll-left 40s linear infinite;
+}
+
+.scrolling-text p {
+    display: inline-block;
+    margin: 0;
+    font-size: 1.2rem;
+    color: #333;
+    padding-right: 2rem;
+}
+
+@keyframes scroll-left {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(-100%);
+    }
+}

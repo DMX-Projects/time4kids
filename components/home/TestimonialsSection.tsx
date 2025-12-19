@@ -30,32 +30,51 @@ const TestimonialsSection = () => {
         },
     ];
 
+    // SVG path for the scallop border
+    const scallopPath = "M0,0 V12 Q15,24 30,12 T60,12 T90,12 T120,12 T150,12 T180,12 T210,12 T240,12 T270,12 T300,12 T330,12 T360,12 T390,12 T420,12 T450,12 T480,12 T510,12 T540,12 T570,12 T600,12 T630,12 T660,12 T690,12 T720,12 T750,12 T780,12 T810,12 T840,12 T870,12 T900,12 T930,12 T960,12 T990,12 T1020,12 T1050,12 T1080,12 T1110,12 T1140,12 T1170,12 T1200,12 V0 Z";
+
     return (
-        <section className="py-10 bg-gradient-to-b from-gray-50 to-white">
-            <div className="container mx-auto px-4">
-                <div className="text-center mb-8">
+        <section className="relative py-24 bg-[#FFFAF5] overflow-hidden">
+            
+            {/* Top Scallop Border */}
+            <div className="absolute top-0 left-0 w-full z-20 pointer-events-none drop-shadow-[0_4px_4px_rgba(0,0,0,0.03)]">
+                <svg viewBox="0 0 1200 24" className="w-full h-12 block fill-white" preserveAspectRatio="none">
+                    <path d={scallopPath} />
+                </svg>
+            </div>
+
+            <div className="container mx-auto px-4 relative z-10">
+                <div className="text-center mb-16">
                     <h2 className="font-bubblegum text-4xl md:text-5xl mb-4 text-[#003366] tracking-wide">
                         Parent <span className="text-[#E67E22]">Testimonials</span>
                     </h2>
-                    <p className="text-lg text-gray-700 max-w-2xl mx-auto">
+                    <p className="text-lg text-gray-700 max-w-2xl mx-auto italic">
                         Hear from parents who have trusted us with their children&apos;s early education.
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
                     {testimonials.map((testimonial, index) => (
-                        <TestimonialVideo
-                            key={index}
-                            title={testimonial.title}
-                            author={testimonial.author}
-                            location={testimonial.location}
-                            videoUrl={testimonial.videoUrl}
-                            thumbnailUrl={testimonial.thumbnailUrl}
-                            isPlaying={playingIndex === index}
-                            onPlay={() => setPlayingIndex(index)}
-                        />
+                        <div key={index} className="transform transition-transform hover:-translate-y-2">
+                            <TestimonialVideo
+                                title={testimonial.title}
+                                author={testimonial.author}
+                                location={testimonial.location}
+                                videoUrl={testimonial.videoUrl}
+                                thumbnailUrl={testimonial.thumbnailUrl}
+                                isPlaying={playingIndex === index}
+                                onPlay={() => setPlayingIndex(index)}
+                            />
+                        </div>
                     ))}
                 </div>
+            </div>
+
+            {/* Bottom Scallop Border (Upside down) */}
+            <div className="absolute bottom-0 left-0 w-full z-20 pointer-events-none rotate-180 drop-shadow-[0_4px_4px_rgba(0,0,0,0.03)]">
+                <svg viewBox="0 0 1200 24" className="w-full h-12 block fill-white" preserveAspectRatio="none">
+                    <path d={scallopPath} />
+                </svg>
             </div>
         </section>
     );
