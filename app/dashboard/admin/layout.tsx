@@ -5,12 +5,12 @@ import { DashboardShell, DashboardNavItem } from "@/components/layout/DashboardS
 import { AdminDataProvider } from "@/components/dashboard/admin/AdminDataProvider";
 
 const navItems: DashboardNavItem[] = [
-    { label: "Dashboard", href: "/dashboard/admin", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { label: "Franchise", href: "/dashboard/admin/manage-franchise", icon: <Building2 className="w-4 h-4" /> },
-    { label: "Events", href: "/dashboard/admin/events", icon: <CalendarDays className="w-4 h-4" /> },
-    { label: "Careers", href: "/dashboard/admin/careers", icon: <Briefcase className="w-4 h-4" /> },
-    { label: "Enquiries", href: "/dashboard/admin/enquiries", icon: <Inbox className="w-4 h-4" /> },
-    { label: "Profile", href: "/dashboard/admin/profile", icon: <UserCircle className="w-4 h-4" /> },
+    { label: "Dashboard", href: "/dashboard/admin", icon: <LayoutDashboard className="w-5 h-5" /> },
+    { label: "Franchise", href: "/dashboard/admin/manage-franchise", icon: <Building2 className="w-5 h-5" /> },
+    { label: "Events", href: "/dashboard/admin/events", icon: <CalendarDays className="w-5 h-5" /> },
+    { label: "Careers", href: "/dashboard/admin/careers", icon: <Briefcase className="w-5 h-5" /> },
+    { label: "Enquiries", href: "/dashboard/admin/enquiries", icon: <Inbox className="w-5 h-5" /> },
+    { label: "Profile", href: "/dashboard/admin/profile", icon: <UserCircle className="w-5 h-5" /> },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <AdminDataProvider>
             <DashboardShell
                 role="admin"
-                brand={{ initials: "AD", title: "Admin Dashboard", subtitle: "Manage franchises and careers", accentClass: "bg-orange-500" }}
+                brand={{ initials: "AD", title: "Admin Dashboard",accentClass: "bg-orange-500" }}
                 navItems={navItems}
                 themeKey="orange"
             >
