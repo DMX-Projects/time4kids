@@ -1,29 +1,32 @@
 .scrolling-advertisement {
     width: 100%;
     overflow: hidden;
-    /* background-color: #f8f8f8; */
-    padding: 1rem 0;
+    padding: 0.8rem 0;
     white-space: nowrap;
+    position: relative;
 }
 
 .scrolling-text {
-    display: inline-block;
-    animation: scroll-left 40s linear infinite;
+    display: flex;
+    white-space: nowrap;
+    animation: scroll-left-smooth 60s linear infinite;
+    width: fit-content;
 }
 
-.scrolling-text p {
+.marquee-content {
     display: inline-block;
-    margin: 0;
-    font-size: 1.2rem;
-    color: #333;
-    padding-right: 2rem;
+    padding-right: 4rem;
+    font-size: 1.1rem;
+    color: #f97316;
+    font-weight: 500;
 }
 
-@keyframes scroll-left {
-    from {
-        transform: translateX(100%);
+@keyframes scroll-left-smooth {
+    0% {
+        transform: translateX(0);
     }
-    to {
-        transform: translateX(-100%);
+
+    100% {
+        transform: translateX(-50%);
     }
 }

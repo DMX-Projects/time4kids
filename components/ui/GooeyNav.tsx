@@ -17,6 +17,12 @@ export interface GooeyNavProps {
   timeVariance?: number;
   colors?: number[];
   initialActiveIndex?: number;
+  /** Text color for normal (non-active) links */
+  textColor?: string;
+  /** Background color for the pill when active */
+  pillColor?: string;
+  /** Text color inside the active pill */
+  activeTextColor?: string;
 }
 
 const GooeyNav: React.FC<GooeyNavProps> = ({
@@ -27,7 +33,10 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
   particleR = 100,
   timeVariance = 300,
   colors = [1, 2, 3, 1, 2, 3, 1, 4],
-  initialActiveIndex = 0
+  initialActiveIndex = -1,
+  textColor = '#555',
+  pillColor = '#ffffff',
+  activeTextColor = '#ffffff'
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLUListElement>(null);
@@ -46,10 +55,10 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
   useEffect(() => {
     const current = normalize(pathname);
     const index = items.findIndex(item => normalize(item.href) === current);
-    if (index !== -1) {
-      setActiveIndex(index);
-    }
+    setActiveIndex(index);
   }, [pathname, items]);
+  // Lightweight theme class for common presets (avoids inline styles for CSS variables)
+  const themeClass = textColor === '#f97316' && pillColor === '#f97316' ? 'nav--orange' : '';
 
   const noise = (n = 1) => n / 2 - Math.random() * n;
   const getXY = (distance: number, pointIndex: number, totalPoints: number): [number, number] => {
@@ -151,9 +160,24 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
   useEffect(() => {
     if (!navRef.current || !containerRef.current) return;
     const activeLi = navRef.current.querySelectorAll('li')[activeIndex] as HTMLElement;
-    if (activeLi) {
+    if (activeLi && activeIndex !== -1) {
       updateEffectPosition(activeLi);
-      textRef.current?.classList.add('active');
+      if (textRef.current) {
+        textRef.current.classList.add('active');
+        textRef.current.style.opacity = '1';
+      }
+      if (filterRef.current) {
+        filterRef.current.style.opacity = '1';
+      }
+    } else {
+      if (textRef.current) {
+        textRef.current.classList.remove('active');
+        textRef.current.style.opacity = '0';
+        textRef.current.innerText = '';
+      }
+      if (filterRef.current) {
+        filterRef.current.style.opacity = '0';
+      }
     }
     const resizeObserver = new ResizeObserver(() => {
       const currentActiveLi = navRef.current?.querySelectorAll('li')[activeIndex] as HTMLElement;
@@ -181,24 +205,28 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             place-items: center;
             z-index: 1;
           }
-          .effect.text {
-            color: #555;
+              .effect.text {
+            color: var(--nav-text-color, #555);
             transition: color 0.3s ease;
           }
+          /* Preset theme helpers (avoid inline styles) */
+          .nav--orange {
+            --nav-text-color: #f97316;
+            --pill-bg: #f97316;
+            --active-text-color: #ffffff;
+          }
           .effect.text.active {
-            color: #333;
+            color: var(--nav-text-color, #555);
           }
           .effect.filter {
-            /* filter: blur(7px) contrast(100) blur(0); */
-            /* mix-blend-mode: lighten; */
             filter: none;
           }
-          /* .effect.filter::before removed to fix black shade */
+          /* Background pill for active item uses CSS variable */
           .effect.filter::after {
             content: "";
             position: absolute;
             inset: 0;
-            background: white;
+            background: var(--pill-bg, white);
             transform: scale(0);
             opacity: 0;
             z-index: -1;
@@ -281,10 +309,14 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             }
           }
           li.active {
-            color: black;
+            color: var(--active-text-color, #fff);
             text-shadow: none;
           }
-          li.active::after {
+          /* Hide the original link text when active to avoid duplication with Gooey effect text */
+          li.active a {
+            opacity: 0;
+          }
+          li.active ::after {
             opacity: 1;
             transform: scale(1);
           }
@@ -293,27 +325,31 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             position: absolute;
             inset: 0;
             border-radius: 8px;
-            background: white;
+            background: var(--pill-bg, white);
             opacity: 0;
             transform: scale(0);
             transition: all 0.3s ease;
             z-index: -1;
           }
       `}} />
-      <div className="relative" ref={containerRef}>
-        <nav className="flex relative" style={{ transform: 'translate3d(0,0,0.01px)' }}>
+      <div
+        className="relative"
+        ref={containerRef}
+        style={{
+          '--nav-text-color': textColor,
+          '--pill-bg': pillColor,
+          '--active-text-color': activeTextColor
+        } as React.CSSProperties}
+      >
+        <nav className="flex relative">
           <ul
             ref={navRef}
             className="flex gap-8 list-none p-0 px-4 m-0 relative z-[3]"
-            style={{
-              color: '#555',
-              textShadow: 'none'
-            }}
           >
             {items.map((item, index) => (
               <li
                 key={index}
-                className={`rounded-full relative cursor-pointer transition-[background-color_color_box-shadow] duration-300 ease shadow-[0_0_0.5px_1.5px_transparent] text-white ${activeIndex === index ? 'active' : ''
+                className={`rounded-full relative cursor-pointer transition-[background-color,color,box-shadow] duration-300 ease ${activeIndex === index ? 'active' : ''
                   }`}
               >
                 <Link
