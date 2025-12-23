@@ -19,6 +19,7 @@ html {}
 body {
   font-family: var(--font-quicksand), var(--font-inter), system-ui, sans-serif;
   overflow-x: hidden;
+  color: #333;
 }
 
 /* Accessibility - respect reduced motion */
@@ -98,6 +99,33 @@ body {
   .glow-on-hover:hover {
     box-shadow: 0 0 20px rgba(249, 115, 22, 0.4),
       0 0 40px rgba(249, 115, 22, 0.2);
+  }
+
+  /* Global section spacing rule - max 50px */
+  .section-gap {
+    @apply py-8 md:py-12;
+    /* Results in 32px to 48px vertical spacing */
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  /* Card padding rule - 15px to 30px */
+  .card-padding {
+    @apply p-4 md:p-6 lg:p-7;
+    /* 16px to 28px */
+  }
+
+  /* Global Button rule - max 45px height */
+  .btn-base {
+    @apply px-6 py-3 flex items-center justify-center transition-all duration-300 rounded-full font-semibold;
+    height: 45px;
+    max-height: 45px;
+    line-height: 1;
+  }
+
+  /* Consistent rounded corners - 24px */
+  .rounded-brand {
+    border-radius: 24px;
   }
 }
 
@@ -435,6 +463,7 @@ body {
 }
 
 @keyframes float-vertical {
+
   0%,
   100% {
     transform: translateY(0);
@@ -475,6 +504,7 @@ body {
 }
 
 @keyframes wave {
+
   0%,
   100% {
     height: 4px;
@@ -715,5 +745,6 @@ body {
   h5,
   h6 {
     font-family: var(--font-fredoka), system-ui, sans-serif;
+    @apply tracking-tight;
   }
 }

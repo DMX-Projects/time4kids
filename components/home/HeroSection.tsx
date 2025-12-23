@@ -165,14 +165,25 @@ const HeroSection = () => {
 
     return (
         <div className="relative min-h-[90vh] flex items-center overflow-hidden bg-[#FFF5F0]">
-            {/* Playful Zig-Zag Background using SVG */}
-            <div className="absolute inset-0 pointer-events-none z-0">
-                <svg className="absolute top-0 right-0 w-1/2 h-full opacity-10" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <path d="M0 0 L10 10 L20 0 L30 10 L40 0 L50 10 L60 0 L70 10 L80 0 L90 10 L100 0 V100 H0 Z" fill="#FF9F1C" />
-                </svg>
-                <div className="absolute top-20 left-10 w-32 h-32 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-                <div className="absolute top-40 right-10 w-32 h-32 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-                <div className="absolute -bottom-8 left-20 w-32 h-32 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+            {/* Full-width background carousel (crossfade) */}
+            <div className="absolute inset-0 z-0" role="region" aria-label="Hero background carousel">
+                {slides.map((s, i) => (
+                    <div key={i} className={`absolute inset-0 transition-opacity duration-1000 ${i === currentSlide ? 'opacity-100 z-0' : 'opacity-0 -z-10'}`} aria-hidden={i === currentSlide ? 'false' : 'true'}>
+                        <div className="absolute inset-0 -z-10">
+                            <Image src={s.image} alt={s.title} fill className="object-cover object-center" sizes="100vw" priority />
+                        </div>
+                    </div>
+                ))}
+
+                {/* Dim overlay for contrast */}
+                <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+
+                {/* Playful decorative blobs on top of overlay (subtle) */}
+                <div className="pointer-events-none">
+                    <div className="absolute top-20 left-10 w-32 h-32 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob -z-0"></div>
+                    <div className="absolute top-40 right-10 w-32 h-32 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob animation-delay-2000 -z-0"></div>
+                    <div className="absolute -bottom-8 left-20 w-32 h-32 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-60 animate-blob animation-delay-4000 -z-0"></div>
+                </div>
             </div>
 
             <div className="container mx-auto px-4 relative z-20">
@@ -189,15 +200,15 @@ const HeroSection = () => {
 
                         {/* Slide Content */}
                         <div className="space-y-4">
-                            <h1 ref={titleRef} className="font-luckiest text-5xl md:text-6xl lg:text-7xl leading-tight text-[#003366] tracking-wide" style={{ textShadow: '2px 4px 6px rgba(0,0,0,0.15)' }}>
+                            <h1 ref={titleRef} className="font-luckiest text-5xl md:text-6xl lg:text-7xl leading-tight text-white tracking-wide" style={{ textShadow: '2px 6px 12px rgba(0,0,0,0.45)' }}>
                                 {slides[currentSlide].title}
                             </h1>
 
-                            <p ref={subtitleRef} className="text-3xl md:text-4xl font-bubblegum text-[#E67E22]" style={{ textShadow: '1px 2px 3px rgba(0,0,0,0.1)' }}>
+                            <p ref={subtitleRef} className="text-3xl md:text-4xl font-bubblegum text-orange-400" style={{ textShadow: '1px 2px 3px rgba(0,0,0,0.2)' }}>
                                 {slides[currentSlide].subtitle}
                             </p>
 
-                            <p ref={descRef} className="text-xl text-gray-700 leading-relaxed max-w-xl font-medium">
+                            <p ref={descRef} className="text-xl text-white/90 leading-relaxed max-w-xl font-medium">
                                 {slides[currentSlide].description}
                             </p>
                         </div>
@@ -240,10 +251,11 @@ const HeroSection = () => {
                             {slides.map((_, index) => (
                                 <button
                                     key={index}
+                                    aria-label={`Go to slide ${index + 1}`}
                                     onClick={() => setCurrentSlide(index)}
                                     className={`h-3 transition-all rounded-full ${index === currentSlide
-                                        ? 'w-10 bg-orange-500'
-                                        : 'w-3 bg-gray-300 hover:bg-orange-300'
+                                        ? 'w-10 bg-white'
+                                        : 'w-3 bg-white/40 hover:bg-white/70'
                                         }`}
                                 />
                             ))}
@@ -251,46 +263,13 @@ const HeroSection = () => {
                     </div>
 
 
-                    {/* Right Content - Organic Shape Image */}
+                    {/* Right Content - removed decorative card (keeps spacing) */}
                     <div ref={imageRef} className="relative mt-10 lg:mt-0">
-                        {/* Organic Blob Shape Background for Image */}
-                        <div className="relative animate-float-slow">
-                            {/* The "Blob" Mask/Border Radius */}
-                            <div className="relative overflow-hidden shadow-2xl transform transition-transform duration-500 rounded-[3rem_2rem_4rem_2rem] border-4 border-white">
-                                <div className={`aspect-[4/3] bg-gradient-to-br from-orange-100 to-blue-100 flex items-center justify-center transition-colors duration-500`}>
-                                    <div className="relative w-full h-full">
-                                        <Image
-                                            key={currentSlide}
-                                            src={slides[currentSlide].image}
-                                            alt={slides[currentSlide].title}
-                                            fill
-                                            sizes="(max-width: 1024px) 100vw, 50vw"
-                                            className="object-cover object-center animate-fade-in"
-                                            priority
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                        {/* Decorative Background Blobs (subtle) */}
+                        <div className="absolute -top-10 -right-10 w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 -z-10 animate-pulse-soft"></div>
+                        <div className="absolute -bottom-10 -left-10 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 -z-10 animate-pulse-soft" style={{ animationDelay: '1s' }}></div>
 
-                            {/* Decorative Background Blobs behind the image */}
-                            <div className="absolute -top-10 -right-10 w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 -z-10 animate-pulse-soft"></div>
-                            <div className="absolute -bottom-10 -left-10 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50 -z-10 animate-pulse-soft" style={{ animationDelay: '1s' }}></div>
-                        </div>
-
-                        {/* Floating Stats Badges - Asymmetric & Playful */}
-                        <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl p-6 animate-float z-30 border-b-4 border-blue-500 rotate-[-3deg] hover:rotate-0 transition-transform">
-                            <div className="flex items-center gap-3">
-                                <div className="text-4xl font-black text-blue-500">250+</div>
-                                <div className="text-sm text-gray-600 font-bold leading-tight">Pre-<br />schools</div>
-                            </div>
-                        </div>
-
-                        <div className="absolute top-8 -right-8 bg-white rounded-2xl shadow-xl p-5 animate-float z-30 border-b-4 border-orange-500 rotate-[3deg] hover:rotate-0 transition-transform" style={{ animationDelay: '1.5s' }}>
-                            <div className="flex flex-col items-center">
-                                <div className="text-4xl font-black text-orange-500">17+</div>
-                                <div className="text-sm text-gray-600 font-bold">Years Legacy</div>
-                            </div>
-                        </div>
+                        {/* Floating stat badges removed per request */}
                     </div>
                 </div>
             </div>
