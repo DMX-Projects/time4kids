@@ -156,6 +156,107 @@ export default function FranchisePage() {
                 </div>
             </section>
 
+            {/* Main Branch Location */}
+            <section className="py-20 bg-white">
+                <div className="container mx-auto px-4">
+                    <div className="text-center mb-12">
+                        <h2 className="font-bubblegum text-4xl mb-4 text-[#003366] tracking-wide">
+                            Visit Our <span className="text-[#E67E22]">Main Branch</span>
+                        </h2>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                            Come meet our team and explore our flagship centre
+                        </p>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid md:grid-cols-2 gap-8">
+                            {/* Map */}
+                            <div className="rounded-3xl overflow-hidden shadow-xl h-[400px] md:h-[500px]">
+                                <iframe
+                                    src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=Siddamsetty+Complex+Parklane+Secunderabad+500003&zoom=15"
+                                    width="100%"
+                                    height="100%"
+                                    style={{ border: 0 }}
+                                    allowFullScreen
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer-when-downgrade"
+                                    title="T.I.M.E. Kids Corporate Office Location"
+                                ></iframe>
+                            </div>
+
+                            {/* Contact Details */}
+                            <Card className="flex flex-col justify-center">
+                                <h3 className="font-bubblegum text-2xl mb-6 text-gray-900 tracking-wide">
+                                    T.I.M.E. Kids Corporate Office
+                                </h3>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-start space-x-3">
+                                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                                            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-gray-900 mb-1">Address</p>
+                                            <p className="text-gray-600 leading-relaxed">
+                                                Triumphant Institute of Management Education Pvt. (T.I.M.E.)<br />
+                                                95B, Second Floor<br />
+                                                Siddamsetty Complex<br />
+                                                Parklane, Secunderabad<br />
+                                                500003
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start space-x-3">
+                                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                                            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-gray-900 mb-1">Phone</p>
+                                            <p className="text-gray-600">040-40088300</p>
+                                            <p className="text-sm text-gray-500 mt-1">Fax: 040-27847334</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start space-x-3">
+                                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                                            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-gray-900 mb-1">Email</p>
+                                            <p className="text-gray-600">info@timekidspreschools.com</p>
+                                            <p className="text-sm text-gray-500 mt-1">Franchise: franchise@timekidspreschools.com</p>
+                                            <p className="text-sm text-gray-500">Cell: 8096355335</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4">
+                                        <a
+                                            href="https://www.google.com/maps/dir/?api=1&destination=Siddamsetty+Complex+Secunderabad+500003"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center space-x-2 bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors shadow-md hover:shadow-lg"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                            </svg>
+                                            <span>Get Directions</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Download Brochure */}
             <section className="py-20 bg-gradient-to-br from-primary-500 to-primary-600 text-white">
                 <div className="container mx-auto px-4">

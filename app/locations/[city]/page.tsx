@@ -4,9 +4,10 @@ import React from 'react';
 import { centres } from '@/data/centres';
 import Card from '@/components/ui/Card';
 import TwinklingStars from '@/components/animations/TwinklingStars';
-import { MapPin, Phone } from 'lucide-react';
+import { MapPin, Phone, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
+import { slugify } from '@/lib/utils';
 
 export default function CityLocationsPage({ params }: { params: { city: string } }) {
     const city = decodeURIComponent(params.city);
@@ -41,24 +42,36 @@ export default function CityLocationsPage({ params }: { params: { city: string }
                         {filteredCentres.length > 0 ? (
                             <div className="grid md:grid-cols-2 gap-6">
                                 {filteredCentres.map(centre => (
-                                    <Card key={centre.id} className="hover:shadow-xl transition-shadow border border-gray-100">
-                                        <div className="flex items-start space-x-4">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
-                                                <MapPin className="w-6 h-6 text-white" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h3 className="font-display font-bold text-lg mb-2 text-gray-900">{centre.name}</h3>
-                                                <p className="text-gray-600 text-sm mb-1">{centre.address}</p>
-                                                <p className="text-gray-600 text-sm mb-3 font-semibold">{centre.city}, {centre.state}</p>
-                                                <div className="flex items-center space-x-2 text-primary-600">
-                                                    <Phone className="w-4 h-4" />
-                                                    <a href={`tel:${centre.phone}`} className="font-semibold hover:underline">
-                                                        {centre.phone}
-                                                    </a>
+                                    <Link
+                                        key={centre.id}
+                                        href={`/locations/${params.city}/${slugify(centre.name)}`}
+                                        className="block"
+                                    >
+                                        <Card className="hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-primary-200 group h-full">
+                                            <div className="flex items-start space-x-4">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                                                    <MapPin className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h3 className="font-display font-bold text-lg mb-2 text-gray-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{centre.name}</h3>
+                                                    <p className="text-gray-600 text-sm mb-1">{centre.address}</p>
+                                                    <p className="text-gray-600 text-sm mb-3 font-semibold">{centre.city}, {centre.state}</p>
+
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center space-x-2 text-primary-600">
+                                                            <Phone className="w-4 h-4" />
+                                                            <span className="font-semibold text-sm">
+                                                                {centre.phone}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-primary-500 font-bold text-sm flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            View Details <ChevronRight className="w-4 h-4 ml-1" />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </Card>
+                                        </Card>
+                                    </Link>
                                 ))}
                             </div>
                         ) : (

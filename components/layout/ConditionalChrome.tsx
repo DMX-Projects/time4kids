@@ -6,7 +6,7 @@ import React from "react";
 // Renders children unless the current route is a dashboard view.
 export default function ConditionalChrome({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const hideChrome = pathname.startsWith("/dashboard");
+    const hideChrome = pathname.startsWith("/dashboard") || (pathname.startsWith("/locations/") && pathname.split('/').length > 3);
 
     if (hideChrome) return null;
     return <>{children}</>;
