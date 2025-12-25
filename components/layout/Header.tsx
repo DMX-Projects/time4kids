@@ -12,7 +12,7 @@ export default function Header() {
     useEffect(() => {
         // Use Lenis scroll event if available for better performance
         const lenis = (window as any).lenis;
-        
+
         let rafId: number | null = null;
         const handleScroll = () => {
             if (rafId === null) {
@@ -216,7 +216,7 @@ export default function Header() {
                     background-color: #fff;
                     padding: 10px 0;
                     position: relative;
-                    z-index: 99;
+                    z-index: 1001;
                     transition: all 0.4s ease;
                 }
 
@@ -268,13 +268,13 @@ export default function Header() {
                 }
 
                 .logo::before {
-                    top: -50px;
-                    background: url(/top-courve.png) no-repeat center top;
+                    top: -38px;
+                    background: url(/images/top-courve.png) no-repeat center top;
                 }
 
                 .logo::after {
                     bottom: -50px;
-                    background: url(/bottom-courve.png) no-repeat center top;
+                    background: url(/images/bottom-courve.png) no-repeat center top;
                 }
 
                 .header-sticky .logo::before,
