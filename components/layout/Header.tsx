@@ -1,144 +1,455 @@
 'use client';
 
-import Image from 'next/image';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import GooeyNav from '@/components/ui/GooeyNav';
-import { useState, useMemo } from 'react';
+import Image from 'next/image';
 
-const Header = () => {
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const menuItems = useMemo(() => [
-        { label: 'Home', href: '/' },
-        { label: 'About Us', href: '/about' },
-        { label: 'Programs', href: '/programs' },
-        { label: 'Admission', href: '/admission' },
-        { label: 'Locate Centre', href: '/locate-centre' },
-        { label: 'Franchise', href: '/franchise' },
-        { label: 'Contact', href: '/contact' },
-    ], []);
+export default function Header() {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isSticky, setIsSticky] = useState(false);
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
-    const leftNav = useMemo(() => menuItems.slice(0, 4), [menuItems]);
-    const rightNav = useMemo(() => menuItems.slice(4), [menuItems]);
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsSticky(window.scrollY >= 35);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     return (
-        <header className="sticky top-0 left-0 right-0 z-50 bg-white">
-            <div className="container mx-auto px-4 flex items-center justify-between h-20 md:h-24 overflow-visible">
-                {/* Left Nav (Desktop) */}
-                <div className="hidden lg:flex flex-1 justify-end pr-8">
-                    <GooeyNav
-                        items={leftNav}
-                        textColor={'#333'}
-                        pillColor={'#f97316'}
-                        activeTextColor={'#ffffff'}
-                    />
-                </div>
-
-                {/* Logo (Centered) */}
-                <div className="flex-shrink-0 px-4">
-                    <Link href="/" className="flex items-center">
-                        <div className="relative w-32 h-12 md:w-44 md:h-16">
-                            <Image src="/logo.jpg" alt="T.I.M.E. Kids" fill className="object-contain" priority />
-                        </div>
-                    </Link>
-                </div>
-
-                {/* Right Nav + Login (Desktop) */}
-                <div className="hidden lg:flex flex-1 items-center justify-start pl-8 gap-6">
-                    <GooeyNav
-                        items={rightNav}
-                        textColor={'#333'}
-                        pillColor={'#f97316'}
-                        activeTextColor={'#ffffff'}
-                    />
-                    <Link
-                        href="/login/"
-                        className="btn-base bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg transition-transform hover:scale-105 active:scale-95 px-8 font-bold"
-                    >
-                        Login
-                    </Link>
-                </div>
-
-                {/* Mobile Toggle */}
-                <button
-                    className="lg:hidden p-2 rounded-md hover:bg-gray-100"
-                    aria-label="Toggle navigation"
-                    onClick={() => setMobileOpen(v => !v)}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-                        {mobileOpen ? (
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        ) : (
-                            <path d="M3 12h18M3 6h18M3 18h18" />
-                        )}
-                    </svg>
-                </button>
-            </div>
-
-            {/* Mobile Menu */}
-            {mobileOpen && (
-                <div id="mobile-nav" aria-hidden="false" className="lg:hidden border-t bg-white absolute top-full left-0 w-full shadow-xl">
-                    <div className="container mx-auto px-4 py-6">
-                        <ul className="flex flex-col gap-4">
-                            {menuItems.map((item, idx) => (
-                                <li key={idx}>
-                                    <Link
-                                        href={item.href}
-                                        className="text-lg font-medium text-gray-700 hover:text-orange-500 block"
-                                        onClick={() => setMobileOpen(false)}
-                                    >
-                                        {item.label}
-                                    </Link>
-                                </li>
-                            ))}
-                            <li className="pt-2 border-t mt-2">
-                                <Link
-                                    href="/login/"
-                                    className="btn-base bg-secondary-blue text-white w-full"
-                                    onClick={() => setMobileOpen(false)}
-                                >
-                                    Login
-                                </Link>
+        <>
+            {/* HEADER TOP */}
+            <div className="header-top">
+                <div className="container mx-auto px-4">
+                    <div className="header-top-content">
+                        <p>T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E.</p>
+                        <ul className="header-top-nav">
+                            <li><Link href="/">HOME</Link></li>
+                            <li><Link href="/careers">CAREERS</Link></li>
+                            <li><Link href="contact">CONTACT US</Link></li>
+                            <li>
+                                 
                             </li>
                         </ul>
                     </div>
                 </div>
-            )}
-            {/* Scalloped bottom to visually separate header from hero */}
-            <div className="absolute top-[100%] left-0 w-full leading-[0] overflow-hidden pointer-events-none -mt-[1px]">
-                <svg
-                    className="w-full h-5 block"
-                    viewBox="0 0 1200 15"
-                    preserveAspectRatio="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                        d="M0,0 H1200 V0 
-                           C1185,0 1185,12 1170,12 S1155,0 1140,0 
-                           S1125,12 1110,12 S1095,0 1080,0 
-                           S1065,12 1050,12 S1035,0 1020,0 
-                           S1005,12 990,12 S975,0 960,0 
-                           S945,12 930,12 S915,0 900,0 
-                           S885,12 870,12 S855,0 840,0 
-                           S825,12 810,12 S795,0 780,0 
-                           S765,12 750,12 S735,0 720,0 
-                           S705,12 690,12 S675,0 660,0 
-                           S645,12 630,12 S615,0 600,0 
-                           S585,12 570,12 S555,0 540,0 
-                           S525,12 510,12 S495,0 480,0 
-                           S465,12 450,12 S435,0 420,0 
-                           S405,12 390,12 S375,0 360,0 
-                           S345,12 330,12 S315,0 300,0 
-                           S285,12 270,12 S255,0 240,0 
-                           S225,12 210,12 S195,0 180,0 
-                           S165,12 150,12 S135,0 120,0 
-                           S105,12 90,0 S75,0 60,0 
-                           S45,12 30,12 S15,0 0,0 Z"
-                        fill="#ffffff"
-                    />
-                </svg>
             </div>
-        </header>
-    );
-};
 
-export default Header;
+            {/* HEADER */}
+            <header className={`header ${isSticky ? 'header-sticky' : ''}`}>
+                <div className="container mx-auto px-4">
+                    <div className="header-inner">
+                        {/* Logo - Centered with curves */}
+                        <div className="logo">
+                            <Link href="/">
+                                <Image
+                                    src="/logo.jpg"
+                                    alt="T.I.M.E. Kids Logo"
+                                    width={200}
+                                    height={80}
+                                    priority
+                                />
+                            </Link>
+                        </div>
+
+                        {/* Navigation */}
+                        <div className="header-nav">
+                            {/* Mobile Menu Button */}
+                            <button
+                                className="nav-button"
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                aria-label="Toggle menu"
+                            >
+                                <i className="fas fa-bars"></i>
+                            </button>
+
+                            {/* Main Navigation */}
+                            <nav className={`main-nav ${isMenuOpen ? 'nav-open' : ''}`}>
+                                <ul className="nav-list">
+                                    <li
+                                        className={`nav-item nav-submenu ${openDropdown === 'about' ? 'nav-active' : ''}`}
+                                        onMouseEnter={() => setOpenDropdown('about')}
+                                        onMouseLeave={() => setOpenDropdown(null)}
+                                    >
+                                        <Link href="/about">About Us</Link>
+                                        <ul className="dropdown-menu">
+                                            <li><Link href="/about/programme">Our Programme</Link></li>
+                                            <li><Link href="/about/infrastructure">Our Infrastructure</Link></li>
+                                            <li><Link href="/about/teachers">Our Teachers</Link></li>
+                                            <li><Link href="/about/curriculum">Our Curriculum</Link></li>
+                                            <li><Link href="/about/strengths">Our Strengths</Link></li>
+                                            <li><Link href="/about/franchise-network">Franchise Network</Link></li>
+                                            <li><Link href="/about/time">About T.I.M.E.</Link></li>
+                                        </ul>
+                                    </li>
+                                    <li className="nav-item">
+                                        <Link href="/programs">our Programs</Link>
+                                    </li>
+                                    <li className="nav-item">
+                                        <Link href="/franchise">Franchise Opportunity</Link>
+                                    </li>
+                                </ul>
+
+                                <ul className="nav-list nav-list-right">
+                                    <li className="nav-item">
+                                        <Link href="/media">Media</Link>
+                                    </li>
+                                    <li className="nav-item">
+                                        <Link href="/faq">Faq's</Link>
+                                    </li>
+                                    <li className="nav-item">
+                                        {/* <Link href="/parents">Parent's Corner</Link> */}
+                                    </li>
+                                </ul>
+
+                                <Link href="/login" className="btn-login">
+                                    LOGIN
+                                </Link>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <style jsx>{`
+                /* HEADER TOP */
+                .header-top {
+                    background-image: linear-gradient(to right, #fd5e60, #f77542, #e78e29, #cfa51a, #b0b929, #89c249, #5dc86c, #00cc90, #00c5b4, #00bbcf, #00afde, #19a0df);
+                }
+
+                .header-top-content {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    position: relative;
+                    z-index: 999;
+                }
+
+                .header-top p {
+                    margin: 0;
+                    padding: 0;
+                    color: #fff;
+                    line-height: 28px;
+                    font-size: 13px;
+                }
+
+                .header-top-nav {
+                    list-style: none;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    align-items: center;
+                    line-height: 28px;
+                }
+
+                .header-top-nav li {
+                    display: inline-block;
+                    padding-left: 15px;
+                    position: relative;
+                }
+
+                .header-top-nav li::before {
+                    content: '|';
+                    color: #fff;
+                    padding-right: 15px;
+                }
+
+                .header-top-nav li:first-child::before {
+                    display: none;
+                }
+
+                .header-top-nav li :global(a) {
+                    color: #fff;
+                    text-decoration: none;
+                    transition: all 0.5s ease;
+                }
+
+                .header-top-nav li :global(a:hover) {
+                    color: #fee52c;
+                }
+
+                .header-top-nav li span {
+                    font-weight: 700;
+                }
+
+                .header-top-nav li span i {
+                    font-size: 22px;
+                    margin-right: 10px;
+                }
+
+                /* HEADER */
+                .header {
+                    background-color: #fff;
+                    padding: 10px 0;
+                    position: relative;
+                    z-index: 99;
+                    transition: all 0.4s ease;
+                }
+
+                .header-sticky {
+                    position: fixed;
+                    width: 100%;
+                    top: 0;
+                    animation: smoothScroll 1s forwards;
+                    box-shadow: 0px -1px 15px rgb(32 43 42 / 40%);
+                }
+
+                @keyframes smoothScroll {
+                    0% {
+                        transform: translateY(-40px);
+                    }
+                    100% {
+                        transform: translateY(0px);
+                    }
+                }
+
+                .header-inner {
+                    position: relative;
+                    min-height: 80px;
+                }
+
+                /* Logo - Centered with curves */
+                .logo {
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    top: 0;
+                    width: 100%;
+                    text-align: center;
+                    z-index: 999;
+                }
+
+                .logo::before,
+                .logo::after {
+                    content: '';
+                    display: block;
+                    width: 100%;
+                    height: 50px;
+                    margin: 0 auto;
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    transition: 0.4s;
+                    background-size: auto 50px;
+                }
+
+                .logo::before {
+                    top: -50px;
+                    background: url(/top-courve.png) no-repeat center top;
+                }
+
+                .logo::after {
+                    bottom: -50px;
+                    background: url(/bottom-courve.png) no-repeat center top;
+                }
+
+                .header-sticky .logo::before,
+                .header-sticky .logo::after {
+                    display: none;
+                }
+
+                .logo :global(a) {
+                    position: relative;
+                    z-index: 9999;
+                    display: inline-block;
+                }
+
+                /* Navigation */
+                .header-nav {
+                    padding-top: 20px;
+                    width: 100%;
+                }
+
+                .main-nav {
+                    display: flex;
+                    width: 100%;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+
+                .nav-list {
+                    list-style: none;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    position: relative;
+                    z-index: 999;
+                    line-height: 40px;
+                    text-transform: uppercase;
+                    font-weight: 600;
+                }
+
+                .nav-list-right {
+                    margin-left: auto;
+                    margin-right: 20px;
+                }
+
+                .nav-item {
+                    padding-right: 10px;
+                    position: relative;
+                }
+
+                .nav-item :global(a) {
+                    color: #333;
+                    display: block;
+                    padding: 0 8px;
+                    border-radius: 0;
+                    border-top-left-radius: 14px;
+                    border-bottom-right-radius: 14px;
+                    background: #fff;
+                    text-decoration: none;
+                    transition: all 0.3s ease;
+                }
+
+                .nav-item :global(a:hover),
+                .nav-item.nav-active > :global(a) {
+                    background: #f3c443;
+                    color: #0d538e;
+                }
+
+                /* Dropdown */
+                .dropdown-menu {
+                    position: absolute;
+                    left: 0;
+                    top: 42px;
+                    display: none;
+                    min-width: 200px;
+                    background: #fff;
+                    border-radius: 5px;
+                    overflow: hidden;
+                    padding: 0;
+                    list-style: none;
+                    margin: 0;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                    z-index: 9999;
+                }
+
+                .nav-submenu:hover .dropdown-menu,
+                .nav-submenu.nav-active .dropdown-menu {
+                    display: block;
+                }
+
+                .dropdown-menu li {
+                    padding: 0;
+                }
+
+                .dropdown-menu li :global(a) {
+                    background: none;
+                    border-radius: 0;
+                    font-size: 15px;
+                    font-weight: 600;
+                    text-transform: none;
+                    padding: 8px 15px;
+                }
+
+                .dropdown-menu li :global(a:hover) {
+                    background: #f3c443;
+                    color: #fff;
+                }
+
+                /* Mobile Menu Button */
+                .nav-button {
+                    display: none;
+                    float: right;
+                    background: #e46e1a;
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 100%;
+                    text-align: center;
+                    line-height: 50px;
+                    margin: 5px 15px 0 0;
+                    color: #fff;
+                    font-size: 18px;
+                    border: none;
+                    cursor: pointer;
+                    position: absolute;
+                    right: 0;
+                    top: 10px;
+                    z-index: 999;
+                }
+
+                /* Responsive */
+                @media (max-width: 998px) {
+                    .header-top-content {
+                        display: block;
+                        text-align: center;
+                    }
+
+                    .header-top p {
+                        line-height: 22px;
+                        padding: 10px 0;
+                    }
+
+                    .header-top-nav {
+                        width: 100%;
+                        line-height: 30px;
+                        justify-content: center;
+                    }
+
+                    .nav-button {
+                        display: block;
+                    }
+
+                    .main-nav {
+                        display: none;
+                        margin-top: 20px;
+                        flex-direction: column;
+                    }
+
+                    .main-nav.nav-open {
+                        display: flex;
+                    }
+
+                    .nav-list {
+                        display: block;
+                        width: 100%;
+                    }
+
+                    .nav-item {
+                        width: 100%;
+                        margin-top: 1px;
+                    }
+
+                    .dropdown-menu {
+                        position: relative;
+                        top: 0;
+                        border-radius: 0;
+                        box-shadow: none;
+                    }
+
+                    .logo {
+                        position: relative;
+                        text-align: left;
+                        width: 60%;
+                    }
+
+                    .logo::before,
+                    .logo::after {
+                        display: none;
+                    }
+
+                    .header-nav {
+                        padding-top: 0;
+                    }
+
+                    .btn-login {
+                        width: 100%;
+                        margin-top: 10px;
+                    }
+                }
+
+                @media (max-width: 768px) {
+                    .header-top p {
+                        font-size: 14px;
+                    }
+
+                    .header-top-nav {
+                        font-size: 14px;
+                    }
+                }
+            `}</style>
+        </>
+    );
+}
