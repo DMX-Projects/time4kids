@@ -30,7 +30,7 @@ export default function Header() {
                             <li><Link href="/careers">CAREERS</Link></li>
                             <li><Link href="contact">CONTACT US</Link></li>
                             <li>
-                                 
+
                             </li>
                         </ul>
                     </div>
@@ -94,8 +94,14 @@ export default function Header() {
 
                                 <ul className="nav-list nav-list-right">
                                     <li className="nav-item">
+                                        <Link href="/admission">Admissions</Link>
+                                    </li>
+
+                                    <li className="nav-item">
                                         <Link href="/media">Media</Link>
                                     </li>
+
+
                                     <li className="nav-item">
                                         <Link href="/faq">Faq's</Link>
                                     </li>
