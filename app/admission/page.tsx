@@ -3,9 +3,9 @@
 import React, { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { gsap } from 'gsap';
-import { 
-  Shield, Users, BookOpen, Download, Video, Sparkles, Sun, Star, Heart, 
-  Music, Smile, Brain, Palette, Dumbbell, Globe 
+import {
+    Shield, Users, BookOpen, Download, Video, Sparkles, Sun, Star, Heart,
+    Music, Smile, Brain, Palette, Dumbbell, Globe
 } from 'lucide-react';
 
 import AdmissionForm from '@/components/admission/AdmissionForm';
@@ -19,14 +19,14 @@ const InteractiveBubbles = () => {
         const container = containerRef.current;
         if (!container) return;
         const bubbles: HTMLDivElement[] = [];
-        const bubbleCount = 20; 
+        const bubbleCount = 20;
         const colors = ['bg-pink-300', 'bg-purple-300', 'bg-blue-300', 'bg-green-300', 'bg-yellow-300', 'bg-orange-300'];
 
         for (let i = 0; i < bubbleCount; i++) {
             const bubble = document.createElement('div');
-            const size = Math.random() * 40 + 10; 
+            const size = Math.random() * 40 + 10;
             const color = colors[Math.floor(Math.random() * colors.length)];
-            
+
             bubble.className = `absolute rounded-full opacity-30 mix-blend-multiply filter blur-[1px] ${color} pointer-events-auto cursor-pointer transition-transform duration-300 hover:scale-110 shadow-sm border border-slate-100/30 backdrop-blur-[1px]`;
             bubble.style.width = `${size}px`;
             bubble.style.height = `${size}px`;
@@ -83,7 +83,7 @@ export default function AdmissionPage() {
     return (
         <div className="min-h-screen relative overflow-x-hidden bg-slate-50 font-sans selection:bg-pink-200" suppressHydrationWarning>
             <InteractiveBubbles />
-            
+
             {/* HERO SECTION */}
             <section className="relative pt-12 pb-32 md:pb-48 overflow-visible z-10">
                 <div className="absolute top-20 right-10 animate-bounce-slow opacity-60 hidden md:block"><Star className="text-yellow-400 w-12 h-12 fill-current" /></div>
@@ -169,7 +169,7 @@ export default function AdmissionPage() {
                     </div>
                 </div>
             </section>
-            
+
             {/* Infrastructure Section */}
             <section className="py-12 md:py-24 bg-white relative z-10">
                 <div className="container mx-auto px-4">
