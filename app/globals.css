@@ -2,10 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Dosis Font from Google Fonts (Req #12) */
+@import url('https://fonts.googleapis.com/css2?family=Dosis:wght@200;300;400;500;600;700;800&display=swap');
+
+/* Import Schoolbell Font for Playful Headings */
+@import url('https://fonts.googleapis.com/css2?family=Schoolbell&display=swap');
+
 :root {
-  --primary-orange: #f97316;
-  --primary-orange-dark: #ea580c;
-  --secondary-blue: #0ea5e9;
+  /* T.I.M.E. Kids Color Palette - Extracted from Reference Files */
+  --primary-orange: #e6952e;
+  --primary-orange-dark: #dd6705;
+  --primary-green: #94b64f;
+  --primary-green-dark: #789f35;
+  --primary-red: #c94a36;
+  --primary-red-dark: #bd2b13;
+  --primary-blue: #085390;
+  --primary-blue-dark: #023763;
+
+  /* Background Colors */
+  --bg-cream: #f5f1dd;
+  --bg-light-blue: #bde2f4;
+  --bg-light-gradient: linear-gradient(to bottom, #e1f6fb, #e3f6fa, #e5f7fa, #e8f7f9, #eaf7f9, #edf8fa, #eff8fb, #f2f9fc, #f6fafd, #fafcfe, #fdfdff, #ffffff);
+
+  /* Accent Colors */
+  --accent-yellow: #fed509;
+  --accent-yellow-bright: #fee52c;
+  --accent-pink: #fd4f60;
+  --accent-lime: #dafe8b;
+
+  /* Footer */
+  --footer-brown: #725233;
+  --footer-gradient: linear-gradient(to bottom, #3f5f05, #3f5f05, #3f5f05, #3f5f05, #3c5f03, #465e06, #4d5c08, #535b0b, #5e5814, #67561d, #6d5427, #715331);
+
+  /* Gradients */
+  --gradient-rainbow: linear-gradient(to right, #f77060, #f88255, #f4944c, #eea649, #e4b84b, #eeaf4f, #f6a656, #fc9e5f, #fd8080, #e172a5, #a973bf, #5977c2);
+  --gradient-header-top: linear-gradient(to right, #fd5e60, #f77542, #e78e29, #cfa51a, #b0b929, #89c249, #5dc86c, #00cc90, #00c5b4, #00bbcf, #00afde, #19a0df);
+
+  /* Design System Values */
+  --border-radius-brand: 24px;
+  --button-max-height: 45px;
+  --section-gap-max: 50px;
+  --card-padding-min: 15px;
+  --card-padding-max: 30px;
 }
 
 * {
@@ -14,10 +52,16 @@
   margin: 0;
 }
 
-html {}
+html {
+  /* Smooth scrolling for anchor links (Req #3) */
+  scroll-behavior: smooth;
+}
 
 body {
-  font-family: var(--font-quicksand), var(--font-inter), system-ui, sans-serif;
+  font-family: 'Dosis', var(--font-quicksand), var(--font-inter), system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
   overflow-x: hidden;
   color: #333;
 }
@@ -101,29 +145,55 @@ body {
       0 0 40px rgba(249, 115, 22, 0.2);
   }
 
-  /* Global section spacing rule - max 50px */
+  /* Global section spacing rule - MAX 50px (Req #7) */
   .section-gap {
-    @apply py-8 md:py-12;
-    /* Results in 32px to 48px vertical spacing */
+    padding-top: 50px;
+    padding-bottom: 50px;
     margin-top: 0;
     margin-bottom: 0;
   }
 
-  /* Card padding rule - 15px to 30px */
-  .card-padding {
-    @apply p-4 md:p-6 lg:p-7;
-    /* 16px to 28px */
+  @media (max-width: 768px) {
+    .section-gap {
+      padding-top: 32px;
+      padding-bottom: 32px;
+    }
   }
 
-  /* Global Button rule - max 45px height */
+  /* Card padding rule - 15px to 30px (Req #8) */
+  .card-padding {
+    padding: 15px;
+  }
+
+  @media (min-width: 768px) {
+    .card-padding {
+      padding: 20px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .card-padding {
+      padding: 30px;
+    }
+  }
+
+  /* Global Button rule - max 45px height (Req #10) */
   .btn-base {
-    @apply px-6 py-3 flex items-center justify-center transition-all duration-300 rounded-full font-semibold;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    /* 12px top/bottom as specified */
     height: 45px;
     max-height: 45px;
     line-height: 1;
+    font-weight: 600;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+    text-decoration: none;
   }
 
-  /* Consistent rounded corners - 24px */
+  /* Consistent rounded corners - 24px (Req #9) */
   .rounded-brand {
     border-radius: 24px;
   }
@@ -412,15 +482,21 @@ body {
   }
 }
 
-/* Playful marquee for cartoon strips */
+/* Playful marquee for cartoon strips - OPTIMIZED for smooth scrolling (Req #3) */
 @keyframes marquee {
   0% {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 
   100% {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
   }
+}
+
+/* Marquee content optimization */
+.marquee-content {
+  will-change: transform;
+  animation: marquee 30s linear infinite;
 }
 
 /* Animation utility classes */
@@ -670,6 +746,128 @@ body {
 
 
 
+/* Login Button - btn-login.png background */
+.btn-login {
+  display: inline-block;
+  background: url(/btn-login.png) no-repeat left top;
+  background-size: contain;
+  width: 124px;
+  height: 41px;
+  position: relative;
+  z-index: 999;
+  padding-left: 42px;
+  text-align: center;
+  line-height: 40px;
+  font-size: 18px;
+  color: #fff !important;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+  color: #cff9ff !important;
+}
+
+/* Key Navigation Section - 6 Circular Icon Buttons */
+.key-nav {
+  display: flex;
+  margin: 0 0 40px 0;
+  padding: 60px 0 0 0;
+  justify-content: space-between;
+  list-style: none;
+  position: relative;
+  z-index: 10;
+}
+
+.key-nav li {
+  text-align: center;
+  flex-basis: 14%;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 24px;
+  color: #222;
+}
+
+.key-nav li figure {
+  width: 100%;
+  height: 120px;
+  display: block;
+  background-color: #dd6705;
+  border-radius: 67% 33% 39% 61% / 37% 57% 43% 63%;
+  margin-bottom: 15px;
+  text-align: center;
+  box-shadow: 0px 0px 32px -3px rgba(0, 0, 0, 0.44);
+  transition: all 0.4s ease-in-out;
+  /* Orange gradient for nav-link1 */
+  background: linear-gradient(135deg, rgb(236, 178, 72) 0%, rgb(221, 103, 5) 100%);
+}
+
+.key-nav li:hover figure {
+  transform: rotate(20deg);
+  border-radius: 16px;
+}
+
+.key-nav li span {
+  height: 120px;
+  vertical-align: middle;
+  text-align: center;
+  display: table-cell;
+}
+
+.key-nav li span img {
+  max-width: 70px;
+  display: block;
+  position: relative;
+  left: 35px;
+  transition: all 0.8s ease-in-out;
+}
+
+.key-nav li a {
+  color: #222;
+  text-decoration: none;
+}
+
+.key-nav li a:hover {
+  color: #085390;
+}
+
+/* Green gradient for nav-link2 */
+.key-nav .nav-link2 figure {
+  background: linear-gradient(135deg, rgb(176, 205, 103) 0%, rgb(120, 159, 53) 100%);
+  border-radius: 42% 58% 37% 63% / 63% 44% 56% 37%;
+}
+
+/* Red gradient for nav-link3 */
+.key-nav .nav-link3 figure {
+  background: linear-gradient(135deg, rgb(211, 102, 85) 0%, rgb(188, 85, 69) 40%, rgb(189, 43, 19) 100%);
+  border-radius: 69% 31% 53% 47% / 41% 69% 31% 59%;
+}
+
+/* Responsive for Key Navigation */
+@media (max-width: 998px) {
+  .key-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .key-nav li {
+    flex-basis: 22%;
+    margin: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .key-nav li {
+    flex-basis: 40%;
+  }
+
+  .key-nav li span img {
+    max-width: 90%;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -747,4 +945,105 @@ body {
     font-family: var(--font-fredoka), system-ui, sans-serif;
     @apply tracking-tight;
   }
+}
+
+/* ============================================
+   WAVE ANIMATIONS - From Reference Files (Req #11)
+   Horizontal side-moving waves for sections
+   ============================================ */
+
+/* Wave Container */
+.waveHorizontals {
+  width: 100%;
+  height: 20px;
+  position: relative;
+  bottom: 0;
+  z-index: 9;
+  float: left;
+}
+
+.waveHorizontals_bottom {
+  transform: rotate(-180deg);
+}
+
+/* Individual Wave Layers */
+.waveHorizontal {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: absolute;
+  background-repeat: repeat-x;
+  animation: wave-move 12s linear infinite;
+}
+
+/* Wave Movement Animation - Smooth horizontal motion */
+@keyframes wave-move {
+  0% {
+    transform: translate3d(-100px, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Three Wave Layers with Different Properties */
+#waveHorizontal1 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20'%3E%3Cpath d='M0 10 Q 25 0, 50 10 T 100 10 V 20 H 0 Z' fill='%23085390' opacity='0.3'/%3E%3C/svg%3E");
+  background-size: 100px 100px;
+  opacity: 0.3;
+}
+
+#waveHorizontal2 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20'%3E%3Cpath d='M0 10 Q 25 5, 50 10 T 100 10 V 20 H 0 Z' fill='%23085390' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 50px 100px;
+  animation-delay: -2s;
+  animation-duration: 12s;
+  opacity: 0.5;
+}
+
+#waveHorizontal3 {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20'%3E%3Cpath d='M0 10 Q 25 3, 50 10 T 100 10 V 20 H 0 Z' fill='%23085390' opacity='0.7'/%3E%3C/svg%3E");
+  background-size: 150px 100px;
+  animation-delay: -4s;
+  animation-duration: 18s;
+  opacity: 0.7;
+}
+
+/* Wave Color Variants */
+.wave_gray {
+  width: 100%;
+  height: 50px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 50'%3E%3Cpath d='M0 25 Q 300 0, 600 25 T 1200 25 V 50 H 0 Z' fill='%23f5f1dd'/%3E%3C/svg%3E") repeat-x;
+  background-size: 100% 100%;
+  position: relative;
+  margin: 0;
+}
+
+.wave_gray2 {
+  width: 100%;
+  height: 50px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 50'%3E%3Cpath d='M0 25 Q 300 50, 600 25 T 1200 25 V 0 H 0 Z' fill='%23f5f1dd'/%3E%3C/svg%3E") repeat-x;
+  background-size: 100% 100%;
+  position: relative;
+  margin: 0;
+  transform: rotate(180deg);
+}
+
+.wave_white_down {
+  width: 100%;
+  height: 50px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 50'%3E%3Cpath d='M0 25 Q 300 0, 600 25 T 1200 25 V 50 H 0 Z' fill='%23ffffff'/%3E%3C/svg%3E") repeat-x;
+  background-size: 100% 100%;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+.wave_light {
+  width: 100%;
+  height: 50px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 50'%3E%3Cpath d='M0 25 Q 300 0, 600 25 T 1200 25 V 50 H 0 Z' fill='%23e1f6fb'/%3E%3C/svg%3E") repeat-x;
+  background-size: 100% 100%;
+  position: relative;
 }

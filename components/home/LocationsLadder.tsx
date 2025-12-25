@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -87,29 +88,42 @@ const LocationsLadder = () => {
     };
 
     return (
-        <section className="pb-10 bg-[#F0F8FF] relative overflow-hidden min-h-screen">
-            {/* Top Banner GIF */}
-            {/* Top Banner GIF */}
-            <div className="w-full mb-6">
-                <img
-                    src="/about2.gif"
-                    alt="About T.I.M.E. Kids"
-                    className="w-full h-[300px] md:h-[500px] object-cover object-bottom"
+        <section className="locations-ladder-section">
+            <style jsx>{`
+                .locations-ladder-section {
+                    position: relative;
+                    overflow: hidden;
+                    padding: 40px 0;
+                    float: left;
+                    width: 100%;
+                    clear: both;
+                }
+            `}</style>
+            {/* Background Image with Overlay */}
+            <div className="absolute inset-0 z-0">
+                <Image
+                    src="/bg-footer.jpg"
+                    alt="Locations Background"
+                    fill
+                    className="object-cover object-center"
+                    priority={false}
                 />
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm"></div>
             </div>
 
-            <div className="container mx-auto px-4">
-                <div className="text-center mb-8">
-                    <h2 className="text-4xl md:text-5xl font-bubblegum text-[#003366] mb-4 tracking-wide">Our Presence</h2>
-                    <p className="text-xl text-gray-700 font-baloo">Spreading happiness in {cities.length}+ locations across India</p>
-                    <p className="text-sm text-gray-500 mt-2">Click on a city to view our centres</p>
+            <div className="container mx-auto px-4 relative z-10">
+                <div className="text-center mb-16">
+                    <h2 className="text-5xl md:text-6xl font-bubblegum text-[#085390] mb-6 tracking-wide drop-shadow-md">
+                        Our Presence
+                    </h2>
+                    <p className="text-2xl text-gray-800 font-baloo font-semibold max-w-2xl mx-auto">
+                        Spreading happiness in {cities.length}+ locations across India.
+                        Find a T.I.M.E. Kids preschool near you!
+                    </p>
+                    <div className="h-1.5 w-32 bg-[#fed509] mx-auto mt-6 rounded-full shadow-sm"></div>
                 </div>
 
-                {/* About GIF is above */}
-
-                {/* Selected City Results Section - REMOVED (Navigates to new page now) */}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 md:gap-8 justify-center mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-y-12 gap-x-8">
                     {columns.map((colItems, idx) => (
                         <LadderColumn
                             key={idx}
@@ -120,6 +134,15 @@ const LocationsLadder = () => {
                     ))}
                 </div>
             </div>
+
+            <style jsx>{`
+                :global(.font-bubblegum) {
+                    font-family: var(--font-bubblegum);
+                }
+                :global(.font-baloo) {
+                    font-family: var(--font-baloo);
+                }
+            `}</style>
         </section>
     );
 };
