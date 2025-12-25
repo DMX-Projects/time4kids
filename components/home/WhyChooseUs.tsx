@@ -26,12 +26,6 @@ const WhyChooseUs = () => {
                     y: 60, opacity: 0, scale: 0.9,
                     duration: 1.2, ease: 'back.out(1.4)', delay: index * 0.1,
                 });
-
-                gsap.to(card, {
-                    y: index % 2 === 0 ? -15 : 15,
-                    duration: 3 + index * 0.5,
-                    repeat: -1, yoyo: true, ease: "sine.inOut",
-                });
             });
 
             // Wavy Background Animation
@@ -110,11 +104,11 @@ const WhyChooseUs = () => {
 
     return (
         <section ref={sectionRef} className="py-20 md:py-24 bg-[#FDFCFB] relative overflow-hidden select-none">
-            
+
             {/* Animated Wave BG */}
             <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
                 <svg ref={waveRef} className="absolute top-0 left-0 w-[200%] h-full" viewBox="0 0 1200 800" fill="none">
-                    <path d="M1200 400C1050 300 900 500 750 400C600 300 450 500 300 400C150 300 0 500 0 400V800H1200V400Z" fill="#F3F4F6" fillOpacity="0.5"/>
+                    <path d="M1200 400C1050 300 900 500 750 400C600 300 450 500 300 400C150 300 0 500 0 400V800H1200V400Z" fill="#F3F4F6" fillOpacity="0.5" />
                 </svg>
             </div>
 
@@ -128,7 +122,7 @@ const WhyChooseUs = () => {
                 {/* UPDATED: grid-cols-1 for Mobile, lg:grid-cols-3 for Desktop */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-20 max-w-7xl mx-auto">
                     {features.map((feature, index) => (
-                        <div 
+                        <div
                             key={index}
                             ref={(el) => { cardRefs.current[index] = el; }}
                             onMouseMove={(e) => handleMouseMove(e, index)}
@@ -137,9 +131,9 @@ const WhyChooseUs = () => {
                             className="relative flex flex-col items-center group cursor-pointer max-w-sm mx-auto w-full"
                         >
                             {/* Card Content */}
-                            <div 
+                            <div
                                 className="relative w-full p-8 pb-16 transition-all duration-300"
-                                style={{ 
+                                style={{
                                     backgroundColor: feature.color,
                                     borderRadius: '50px 100px 50px 110px / 80px 50px 110px 50px'
                                 }}
@@ -150,7 +144,7 @@ const WhyChooseUs = () => {
                                     {feature.title}
                                 </h3>
 
-                                <div 
+                                <div
                                     className="relative w-full aspect-[4/3] bg-white overflow-hidden mb-6 border-4 border-white shadow-inner relative z-10"
                                     style={{ borderRadius: '70px 40px 80px 50px / 50px 70px 45px 85px' }}
                                 >
@@ -162,8 +156,8 @@ const WhyChooseUs = () => {
                                 </p>
 
                                 {/* Eye Icon */}
-                                <div 
-                                    className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg border-[6px] z-20" 
+                                <div
+                                    className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg border-[6px] z-20"
                                     style={{ borderColor: feature.accent }}
                                 >
                                     <div ref={(el) => { pupilRefs.current[index] = el; }} className="w-4 h-4 rounded-full bg-[#111]" />

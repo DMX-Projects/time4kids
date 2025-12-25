@@ -12,7 +12,6 @@ if (typeof window !== 'undefined') {
 
 const ProgramsPreview = () => {
     const sectionRef = useRef(null);
-    const kidRef = useRef(null);
 
     const programs = [
         {
@@ -51,39 +50,64 @@ const ProgramsPreview = () => {
 
     const scallopPath = "M0,0 V12 Q15,24 30,12 T60,12 T90,12 T120,12 T150,12 T180,12 T210,12 T240,12 T270,12 T300,12 T330,12 T360,12 T390,12 T420,12 T450,12 T480,12 T510,12 T540,12 T570,12 T600,12 T630,12 T660,12 T690,12 T720,12 T750,12 T780,12 T810,12 T840,12 T870,12 T900,12 T930,12 T960,12 T990,12 T1020,12 T1050,12 T1080,12 T1110,12 T1140,12 T1170,12 T1200,12 V0 Z";
 
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            // TARGET ONLY THE KID: Move from left to right based on scroll
-            gsap.to(kidRef.current, {
-                x: "85vw", // Kid travels across the screen
-                ease: "none",
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: "top center", // Animation starts when section hits middle of screen
-                    end: "bottom center",
-                    scrub: 1, // Smooth movement tied to scroll
-                    onUpdate: (self) => {
-                        // Flip character to face direction of travel
-                        if (self.direction === 1) {
-                            gsap.to(kidRef.current, { scaleX: 1, duration: 0.1 });
-                        } else {
-                            gsap.to(kidRef.current, { scaleX: -1, duration: 0.1 });
-                        }
-                    }
-                }
-            });
-        }, sectionRef);
-        return () => ctx.revert();
-    }, []);
-
     return (
-        <section ref={sectionRef} className="relative py-24 bg-[#FFFAF5] overflow-hidden">
-            
+        <section ref={sectionRef} className="relative py-12 bg-[#FFFAF5] overflow-hidden">
+
             {/* Top Border */}
             <div className="absolute top-0 left-0 w-full z-20 pointer-events-none">
                 <svg viewBox="0 0 1200 24" className="w-full h-12 block fill-white" preserveAspectRatio="none">
                     <path d={scallopPath} />
                 </svg>
+            </div>
+
+            {/* Decorative Background Elements */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+                {/* Flying Birds */}
+                <Image
+                    src="/images/icon-bird1.png"
+                    alt=""
+                    width={80}
+                    height={80}
+                    className="absolute top-20 left-10 md:left-20 animate-bounce"
+                    style={{ animationDuration: '4s' }}
+                />
+                <Image
+                    src="/images/icon-bird2.png"
+                    alt=""
+                    width={60}
+                    height={60}
+                    className="absolute top-40 right-16 md:right-32 animate-bounce"
+                    style={{ animationDuration: '5s', animationDelay: '1s' }}
+                />
+
+                {/* Butterfly */}
+                <Image
+                    src="/images/buterfly-2.png"
+                    alt=""
+                    width={70}
+                    height={70}
+                    className="absolute top-1/3 left-1/4 animate-pulse"
+                    style={{ animationDuration: '3s' }}
+                />
+
+                {/* Whale */}
+                <Image
+                    src="/images/whale.png"
+                    alt=""
+                    width={100}
+                    height={100}
+                    className="absolute bottom-40 right-10 md:right-20 animate-pulse"
+                    style={{ animationDuration: '4s', animationDelay: '0.5s' }}
+                />
+
+                {/* School Bus */}
+                <Image
+                    src="/images/school-bus.png"
+                    alt=""
+                    width={90}
+                    height={90}
+                    className="absolute bottom-32 left-1/3 opacity-40"
+                />
             </div>
 
             <div className="container mx-auto px-4 relative z-10">
@@ -97,20 +121,20 @@ const ProgramsPreview = () => {
                 <div className="relative">
                     {/* Adventure Path Line (Static) */}
                     <svg className="absolute top-1/2 left-0 w-full h-32 -translate-y-1/2 -z-10 opacity-20" preserveAspectRatio="none" viewBox="0 0 1000 100">
-                        <path 
-                            d="M0,50 Q125,0 250,50 T500,50 T750,50 T1000,50" 
-                            fill="none" 
-                            stroke="#003366" 
-                            strokeWidth="3" 
-                            strokeDasharray="10 10" 
+                        <path
+                            d="M0,50 Q125,0 250,50 T500,50 T750,50 T1000,50"
+                            fill="none"
+                            stroke="#003366"
+                            strokeWidth="3"
+                            strokeDasharray="10 10"
                         />
                     </svg>
 
                     {/* Program Cards (Static) */}
                     <div className="flex flex-nowrap overflow-x-auto pb-32 pt-10 gap-12 no-scrollbar md:justify-between">
                         {programs.map((program, index) => (
-                            <div 
-                                key={index} 
+                            <div
+                                key={index}
                                 className="flex-shrink-0 w-72 flex flex-col items-center text-center"
                                 style={{ transform: `translateY(${program.yOffset})` }}
                             >
@@ -141,26 +165,7 @@ const ProgramsPreview = () => {
                         </div>
                     </Link>
                 </div>
-            </div>
-
-            {/* --- FIXED: THE KID WALKS INDEPENDENTLY AT BOTTOM --- */}
-            <div 
-                ref={kidRef} 
-                className="absolute bottom-6 left-0 z-50 pointer-events-none"
-            >
-                <div className="relative w-36 h-36 md:w-44 md:h-44">
-                    <Image 
-                        src="/kid-character.gif" 
-                        alt="Walking Kid" 
-                        fill
-                        className="object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.15)]"
-                        unoptimized 
-                        priority
-                    />
-                </div>
-            </div>
-
-            {/* Bottom Scallop */}
+            </div>{/* Bottom Scallop */}
             <div className="absolute bottom-0 left-0 w-full z-20 pointer-events-none rotate-180">
                 <svg viewBox="0 0 1200 24" className="w-full h-12 block fill-white" preserveAspectRatio="none">
                     <path d={scallopPath} />

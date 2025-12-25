@@ -40,24 +40,17 @@ const faqsData = [
 
 const AnimatedWave = ({ position = 'top' }: { position?: 'top' | 'bottom' }) => {
     return (
-        <div className={`wave-section ${position === 'bottom' ? 'wave-bottom' : 'wave-top'}`}>
-            <svg className="wave-svg wave1" viewBox="0 0 1200 40" preserveAspectRatio="none">
-                <path d="M0,34C80,34,120,0,200,0C280,0,320,34,400,34C480,34,520,0,600,0C680,0,720,34,800,34C880,34,920,0,1000,0C1080,0,1120,34,1200,34V40H0Z"
-                    fill="#035392" opacity="0.3" />
-            </svg>
-            <svg className="wave-svg wave2" viewBox="0 0 1200 40" preserveAspectRatio="none">
-                <path d="M0,34C80,34,120,0,200,0C280,0,320,34,400,34C480,34,520,0,600,0C680,0,720,34,800,34C880,34,920,0,1000,0C1080,0,1120,34,1200,34V40H0Z"
-                    fill="#035392" opacity="0.5" />
-            </svg>
-            <svg className="wave-svg wave3" viewBox="0 0 1200 40" preserveAspectRatio="none">
-                <path d="M0,34C80,34,120,0,200,0C280,0,320,34,400,34C480,34,520,0,600,0C680,0,720,34,800,34C880,34,920,0,1000,0C1080,0,1120,34,1200,34V40H0Z"
-                    fill="#035392" opacity="1" />
-            </svg>
+        <>
+            <div className={`wave-container ${position === 'bottom' ? 'wave-bottom' : 'wave-top'}`}>
+                <div className="wave wave1"></div>
+                <div className="wave wave2"></div>
+                <div className="wave wave3"></div>
+            </div>
 
             <style jsx>{`
-                .wave-section {
+                .wave-container {
                     width: 100%;
-                    height: 30px;
+                    height: 28px;
                     position: relative;
                     overflow: hidden;
                     z-index: 5;
@@ -67,36 +60,42 @@ const AnimatedWave = ({ position = 'top' }: { position?: 'top' | 'bottom' }) => 
                     transform: rotate(180deg);
                 }
 
-                .wave-svg {
+                .wave {
                     position: absolute;
                     width: 100%;
                     height: 100%;
-                    left: 0;
-                    top: 0;
+                    background-repeat: repeat-x;
+                    background-size: auto 100%;
                 }
 
                 .wave1 {
-                    animation: wave-shift 20s linear infinite;
+                    background-image: url('/images/wave-gray.png');
+                    animation: wave-animation 60s linear infinite;
+                    opacity: 0.4;
                 }
 
                 .wave2 {
-                    animation: wave-shift 15s linear infinite reverse;
+                    background-image: url('/images/wave-gray2.png');
+                    animation: wave-animation 45s linear infinite reverse;
+                    opacity: 0.6;
                 }
 
                 .wave3 {
-                    animation: wave-shift 10s linear infinite;
+                    background-image: url('/images/wave-gray.png');
+                    animation: wave-animation 30s linear infinite;
+                    opacity: 0.8;
                 }
 
-                @keyframes wave-shift {
+                @keyframes wave-animation {
                     0% {
-                        transform: translateX(0);
+                        background-position: 0 0;
                     }
                     100% {
-                        transform: translateX(-200px);
+                        background-position: 4000px 0;
                     }
                 }
             `}</style>
-        </div>
+        </>
     );
 };
 
