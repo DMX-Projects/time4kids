@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 
 const SmoothScroll = dynamic(() => import("@/components/shared/SmoothScroll"), { ssr: false });
 const BlobBackground = dynamic(() => import("@/components/animations/BlobBackground"), { ssr: false });
-const ScrollProgress = dynamic(() => import("@/components/animations/ScrollProgress"), { ssr: false });
 const Chatbot = dynamic(() => import("@/components/shared/Chatbot"), { ssr: false });
 
 const ClientEnhancements = () => {
@@ -32,7 +31,6 @@ const ClientEnhancements = () => {
         <>
             <SmoothScroll />
             <BlobBackground />
-            <ScrollProgress />
             <Chatbot />
         </>
     );

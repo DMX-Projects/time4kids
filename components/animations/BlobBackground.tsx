@@ -34,22 +34,39 @@ const BlobBackground = () => {
             ySet.current = gsap.quickSetter(containerRef.current, "y", "px");
         }
 
-        // Mouse move effect using quickSetter for performance
+        // Mouse move effect using quickSetter for performance - throttled
+        let rafId: number | null = null;
         const handleMouseMove = (e: MouseEvent) => {
             if (!xSet.current || !ySet.current) return;
+            
+            if (rafId === null) {
+                rafId = requestAnimationFrame(() => {
+                    const { clientX, clientY } = e;
+                    const xPercent = (clientX / window.innerWidth - 0.5) * 20;
+                    const yPercent = (clientY / window.innerHeight - 0.5) * 20;
 
-            const { clientX, clientY } = e;
-            const xPercent = (clientX / window.innerWidth - 0.5) * 20;
-            const yPercent = (clientY / window.innerHeight - 0.5) * 20;
-
-            xSet.current(xPercent);
-            ySet.current(yPercent);
+                    if (xSet.current && ySet.current) {
+                        xSet.current(xPercent);
+                        ySet.current(yPercent);
+                    }
+                    rafId = null;
+                });
+            }
         };
 
-        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
         return () => {
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+            }
             window.removeEventListener('mousemove', handleMouseMove);
+            // Clean up GSAP animations
+            blobs.forEach((blob) => {
+                if (blob) {
+                    gsap.killTweensOf(blob);
+                }
+            });
         };
     }, []);
 

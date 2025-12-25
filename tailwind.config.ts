@@ -93,15 +93,6 @@ const config: Config = {
 					'system-ui',
 					'sans-serif'
 				],
-				comic: [
-					'var(--font-comic)',
-					'Comic Sans MS',
-					'cursive'
-				],
-				chewy: [
-					'var(--font-chewy)',
-					'cursive'
-				],
 				bubblegum: [
 					'var(--font-bubblegum)',
 					'cursive'
@@ -112,14 +103,6 @@ const config: Config = {
 				],
 				quicksand: [
 					'var(--font-quicksand)',
-					'sans-serif'
-				],
-				abeezee: [
-					'var(--font-abeezee)',
-					'sans-serif'
-				],
-				andika: [
-					'var(--font-andika)',
 					'sans-serif'
 				]
 			},

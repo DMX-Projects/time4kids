@@ -53,8 +53,8 @@
 }
 
 html {
-  /* Smooth scrolling for anchor links (Req #3) */
-  scroll-behavior: smooth;
+  /* Smooth scrolling disabled when Lenis is active - handled by SmoothScroll component */
+  scroll-behavior: auto;
 }
 
 body {

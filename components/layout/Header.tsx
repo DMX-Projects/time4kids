@@ -10,12 +10,38 @@ export default function Header() {
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
     useEffect(() => {
+        // Use Lenis scroll event if available for better performance
+        const lenis = (window as any).lenis;
+        
+        let rafId: number | null = null;
         const handleScroll = () => {
-            setIsSticky(window.scrollY >= 35);
+            if (rafId === null) {
+                rafId = requestAnimationFrame(() => {
+                    const scrollY = lenis ? lenis.scroll : window.scrollY;
+                    setIsSticky(scrollY >= 35);
+                    rafId = null;
+                });
+            }
         };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        if (lenis) {
+            lenis.on('scroll', handleScroll);
+            handleScroll(); // Initial call
+        } else {
+            window.addEventListener('scroll', handleScroll, { passive: true });
+            handleScroll(); // Initial call
+        }
+
+        return () => {
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+            }
+            if (lenis) {
+                lenis.off('scroll', handleScroll);
+            } else {
+                window.removeEventListener('scroll', handleScroll);
+            }
+        };
     }, []);
 
     return (
