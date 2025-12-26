@@ -101,13 +101,13 @@ export default function Header() {
                                     >
                                         <Link href="/about">About Us</Link>
                                         <ul className="dropdown-menu">
-                                            <li><Link href="/about/programme">Our Programme</Link></li>
+                                            {/* <li><Link href="/about/programme">Our Programme</Link></li>
                                             <li><Link href="/about/infrastructure">Our Infrastructure</Link></li>
                                             <li><Link href="/about/teachers">Our Teachers</Link></li>
                                             <li><Link href="/about/curriculum">Our Curriculum</Link></li>
                                             <li><Link href="/about/strengths">Our Strengths</Link></li>
                                             <li><Link href="/about/franchise-network">Franchise Network</Link></li>
-                                            <li><Link href="/about/time">About T.I.M.E.</Link></li>
+                                            <li><Link href="/about/time">About T.I.M.E.</Link></li> */}
                                         </ul>
                                     </li>
                                     <li className="nav-item">
