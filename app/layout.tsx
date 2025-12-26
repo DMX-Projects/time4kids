@@ -13,9 +13,9 @@ import PageReadyMarker from "@/components/layout/PageReadyMarker";
 import dynamic from "next/dynamic";
 
 // Lazy load heavy animations
-const LazyBlobBackground = dynamic(() => import("@/components/animations/BlobBackground"), { 
+const LazyBlobBackground = dynamic(() => import("@/components/animations/BlobBackground"), {
     ssr: false,
-    loading: () => null 
+    loading: () => null
 });
 
 const inter = Inter({
@@ -80,6 +80,11 @@ export const metadata: Metadata = {
         description: "17 Years of Legacy in Early Education. 250+ preschools across India.",
         type: "website",
     },
+    icons: {
+        icon: '/images/logo.png',
+        shortcut: '/images/logo.png',
+        apple: '/images/logo.png',
+    },
 };
 
 export default function RootLayout({
@@ -100,7 +105,7 @@ export default function RootLayout({
                             <SmoothScroll />
                             <Header />
                         </ConditionalChrome>
-                        
+
                         {/* Lazy load heavy animations */}
                         <LazyBlobBackground />
 

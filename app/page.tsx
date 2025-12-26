@@ -22,6 +22,10 @@ const MethodologySection = dynamic(() => import('@/components/home/MethodologySe
 const CounterSection = dynamic(() => import('@/components/home/CounterSection'), {
     loading: () => <div className="h-96" />,
 });
+// Integrating TestimonialSlider & TestimonialsSection with dynamic import
+const TestimonialSlider = dynamic(() => import('@/components/home/TestimonialSlider'), {
+    loading: () => <div className="h-96" />,
+});
 const TestimonialsSection = dynamic(() => import('@/components/home/TestimonialsSection'), {
     loading: () => <div className="h-96" />,
 });
@@ -50,9 +54,6 @@ export default function Home() {
             {/* Programs Preview Section */}
             <ProgramsPreview />
 
-            {/* Events, Tips, and Brands - Integrated with Whale and Waves */}
-            {/* <EventsTipsBrands /> */}
-
             {/* Methodology Section */}
             <MethodologySection />
 
@@ -60,6 +61,7 @@ export default function Home() {
             <CounterSection />
 
             {/* Testimonials */}
+            <TestimonialSlider />
             <TestimonialsSection />
 
             {/* Locations Ladder Section */}
