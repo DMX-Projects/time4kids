@@ -41,7 +41,7 @@ export default function HeroSection() {
                         </div>
                         <div className="slide">
                             <Image
-                                src="/slide2.jpg"
+                                src="/images/center-images/center-slide-1.jpg"
                                 alt="T.I.M.E. Kids Slide 2"
                                 width={1920}
                                 height={600}
@@ -50,7 +50,7 @@ export default function HeroSection() {
                         </div>
                         <div className="slide">
                             <Image
-                                src="/slide3.jpg"
+                                src="/images/center-images/center-slide-2.jpg"
                                 alt="T.I.M.E. Kids Slide 3"
                                 width={1920}
                                 height={600}

@@ -54,7 +54,7 @@ export default function Header() {
                         <ul className="header-top-nav">
                             <li><Link href="/">HOME</Link></li>
                             <li><Link href="/careers">CAREERS</Link></li>
-                            <li><Link href="contact">CONTACT US</Link></li>
+                            <li><Link href="/contact">CONTACT US</Link></li>
                             <li>
 
                             </li>
@@ -251,6 +251,7 @@ export default function Header() {
                     width: 100%;
                     text-align: center;
                     z-index: 999;
+                    pointer-events: none;
                 }
 
                 .logo::before,
@@ -258,22 +259,22 @@ export default function Header() {
                     content: '';
                     display: block;
                     width: 100%;
-                    height: 50px;
+                    height: 70px;
                     margin: 0 auto;
                     position: absolute;
                     left: 0;
                     right: 0;
                     transition: 0.4s;
-                    background-size: auto 50px;
+                    background-size: auto 70px;
                 }
 
                 .logo::before {
-                    top: -38px;
+                    top: -40px;
                     background: url(/images/top-courve.png) no-repeat center top;
                 }
 
                 .logo::after {
-                    bottom: -50px;
+                    bottom: -70px;
                     background: url(/images/bottom-courve.png) no-repeat center top;
                 }
 
@@ -286,6 +287,7 @@ export default function Header() {
                     position: relative;
                     z-index: 9999;
                     display: inline-block;
+                    pointer-events: auto;
                 }
 
                 /* Navigation */
