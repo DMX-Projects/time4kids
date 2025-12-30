@@ -69,7 +69,7 @@ export default function SchoolProgramsPage() {
                 <div className="text-center mb-8">
                     <h2 className="text-4xl md:text-5xl font-fredoka font-bold text-gray-900 mb-4">Our Programs</h2>
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                        We provide a nurturing environment for every stage of your child's early development.
+                        We provide a nurturing environment for every stage of your child&apos;s early development.
                     </p>
                 </div>
 

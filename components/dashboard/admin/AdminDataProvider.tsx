@@ -187,11 +187,13 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         loadCareers();
         loadEvents();
         loadStats();
-        setProfile((prev) => ({
-            ...prev,
-            name: user.fullName || prev.name || user.email,
-            email: user.email,
-        }));
+        if (user) {
+            setProfile((prev) => ({
+                ...prev,
+                name: user.fullName || prev.name || user.email,
+                email: user.email,
+            }));
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.role]);
 
@@ -260,11 +262,11 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
     const updateFranchise = async (id: string, payload: Partial<AdminFranchise>) => {
         const body = {
-            name: payload.title,
-            description: payload.dept || payload.type,
-            location: payload.location,
-            apply_email: user?.email,
-            is_active: payload.type.toLowerCase() !== "inactive",
+            name: payload.name,
+            city: payload.region,
+            contact_email: payload.email,
+            contact_phone: payload.phone,
+            is_active: payload.status ? payload.status.toLowerCase() === "active" : undefined,
         };
         const updated = await authFetch<ApiFranchise>(`/franchises/admin/franchises/${id}/`, {
             method: "PATCH",

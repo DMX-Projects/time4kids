@@ -196,7 +196,7 @@ export default function ProgramsPage() {
                     </h1>
 
                     <p className="text-lg text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed">
-                        Curiosity-led learning adventures for every stage of your child's magical early years.
+                        Curiosity-led learning adventures for every stage of your child&apos;s magical early years.
                     </p>
                 </div>
 

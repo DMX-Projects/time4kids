@@ -36,6 +36,7 @@ export type EventRecord = {
     date: string;
     venue: string;
     notes?: string;
+    rsvp?: string;
 };
 
 export type EventMedia = {
@@ -58,6 +59,8 @@ export type Enquiry = {
     name: string;
     email: string;
     phone?: string;
+    city?: string;
+    childAge?: string;
     message: string;
     createdAt: string;
     status: "new" | "in-progress" | "closed";

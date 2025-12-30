@@ -31,11 +31,11 @@ export default function SchoolAdmissionPage() {
 
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700">Child's Name</label>
+                            <label className="text-sm font-bold text-gray-700">Child&apos;s Name</label>
                             <input type="text" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all" placeholder="Enter child's name" />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700">Child's Age</label>
+                            <label className="text-sm font-bold text-gray-700">Child&apos;s Age</label>
                             <input type="number" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all" placeholder="Age in years" />
                         </div>
                     </div>

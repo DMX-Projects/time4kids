@@ -82,7 +82,7 @@ export default function LocationsPage() {
                     <TwinklingStars count={50} />
                 </div>
                 <div className="container mx-auto px-4 text-center relative z-10">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-8 font-fredoka">Can't find your city?</h2>
+                    <h2 className="text-4xl md:text-5xl font-bold mb-8 font-fredoka">Can&apos;t find your city?</h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
                         We are rapidly expanding across India. Partner with us to bring T.I.M.E. Kids to your neighborhood.
                     </p>

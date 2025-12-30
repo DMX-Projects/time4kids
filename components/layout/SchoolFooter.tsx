@@ -44,7 +44,7 @@ const SchoolFooter = () => {
                         <div className="space-y-4">
                             <h3 className="font-fredoka text-3xl font-bold text-yellow-300 drop-shadow-sm">About us</h3>
                             <p className="text-sm leading-relaxed text-white font-medium opacity-90">
-                                A good school plays an important role in the development of a child. It's the light that helps us choose the right path in the various walks of life. I am glad that I found T.I.M.E. Kids for my daughter. In just three months there has been a lot of development in Nandika, especially with respect to her linguistic skills and social skills. I like the way kids are handled and education is imparted at T.I.M.E. Kids. Thanks to all the wonderful teachers for enabling such remarkable change in my child.
+                                A good school plays an important role in the development of a child. It&apos;s the light that helps us choose the right path in the various walks of life. I am glad that I found T.I.M.E. Kids for my daughter. In just three months there has been a lot of development in Nandika, especially with respect to her linguistic skills and social skills. I like the way kids are handled and education is imparted at T.I.M.E. Kids. Thanks to all the wonderful teachers for enabling such remarkable change in my child.
                             </p>
                         </div>
 

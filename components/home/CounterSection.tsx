@@ -9,8 +9,8 @@ if (typeof window !== 'undefined') {
 }
 
 const CountUpSection = () => {
-    const sectionRef = useRef(null);
-    const countersRef = useRef(null);
+    const sectionRef = useRef<HTMLElement>(null);
+    const countersRef = useRef<HTMLDivElement>(null);
 
     const stats = [
         { label: 'Schools', value: 350, color: 'text-[#003366]' },
@@ -22,11 +22,15 @@ const CountUpSection = () => {
 
     useEffect(() => {
         const ctx = gsap.context(() => {
+            if (!countersRef.current) return;
+            
             // 1. Counter Animation with a "Pop" at the end
             const counters = countersRef.current.querySelectorAll('.counter-wrapper');
             
             counters.forEach((wrapper) => {
                 const counterSpan = wrapper.querySelector('.counter-value');
+                if (!counterSpan) return;
+                
                 const target = parseInt(counterSpan.getAttribute('data-target') || '0');
                 
                 const tl = gsap.timeline({

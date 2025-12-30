@@ -6,8 +6,8 @@ import { gsap } from 'gsap';
 const BlobBackground = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const blobsRef = useRef<SVGPathElement[]>([]);
-    const xSet = useRef<((value: any) => void) | null>(null);
-    const ySet = useRef<((value: any) => void) | null>(null);
+    const xSet = useRef<Function | null>(null);
+    const ySet = useRef<Function | null>(null);
 
     useEffect(() => {
         const blobs = blobsRef.current;

@@ -29,7 +29,7 @@ export default function SchoolAboutPage({ params }: { params: { city: string, sc
                         Our centre at {school.address} is equipped with state-of-the-art facilities designed to provide a safe, secure, and stimulating environment for your child. Our curriculum is strictly aligned with the National Education Policy (NEP) 2020, ensuring your child gets the best start in their educational journey.
                     </p>
                     <p>
-                        We believe that every child is unique and has their own pace of learning. Our trained facilitators are dedicated to nurturing each child's potential through a blend of play-way methods and Montessori principles.
+                        We believe that every child is unique and has their own pace of learning. Our trained facilitators are dedicated to nurturing each child&apos;s potential through a blend of play-way methods and Montessori principles.
                     </p>
 
                     <h3 className="text-2xl font-bold text-gray-800 mt-8 mb-4">Why Choose Us?</h3>
