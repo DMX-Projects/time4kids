@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { centres } from '@/data/centres';
+
 import Link from 'next/link';
 import { MapPin, ChevronRight, GraduationCap } from 'lucide-react';
 import TwinklingStars from '@/components/animations/TwinklingStars';
@@ -9,7 +9,28 @@ import Card from '@/components/ui/Card';
 
 export default function LocationsPage() {
     // Get unique cities
-    const cities = Array.from(new Set(centres.map(c => c.city))).sort();
+    const [locations, setLocations] = React.useState<
+        { city: string; franchise_count: number }[]
+    >([]);
+
+    React.useEffect(() => {
+        const fetchLocations = async () => {
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/franchises/public/locations/`
+                );
+                if (!res.ok) throw new Error('Failed to fetch locations');
+                const data = await res.json();
+                setLocations(data);
+            } catch (err) {
+                console.error(err);
+                setLocations([]);
+            }
+        };
+
+        fetchLocations();
+    }, []);
+
 
     return (
         <div className="min-h-screen bg-white">
@@ -38,8 +59,9 @@ export default function LocationsPage() {
             <section className="py-20 -mt-10 relative z-20">
                 <div className="container mx-auto px-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        {cities.map((city) => {
-                            const schoolCount = centres.filter(c => c.city === city).length;
+                        {locations.map(({ city, franchise_count }) => {
+
+
                             return (
                                 <Link
                                     key={city}
@@ -61,7 +83,7 @@ export default function LocationsPage() {
 
                                         <div className="flex items-center text-gray-500 space-x-2 mb-6">
                                             <GraduationCap className="w-4 h-4" />
-                                            <span className="text-sm font-medium">{schoolCount} Centres</span>
+                                            <span className="text-sm font-medium">{franchise_count} Centres</span>
                                         </div>
 
                                         <div className="flex items-center text-primary-600 font-bold group-hover:translate-x-2 transition-transform duration-300">

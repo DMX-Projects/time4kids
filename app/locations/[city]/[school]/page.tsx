@@ -1,47 +1,78 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { centres } from '@/data/centres';
-import { slugify } from '@/lib/utils';
+import { apiUrl } from '@/lib/api-client';
 import {
-    MapPin,
-    Phone,
-    Mail,
-    Clock,
-    Camera,
-    ExternalLink,
-    Star,
-    Award,
-    Users,
     Info,
-    Map as MapIcon,
-    MessageSquare
+    Camera,
+    Users
 } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
 import AdmissionBar from '@/components/admission/AdmissionBar';
 import WelcomeSection from '@/components/school/WelcomeSection';
 import TeachingTools from '@/components/school/TeachingTools';
 import ClassesSection from '@/components/school/ClassesSection';
+import { slugify } from '@/lib/utils';
+
 
 export default function SchoolDetailPage({ params }: { params: { city: string, school: string } }) {
     const city = decodeURIComponent(params.city);
     const schoolSlug = params.school;
 
-    const school = centres.find(c =>
-        c.city.toLowerCase().includes(city.toLowerCase()) &&
-        slugify(c.name) === schoolSlug
-    );
+    const [school, setSchool] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchSchool = async () => {
+            try {
+                // Fetch all centres to ensure we find the school even if the URL city name differs from backend city
+                const res = await fetch(apiUrl(`/franchises/public/`));
+                if (!res.ok) throw new Error('Failed to fetch data');
+                const data = await res.json();
+                const rawData = Array.isArray(data) ? data : (data.results || []);
+                // Match school using slug logic:
+                // 1. Exact match on slug
+                // 2. Fallback match on slugified name
+                const foundSchool = rawData.find((c: any) =>
+                    c.slug === schoolSlug || slugify(c.name) === schoolSlug
+                );
+
+                if (foundSchool) {
+                    setSchool(foundSchool);
+                } else {
+                    setSchool(null);
+                }
+            } catch (err) {
+                console.error(err);
+                setSchool(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (schoolSlug && city) {
+            fetchSchool();
+        } else {
+            setLoading(false);
+        }
+    }, [schoolSlug, city]);
 
     const [activeSection, setActiveSection] = useState('overview');
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-center items-center justify-center p-4">
+                <div className="text-center text-gray-500">Loading school details...</div>
+            </div>
+        );
+    }
 
     if (!school) {
         return (
             <div className="min-h-screen flex flex-center items-center justify-center p-4">
                 <div className="text-center">
-                    <h1 className="text-4xl font-bold mb-4">School Not Found</h1>
+                    <h1 className="text-4xl font-bold mb-4">Centre Not Found</h1>
                     <Link href={`/locations/${params.city}`}>
                         <Button variant="primary">Back to {city}</Button>
                     </Link>
@@ -53,7 +84,7 @@ export default function SchoolDetailPage({ params }: { params: { city: string, s
     const navItems = [
         { id: 'overview', label: 'Overview', icon: Info },
         { id: 'teaching-tools', label: 'Teaching Tools', icon: Camera },
-        { id: 'classes', label: 'Classes', icon: Users }, // Changed icon from Star to Users as Star is no longer imported
+        { id: 'classes', label: 'Classes', icon: Users },
     ];
 
     return (

@@ -3,6 +3,33 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+const containerVariants = {
+    hidden: {},
+    visible: {
+        transition: {
+            staggerChildren: 0.15,
+        },
+    },
+};
+
+const cardVariants = {
+    hidden: {
+        opacity: 0,
+        y: 40,
+        scale: 0.95,
+    },
+    visible: {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        transition: {
+            type: 'spring',
+            stiffness: 120,
+            damping: 14,
+        },
+    },
+};
+
 const ClassesSection = () => {
     const programs = [
         {
@@ -63,14 +90,22 @@ const ClassesSection = () => {
                     Classes
                 </h2>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, margin: '-100px' }}
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+                >
                     {programs.map((program, index) => (
                         <motion.div
                             key={index}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
-                            viewport={{ once: true }}
+                            variants={cardVariants}
+                            whileHover={{
+                                y: -10,
+                                rotate: [-1, 1, -1, 0],
+                                transition: { duration: 0.4 },
+                            }}
                             className="bg-white rounded-[2rem] overflow-hidden shadow-2xl flex flex-col h-full border-t-8 border-white group"
                         >
                             {/* Card Header */}
@@ -110,18 +145,24 @@ const ClassesSection = () => {
                                     {program.description}
                                 </p>
 
-                                <button className={`${program.btnColor} text-white py-3 rounded-full font-bold text-xs uppercase tracking-widest transition-all shadow-md hover:shadow-lg transform active:scale-95 flex items-center justify-center gap-2`}>
+                                <motion.button
+                                    whileHover={{
+                                        scale: 1.08,
+                                        boxShadow: '0 0 20px rgba(255,255,255,0.6)',
+                                    }}
+                                    className={`${program.btnColor} text-white py-3 rounded-full font-bold text-xs uppercase tracking-widest transition-all shadow-md transform active:scale-95 flex items-center justify-center gap-2`}
+                                >
                                     <span className="bg-yellow-400 rounded-full w-5 h-5 flex items-center justify-center">
                                         <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"></path>
                                         </svg>
                                     </span>
                                     Read More...
-                                </button>
+                                </motion.button>
                             </div>
                         </motion.div>
                     ))}
-                </div>
+                </motion.div>
             </div>
 
             {/* Bottom Animated Waves */}
