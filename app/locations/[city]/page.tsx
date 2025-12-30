@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
-import { centres } from '@/data/centres';
+import React, { useState, useEffect } from 'react';
+import { apiUrl } from '@/lib/api-client';
+
 import Card from '@/components/ui/Card';
 import TwinklingStars from '@/components/animations/TwinklingStars';
 import { MapPin, Phone, ChevronRight } from 'lucide-react';
@@ -9,15 +10,60 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import { slugify } from '@/lib/utils';
 
+interface Centre {
+    id: number;
+    name: string;
+    slug?: string;
+    address: string;
+    city: string;
+    state: string;
+    phone: string; // Changed from contact_phone to phone
+}
+
+
 export default function CityLocationsPage({ params }: { params: { city: string } }) {
     const city = decodeURIComponent(params.city);
 
     // Filter centres for the selected city
-    const filteredCentres = centres.filter(centre =>
-        centre.city.toLowerCase() === city.toLowerCase() ||
-        centre.city.toLowerCase().includes(city.toLowerCase()) ||
-        city.toLowerCase().includes(centre.city.toLowerCase())
-    );
+    const [centres, setCentres] = useState<Centre[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCentres = async () => {
+            try {
+                const res = await fetch(apiUrl('/franchises/public/'));
+                if (!res.ok) throw new Error('Failed to fetch data');
+                const data = await res.json();
+                const rawData = Array.isArray(data) ? data : (data.results || []);
+
+                // Map API fields and filter
+                const mappedData: Centre[] = rawData.map((item: any) => ({
+                    id: item.id,
+                    name: item.name,
+                    slug: item.slug, // Ensure slug is also mapped if available
+                    address: item.address,
+                    city: item.city,
+                    state: item.state,
+                    phone: item.contact_phone || item.phone || '', // Use 'phone' field
+                }));
+
+                const filtered = mappedData.filter(centre =>
+                    centre.city.toLowerCase() === city.toLowerCase() ||
+                    centre.city.toLowerCase().includes(city.toLowerCase()) ||
+                    city.toLowerCase().includes(centre.city.toLowerCase())
+                );
+
+                setCentres(filtered);
+            } catch (err) {
+                console.error(err);
+                setCentres([]); // Ensure centres is empty on error
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCentres();
+    }, [city]);
+
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -39,12 +85,18 @@ export default function CityLocationsPage({ params }: { params: { city: string }
             <section className="py-12 bg-white">
                 <div className="container mx-auto px-4">
                     <div className="max-w-6xl mx-auto">
-                        {filteredCentres.length > 0 ? (
+                        {loading ? (
+                            <div className="py-20 text-center text-gray-500">Loading centres...</div>
+                        ) : centres.length > 0 ? (
+
+
                             <div className="grid md:grid-cols-2 gap-6">
-                                {filteredCentres.map(centre => (
+                                {centres.map(centre => (
+
                                     <Link
                                         key={centre.id}
-                                        href={`/locations/${params.city}/${slugify(centre.name)}`}
+                                        href={`/locations/${params.city}/${centre.slug ?? slugify(centre.name)}`}
+
                                         className="block"
                                     >
                                         <Card className="hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-primary-200 group h-full">
@@ -62,6 +114,7 @@ export default function CityLocationsPage({ params }: { params: { city: string }
                                                             <Phone className="w-4 h-4" />
                                                             <span className="font-semibold text-sm">
                                                                 {centre.phone}
+
                                                             </span>
                                                         </div>
                                                         <div className="text-primary-500 font-bold text-sm flex items-center opacity-0 group-hover:opacity-100 transition-opacity">

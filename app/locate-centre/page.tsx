@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { MapPin, Phone, Search, Navigation, Star, Sun } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { slugify } from '@/lib/utils';
 
 // --- 1. Interactive Bubbles ---
 const InteractiveBubbles = () => {
@@ -11,14 +13,14 @@ const InteractiveBubbles = () => {
         const container = containerRef.current;
         if (!container) return;
         const bubbles: HTMLDivElement[] = [];
-        const bubbleCount = 15; 
+        const bubbleCount = 15;
         const colors = ['bg-pink-300', 'bg-purple-300', 'bg-blue-300', 'bg-green-300', 'bg-yellow-300', 'bg-orange-300'];
 
         for (let i = 0; i < bubbleCount; i++) {
             const bubble = document.createElement('div');
-            const size = Math.random() * 30 + 10; 
+            const size = Math.random() * 30 + 10;
             const color = colors[Math.floor(Math.random() * colors.length)];
-            
+
             bubble.className = `absolute rounded-full opacity-30 mix-blend-multiply filter blur-[1px] ${color} pointer-events-auto cursor-pointer transition-transform duration-300 hover:scale-110 shadow-sm border border-slate-100/30 backdrop-blur-[1px]`;
             bubble.style.width = `${size}px`;
             bubble.style.height = `${size}px`;
@@ -37,6 +39,7 @@ const InteractiveBubbles = () => {
 interface Centre {
     id: number;
     name: string;
+    slug?: string;
     address: string;
     city: string;
     state: string;
@@ -49,117 +52,62 @@ interface Centre {
 }
 
 export default function LocateCentrePage() {
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedState, setSelectedState] = useState('');
     const [selectedCity, setSelectedCity] = useState('');
 
-    // ENHANCED DATA: Added background tints and better border colors
-    const centres: Centre[] = [
-        { 
-            id: 1, 
-            name: 'T.I.M.E. Kids - Banjara Hills', 
-            address: 'Road No. 12, Banjara Hills', 
-            city: 'Hyderabad', 
-            state: 'Telangana', 
-            phone: '+91 40 1234 5678', 
-            color: 'bg-pink-100 text-pink-600', 
-            bgColor: 'bg-pink-50/50',
-            borderColor: 'border-pink-300',
-            shape: 'rounded-[40%_60%_70%_30%_/_50%_60%_40%_50%]', 
-            rotate: '-rotate-1' 
-        },
-        { 
-            id: 2, 
-            name: 'T.I.M.E. Kids - Jubilee Hills', 
-            address: 'Road No. 45, Jubilee Hills', 
-            city: 'Hyderabad', 
-            state: 'Telangana', 
-            phone: '+91 40 2345 6789', 
-            color: 'bg-blue-100 text-blue-600', 
-            bgColor: 'bg-blue-50/50',
-            borderColor: 'border-blue-300',
-            shape: 'rounded-[60%_40%_30%_70%_/_50%_40%_60%_50%]', 
-            rotate: 'rotate-1' 
-        },
-        { 
-            id: 3, 
-            name: 'T.I.M.E. Kids - Koramangala', 
-            address: '5th Block, Koramangala', 
-            city: 'Bangalore', 
-            state: 'Karnataka', 
-            phone: '+91 80 3456 7890', 
-            color: 'bg-green-100 text-green-600', 
-            bgColor: 'bg-green-50/50',
-            borderColor: 'border-green-300',
-            shape: 'rounded-[30%_70%_70%_30%_/_40%_50%_50%_60%]', 
-            rotate: '-rotate-2' 
-        },
-        { 
-            id: 4, 
-            name: 'T.I.M.E. Kids - Indiranagar', 
-            address: '100 Feet Road, Indiranagar', 
-            city: 'Bangalore', 
-            state: 'Karnataka', 
-            phone: '+91 80 4567 8901', 
-            color: 'bg-yellow-100 text-yellow-700', 
-            bgColor: 'bg-yellow-50/50',
-            borderColor: 'border-yellow-400',
-            shape: 'rounded-[70%_30%_30%_70%_/_60%_40%_60%_40%]', 
-            rotate: 'rotate-2' 
-        },
-        { 
-            id: 5, 
-            name: 'T.I.M.E. Kids - Anna Nagar', 
-            address: '2nd Avenue, Anna Nagar', 
-            city: 'Chennai', 
-            state: 'Tamil Nadu', 
-            phone: '+91 44 5678 9012', 
-            color: 'bg-purple-100 text-purple-600', 
-            bgColor: 'bg-purple-50/50',
-            borderColor: 'border-purple-300',
-            shape: 'rounded-[40%_60%_60%_40%_/_40%_60%_40%_60%]', 
-            rotate: '-rotate-1' 
-        },
-        { 
-            id: 6, 
-            name: 'T.I.M.E. Kids - Velachery', 
-            address: 'Main Road, Velachery', 
-            city: 'Chennai', 
-            state: 'Tamil Nadu', 
-            phone: '+91 44 6789 0123', 
-            color: 'bg-orange-100 text-orange-600', 
-            bgColor: 'bg-orange-50/50',
-            borderColor: 'border-orange-300',
-            shape: 'rounded-[70%_30%_30%_70%_/_50%_50%_50%_50%]', 
-            rotate: 'rotate-1' 
-        },
-        { 
-            id: 7, 
-            name: 'T.I.M.E. Kids - Koregaon Park', 
-            address: 'North Main Road, Koregaon Park', 
-            city: 'Pune', 
-            state: 'Maharashtra', 
-            phone: '+91 20 7890 1234', 
-            color: 'bg-red-100 text-red-600', 
-            bgColor: 'bg-red-50/50',
-            borderColor: 'border-red-300',
-            shape: 'rounded-[50%_50%_70%_30%_/_40%_50%_60%_50%]', 
-            rotate: '-rotate-2' 
-        },
-        { 
-            id: 8, 
-            name: 'T.I.M.E. Kids - Satellite', 
-            address: 'Satellite Road', 
-            city: 'Ahmedabad', 
-            state: 'Gujarat', 
-            phone: '+91 79 8901 2345', 
-            color: 'bg-teal-100 text-teal-600', 
-            bgColor: 'bg-teal-50/50',
-            borderColor: 'border-teal-300',
-            shape: 'rounded-[60%_40%_40%_60%_/_50%_40%_60%_50%]', 
-            rotate: 'rotate-2' 
-        },
-    ];
+    const [centres, setCentres] = useState<Centre[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCentres = async () => {
+            // Style presets to maintain the existing UI look
+            const STYLE_PRESETS = [
+                { color: 'bg-pink-100 text-pink-600', bgColor: 'bg-pink-50/50', borderColor: 'border-pink-300', shape: 'rounded-[40%_60%_70%_30%_/_50%_60%_40%_50%]', rotate: '-rotate-1' },
+                { color: 'bg-blue-100 text-blue-600', bgColor: 'bg-blue-50/50', borderColor: 'border-blue-300', shape: 'rounded-[60%_40%_30%_70%_/_50%_40%_60%_50%]', rotate: 'rotate-1' },
+                { color: 'bg-green-100 text-green-600', bgColor: 'bg-green-50/50', borderColor: 'border-green-300', shape: 'rounded-[30%_70%_70%_30%_/_40%_50%_50%_60%]', rotate: '-rotate-2' },
+                { color: 'bg-yellow-100 text-yellow-700', bgColor: 'bg-yellow-50/50', borderColor: 'border-yellow-400', shape: 'rounded-[70%_30%_30%_70%_/_60%_40%_60%_40%]', rotate: 'rotate-2' },
+                { color: 'bg-purple-100 text-purple-600', bgColor: 'bg-purple-50/50', borderColor: 'border-purple-300', shape: 'rounded-[40%_60%_60%_40%_/_40%_60%_40%_60%]', rotate: '-rotate-1' },
+                { color: 'bg-orange-100 text-orange-600', bgColor: 'bg-orange-50/50', borderColor: 'border-orange-300', shape: 'rounded-[70%_30%_30%_70%_/_50%_50%_50%_50%]', rotate: 'rotate-1' },
+                { color: 'bg-red-100 text-red-600', bgColor: 'bg-red-50/50', borderColor: 'border-red-300', shape: 'rounded-[50%_50%_70%_30%_/_40%_50%_60%_50%]', rotate: '-rotate-2' },
+                { color: 'bg-teal-100 text-teal-600', bgColor: 'bg-teal-50/50', borderColor: 'border-teal-300', shape: 'rounded-[60%_40%_40%_60%_/_50%_40%_60%_50%]', rotate: 'rotate-2' },
+            ];
+
+            try {
+                const response = await fetch('http://localhost:8000/api/franchises/public/');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+                const json = await response.json();
+                const data = Array.isArray(json) ? json : json.results;
+                // 👈 THIS IS THE FIX
+
+                const mappedCentres = data.map((item: any, index: number) => {
+
+                    const style = STYLE_PRESETS[index % STYLE_PRESETS.length];
+                    return {
+                        id: item.id,
+                        name: item.name,
+                        slug: item.slug,
+                        address: item.address,
+                        city: item.city,
+                        state: item.state,
+                        phone: item.contact_phone || item.phone,
+                        ...style
+                    };
+                });
+
+                setCentres(mappedCentres);
+            } catch (error) {
+                console.error('Error fetching centres:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchCentres();
+    }, []);
 
     const states = Array.from(new Set(centres.map(c => c.state))).sort();
     const cities = selectedState
@@ -186,18 +134,18 @@ export default function LocateCentrePage() {
                 <div className="absolute top-20 left-10 animate-pulse opacity-60 hidden md:block"><Sun className="text-orange-400 w-16 h-16" /></div>
 
                 <div className="container mx-auto px-4 relative z-10">
-                     <div className="inline-flex items-center gap-2 bg-white px-6 py-2 rounded-full shadow-sm mb-6 border border-slate-200 hover:scale-110 transition-transform cursor-pointer animate-float">
+                    <div className="inline-flex items-center gap-2 bg-white px-6 py-2 rounded-full shadow-sm mb-6 border border-slate-200 hover:scale-110 transition-transform cursor-pointer animate-float">
                         <Navigation className="w-5 h-5 text-green-500 animate-pulse" />
                         <span className="font-bold text-slate-600 tracking-wide uppercase text-sm">Find Your School</span>
                     </div>
-                    
+
                     <h1 className="font-display font-black text-4xl md:text-6xl mb-6 tracking-tight leading-tight">
                         <span className="text-slate-800">Locate a </span>
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 drop-shadow-sm filter">
                             Centre
                         </span>
                     </h1>
-                    
+
                     <p className="text-lg md:text-xl text-slate-500 font-medium max-w-2xl mx-auto">
                         Find the nearest <span className="font-bold text-blue-500">T.I.M.E. Kids</span> preschool in your area and visit us today!
                     </p>
@@ -259,11 +207,19 @@ export default function LocateCentrePage() {
             <section className="py-12 relative z-10">
                 <div className="container mx-auto px-4">
                     <div className="max-w-6xl mx-auto">
-                        {filteredCentres.length > 0 ? (
+                        {isLoading ? (
+                            <div className="flex justify-center items-center py-20 min-h-[300px]">
+                                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-pink-400"></div>
+                            </div>
+                        ) : filteredCentres.length > 0 ? (
                             <div className="grid md:grid-cols-2 gap-10 lg:gap-14">
                                 {filteredCentres.map((centre) => (
-                                    <div key={centre.id} className={`group relative transition-all duration-300 transform ${centre.rotate} hover:scale-[1.03] hover:z-20`}>
-                                        
+                                    <div
+                                        key={centre.id}
+                                        onClick={() => router.push(`/locations/${encodeURIComponent(centre.city)}/${centre.slug ?? slugify(centre.name)}`)}
+                                        className={`group relative transition-all duration-300 transform ${centre.rotate} hover:scale-[1.03] hover:z-20 cursor-pointer`}
+                                    >
+
                                         {/* Colored Shadow Blob (behind) - Now slightly stronger */}
                                         <div className={`absolute top-3 left-3 right-0 bottom-0 ${centre.color.split(' ')[0].replace('100', '200')} ${centre.shape} opacity-100 -z-10 transition-transform duration-300 group-hover:translate-x-1 group-hover:translate-y-1`}></div>
 
@@ -274,7 +230,7 @@ export default function LocateCentrePage() {
                                                 <div className={`w-16 h-16 bg-white rounded-full flex items-center justify-center flex-shrink-0 shadow-sm group-hover:rotate-12 transition-transform duration-500 border-2 ${centre.borderColor}`}>
                                                     <MapPin className={`w-8 h-8 ${centre.color.split(' ')[1]}`} />
                                                 </div>
-                                                
+
                                                 <div className="flex-1 min-w-0 pt-1">
                                                     <h3 className="font-display font-black text-2xl mb-2 text-slate-800 group-hover:text-pink-600 transition-colors break-words leading-tight">
                                                         {centre.name}
@@ -282,7 +238,7 @@ export default function LocateCentrePage() {
                                                     <p className="text-slate-600 font-medium text-base mb-3 leading-relaxed break-words">
                                                         {centre.address}
                                                     </p>
-                                                    
+
                                                     <div className="flex items-center gap-2 mb-5 flex-wrap">
                                                         <span className="bg-white/80 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide border border-white/50 shadow-sm">
                                                             {centre.city}
@@ -292,8 +248,12 @@ export default function LocateCentrePage() {
                                                             {centre.state}
                                                         </span>
                                                     </div>
-                                                    
-                                                    <a href={`tel:${centre.phone}`} className="inline-flex items-center gap-2 bg-slate-800 text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-slate-700 transition-all shadow-md hover:shadow-lg whitespace-nowrap group-hover:scale-105">
+
+                                                    <a
+                                                        href={`tel:${centre.phone}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="inline-flex items-center gap-2 bg-slate-800 text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-slate-700 transition-all shadow-md hover:shadow-lg whitespace-nowrap group-hover:scale-105"
+                                                    >
                                                         <Phone className="w-4 h-4" />
                                                         {centre.phone}
                                                     </a>
