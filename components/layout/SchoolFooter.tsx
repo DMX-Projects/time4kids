@@ -6,13 +6,19 @@ import Image from 'next/image';
 import { Phone, Mail, MessageCircle, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const SchoolFooter = () => {
+interface SchoolFooterProps {
+    homeUrl?: string;
+}
+
+const SchoolFooter = ({ homeUrl }: SchoolFooterProps) => {
+    const homeLink = homeUrl || '/';
     return (
         <footer className="relative w-full overflow-hidden bg-white mt-12">
             {/* Back to Main Site Navigation - Kept above the visual elements */}
             <div className="flex justify-center pb-12 bg-white relative z-10">
                 <Link
                     href="/"
+                    data-no-loader="true"
                     className="group flex items-center space-x-2 px-6 py-3 bg-white border-2 border-green-500 rounded-full text-green-700 font-bold max-w-xs hover:bg-green-50 transition-all hover:scale-105 active:scale-95 shadow-md"
                 >
                     <div className="bg-green-100 p-1.5 rounded-full">
@@ -52,7 +58,7 @@ const SchoolFooter = () => {
                         <div className="space-y-4 md:pl-12">
                             <h3 className="font-fredoka text-3xl font-bold text-yellow-300 drop-shadow-sm">Quick Links</h3>
                             <ul className="grid grid-cols-1 gap-2 font-bold text-base">
-                                <li><Link href="/" className="hover:text-yellow-200 transition-colors">Home</Link></li>
+                                <li><Link href={homeLink} className="hover:text-yellow-200 transition-colors">Home</Link></li>
                                 <li><Link href="/about" className="hover:text-yellow-200 transition-colors">About us</Link></li>
                                 <li><Link href="/admission" className="hover:text-yellow-200 transition-colors">Admissions</Link></li>
                                 <li><Link href="/programs" className="hover:text-yellow-200 transition-colors">Classes</Link></li>
@@ -77,7 +83,7 @@ const SchoolFooter = () => {
 
                             {/* Logo */}
                             <div className="pt-4">
-                                <Link href="/">
+                                <Link href={homeLink}>
                                     <div className="bg-white p-4 rounded-xl inline-block shadow-lg -rotate-2 hover:rotate-0 transition-transform duration-300">
                                         <div className="relative w-40 h-10">
                                             <Image

@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 interface SchoolBrandHeaderProps {
     schoolName: string;
     basePath?: string;
+    homeUrl?: string;
 }
 
 // ... imports remain the same
@@ -32,9 +33,9 @@ const FloatingElement = ({ children, delay = 0, duration = 3, className }: { chi
     </motion.div>
 );
 
-const SchoolBrandHeader = ({ schoolName, basePath = "/" }: SchoolBrandHeaderProps) => {
+const SchoolBrandHeader = ({ schoolName, basePath = "/", homeUrl }: SchoolBrandHeaderProps) => {
     // ... logic remains same
-    const homeLink = basePath === "/" ? "/" : basePath;
+    const homeLink = homeUrl || (basePath === "/" ? "/" : basePath);
 
     return (
         <div className="w-full font-sans">

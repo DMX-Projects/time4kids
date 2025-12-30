@@ -13,10 +13,11 @@ export default function SchoolLayout({ children }: { children: React.ReactNode }
     // const schoolSlug = typeof params.school === 'string' ? params.school : '';
 
     const basePath = `/locations/${params.city}/${params.school}`;
+    const cityHomeUrl = `/locations/${params.city}`;
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <SchoolBrandHeader schoolName="School Details" basePath={basePath} />
+            <SchoolBrandHeader schoolName="School Details" basePath={basePath} homeUrl={cityHomeUrl} />
 
             <AnimatePresence mode="wait">
                 <motion.div
@@ -31,7 +32,7 @@ export default function SchoolLayout({ children }: { children: React.ReactNode }
                 </motion.div>
             </AnimatePresence>
 
-            <SchoolFooter />
+            <SchoolFooter homeUrl={cityHomeUrl} />
         </div>
     );
 }
