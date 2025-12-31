@@ -1,13 +1,41 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
 import Image from 'next/image';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
+// Define the HeroSlide interface
+interface HeroSlide {
+    id: number;
+    image: string;
+    alt_text: string;
+    order: number;
+}
+
 export default function HeroSection() {
     const [showAdmissionModal, setShowAdmissionModal] = useState(false);
+    const [slides, setSlides] = useState<HeroSlide[]>([]);
+
+    useEffect(() => {
+        const fetchSlides = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/common/hero-slides/');
+                if (response.ok) {
+                    const data = await response.json();
+                    setSlides(data);
+                } else {
+                    console.error('Failed to fetch slides');
+                }
+            } catch (error) {
+                console.error('Error fetching slides:', error);
+            }
+        };
+
+        fetchSlides();
+    }, []);
 
     const settings = {
         dots: false,
@@ -23,40 +51,31 @@ export default function HeroSection() {
         nextArrow: <NextArrow />,
     };
 
+    // Fallback static slides if no dynamic slides are available
+    const heroSlides = slides.length > 0 ? slides : [
+        { id: 's1', image: "/slide1.jpg", alt_text: "T.I.M.E. Kids Slide 1" },
+        { id: 's2', image: "/images/center-images/center-slide-1.jpg", alt_text: "T.I.M.E. Kids Slide 2" },
+        { id: 's3', image: "/images/center-images/center-slide-2.jpg", alt_text: "T.I.M.E. Kids Slide 3" }
+    ];
+
     return (
         <>
             {/* Banner Slider Section */}
             <section className="banner-section">
                 <div className="banner-slider">
                     <Slider {...settings}>
-                        <div className="slide">
-                            <Image
-                                src="/slide1.jpg"
-                                alt="T.I.M.E. Kids Slide 1"
-                                width={1920}
-                                height={600}
-                                priority
-                                className="slide-image"
-                            />
-                        </div>
-                        <div className="slide">
-                            <Image
-                                src="/images/center-images/center-slide-1.jpg"
-                                alt="T.I.M.E. Kids Slide 2"
-                                width={1920}
-                                height={600}
-                                className="slide-image"
-                            />
-                        </div>
-                        <div className="slide">
-                            <Image
-                                src="/images/center-images/center-slide-2.jpg"
-                                alt="T.I.M.E. Kids Slide 3"
-                                width={1920}
-                                height={600}
-                                className="slide-image"
-                            />
-                        </div>
+                        {heroSlides.map((slide: any, index: number) => (
+                            <div className="slide" key={slide.id}>
+                                <Image
+                                    src={slide.image}
+                                    alt={slide.alt_text || "T.I.M.E. Kids Slide"}
+                                    width={1920}
+                                    height={600}
+                                    priority={index === 0}
+                                    className="slide-image"
+                                />
+                            </div>
+                        ))}
                     </Slider>
                 </div>
 
@@ -82,7 +101,6 @@ export default function HeroSection() {
                 .banner-section {
                     position: relative;
                     width: 100%;
-                    float: left;
                 }
 
                 .banner-slider {
@@ -91,7 +109,8 @@ export default function HeroSection() {
 
                 .slide-image {
                     width: 100%;
-                    height: auto;
+                    height: 600px;
+                    object-fit: cover;
                     display: block;
                 }
 
@@ -216,6 +235,10 @@ export default function HeroSection() {
                         display: inline-block;
                         margin: 15px 0;
                         font-size: 18px;
+                    }
+
+                    .slide-image {
+                        height: 300px;
                     }
                 }
             `}</style>

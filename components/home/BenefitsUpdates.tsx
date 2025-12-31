@@ -14,6 +14,8 @@ export default function BenefitsUpdates() {
         autoplay: true,
         autoplaySpeed: 4000,
         arrows: false,
+        vertical: true,
+        verticalSwiping: true,
     };
 
     const benefits = [
@@ -24,7 +26,7 @@ export default function BenefitsUpdates() {
         { number: 5, text: 'Operational Support', class: 'benefit5' },
     ];
 
-    const updates = [
+    const [updates, setUpdates] = React.useState([
         {
             date: '28-12-2015',
             text: "T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+ pre-schools is now poised for major expansion across the country.",
@@ -37,7 +39,21 @@ export default function BenefitsUpdates() {
             date: '15-11-2020',
             text: 'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
         },
-    ];
+    ]);
+
+    React.useEffect(() => {
+        // Use environment variable or default to localhost
+        const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+        fetch(`${apiUrl}/updates/`)
+            .then((res) => res.json())
+            .then((data) => {
+                const items = Array.isArray(data) ? data : data.results || [];
+                if (items.length > 0) {
+                    setUpdates(items);
+                }
+            })
+            .catch((err) => console.error('Failed to fetch updates:', err));
+    }, []);
 
     return (
         <div className="benefits-updates">
