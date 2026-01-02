@@ -18,7 +18,8 @@ const Footer = () => {
                     alt="Kids playing background"
                     fill
                     className="object-cover object-center"
-                    priority={false}
+                    priority={true}
+                    sizes="100vw"
                 />
             </div>
 

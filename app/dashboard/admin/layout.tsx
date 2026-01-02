@@ -1,11 +1,12 @@
 "use client";
 
-import { LayoutDashboard, Building2, CalendarDays, Briefcase, UserCircle, Inbox, Images } from "lucide-react";
+import { LayoutDashboard, Building2, CalendarDays, Briefcase, UserCircle, Inbox, Images, Film } from "lucide-react";
 
 import { DashboardShell, DashboardNavItem } from "@/components/layout/DashboardShell";
 import { AdminDataProvider } from "@/components/dashboard/admin/AdminDataProvider";
 
 const navItems: DashboardNavItem[] = [
+    { label: "Media Files", href: "/dashboard/admin/media", icon: <Images className="w-5 h-5" /> },
     { label: "Dashboard", href: "/dashboard/admin", icon: <LayoutDashboard className="w-5 h-5" /> },
     { label: "Franchise", href: "/dashboard/admin/manage-franchise", icon: <Building2 className="w-5 h-5" /> },
     { label: "Events", href: "/dashboard/admin/events", icon: <CalendarDays className="w-5 h-5" /> },

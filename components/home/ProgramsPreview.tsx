@@ -15,7 +15,7 @@ const ProgramsPreview = () => {
 
     const programs = [
         {
-            image: '/13.png',
+            image: '/day care.png',
             programName: 'Play Group',
             ageGroup: '1.5 - 2.5 years',
             description: 'Introduction to social interaction and basic motor skills.',
@@ -23,7 +23,7 @@ const ProgramsPreview = () => {
             yOffset: '-20px'
         },
         {
-            image: '/12.png',
+            image: '/faq2.jpeg',
             programName: 'Nursery',
             ageGroup: '2.5 - 3.5 years',
             description: 'Building foundation for language, numbers, and expression.',
@@ -39,7 +39,7 @@ const ProgramsPreview = () => {
             yOffset: '-30px'
         },
         {
-            image: '/16.png',
+            image: '/images/landing-banner.jpg',
             programName: 'Day Care',
             ageGroup: '1.5 - 5.5 years',
             description: 'Extended care with engaging activities throughout the day.',
@@ -69,7 +69,7 @@ const ProgramsPreview = () => {
                     width={80}
                     height={80}
                     className="absolute top-20 left-10 md:left-20 animate-bounce"
-                    style={{ animationDuration: '4s' }}
+                    style={{ animationDuration: '4s', height: 'auto' }}
                 />
                 <Image
                     src="/images/icon-bird2.png"
@@ -77,7 +77,7 @@ const ProgramsPreview = () => {
                     width={60}
                     height={60}
                     className="absolute top-40 right-16 md:right-32 animate-bounce"
-                    style={{ animationDuration: '5s', animationDelay: '1s' }}
+                    style={{ animationDuration: '5s', animationDelay: '1s', height: 'auto' }}
                 />
 
                 {/* Butterfly */}
@@ -87,7 +87,7 @@ const ProgramsPreview = () => {
                     width={70}
                     height={70}
                     className="absolute top-1/3 left-1/4 animate-pulse"
-                    style={{ animationDuration: '3s' }}
+                    style={{ animationDuration: '3s', height: 'auto' }}
                 />
 
                 {/* Whale */}
@@ -97,7 +97,7 @@ const ProgramsPreview = () => {
                     width={100}
                     height={100}
                     className="absolute bottom-40 right-10 md:right-20 animate-pulse"
-                    style={{ animationDuration: '4s', animationDelay: '0.5s' }}
+                    style={{ animationDuration: '4s', animationDelay: '0.5s', height: 'auto' }}
                 />
 
                 {/* School Bus */}
@@ -107,6 +107,7 @@ const ProgramsPreview = () => {
                     width={90}
                     height={90}
                     className="absolute bottom-32 left-1/3 opacity-40"
+                    style={{ height: 'auto' }}
                 />
             </div>
 
@@ -120,14 +121,21 @@ const ProgramsPreview = () => {
 
                 <div className="relative">
                     {/* Adventure Path Line (Static) */}
-                    <svg className="absolute top-1/2 left-0 w-full h-32 -translate-y-1/2 -z-10 opacity-20" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                    <svg className="hidden md:block absolute top-1/2 left-0 w-full h-32 -translate-y-1/2 -z-10" preserveAspectRatio="none" viewBox="0 0 1000 100">
                         <path
+                            id="adventurePath"
                             d="M0,50 Q125,0 250,50 T500,50 T750,50 T1000,50"
                             fill="none"
                             stroke="#003366"
                             strokeWidth="3"
-                            strokeDasharray="10 10"
+                            strokeDasharray="15 10"
+                            className="dashed-path opacity-20"
                         />
+                        <image href="/images/whale.png" width="50" height="50" x="-25" y="-25" style={{ transformBox: 'fill-box', transformOrigin: 'center' }}>
+                            <animateMotion dur="20s" repeatCount="indefinite" rotate="auto">
+                                <mpath href="#adventurePath" />
+                            </animateMotion>
+                        </image>
                     </svg>
 
                     {/* Program Cards (Static) */}
@@ -141,7 +149,7 @@ const ProgramsPreview = () => {
                                 <div className="relative group mb-6">
                                     <div className="absolute inset-0 rounded-full blur-2xl opacity-10" style={{ backgroundColor: program.color }} />
                                     <div className="relative w-48 h-48 rounded-full border-[10px] border-white shadow-xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                                        <Image src={program.image} alt={program.programName} fill className="object-cover" />
+                                        <Image src={program.image} alt={program.programName} fill sizes="(max-width: 768px) 100vw, 300px" className="object-cover" />
                                     </div>
                                     <div className="absolute -bottom-2 right-2 px-4 py-1.5 rounded-full text-white font-black text-[10px] shadow-lg rotate-12" style={{ backgroundColor: program.color }}>
                                         {program.ageGroup}
@@ -171,6 +179,21 @@ const ProgramsPreview = () => {
                     <path d={scallopPath} />
                 </svg>
             </div>
+            {/* CSS Animation for Dashed Line */}
+            <style jsx>{`
+                .dashed-path {
+                    animation: dashMove 20s linear infinite;
+                }
+
+                @keyframes dashMove {
+                    from {
+                        stroke-dashoffset: 1000;
+                    }
+                    to {
+                        stroke-dashoffset: 0;
+                    }
+                }
+            `}</style>
         </section>
     );
 };

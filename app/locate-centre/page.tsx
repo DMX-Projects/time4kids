@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { MapPin, Phone, Search, Navigation, Star, Sun } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { slugify } from '@/lib/utils';
+import { slugify, cn } from '@/lib/utils';
+import { apiUrl } from '@/lib/api-client';
 
 // --- 1. Interactive Bubbles ---
 const InteractiveBubbles = () => {
@@ -75,7 +76,7 @@ export default function LocateCentrePage() {
             ];
 
             try {
-                const response = await fetch('http://localhost:8000/api/franchises/public/');
+                const response = await fetch(apiUrl('/franchises/public/'));
                 if (!response.ok) {
                     throw new Error('Failed to fetch data');
                 }

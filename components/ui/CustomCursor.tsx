@@ -3,122 +3,146 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 
-type CursorState = 'default' | 'hover' | 'click';
-
 const CustomCursor = () => {
     const cursorRef = useRef<HTMLDivElement>(null);
-    const cursorDotRef = useRef<HTMLDivElement>(null);
-    const [cursorState, setCursorState] = useState<CursorState>('default');
-    const mousePos = useRef({ x: 0, y: 0 });
-    const cursorPos = useRef({ x: 0, y: 0 });
+    const cursorInnerRef = useRef<HTMLDivElement>(null);
+    const [isPointer, setIsPointer] = useState(false);
+    const [isActive, setIsActive] = useState(false);
+    const [isVisible, setIsVisible] = useState(false); // Initially hidden until mouse moves
 
     useEffect(() => {
-        // Only show on desktop devices
-        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        if (isTouchDevice) return;
+        // Only run on client with fine pointer (mouse)
+        const isFinePointer = window.matchMedia('(pointer: fine)').matches;
+        if (!isFinePointer) return;
 
         const cursor = cursorRef.current;
-        const cursorDot = cursorDotRef.current;
-        if (!cursor || !cursorDot) return;
+        const cursorInner = cursorInnerRef.current;
 
-        // Mouse move handler
-        const handleMouseMove = (e: MouseEvent) => {
-            mousePos.current = { x: e.clientX, y: e.clientY };
+        if (!cursor || !cursorInner) return;
+
+        // Use gsap.quickTo for performance optimized movement
+        const xTo = gsap.quickTo(cursor, "x", { duration: 0.1, ease: "power3.out" });
+        const yTo = gsap.quickTo(cursor, "y", { duration: 0.1, ease: "power3.out" });
+
+        // Tilt effect logic
+        const rotateTo = gsap.quickTo(cursor, "rotation", { duration: 0.2, ease: "power2.out" });
+
+        let lastX = 0;
+        let lastY = 0;
+        let rotation = 0; // -15 to 0 (resting)
+
+        const onMouseMove = (e: MouseEvent) => {
+            // Make visible on first move
+            if (!isVisible) setIsVisible(true);
+
+            // Move cursor
+            xTo(e.clientX);
+            yTo(e.clientY);
+
+            // Calculate tilt based on movement direction
+            const deltaX = e.clientX - lastX;
+            // Limit rotation between -30 and 10 degrees based on horizontal speed
+            const targetRotation = Math.max(-30, Math.min(10, deltaX * 0.5 - 15));
+
+            rotateTo(targetRotation);
+
+            lastX = e.clientX;
+            lastY = e.clientY;
+
+            // Check if hovering over clickable elements
+            const target = e.target as HTMLElement;
+            const isClickable = window.getComputedStyle(target).cursor === 'pointer' ||
+                target.tagName === 'A' ||
+                target.tagName === 'BUTTON' ||
+                target.closest('a') !== null ||
+                target.closest('button') !== null;
+
+            setIsPointer(isClickable);
         };
 
-        // Smooth cursor animation
-        const animateCursor = () => {
-            const dx = mousePos.current.x - cursorPos.current.x;
-            const dy = mousePos.current.y - cursorPos.current.y;
+        const onMouseDown = () => setIsActive(true);
+        const onMouseUp = () => setIsActive(false);
 
-            cursorPos.current.x += dx * 0.15;
-            cursorPos.current.y += dy * 0.15;
-
-            gsap.set(cursor, {
-                x: cursorPos.current.x,
-                y: cursorPos.current.y,
-            });
-
-            gsap.set(cursorDot, {
-                x: mousePos.current.x,
-                y: mousePos.current.y,
-            });
-
-            requestAnimationFrame(animateCursor);
-        };
-
-        // Handle hover states
-        const handleMouseEnter = () => setCursorState('hover');
-        const handleMouseLeave = () => setCursorState('default');
-        const handleMouseDown = () => setCursorState('click');
-        const handleMouseUp = () => setCursorState('hover');
-
-        // Add listeners to interactive elements
-        const interactiveElements = document.querySelectorAll(
-            'a, button, input, textarea, select, [role="button"], .cursor-pointer'
-        );
-
-        interactiveElements.forEach((el) => {
-            el.addEventListener('mouseenter', handleMouseEnter);
-            el.addEventListener('mouseleave', handleMouseLeave);
-            el.addEventListener('mousedown', handleMouseDown);
-            el.addEventListener('mouseup', handleMouseUp);
-        });
-
-        window.addEventListener('mousemove', handleMouseMove);
-        animateCursor();
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mouseup', onMouseUp);
 
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            interactiveElements.forEach((el) => {
-                el.removeEventListener('mouseenter', handleMouseEnter);
-                el.removeEventListener('mouseleave', handleMouseLeave);
-                el.removeEventListener('mousedown', handleMouseDown);
-                el.removeEventListener('mouseup', handleMouseUp);
-            });
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mousedown', onMouseDown);
+            window.removeEventListener('mouseup', onMouseUp);
         };
-    }, []);
+    }, [isVisible]);
 
-    // Don't render on touch devices
-    if (typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
-        return null;
-    }
+    useEffect(() => {
+        if (!cursorInnerRef.current) return;
+
+        if (isPointer) {
+            gsap.to(cursorInnerRef.current, {
+                scale: 1.2,
+                duration: 0.3,
+                ease: "back.out(1.7)"
+            });
+        } else {
+            gsap.to(cursorInnerRef.current, {
+                scale: 1,
+                duration: 0.3,
+                ease: "power2.out"
+            });
+        }
+    }, [isPointer]);
+
+    useEffect(() => {
+        if (!cursorInnerRef.current) return;
+
+        if (isActive) {
+            gsap.to(cursorInnerRef.current, {
+                scale: 0.8,
+                rotation: -10,
+                duration: 0.1,
+                ease: "power1.out"
+            });
+        } else {
+            gsap.to(cursorInnerRef.current, {
+                scale: isPointer ? 1.2 : 1,
+                rotation: 0,
+                duration: 0.3,
+                ease: "power2.out"
+            });
+        }
+    }, [isActive, isPointer]);
+
+    if (typeof window !== 'undefined' && !window.matchMedia('(pointer: fine)').matches) return null;
 
     return (
-        <>
-            <style jsx global>{`
-        * {
-          cursor: none !important;
-        }
-      `}</style>
-            {/* Outer cursor ring */}
-            <div
-                ref={cursorRef}
-                className="pointer-events-none fixed top-0 left-0 z-[9999] mix-blend-difference"
-                style={{ transform: 'translate(-50%, -50%)' }}
-            >
-                <div
-                    className={`rounded-full border-2 border-primary-400 transition-all duration-300 ${cursorState === 'hover'
-                            ? 'w-16 h-16 bg-primary-400/20'
-                            : cursorState === 'click'
-                                ? 'w-12 h-12 bg-primary-500/30'
-                                : 'w-12 h-12 bg-transparent'
-                        }`}
-                />
+        <div
+            ref={cursorRef}
+            className={`fixed top-0 left-0 z-[9999] pointer-events-none mix-blend-normal ${!isVisible ? 'opacity-0' : 'opacity-100'}`}
+            style={{
+                willChange: 'transform',
+                // Adjusted offset for baby cursor (centering it)
+                marginLeft: -20,
+                marginTop: -20
+            }}
+        >
+            <div ref={cursorInnerRef} className="origin-center relative drop-shadow-xl">
+                {/* Cute Baby SVG */}
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="filter drop-shadow-md">
+                    <circle cx="12" cy="12" r="10" fill="#fecaca" stroke="#f87171" strokeWidth="1.5" />
+                    {/* Hair */}
+                    <path d="M12 2C9 2 6 4 6 7C6 7 8 5 12 5C16 5 18 7 18 7C18 4 15 2 12 2Z" fill="#78350f" />
+                    {/* Eyes */}
+                    <circle cx="9" cy="11" r="1.5" fill="#374151" />
+                    <circle cx="15" cy="11" r="1.5" fill="#374151" />
+                    {/* Cheeks */}
+                    <circle cx="7.5" cy="13.5" r="1.5" fill="#fca5a5" opacity="0.6" />
+                    <circle cx="16.5" cy="13.5" r="1.5" fill="#fca5a5" opacity="0.6" />
+                    {/* Smile - Cute small mouth */}
+                    <path d="M10 15C10 15 11 16 12 16C13 16 14 15 14 15" stroke="#374151" strokeWidth="1.2" strokeLinecap="round" />
+                    {/* Pacifier handle (optional hint) */}
+                </svg>
             </div>
-
-            {/* Inner cursor dot */}
-            <div
-                ref={cursorDotRef}
-                className="pointer-events-none fixed top-0 left-0 z-[9999]"
-                style={{ transform: 'translate(-50%, -50%)' }}
-            >
-                <div
-                    className={`rounded-full bg-primary-600 mix-blend-difference transition-all duration-100 ${cursorState === 'click' ? 'w-2 h-2' : 'w-3 h-3'
-                        }`}
-                />
-            </div>
-        </>
+        </div>
     );
 };
 

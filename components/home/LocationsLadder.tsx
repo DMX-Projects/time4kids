@@ -107,6 +107,7 @@ const LocationsLadder = () => {
                     fill
                     className="object-cover object-center"
                     priority={false}
+                    sizes="100vw"
                 />
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm"></div>
             </div>
