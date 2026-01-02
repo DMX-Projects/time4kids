@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { Images, Plus, Pencil, Trash2, Eye, EyeOff, Upload, X } from "lucide-react";
 import Image from "next/image";
+import { mediaUrl, apiUrl } from "@/lib/api-client";
 
 interface HeroSlide {
     id: number;
@@ -33,7 +34,7 @@ export default function HeroSlidesPage() {
     const fetchSlides = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:8000/api/common/hero-slides/');
+            const response = await fetch(apiUrl('/common/hero-slides/'));
             if (response.ok) {
                 const data = await response.json();
                 setSlides(data);
@@ -96,7 +97,7 @@ export default function HeroSlidesPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Are you sure you want to delete this slide?")) return;
         try {
-            const response = await fetch(`http://localhost:8000/api/common/hero-slides/${id}/`, {
+            const response = await fetch(apiUrl(`/common/hero-slides/${id}/`), {
                 method: 'DELETE',
             });
             if (response.ok) {
@@ -126,7 +127,7 @@ export default function HeroSlidesPage() {
                     formData.append("image", imageFiles[0]); // Only take first file for edit
                 }
 
-                const response = await fetch(`http://localhost:8000/api/common/hero-slides/${editingId}/`, {
+                const response = await fetch(apiUrl(`/common/hero-slides/${editingId}/`), {
                     method: 'PATCH',
                     body: formData,
                 });
@@ -150,7 +151,7 @@ export default function HeroSlidesPage() {
                     formData.append("order", (form.order + index).toString());
                     formData.append("is_active", form.is_active ? "true" : "false");
 
-                    return fetch('http://localhost:8000/api/common/hero-slides/', {
+                    return fetch(apiUrl('/common/hero-slides/'), {
                         method: 'POST',
                         body: formData,
                     });
@@ -201,7 +202,7 @@ export default function HeroSlidesPage() {
                                 <td className="px-4 py-3">
                                     <div className="relative w-24 h-12 rounded overflow-hidden bg-slate-100 border border-slate-200">
                                         <Image
-                                            src={slide.image}
+                                            src={mediaUrl(slide.image)}
                                             alt={slide.alt_text}
                                             fill
                                             className="object-cover"

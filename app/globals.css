@@ -67,6 +67,19 @@ body {
 }
 
 /* Accessibility - respect reduced motion */
+@media (pointer: fine) {
+
+  html,
+  body,
+  button,
+  a,
+  [role="button"],
+  input[type="submit"],
+  input[type="image"] {
+    cursor: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   *,

@@ -51,7 +51,7 @@ const FloatingBubbles = ({ count = 20 }) => (
 // Wavy Divider Component
 const WavyDivider = ({ flip = false, color = 'fill-white' }) => (
     <div className={`w-full ${flip ? 'rotate-180' : ''}`} style={{ lineHeight: 0 }}>
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-16 md:h-24">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-16 md:h-24 wave-anim">
             <path d="M0,0 C150,80 350,80 600,50 C850,20 1050,20 1200,50 L1200,120 L0,120 Z" className={color} />
         </svg>
     </div>
@@ -120,25 +120,25 @@ export default function AboutPage() {
                 <TwinklingStars count={20} />
 
                 {/* Animated Floating Shapes */}
-                <div className="absolute top-10 left-10 w-20 h-20 bg-yellow-300 rounded-full opacity-30 animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}></div>
-                <div className="absolute bottom-20 right-20 w-16 h-16 bg-pink-300 rounded-full opacity-30 animate-bounce" style={{ animationDelay: '1s', animationDuration: '4s' }}></div>
-                <div className="absolute top-40 right-40 w-12 h-12 bg-blue-300 rounded-full opacity-30 animate-bounce" style={{ animationDelay: '2s', animationDuration: '3.5s' }}></div>
+                <div className="absolute top-10 left-10 w-20 h-20 bg-yellow-300 rounded-full opacity-30 animate-drift" style={{ animationDelay: '0s' }}></div>
+                <div className="absolute bottom-20 right-20 w-16 h-16 bg-pink-300 rounded-full opacity-30 animate-drift-slow" style={{ animationDelay: '1s' }}></div>
+                <div className="absolute top-40 right-40 w-12 h-12 bg-blue-300 rounded-full opacity-30 animate-drift" style={{ animationDelay: '2s' }}></div>
 
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
-                        <div className="inline-block mb-4">
+                        <div className="inline-block mb-4 animate-on-scroll">
                             <span className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
                                 <Sparkles className="inline w-4 h-4 mr-2" />
                                 Trusted by 250+ Schools Nationwide
                             </span>
                         </div>
-                        <h1 className="font-luckiest text-5xl md:text-7xl mb-4 animate-fade-in tracking-wider text-[#003366]">
+                        <h1 className="font-luckiest text-5xl md:text-7xl mb-4 animate-on-scroll delay-100 tracking-wider text-[#003366]">
                             About <span className="text-[#E67E22]">T.I.M.E. Kids</span>
                         </h1>
-                        <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-6">
+                        <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-6 animate-on-scroll delay-200">
                             Where little dreamers become big achievers!
                         </p>
-                        <p className="text-base text-gray-600">
+                        <p className="text-base text-gray-600 animate-on-scroll delay-300">
                             A legacy of educational excellence spanning over 17 years in early childhood education
                         </p>
                     </div>
@@ -152,7 +152,7 @@ export default function AboutPage() {
             <section className="py-8 bg-white relative overflow-hidden">
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-5xl mx-auto">
-                        <div className="text-center mb-8">
+                        <div className="text-center mb-8 animate-on-scroll">
                             <h2 className="font-bubblegum text-4xl md:text-5xl mb-3 text-[#003366] tracking-wide">
                                 Our <span className="text-[#ef5f5f]">Magical</span> Story
                             </h2>
@@ -160,60 +160,60 @@ export default function AboutPage() {
                         </div>
 
                         {/* Content Cards */}
-                        <div className="space-y-4 mb-8">
-                            <div className="flex items-start gap-6 p-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
-                                <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <div className="space-y-8 mb-12">
+                            <div className="flex items-start gap-6 p-8 bg-gradient-to-br from-blue-50 to-purple-50 shadow-lg cloud-card-1 hover-float transition-all relative z-10 animate-on-scroll delay-100">
+                                <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg animate-bounce" style={{ animationDuration: '3s' }}>
                                     <School className="w-8 h-8 text-white" />
                                 </div>
-                                <p className="text-gray-700 leading-relaxed">
+                                <p className="text-gray-700 leading-relaxed text-lg">
                                     T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with <span className="font-bold text-primary-600">250+ pre-schools</span> is now poised for major expansion across the country.
                                 </p>
                             </div>
 
-                            <div className="flex items-start gap-6 p-6 bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
-                                <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-pink-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <div className="flex items-start gap-6 p-8 bg-gradient-to-br from-pink-50 to-purple-50 shadow-lg cloud-card-2 hover-float transition-all ml-4 md:ml-12 relative z-10 animate-on-scroll delay-200">
+                                <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg animate-bounce" style={{ animationDuration: '4s' }}>
                                     <Home className="w-8 h-8 text-white" />
                                 </div>
-                                <p className="text-gray-700 leading-relaxed">
+                                <p className="text-gray-700 leading-relaxed text-lg">
                                     The programme at T.I.M.E. Kids pre-schools aims at making the transition from home to school easy, by providing the <span className="font-semibold text-secondary-600">warm, safe and caring learning environment</span> that young children have at home. Our play schools offer wholesome, fun-filled and memorable childhood education to our children.
                                 </p>
                             </div>
 
-                            <div className="flex items-start gap-6 p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
-                                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                            <div className="flex items-start gap-6 p-8 bg-gradient-to-br from-purple-50 to-blue-50 shadow-lg cloud-card-3 hover-float transition-all relative z-10 animate-on-scroll delay-300">
+                                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg animate-bounce" style={{ animationDuration: '3.5s' }}>
                                     <GraduationCap className="w-8 h-8 text-white" />
                                 </div>
-                                <p className="text-gray-700 leading-relaxed">
+                                <p className="text-gray-700 leading-relaxed text-lg">
                                     T.I.M.E. Kids pre-schools are backed by our educational expertise of <span className="font-bold text-primary-600">over 30 years</span>, well trained care providers and a balanced educational programme. The programme at T.I.M.E. Kids pre-schools is based on the principles of age-appropriate child development practices.
                                 </p>
                             </div>
                         </div>
 
                         {/* Fun Stats with Icons */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 animate-on-scroll delay-400">
                             <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105">
-                                <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg">
+                                <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg animate-ping" style={{ animationDuration: '3s' }}>
                                     <School className="w-7 h-7 text-white" />
                                 </div>
                                 <div className="text-2xl font-bold text-primary-600 mb-1">250+</div>
                                 <div className="text-xs text-gray-600 font-medium">Pre-schools</div>
                             </div>
                             <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105">
-                                <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg">
+                                <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg animate-ping" style={{ animationDuration: '3.5s' }}>
                                     <Award className="w-7 h-7 text-white" />
                                 </div>
                                 <div className="text-2xl font-bold text-secondary-600 mb-1">30+</div>
                                 <div className="text-xs text-gray-600 font-medium">Years Legacy</div>
                             </div>
                             <div className="text-center p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105">
-                                <div className="w-14 h-14 bg-gradient-to-br from-pink-400 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg">
+                                <div className="w-14 h-14 bg-gradient-to-br from-pink-400 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg animate-ping" style={{ animationDuration: '4s' }}>
                                     <Heart className="w-7 h-7 text-white" />
                                 </div>
                                 <div className="text-2xl font-bold text-pink-600 mb-1">17+</div>
                                 <div className="text-xs text-gray-600 font-medium">Years in ECE</div>
                             </div>
                             <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105">
-                                <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg">
+                                <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg animate-ping" style={{ animationDuration: '4.5s' }}>
                                     <Users className="w-7 h-7 text-white" />
                                 </div>
                                 <div className="text-2xl font-bold text-purple-600 mb-1">1000s</div>
@@ -232,8 +232,8 @@ export default function AboutPage() {
                 <TwinklingStars count={15} />
 
                 {/* Decorative Elements */}
-                <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-yellow-300 to-orange-300 rounded-full opacity-20 blur-2xl"></div>
-                <div className="absolute bottom-10 right-10 w-40 h-40 bg-gradient-to-br from-pink-300 to-purple-300 rounded-full opacity-20 blur-2xl"></div>
+                <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-yellow-300 to-orange-300 rounded-full opacity-20 blur-2xl animate-drift"></div>
+                <div className="absolute bottom-10 right-10 w-40 h-40 bg-gradient-to-br from-pink-300 to-purple-300 rounded-full opacity-20 blur-2xl animate-drift-slow"></div>
 
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="text-center mb-8">
@@ -243,32 +243,39 @@ export default function AboutPage() {
                         <p className="text-gray-600 text-base">Our guiding stars in nurturing young minds</p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto mb-8">
-                        <Card className="bg-gradient-to-br from-primary-500 to-primary-600 text-white hover:scale-105 transition-transform relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-4 mb-4">
-                                    <Target className="w-16 h-16" />
-                                    <h3 className="font-display font-bold text-3xl">Our Vision</h3>
+                    <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto mb-12">
+                        <div className="relative p-1">
+                            {/* Decorative backing for depth */}
+                            <div className="absolute inset-0 bg-[#ef5f5f] cloud-card-4 rotate-3 opacity-20"></div>
+                            <Card className="bg-gradient-to-br from-primary-500 to-primary-600 text-white cloud-card-1 hover-float relative overflow-hidden h-full">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <Target className="w-16 h-16 animate-pulse" />
+                                        <h3 className="font-display font-bold text-3xl">Our Vision</h3>
+                                    </div>
+                                    <p className="text-white/95 leading-relaxed text-lg">
+                                        To be the most trusted and preferred preschool chain in India, providing world-class early childhood education that nurtures every child&apos;s potential and prepares them for a bright future.
+                                    </p>
                                 </div>
-                                <p className="text-white/95 leading-relaxed text-lg">
-                                    To be the most trusted and preferred preschool chain in India, providing world-class early childhood education that nurtures every child&apos;s potential and prepares them for a bright future.
-                                </p>
-                            </div>
-                        </Card>
+                            </Card>
+                        </div>
 
-                        <Card className="bg-gradient-to-br from-secondary-500 to-secondary-600 text-white hover:scale-105 transition-transform relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-4 mb-4">
-                                    <Lightbulb className="w-16 h-16" />
-                                    <h3 className="font-display font-bold text-3xl">Our Philosophy</h3>
+                        <div className="relative p-1">
+                            <div className="absolute inset-0 bg-[#fbd267] cloud-card-3 -rotate-2 opacity-20"></div>
+                            <Card className="bg-gradient-to-br from-secondary-500 to-secondary-600 text-white cloud-card-2 hover-float relative overflow-hidden h-full">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <Lightbulb className="w-16 h-16 animate-pulse" />
+                                        <h3 className="font-display font-bold text-3xl">Our Philosophy</h3>
+                                    </div>
+                                    <p className="text-white/95 leading-relaxed text-lg">
+                                        We believe in holistic development through play-based learning, fostering creativity, curiosity, and confidence in every child. Our approach combines traditional values with modern educational practices.
+                                    </p>
                                 </div>
-                                <p className="text-white/95 leading-relaxed text-lg">
-                                    We believe in holistic development through play-based learning, fostering creativity, curiosity, and confidence in every child. Our approach combines traditional values with modern educational practices.
-                                </p>
-                            </div>
-                        </Card>
+                            </Card>
+                        </div>
                     </div>
 
                     {/* Core Values */}
@@ -389,6 +396,75 @@ export default function AboutPage() {
                     </div>
                 </div>
             </section>
-        </div>
+            <style jsx>{`
+                /* Fade In Up Animation for Content */
+                .animate-on-scroll {
+                    animation: fadeInUp 0.8s ease-out forwards;
+                    opacity: 0;
+                }
+                
+                /* Staggered delays children */
+                .delay-100 { animation-delay: 0.1s; }
+                .delay-200 { animation-delay: 0.2s; }
+                .delay-300 { animation-delay: 0.3s; }
+                .delay-400 { animation-delay: 0.4s; }
+
+                @keyframes fadeInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                /* Drifting Animation for Background Elements */
+                .animate-drift {
+                    animation: drift 10s ease-in-out infinite alternate;
+                }
+                
+                .animate-drift-slow {
+                    animation: drift 15s ease-in-out infinite alternate-reverse;
+                }
+
+                @keyframes drift {
+                    0% { transform: translate(0, 0); }
+                    100% { transform: translate(20px, 10px); }
+                }
+
+                /* Softer, Cleaner Cloud Shapes */
+                .cloud-card-1 { border-radius: 30px; }
+                .cloud-card-2 { border-radius: 30px; }
+                .cloud-card-3 { border-radius: 30px; }
+                .cloud-card-4 { border-radius: 30px; }
+                
+                .hover-float {
+                    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+                }
+                .hover-float:hover {
+                    transform: translateY(-8px);
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                }
+
+                .wave-anim path {
+                    animation: waveMove 20s linear infinite;
+                }
+                
+                @keyframes waveMove {
+                    0% { transform: translateX(0); }
+                    50% { transform: translateX(-2%); }
+                    100% { transform: translateX(0); }
+                }
+
+                /* More pronounced bounce for bubbles */
+                @keyframes wobble {
+                    0%, 100% { transform: rotate(0deg); }
+                    25% { transform: rotate(-2deg); }
+                    75% { transform: rotate(2deg); }
+                }
+            `}</style>
+        </div >
     );
 }

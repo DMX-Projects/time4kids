@@ -23,7 +23,7 @@ export default function MethodologySection() {
                         <li key={index} className={item.class}>
                             <Link href="#">
                                 <span>
-                                    <Image src={item.icon} alt={item.label} width={60} height={60} />
+                                    <Image src={item.icon} alt={item.label} width={60} height={60} style={{ height: 'auto' }} />
                                 </span>
                                 <strong>{item.label}</strong>
                             </Link>
@@ -34,7 +34,7 @@ export default function MethodologySection() {
 
             <style jsx>{`
                 .methodology-block {
-                    background: #bde2f4 url(/bg1.jpg) no-repeat center bottom;
+                    background: #bde2f4 url(/bg1.png) no-repeat center bottom;
                     background-size: cover;
                     text-align: center;
                     padding: 50px 0;
@@ -153,8 +153,14 @@ export default function MethodologySection() {
 
                 @media (max-width: 768px) {
                     .methodology-nav li {
-                        flex-basis: 40%;
-                        margin-bottom: 15px;
+                        flex-basis: 45%; /* 2 items per row */
+                        margin: 10px 0;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .methodology-nav li {
+                        flex-basis: 100%; /* 1 item per row on very small screens */
                     }
                 }
             `}</style>

@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Slider from 'react-slick';
+import { apiUrl } from '@/lib/api-client';
 
 export default function BenefitsUpdates() {
     const updatesSettings = {
@@ -42,17 +43,22 @@ export default function BenefitsUpdates() {
     ]);
 
     React.useEffect(() => {
-        // Use environment variable or default to localhost
-        const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-        fetch(`${apiUrl}/updates/`)
-            .then((res) => res.json())
-            .then((data) => {
-                const items = Array.isArray(data) ? data : data.results || [];
-                if (items.length > 0) {
-                    setUpdates(items);
+        const fetchUpdates = async () => {
+            try {
+                const response = await fetch(apiUrl('/updates/'));
+                if (response.ok) {
+                    const data = await response.json();
+                    const items = Array.isArray(data) ? data : data.results || [];
+                    if (items.length > 0) {
+                        setUpdates(items);
+                    }
                 }
-            })
-            .catch((err) => console.error('Failed to fetch updates:', err));
+            } catch (err) {
+                console.error('Failed to fetch updates:', err);
+            }
+        };
+
+        fetchUpdates();
     }, []);
 
     return (
@@ -108,7 +114,7 @@ export default function BenefitsUpdates() {
 
             <style jsx global>{`
                 .benefits-updates {
-                    background: #fff url(/pat2.png) no-repeat 85% bottom;
+                    background: #fff;
                     padding: 50px 0;
                 }
 
@@ -301,10 +307,27 @@ export default function BenefitsUpdates() {
                 @media (max-width: 768px) {
                     .benefits-updates {
                         background: none;
+                        padding: 30px 0;
                     }
 
                     .benefits-list li {
                         font-size: 16px;
+                        line-height: 1.4;
+                        margin-bottom: 15px;
+                    }
+                    
+                    .benefits-list strong {
+                        width: 40px;
+                        height: 40px;
+                        font-size: 20px;
+                        line-height: 40px;
+                        margin-right: 15px;
+                    }
+
+                    .benefits-updates h3 {
+                        font-size: 24px;
+                        line-height: 30px;
+                        text-align: center;
                     }
                 }
             `}</style>

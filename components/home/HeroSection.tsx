@@ -6,6 +6,9 @@ import Image from 'next/image';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { mediaUrl, apiUrl } from '@/lib/api-client';
+import Modal from '@/components/ui/Modal';
+import AdmissionForm from '@/components/admission/AdmissionForm';
 
 // Define the HeroSlide interface
 interface HeroSlide {
@@ -18,11 +21,12 @@ interface HeroSlide {
 export default function HeroSection() {
     const [showAdmissionModal, setShowAdmissionModal] = useState(false);
     const [slides, setSlides] = useState<HeroSlide[]>([]);
+    const [particles, setParticles] = useState<Array<{ x: string, y: string, anim: string, top: string, left: string }>>([]);
 
     useEffect(() => {
         const fetchSlides = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/common/hero-slides/');
+                const response = await fetch(apiUrl('/common/hero-slides/'));
                 if (response.ok) {
                     const data = await response.json();
                     setSlides(data);
@@ -35,6 +39,16 @@ export default function HeroSection() {
         };
 
         fetchSlides();
+
+        // Generate particles for magnetic button
+        const newParticles = Array.from({ length: 50 }).map(() => ({
+            x: `${Math.random() * 200 - 100}px`,
+            y: `${Math.random() * 200 - 100}px`,
+            anim: `${1 + Math.random() * 2}s`,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+        }));
+        setParticles(newParticles);
     }, []);
 
     const settings = {
@@ -67,10 +81,10 @@ export default function HeroSection() {
                         {heroSlides.map((slide: any, index: number) => (
                             <div className="slide" key={slide.id}>
                                 <Image
-                                    src={slide.image}
+                                    src={slide.image.startsWith('/') && !slide.image.startsWith('/media') ? slide.image : mediaUrl(slide.image)}
                                     alt={slide.alt_text || "T.I.M.E. Kids Slide"}
-                                    width={1920}
-                                    height={600}
+                                    fill
+                                    sizes="100vw"
                                     priority={index === 0}
                                     className="slide-image"
                                 />
@@ -87,15 +101,35 @@ export default function HeroSection() {
                                 <span>16,00,000</span> + Students
                             </p>
                             <button
-                                className="btn-enquiry"
+                                className="btn-enquiry magnetic-button"
                                 onClick={() => setShowAdmissionModal(true)}
                             >
-                                ADMISSION ENQUIRY
+                                <span className="relative z-10">ADMISSION ENQUIRY</span>
+                                <div className="particle-field">
+                                    {particles.map((p, i) => (
+                                        <div key={i} className="particle" style={{
+                                            '--x': p.x,
+                                            '--y': p.y,
+                                            animationDuration: p.anim,
+                                            left: p.left,
+                                            top: p.top
+                                        } as React.CSSProperties} />
+                                    ))}
+                                </div>
                             </button>
                         </div>
                     </div>
                 </div>
             </section>
+
+            <Modal
+                isOpen={showAdmissionModal}
+                onClose={() => setShowAdmissionModal(false)}
+                title="Admission Enquiry"
+                size="lg"
+            >
+                <AdmissionForm />
+            </Modal>
 
             <style jsx global>{`
                 .banner-section {
@@ -105,6 +139,12 @@ export default function HeroSection() {
 
                 .banner-slider {
                     position: relative;
+                }
+
+                .slide {
+                    position: relative;
+                    width: 100%;
+                    height: 600px;
                 }
 
                 .slide-image {
@@ -199,6 +239,44 @@ export default function HeroSection() {
                     color: #fff;
                 }
 
+                /* Magnetic Button Particles */
+                .magnetic-button {
+                    position: relative;
+                    overflow: visible !important;
+                }
+
+                .particle-field {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    width: 100%;
+                    height: 100%;
+                    transform: translate(-50%, -50%);
+                    pointer-events: none;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                    z-index: 0;
+                }
+
+                .magnetic-button:hover .particle-field {
+                    opacity: 1;
+                }
+
+                .particle {
+                    position: absolute;
+                    width: 6px;
+                    height: 6px;
+                    background: #f9d71c;
+                    border-radius: 50%;
+                    animation: particleFloat infinite ease-in-out;
+                    box-shadow: 0 0 4px rgba(249, 215, 28, 0.6);
+                }
+
+                @keyframes particleFloat {
+                    0%, 100% { transform: translate(0, 0); }
+                    50% { transform: translate(var(--x), var(--y)); }
+                }
+
                 /* Mobile Responsive */
                 @media (max-width: 998px) {
                     .banner-slider :global(.slick-prev),
@@ -237,7 +315,7 @@ export default function HeroSection() {
                         font-size: 18px;
                     }
 
-                    .slide-image {
+                    .slide {
                         height: 300px;
                     }
                 }
