@@ -20,7 +20,9 @@ interface HeroSlide {
 
 export default function HeroSection() {
     const [showAdmissionModal, setShowAdmissionModal] = useState(false);
+    // Define slides state
     const [slides, setSlides] = useState<HeroSlide[]>([]);
+    const [loading, setLoading] = useState(true);
     const [particles, setParticles] = useState<Array<{ x: string, y: string, anim: string, top: string, left: string }>>([]);
 
     useEffect(() => {
@@ -29,12 +31,22 @@ export default function HeroSection() {
                 const response = await fetch(apiUrl('/common/hero-slides/'));
                 if (response.ok) {
                     const data = await response.json();
-                    setSlides(data);
+                    // The viewset returns a list directly or a paginated result? 
+                    // Views.py says pagination_class = None, so it returns a list.
+                    const results = Array.isArray(data) ? data : data.results || [];
+
+                    if (results.length > 0) {
+                        setSlides(results);
+                    } else {
+                        setSlides([]);
+                    }
                 } else {
                     console.error('Failed to fetch slides');
                 }
             } catch (error) {
                 console.error('Error fetching slides:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -65,12 +77,14 @@ export default function HeroSection() {
         nextArrow: <NextArrow />,
     };
 
-    // Fallback static slides if no dynamic slides are available
-    const heroSlides = slides.length > 0 ? slides : [
-        { id: 's1', image: "/slide1.jpg", alt_text: "T.I.M.E. Kids Slide 1" },
-        { id: 's2', image: "/images/center-images/center-slide-1.jpg", alt_text: "T.I.M.E. Kids Slide 2" },
-        { id: 's3', image: "/images/center-images/center-slide-2.jpg", alt_text: "T.I.M.E. Kids Slide 3" }
-    ];
+    // If loading or no slides found, return null (empty state)
+    if (!loading && slides.length === 0) {
+        return null; // Or <></>
+    }
+
+    // Use slides if available, otherwise it would have returned null above.
+    // We REMOVED the static fallback.
+    const heroSlides = slides;
 
     return (
         <>
@@ -81,7 +95,7 @@ export default function HeroSection() {
                         {heroSlides.map((slide: any, index: number) => (
                             <div className="slide" key={slide.id}>
                                 <Image
-                                    src={slide.image.startsWith('/') && !slide.image.startsWith('/media') ? slide.image : mediaUrl(slide.image)}
+                                    src={mediaUrl(slide.image)}
                                     alt={slide.alt_text || "T.I.M.E. Kids Slide"}
                                     fill
                                     sizes="100vw"

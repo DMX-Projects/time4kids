@@ -64,21 +64,11 @@ body {
   line-height: 24px;
   overflow-x: hidden;
   color: #333;
+  cursor: auto;
+  /* Ensure default cursor is visible */
 }
 
 /* Accessibility - respect reduced motion */
-@media (pointer: fine) {
-
-  html,
-  body,
-  button,
-  a,
-  [role="button"],
-  input[type="submit"],
-  input[type="image"] {
-    cursor: none !important;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
 
