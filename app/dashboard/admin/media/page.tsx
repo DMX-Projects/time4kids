@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Plus, Trash2, Film, Image as ImageIcon } from 'lucide-react';
 import { mediaUrl, apiUrl } from '@/lib/api-client';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 interface MediaItem {
     id: number;
@@ -15,6 +16,7 @@ interface MediaItem {
 }
 
 export default function AdminMediaPage() {
+    const { tokens } = useAuth();
     const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -48,6 +50,9 @@ export default function AdminMediaPage() {
         try {
             const response = await fetch(apiUrl(`/media/${id}/`), {
                 method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${tokens?.access}`
+                }
             });
             if (response.ok) {
                 fetchMedia(); // Refresh list

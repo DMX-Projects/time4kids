@@ -27,7 +27,8 @@ export default function UniversalLoginPage() {
         setSubmitting(true);
         try {
             const user = await login(identifier, password);
-            setSuccess("✅ Login successful!");
+            setSubmitting(false); // 1. Stop loading
+            setSuccess("✅ Login successful!"); // 2. Show success
             setTimeout(() => {
                 const destination = next || `/dashboard/${user.role}`;
                 router.replace(destination);
@@ -121,7 +122,7 @@ export default function UniversalLoginPage() {
                             </div>
 
                             {/* Success Message */}
-                            {success && (
+                            {success && !submitting && (
                                 <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border-l-4 border-green-500 rounded-lg p-4 animate-pulse">
                                     <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -145,9 +146,16 @@ export default function UniversalLoginPage() {
                                 type="submit"
                                 size="lg"
                                 className="w-full bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-semibold text-lg py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-                                disabled={submitting}
+                                disabled={submitting || !!success}
                             >
-                                {submitting ? (
+                                {success ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Success! Redirecting...
+                                    </span>
+                                ) : submitting ? (
                                     <span className="flex items-center justify-center gap-2">
                                         <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MOCK_MEDIA_ITEMS, MediaItem } from '@/lib/mock-media-data';
@@ -8,13 +8,54 @@ import { Play, X, ChevronLeft, ChevronRight, Image as ImageIcon, Film } from 'lu
 
 export default function MediaPage() {
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
     const [lightboxItem, setLightboxItem] = useState<MediaItem | null>(null);
+
+    // Fetch media from API
+    useEffect(() => {
+        const fetchMedia = async () => {
+            try {
+                // Determine API URL based on environment
+                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                const res = await fetch(`${baseUrl}/api/media/`);
+                if (!res.ok) throw new Error('Failed to fetch media');
+
+                const data = await res.json();
+                const results = Array.isArray(data) ? data : data.results || [];
+
+                // Map API response to MediaItem interface
+                const mappedItems: MediaItem[] = results.map((item: any) => {
+                    const fileUrl = item.file.startsWith('http')
+                        ? item.file
+                        : `${baseUrl}${item.file.startsWith('/') ? '' : '/'}${item.file}`;
+
+                    return {
+                        id: item.id,
+                        type: item.media_type,
+                        src: fileUrl,
+                        title: item.title,
+                        category: item.category || 'Events',
+                        size: 'normal',
+                        thumb: item.media_type === 'video' ? '/images/event-1.jpg' : undefined
+                    };
+                });
+
+                setMediaItems(mappedItems);
+            } catch (error) {
+                console.error('Error loading media:', error);
+                // Fallback to mock data if API fails (optional, removing for now to force API usage)
+                // setMediaItems(MOCK_MEDIA_ITEMS); 
+            }
+        };
+
+        fetchMedia();
+    }, []);
 
     const categories = ['All', 'Events', 'Classroom', 'Activities', 'Campus'];
 
     const filteredItems = selectedCategory === 'All'
-        ? MOCK_MEDIA_ITEMS
-        : MOCK_MEDIA_ITEMS.filter(item => item.category === selectedCategory);
+        ? mediaItems
+        : mediaItems.filter(item => item.category === selectedCategory);
 
     const openLightbox = (item: MediaItem) => setLightboxItem(item);
     const closeLightbox = () => setLightboxItem(null);

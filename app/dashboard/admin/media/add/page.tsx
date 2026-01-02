@@ -13,6 +13,7 @@ export default function AddMediaPage() {
     const { tokens } = useAuth(); // Get auth token
     const token = tokens?.access;
     const [title, setTitle] = useState('');
+    const [category, setCategory] = useState('Events');
     const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
     const [files, setFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
@@ -62,6 +63,7 @@ export default function AddMediaPage() {
             const itemTitle = files.length > 1 ? `${title} - ${i + 1}` : title;
 
             formData.append('title', itemTitle);
+            formData.append('category', category);
             formData.append('media_type', mediaType);
             formData.append('file', file);
 
@@ -135,38 +137,55 @@ export default function AddMediaPage() {
                     </div>
 
                     {/* Media Type Selection */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Media Type</label>
-                        <div className="flex gap-4">
-                            <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${mediaType === 'image' ? 'border-orange-500 bg-orange-50 text-orange-700 ring-1 ring-orange-500' : 'border-gray-200 hover:bg-gray-50'}`}>
-                                <input
-                                    type="radio"
-                                    name="mediaType"
-                                    value="image"
-                                    checked={mediaType === 'image'}
-                                    onChange={() => setMediaType('image')}
-                                    className="hidden"
-                                />
-                                <div className="p-2 bg-white rounded-lg shadow-sm text-orange-500">
-                                    <ImageIcon size={20} />
-                                </div>
-                                <span className="font-medium">Image</span>
-                            </label>
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Media Type</label>
+                            <div className="flex gap-4">
+                                <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${mediaType === 'image' ? 'border-orange-500 bg-orange-50 text-orange-700 ring-1 ring-orange-500' : 'border-gray-200 hover:bg-gray-50'}`}>
+                                    <input
+                                        type="radio"
+                                        name="mediaType"
+                                        value="image"
+                                        checked={mediaType === 'image'}
+                                        onChange={() => setMediaType('image')}
+                                        className="hidden"
+                                    />
+                                    <div className="p-2 bg-white rounded-lg shadow-sm text-orange-500">
+                                        <ImageIcon size={20} />
+                                    </div>
+                                    <span className="font-medium">Image</span>
+                                </label>
 
-                            <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${mediaType === 'video' ? 'border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-500' : 'border-gray-200 hover:bg-gray-50'}`}>
-                                <input
-                                    type="radio"
-                                    name="mediaType"
-                                    value="video"
-                                    checked={mediaType === 'video'}
-                                    onChange={() => setMediaType('video')}
-                                    className="hidden"
-                                />
-                                <div className="p-2 bg-white rounded-lg shadow-sm text-blue-500">
-                                    <FileVideo size={20} />
-                                </div>
-                                <span className="font-medium">Video</span>
-                            </label>
+                                <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${mediaType === 'video' ? 'border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-500' : 'border-gray-200 hover:bg-gray-50'}`}>
+                                    <input
+                                        type="radio"
+                                        name="mediaType"
+                                        value="video"
+                                        checked={mediaType === 'video'}
+                                        onChange={() => setMediaType('video')}
+                                        className="hidden"
+                                    />
+                                    <div className="p-2 bg-white rounded-lg shadow-sm text-blue-500">
+                                        <FileVideo size={20} />
+                                    </div>
+                                    <span className="font-medium">Video</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                            <select
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all appearance-none bg-white"
+                            >
+                                <option value="Events">Events</option>
+                                <option value="Classroom">Classroom</option>
+                                <option value="Activities">Activities</option>
+                                <option value="Campus">Campus</option>
+                                <option value="Banner">Banner</option>
+                            </select>
                         </div>
                     </div>
 

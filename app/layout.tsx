@@ -11,7 +11,7 @@ import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProv
 import PageTransitionLoader from "@/components/layout/PageTransitionLoader";
 import PageReadyMarker from "@/components/layout/PageReadyMarker";
 import dynamic from "next/dynamic";
-import CustomCursor from "@/components/ui/CustomCursor";
+
 
 // Lazy load heavy animations
 const LazyBlobBackground = dynamic(() => import("@/components/animations/BlobBackground"), {
@@ -104,7 +104,6 @@ export default function RootLayout({
                         <PageTransitionLoader />
                         <ConditionalChrome>
                             <SmoothScroll />
-                            <CustomCursor />
                             <Header />
                         </ConditionalChrome>
 
