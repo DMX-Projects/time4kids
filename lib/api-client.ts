@@ -5,8 +5,7 @@ const normalizeBase = (value: string | undefined, fallback: string) => {
 
 export const API_BASE_URL = normalizeBase(process.env.NEXT_PUBLIC_API_BASE_URL, "http://localhost:8000/api");
 export const MEDIA_BASE_URL = normalizeBase(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, "http://localhost:8000/media");
-export const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8000";
-
+export const SERVER_URL = normalizeBase(process.env.NEXT_PUBLIC_SERVER_URL, "http://localhost:8000");
 export const apiUrl = (path: string) => `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
 export const mediaUrl = (path?: string | null) => {

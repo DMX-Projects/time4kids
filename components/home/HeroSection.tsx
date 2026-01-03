@@ -77,10 +77,9 @@ export default function HeroSection() {
         nextArrow: <NextArrow />,
     };
 
-    // If loading or no slides found, return null (empty state)
-    if (!loading && slides.length === 0) {
-        return null; // Or <></>
-    }
+    // If loading or no slides found, do NOT return null. We want to show the black background.
+    // Logic moved to JSX
+
 
     // Use slides if available, otherwise it would have returned null above.
     // We REMOVED the static fallback.
@@ -91,20 +90,24 @@ export default function HeroSection() {
             {/* Banner Slider Section */}
             <section className="banner-section">
                 <div className="banner-slider">
-                    <Slider {...settings}>
-                        {heroSlides.map((slide: any, index: number) => (
-                            <div className="slide" key={slide.id}>
-                                <Image
-                                    src={mediaUrl(slide.image)}
-                                    alt={slide.alt_text || "T.I.M.E. Kids Slide"}
-                                    fill
-                                    sizes="100vw"
-                                    priority={index === 0}
-                                    className="slide-image"
-                                />
-                            </div>
-                        ))}
-                    </Slider>
+                    {heroSlides.length > 0 ? (
+                        <Slider {...settings}>
+                            {heroSlides.map((slide: any, index: number) => (
+                                <div className="slide" key={slide.id}>
+                                    <Image
+                                        src={mediaUrl(slide.image)}
+                                        alt={slide.alt_text || "T.I.M.E. Kids Slide"}
+                                        fill
+                                        sizes="100vw"
+                                        priority={index === 0}
+                                        className="slide-image"
+                                    />
+                                </div>
+                            ))}
+                        </Slider>
+                    ) : (
+                        <div className="slide" style={{ backgroundColor: '#000' }}></div>
+                    )}
                 </div>
 
                 <div className="banner-content">
