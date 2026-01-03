@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
-import { Star, Quote } from 'lucide-react';
+import { Star, Quote, Sparkles } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -88,6 +88,7 @@ const TestimonialSlider = () => {
     const pinContainerRef = useRef(null);
     const wrapperRef = useRef(null);
     const bgRef = useRef(null);
+    const headerRef = useRef(null);
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -113,12 +114,29 @@ const TestimonialSlider = () => {
                     scrollTrigger: {
                         trigger: pinContainerRef.current,
                         pin: true,
-                        scrub: 2.5, // Increased from 1 for smoother momentum
+                        scrub: 1, // Reduced from 2.5 for more responsive feel
                         start: "top top",
                         end: () => "+=" + totalWidth,
                         invalidateOnRefresh: true,
-                    }
+                    },
+                    force3D: true // Force hardware acceleration
                 });
+
+                // Animate Header Entry
+                if (headerRef.current) {
+                    gsap.from(headerRef.current.children, {
+                        y: 30,
+                        opacity: 0,
+                        duration: 1,
+                        stagger: 0.2,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: pinContainerRef.current,
+                            start: "top 80%", // Animates when section hits view
+                            toggleActions: "play none none reverse"
+                        }
+                    });
+                }
 
                 // Curved Path Animation Loop
                 gsap.ticker.add(() => {
@@ -134,26 +152,30 @@ const TestimonialSlider = () => {
                         const absDist = Math.abs(distFromCenter);
 
                         // 1. Parabolic Y-Offset (Arch)
-                        const yOffset = Math.pow(distFromCenter, 2) * parabolaSteepness;
+                        // Flatten the curve significantly since we show more cards
+                        const yOffset = Math.pow(distFromCenter, 2) * 0.0004;
 
                         // 2. Rotation (Follow the curve)
-                        const rotation = distFromCenter * 0.015;
+                        const rotation = distFromCenter * 0.008;
 
                         // 3. Scale Effect (Center card largest)
-                        // Scale from 1.0 down to 0.85 at edges
-                        const scale = Math.max(0.85, 1 - (absDist / centerScreen) * 0.3);
+                        // Make the difference less dramatic so side cards are clearly visible
+                        const scale = Math.max(0.92, 1 - (absDist / centerScreen) * 0.15);
 
-                        // 4. Opacity/Blur Effect (Focus on center)
-                        const opacity = Math.max(0.4, 1 - (absDist / centerScreen) * 0.8);
-                        const blur = Math.min(4, (absDist / centerScreen) * 6); // Add slight blur to edges
+                        // 4. Opacity - Keep high visibility
+                        const opacity = Math.max(0.8, 1 - (absDist / centerScreen) * 0.3);
+
+                        // REMOVED BLUR as requested
 
                         gsap.set(card, {
                             y: yOffset,
                             rotation: rotation,
                             scale: scale,
                             opacity: opacity,
-                            filter: `blur(${blur}px)`,
-                            zIndex: Math.round(100 - absDist * 0.1) // Ensure center is on top
+                            // filter: blur(...) REMOVED
+                            zIndex: Math.round(100 - absDist * 0.1), // Ensure center is on top
+                            force3D: true, // Hardware acceleration
+                            overwrite: 'auto' // Prevent conflict
                         });
                     });
                 });
@@ -167,12 +189,14 @@ const TestimonialSlider = () => {
     }, [isMounted]);
 
 
-    // Cursor Parallax Logic (Simplified for background)
+    // Cursor Parallax Logic (Optimized)
     const handleMouseMove = (e) => {
         if (bgRef.current) {
-            const moveX = (window.innerWidth / 2 - e.clientX) * 0.05;
-            const moveY = (window.innerHeight / 2 - e.clientY) * 0.05;
-            bgRef.current.style.transform = `translate(${moveX}px, ${moveY}px)`;
+            // Using requestAnimationFrame for smoother updates is implicit in modern browsers,
+            // but keeping it simple. Adding will-change to CSS is more critical.
+            const moveX = (window.innerWidth / 2 - e.clientX) * 0.02; // Reduced modifier for subtler, smoother feel
+            const moveY = (window.innerHeight / 2 - e.clientY) * 0.02;
+            bgRef.current.style.transform = `translate3d(${moveX}px, ${moveY}px, 0)`; // force 3d
         }
     };
 
@@ -184,40 +208,60 @@ const TestimonialSlider = () => {
         >
 
             {/* Background Decorations */}
-            <div ref={bgRef} className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-30 transition-transform duration-100 ease-out">
+            <div ref={bgRef} className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-30 transition-transform duration-300 ease-out will-change-transform">
                 <div className="bg-blob absolute top-10 left-10 w-64 h-64 bg-purple-400 rounded-full blur-[80px] animate-blob"></div>
                 <div className="bg-blob absolute bottom-10 right-10 w-80 h-80 bg-indigo-400 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
                 <div className="bg-blob absolute top-1/2 left-1/2 -translate-x-1/2 w-96 h-48 bg-pink-400 rounded-full blur-[120px] animate-blob animation-delay-4000"></div>
             </div>
 
-            {/* Wavy Top Divider */}
-            <div className="absolute top-0 left-0 w-full z-20 pointer-events-none overflow-hidden" style={{ height: '60px' }}>
-                <svg className="w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
-                    <path fill="#ffffff" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path>
+            {/* Animated Wavy Top Divider - Micro Ripples (Flipped) */}
+            <div className="absolute -top-[1px] left-0 w-full z-20 pointer-events-none rotate-180">
+                <svg className="w-full h-[8vh] min-h-[60px] max-h-[100px]" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                    viewBox="0 24 150 28" preserveAspectRatio="none" shapeRendering="auto" stroke="none">
+                    <defs>
+                        {/* Ultra High Frequency "Micro" Wave Path: ~60 repeats of width 20 */}
+                        <path id="gentle-wave-top" d="M-200 44 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 v44 h-1200 z" />
+                    </defs>
+                    <g className="parallax">
+                        <use xlinkHref="#gentle-wave-top" x="48" y="0" fill="rgba(255, 255, 255, 0.7)" />
+                        <use xlinkHref="#gentle-wave-top" x="48" y="3" fill="rgba(255, 255, 255, 0.5)" />
+                        <use xlinkHref="#gentle-wave-top" x="48" y="5" fill="rgba(255, 255, 255, 0.3)" />
+                        <use xlinkHref="#gentle-wave-top" x="48" y="7" fill="#fff" />
+                    </g>
                 </svg>
             </div>
 
             {/* Sticky Container for Horizontal Scroll */}
-            <div ref={pinContainerRef} className="min-h-screen flex flex-col justify-center relative py-16">
-                <div className="container mx-auto px-4 relative z-10 mb-10">
-                    <div className="text-center">
-                        <h2 className="font-bubblegum font-bold text-4xl md:text-5xl text-white mb-2 drop-shadow-md tracking-wide">
-                            Parent <span className="text-[#fbd267]">Testimonials</span>
+            <div ref={pinContainerRef} className="min-h-0 flex flex-col justify-center relative py-4">
+                <div ref={headerRef} className="container mx-auto px-4 relative z-10 mb-4">
+                    <div className="text-center max-w-3xl mx-auto">
+                        <h2 className="font-bubblegum font-bold text-5xl md:text-6xl text-white mb-2 drop-shadow-xl tracking-wide leading-tight">
+                            Parent <span className="text-[#fbd267] relative inline-block">
+                                Testimonials
+                                <svg className="absolute w-full h-3 -bottom-1 left-0 text-[#fbd267]/30" viewBox="0 0 100 10" preserveAspectRatio="none">
+                                    <path d="M0 5 Q 50 10 100 5 L 100 8 Q 50 13 0 8 Z" fill="currentColor" />
+                                </svg>
+                            </span>
                         </h2>
-                        <p className="text-white/90 text-lg italic">Hear from parents who have trusted us with their children&apos;s early education.</p>
+                        <p className="text-white/95 text-lg md:text-xl font-medium leading-relaxed drop-shadow-md">
+                            Hear from parents who have trusted us with their children&apos;s early education and witnessed their blooming journey.
+                        </p>
                     </div>
                 </div>
 
                 <div className="w-full overflow-hidden">
                     <div
                         ref={wrapperRef}
-                        className="flex flex-nowrap items-center px-4 md:px-20 gap-8 md:gap-16 w-max pt-10 pb-20" /* Added padding-bottom for curve dip */
+                        className="flex flex-nowrap items-center px-4 md:px-20 gap-8 md:gap-16 w-max pt-2 pb-8 will-change-transform" /* Added will-change-transform for perf and padding-bottom for curve dip */
                     >
                         {testimonials.map((item, index) => (
                             <div
                                 key={`${item.id}-${index}`}
                                 ref={el => cardsRef.current[index] = el}
-                                className="flex-shrink-0 w-[85vw] md:w-[450px] h-full outline-none"
+                                // width for 3 cards: ~30vw on desktop (assuming gaps)
+                                // On mobile kept high width. On desktop set to approx 400px but dynamic is better.
+                                // Let's try 30vw for desktop to ensure 3 fit.
+                                className="flex-shrink-0 w-[85vw] md:w-[28vw] h-full outline-none"
                             >
                                 <TiltCard>
                                     <div className="testimonial-card bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden h-full border border-white/20 flex flex-col justify-between min-h-[300px] transition-all duration-300 hover:-translate-y-2 group">
@@ -249,33 +293,54 @@ const TestimonialSlider = () => {
                 </div>
             </div>
 
-            {/* Wavy Bottom Divider */}
-            <div className="absolute bottom-0 left-0 w-full z-20 pointer-events-none overflow-hidden rotate-180" style={{ height: '60px' }}>
-                <svg className="w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
-                    <path fill="#ffffff" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path>
+            {/* Animated Wavy Bottom Divider - Gentle Wave SVG */}
+            <div className="absolute -bottom-[1px] left-0 w-full z-20 pointer-events-none">
+                <svg className="w-full h-[8vh] min-h-[60px] max-h-[100px]" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
+                    viewBox="0 24 150 28" preserveAspectRatio="none" shapeRendering="auto" stroke="none">
+                    <defs>
+                        {/* Friendly "Cloud-like" Wave Path: ~15 repeats of width 30 */}
+                        <path id="gentle-wave" d="M-160 44 q 15 -10 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 v44 h-1200 z" />
+                    </defs>
+                    <g className="parallax">
+                        <use xlinkHref="#gentle-wave" x="48" y="0" fill="rgba(255, 255, 255, 0.7)" />
+                        <use xlinkHref="#gentle-wave" x="48" y="3" fill="rgba(255, 255, 255, 0.5)" />
+                        <use xlinkHref="#gentle-wave" x="48" y="5" fill="rgba(255, 255, 255, 0.3)" />
+                        <use xlinkHref="#gentle-wave" x="48" y="7" fill="#fff" />
+                    </g>
                 </svg>
             </div>
 
             <style jsx global>{`
-                /* Ensure content fits */
                 .testimonial-card {
                      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
                 }
-                
-                @keyframes blob {
-                    0% { transform: translate(0px, 0px) scale(1); }
-                    33% { transform: translate(30px, -50px) scale(1.1); }
-                    66% { transform: translate(-20px, 20px) scale(0.9); }
-                    100% { transform: translate(0px, 0px) scale(1); }
+
+                .parallax > use {
+                    animation: move-forever 25s cubic-bezier(.55, .5, .45, .5) infinite;
                 }
-                .animate-blob {
-                    animation: blob 7s infinite;
+                .parallax > use:nth-child(1) {
+                    animation-delay: -2s;
+                    animation-duration: 7s;
                 }
-                .animation-delay-2000 {
-                    animation-delay: 2s;
+                .parallax > use:nth-child(2) {
+                    animation-delay: -3s;
+                    animation-duration: 10s;
                 }
-                .animation-delay-4000 {
-                    animation-delay: 4s;
+                .parallax > use:nth-child(3) {
+                    animation-delay: -4s;
+                    animation-duration: 13s;
+                }
+                .parallax > use:nth-child(4) {
+                    animation-delay: -5s;
+                    animation-duration: 20s;
+                }
+                @keyframes move-forever {
+                    0% {
+                        transform: translate3d(-90px, 0, 0);
+                    }
+                    100% {
+                        transform: translate3d(85px, 0, 0);
+                    }
                 }
             `}</style>
         </section >

@@ -35,7 +35,7 @@ const TestimonialsSection = () => {
 
     return (
         <section className="relative py-12 bg-[#FFFAF5] overflow-hidden">
-            
+
             {/* Top Scallop Border */}
             <div className="absolute top-0 left-0 w-full z-20 pointer-events-none drop-shadow-[0_4px_4px_rgba(0,0,0,0.03)]">
                 <svg viewBox="0 0 1200 24" className="w-full h-12 block fill-white" preserveAspectRatio="none">
@@ -44,14 +44,7 @@ const TestimonialsSection = () => {
             </div>
 
             <div className="container mx-auto px-4 relative z-10">
-                <div className="text-center mb-16">
-                    <h2 className="font-bubblegum text-4xl md:text-5xl mb-4 text-[#003366] tracking-wide">
-                        Parent <span className="text-[#E67E22]">Testimonials</span>
-                    </h2>
-                    <p className="text-lg text-gray-700 max-w-2xl mx-auto italic">
-                        Hear from parents who have trusted us with their children&apos;s early education.
-                    </p>
-                </div>
+                {/* Header Removed as per request */}
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
                     {testimonials.map((testimonial, index) => (

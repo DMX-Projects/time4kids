@@ -48,16 +48,85 @@ const ProgramsPreview = () => {
         }
     ];
 
-    const scallopPath = "M0,0 V12 Q15,24 30,12 T60,12 T90,12 T120,12 T150,12 T180,12 T210,12 T240,12 T270,12 T300,12 T330,12 T360,12 T390,12 T420,12 T450,12 T480,12 T510,12 T540,12 T570,12 T600,12 T630,12 T660,12 T690,12 T720,12 T750,12 T780,12 T810,12 T840,12 T870,12 T900,12 T930,12 T960,12 T990,12 T1020,12 T1050,12 T1080,12 T1110,12 T1140,12 T1170,12 T1200,12 V0 Z";
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Parallax Wave Animation
+            gsap.to(".wave-front", {
+                x: -60,
+                duration: 2.5,
+                repeat: -1,
+                ease: "linear"
+            });
+
+            gsap.to(".wave-back", {
+                x: -60,
+                duration: 4.5,
+                repeat: -1,
+                ease: "linear"
+            });
+
+            // School Bus Drive Animation - Explicit fromTo for guaranteed loop
+            gsap.fromTo(".school-bus",
+                { x: 0 },
+                {
+                    x: "-150vw", // Move well past the left edge
+                    duration: 15,
+                    repeat: -1,
+                    ease: "none"
+                }
+            );
+
+            // School Bus Bounce (Running effect)
+            gsap.to(".school-bus", {
+                y: -5,
+                duration: 0.3,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+
+            // Floating Fish Animation
+            gsap.to(".floating-fish", {
+                y: -20,
+                rotation: 5,
+                duration: 3,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+        }, sectionRef);
+
+        return () => ctx.revert();
+    }, []);
 
     return (
         <section ref={sectionRef} className="relative py-12 bg-[#FFFAF5] overflow-hidden">
 
-            {/* Top Border */}
-            <div className="absolute top-0 left-0 w-full z-20 pointer-events-none">
-                <svg viewBox="0 0 1200 24" className="w-full h-12 block fill-white" preserveAspectRatio="none">
-                    <path d={scallopPath} />
-                </svg>
+            {/* Top Border - Parallax Animated */}
+            <div className="absolute top-0 left-0 w-full h-12 z-20 pointer-events-none overflow-hidden">
+                {/* Back Wave (Slower, Transparent) */}
+                <div className="wave-back absolute top-0 left-0 w-[200%] h-full opacity-40">
+                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
+                        <defs>
+                            <pattern id="progScallopPattern" x="0" y="0" width="60" height="24" patternUnits="userSpaceOnUse">
+                                <path d="M0 0 V12 Q15 24 30 12 T60 12 V0 H0 Z" fill="white" />
+                            </pattern>
+                        </defs>
+                        <rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPattern)" />
+                    </svg>
+                </div>
+                {/* Front Wave (Faster, Solid) */}
+                <div className="wave-front absolute top-0 left-0 w-[200%] h-full">
+                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
+                        {/* Reuse pattern via UNIQUE ID */}
+                        <defs>
+                            <pattern id="progScallopPatternFront" x="0" y="0" width="60" height="24" patternUnits="userSpaceOnUse">
+                                <path d="M0 0 V12 Q15 24 30 12 T60 12 V0 H0 Z" fill="white" />
+                            </pattern>
+                        </defs>
+                        <rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPatternFront)" />
+                    </svg>
+                </div>
             </div>
 
             {/* Decorative Background Elements */}
@@ -90,14 +159,14 @@ const ProgramsPreview = () => {
                     style={{ animationDuration: '3s', height: 'auto' }}
                 />
 
-                {/* Whale */}
+                {/* Whale - Floating Animation */}
                 <Image
                     src="/images/whale.png"
                     alt=""
                     width={100}
                     height={100}
-                    className="absolute bottom-40 right-10 md:right-20 animate-pulse"
-                    style={{ animationDuration: '4s', animationDelay: '0.5s', height: 'auto' }}
+                    className="floating-fish absolute bottom-40 right-10 md:right-20"
+                    style={{ height: 'auto' }}
                 />
 
                 {/* School Bus */}
@@ -106,8 +175,8 @@ const ProgramsPreview = () => {
                     alt=""
                     width={90}
                     height={90}
-                    className="absolute bottom-32 left-1/3 opacity-40"
-                    style={{ height: 'auto' }}
+                    className="school-bus absolute bottom-32 opacity-80"
+                    style={{ height: 'auto', left: '100%' }} // Start off-screen Right
                 />
             </div>
 
@@ -173,11 +242,20 @@ const ProgramsPreview = () => {
                         </div>
                     </Link>
                 </div>
-            </div>{/* Bottom Scallop */}
-            <div className="absolute bottom-0 left-0 w-full z-20 pointer-events-none rotate-180">
-                <svg viewBox="0 0 1200 24" className="w-full h-12 block fill-white" preserveAspectRatio="none">
-                    <path d={scallopPath} />
-                </svg>
+            </div>{/* Bottom Scallop - Parallax Animated */}
+            <div className="absolute bottom-0 left-0 w-full h-12 z-20 pointer-events-none rotate-180 overflow-hidden">
+                {/* Back Wave */}
+                <div className="wave-back absolute top-0 left-0 w-[200%] h-full opacity-40">
+                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
+                        <rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPattern)" />
+                    </svg>
+                </div>
+                {/* Front Wave */}
+                <div className="wave-front absolute top-0 left-0 w-[200%] h-full">
+                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
+                        <rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPatternFront)" />
+                    </svg>
+                </div>
             </div>
             {/* CSS Animation for Dashed Line */}
             <style jsx>{`

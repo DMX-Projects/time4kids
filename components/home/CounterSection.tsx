@@ -23,16 +23,16 @@ const CountUpSection = () => {
     useEffect(() => {
         const ctx = gsap.context(() => {
             if (!countersRef.current) return;
-            
+
             // 1. Counter Animation with a "Pop" at the end
             const counters = countersRef.current.querySelectorAll('.counter-wrapper');
-            
+
             counters.forEach((wrapper) => {
                 const counterSpan = wrapper.querySelector('.counter-value');
                 if (!counterSpan) return;
-                
+
                 const target = parseInt(counterSpan.getAttribute('data-target') || '0');
-                
+
                 const tl = gsap.timeline({
                     scrollTrigger: {
                         trigger: sectionRef.current,
@@ -40,8 +40,8 @@ const CountUpSection = () => {
                     }
                 });
 
-                tl.fromTo(counterSpan, 
-                    { innerHTML: 0 }, 
+                tl.fromTo(counterSpan,
+                    { innerHTML: 0 },
                     {
                         innerHTML: target,
                         duration: 2,
@@ -53,9 +53,9 @@ const CountUpSection = () => {
                         }
                     }
                 )
-                // The "Pop" effect
-                .to(wrapper, { scale: 1.1, duration: 0.2, ease: "back.out(2)" })
-                .to(wrapper, { scale: 1, duration: 0.2 });
+                    // The "Pop" effect
+                    .to(wrapper, { scale: 1.1, duration: 0.2, ease: "back.out(2)" })
+                    .to(wrapper, { scale: 1, duration: 0.2 });
             });
 
             // 2. Continuous Floating Clouds
@@ -78,25 +78,61 @@ const CountUpSection = () => {
                 ease: "none",
                 stagger: 0.3
             });
+
+            // 4. Border Wave Animation - Parallax
+            gsap.to(".wave-front", {
+                x: -60,
+                duration: 2.5,
+                repeat: -1,
+                ease: "linear"
+            });
+
+            gsap.to(".wave-back", {
+                x: -60,
+                duration: 4.5,
+                repeat: -1,
+                ease: "linear"
+            });
         }, sectionRef);
         return () => ctx.revert();
     }, []);
 
     return (
         <section ref={sectionRef} className="relative py-12 bg-[#E0F2FE] overflow-hidden">
-            
-            {/* Top Border */}
-            <div className="absolute top-0 left-0 w-full z-30 pointer-events-none">
-                <svg viewBox="0 0 1200 24" className="w-full h-8 block" preserveAspectRatio="none">
-                    <path d={scallopPath} fill="white" />
-                </svg>
+
+            {/* Top Border - Parallax Animated */}
+            <div className="absolute top-0 left-0 w-full h-8 z-30 pointer-events-none overflow-hidden">
+                {/* Back Wave (Slower, Transparent) */}
+                <div className="wave-back absolute top-0 left-0 w-[200%] h-full opacity-40">
+                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
+                        <defs>
+                            <pattern id="scallopPattern" x="0" y="0" width="60" height="24" patternUnits="userSpaceOnUse">
+                                <path d="M0 0 V12 Q15 24 30 12 T60 12 V0 H0 Z" fill="white" />
+                            </pattern>
+                        </defs>
+                        <rect x="0" y="0" width="100%" height="24" fill="url(#scallopPattern)" />
+                    </svg>
+                </div>
+                {/* Front Wave (Faster, Solid) */}
+                <div className="wave-front absolute top-0 left-0 w-[200%] h-full">
+                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
+                        {/* Reuse pattern via ID or redefine if scope issue. React component, ID is global in page. */}
+                        {/* Safer to redefine or assume global context. Let's redefine to be safe from hydration conflicts */}
+                        <defs>
+                            <pattern id="scallopPatternFront" x="0" y="0" width="60" height="24" patternUnits="userSpaceOnUse">
+                                <path d="M0 0 V12 Q15 24 30 12 T60 12 V0 H0 Z" fill="white" />
+                            </pattern>
+                        </defs>
+                        <rect x="0" y="0" width="100%" height="24" fill="url(#scallopPatternFront)" />
+                    </svg>
+                </div>
             </div>
 
             {/* Background Bubbles */}
             <div className="absolute inset-0 pointer-events-none">
                 {[...Array(15)].map((_, i) => (
-                    <div 
-                        key={i} 
+                    <div
+                        key={i}
                         className="bubble absolute bg-white/40 rounded-full border border-white/20"
                         style={{
                             width: `${Math.random() * 15 + 5}px`,
@@ -112,7 +148,7 @@ const CountUpSection = () => {
                 <div ref={countersRef} className="flex flex-wrap justify-center gap-6 md:gap-14 max-w-6xl mx-auto">
                     {stats.map((stat, index) => (
                         <div key={index} className="counter-wrapper relative w-60 h-40 flex items-center justify-center group">
-                            
+
                             {/* Cloud SVG Background */}
                             <div className="floating-cloud absolute inset-0 z-0">
                                 <svg viewBox="0 0 500 300" className="w-full h-full text-white fill-current drop-shadow-xl" preserveAspectRatio="none">
@@ -137,11 +173,20 @@ const CountUpSection = () => {
                 </div>
             </div>
 
-            {/* Bottom Border */}
-            <div className="absolute bottom-0 left-0 w-full z-30 pointer-events-none rotate-180">
-                <svg viewBox="0 0 1200 24" className="w-full h-8 block" preserveAspectRatio="none">
-                    <path d={scallopPath} fill="white" />
-                </svg>
+            {/* Bottom Border - Parallax Animated */}
+            <div className="absolute bottom-0 left-0 w-full h-8 z-30 pointer-events-none rotate-180 overflow-hidden">
+                {/* Back Wave */}
+                <div className="wave-back absolute top-0 left-0 w-[200%] h-full opacity-40">
+                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
+                        <rect x="0" y="0" width="100%" height="24" fill="url(#scallopPattern)" />
+                    </svg>
+                </div>
+                {/* Front Wave */}
+                <div className="wave-front absolute top-0 left-0 w-[200%] h-full">
+                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
+                        <rect x="0" y="0" width="100%" height="24" fill="url(#scallopPatternFront)" />
+                    </svg>
+                </div>
             </div>
         </section>
     );
