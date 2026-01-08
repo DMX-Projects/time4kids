@@ -1,23 +1,16 @@
 import type { Metadata } from "next";
-import { Inter, Poppins, Fredoka, Baloo_2, Bubblegum_Sans, Luckiest_Guy, Quicksand } from "next/font/google";
+import { Inter, Poppins, Fredoka, Baloo_2, Comic_Neue, Chewy, Bubblegum_Sans, Luckiest_Guy, Quicksand, ABeeZee, Andika } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Chatbot from "@/components/shared/Chatbot";
+import ScrollProgress from "@/components/animations/ScrollProgress";
 import SmoothScroll from "@/components/shared/SmoothScroll";
+import BlobBackground from "@/components/animations/BlobBackground";
 import ConditionalChrome from "@/components/layout/ConditionalChrome";
+import DiceCursor from "@/components/ui/DiceCursor";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
-import PageTransitionLoader from "@/components/layout/PageTransitionLoader";
-import PageReadyMarker from "@/components/layout/PageReadyMarker";
-import dynamic from "next/dynamic";
-
-
-// Lazy load heavy animations
-const LazyBlobBackground = dynamic(() => import("@/components/animations/BlobBackground"), {
-    ssr: false,
-    loading: () => null
-});
 
 const inter = Inter({
     subsets: ["latin"],
@@ -41,11 +34,17 @@ const fredoka = Fredoka({
 });
 
 const baloo2 = Baloo_2({
-    weight: ['400', '500', '600', '700'],
+    weight: ['400', '500', '600', '700', '800'],
     subsets: ["latin"],
     variable: '--font-baloo',
     display: 'swap',
-    preload: true,
+});
+
+const comicNeue = Comic_Neue({
+    weight: ['400', '700'],
+    subsets: ["latin"],
+    variable: '--font-comic',
+    display: 'swap',
 });
 
 const bubblegumSans = Bubblegum_Sans({
@@ -53,7 +52,6 @@ const bubblegumSans = Bubblegum_Sans({
     subsets: ["latin"],
     variable: '--font-bubblegum',
     display: 'swap',
-    preload: true,
 });
 
 const luckiestGuy = Luckiest_Guy({
@@ -61,14 +59,33 @@ const luckiestGuy = Luckiest_Guy({
     subsets: ["latin"],
     variable: '--font-luckiest',
     display: 'swap',
-    preload: false, // Less critical, can load later
 });
 
 const quicksand = Quicksand({
     subsets: ["latin"],
     variable: '--font-quicksand',
     display: 'swap',
-    preload: true,
+});
+
+const abeezee = ABeeZee({
+    weight: ['400'],
+    subsets: ["latin"],
+    variable: '--font-abeezee',
+    display: 'swap',
+});
+
+const andika = Andika({
+    weight: ['400', '700'],
+    subsets: ["latin"],
+    variable: '--font-andika',
+    display: 'swap',
+});
+
+const chewy = Chewy({
+    weight: ['400'],
+    subsets: ["latin"],
+    variable: '--font-chewy',
+    display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -81,11 +98,6 @@ export const metadata: Metadata = {
         description: "17 Years of Legacy in Early Education. 250+ preschools across India.",
         type: "website",
     },
-    icons: {
-        icon: '/images/logo.png',
-        shortcut: '/images/logo.png',
-        apple: '/images/logo.png',
-    },
 };
 
 export default function RootLayout({
@@ -94,24 +106,22 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={`${inter.variable} ${poppins.variable} ${fredoka.variable} ${baloo2.variable} ${bubblegumSans.variable} ${luckiestGuy.variable} ${quicksand.variable}`}>
+        <html lang="en" className={`${inter.variable} ${poppins.variable} ${fredoka.variable} ${baloo2.variable} ${comicNeue.variable} ${chewy.variable} ${bubblegumSans.variable} ${luckiestGuy.variable} ${quicksand.variable} ${abeezee.variable} ${andika.variable}`}>
             <head>
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
             </head>
             <body className="antialiased">
                 <AuthProvider>
                     <SchoolDataProvider>
-                        <PageTransitionLoader />
                         <ConditionalChrome>
                             <SmoothScroll />
+                            <BlobBackground />
+                            <ScrollProgress />
+                            <DiceCursor />
                             <Header />
                         </ConditionalChrome>
 
-                        {/* Lazy load heavy animations */}
-                        <LazyBlobBackground />
-
-                        <main className="min-h-screen" data-page-ready="false">
-                            <PageReadyMarker />
+                        <main className="min-h-screen">
                             {children}
                         </main>
 

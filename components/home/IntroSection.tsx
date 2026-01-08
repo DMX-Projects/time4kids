@@ -60,7 +60,7 @@ export default function IntroSection() {
 
                 .intro-block {
                     text-align: center;
-                    background: #f5f1dd;
+                    background: #f5f1dd url(/bg2.gif) repeat-x center bottom;
                     font-weight: 500;
                     padding: 50px 0;
                 }
@@ -97,22 +97,15 @@ export default function IntroSection() {
 
                 @media (max-width: 768px) {
                     .intro-block {
-                        padding: 30px 0;
+                        padding: 25px 0;
                     }
 
                     .intro-block h1 {
                         font-size: 24px;
-                        line-height: 28px;
                     }
 
                     .intro-block h2 {
-                        font-size: 18px;
-                        line-height: 24px;
-                    }
-
-                    .intro-block p {
-                        font-size: 14px;
-                        line-height: 22px;
+                        font-size: 20px;
                     }
                 }
             `}</style>
