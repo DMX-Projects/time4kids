@@ -10,6 +10,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
 import PageTransitionLoader from "@/components/layout/PageTransitionLoader";
 import PageReadyMarker from "@/components/layout/PageReadyMarker";
+import DiceCursor from "@/components/ui/DiceCursor";
 import dynamic from "next/dynamic";
 
 
@@ -119,6 +120,8 @@ export default function RootLayout({
                             <Footer />
                             <Chatbot />
                         </ConditionalChrome>
+
+                        <DiceCursor />
                     </SchoolDataProvider>
                 </AuthProvider>
             </body>
