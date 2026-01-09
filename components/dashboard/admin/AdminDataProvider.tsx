@@ -101,6 +101,8 @@ type ApiFranchise = {
 type ApiCareer = {
     id: number;
     title: string;
+    department?: string;
+    type?: string;
     description?: string;
     location?: string;
     apply_email?: string;
@@ -137,9 +139,9 @@ const mapFranchise = (fr: ApiFranchise): AdminFranchise => ({
 const mapCareer = (career: ApiCareer): AdminCareer => ({
     id: String(career.id),
     title: career.title,
-    dept: career.description || "",
+    dept: career.department || "",
     location: career.location || "",
-    type: career.is_active === false ? "Inactive" : "Active",
+    type: career.type || "Full-time",
 });
 
 const mapEvent = (event: ApiEvent): AdminEvent => ({
@@ -284,10 +286,12 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     const addCareer = async (payload: Omit<AdminCareer, "id">) => {
         const body = {
             title: payload.title,
-            description: payload.dept || payload.type,
+            department: payload.dept,
+            type: payload.type,
+            description: payload.dept, // Keep as fallback description for now or could be separate input
             location: payload.location,
             apply_email: user?.email,
-            is_active: payload.type.toLowerCase() !== "inactive",
+            is_active: true,
         };
         const created = await authFetch<ApiCareer>("/careers/admin/", {
             method: "POST",
@@ -300,9 +304,10 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     const updateCareer = async (id: string, payload: Partial<AdminCareer>) => {
         const body = {
             title: payload.title,
-            description: payload.dept,
+            department: payload.dept,
+            type: payload.type,
             location: payload.location,
-            is_active: payload.type ? payload.type.toLowerCase() !== "inactive" : undefined,
+            is_active: true,
         };
         const updated = await authFetch<ApiCareer>(`/careers/admin/${id}/`, {
             method: "PATCH",

@@ -56,18 +56,18 @@ const Loader: React.FC<LoaderProps> = ({
         md: 40,
         lg: 56,
     };
-    
+
     const loaderSize = typeof size === 'number' ? size : sizeMap[size];
-    
+
     // Color mapping
     const colorMap: Record<string, string> = {
         primary: '#f97316', // Orange
         secondary: '#0ea5e9', // Blue
         white: '#ffffff',
     };
-    
+
     const loaderColor = colorMap[variant] || variant;
-    
+
     // Base loader styles
     const spinnerStyle: React.CSSProperties = {
         width: loaderSize,
@@ -75,13 +75,13 @@ const Loader: React.FC<LoaderProps> = ({
         border: `3px solid ${loaderColor}20`,
         borderTop: `3px solid ${loaderColor}`,
         borderRadius: '50%',
-        animation: 'spin 0.8s linear infinite',
+        animation: 'spin 0.6s linear infinite', // Faster spin: 0.8s → 0.6s
     };
-    
+
     const containerClass = fullScreen
         ? `fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm ${className}`
         : `flex flex-col items-center justify-center ${className}`;
-    
+
     return (
         <div className={containerClass}>
             <style jsx>{`
@@ -92,7 +92,7 @@ const Loader: React.FC<LoaderProps> = ({
             `}</style>
             <div style={spinnerStyle} />
             {text && (
-                <p 
+                <p
                     className={`mt-4 font-fredoka font-semibold ${fullScreen ? 'text-lg' : 'text-sm'}`}
                     style={{ color: loaderColor }}
                 >
