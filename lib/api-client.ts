@@ -28,6 +28,17 @@ export async function toApiError(res: Response): Promise<ApiError> {
             message = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
         } else if (data?.message) {
             message = data.message;
+        } else if (typeof data === "object" && data !== null) {
+            // Handle DRF field errors e.g. { "email": ["Error msg"] }
+            const values = Object.values(data);
+            if (values.length > 0) {
+                const first = values[0];
+                if (Array.isArray(first) && first.length > 0 && typeof first[0] === "string") {
+                    message = first[0];
+                } else if (typeof first === "string") {
+                    message = first;
+                }
+            }
         }
         details = data;
     } catch {

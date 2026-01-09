@@ -11,11 +11,12 @@ interface HeroSlide {
     id: number;
     image: string;
     alt_text: string;
+    link: string;
     order: number;
     is_active: boolean;
 }
 
-const emptySlide = { alt_text: "", order: 0, is_active: true };
+const emptySlide = { alt_text: "", link: "", order: 0, is_active: true };
 
 export default function HeroSlidesPage() {
     const [slides, setSlides] = useState<HeroSlide[]>([]);
@@ -63,6 +64,7 @@ export default function HeroSlidesPage() {
         setEditingId(slide.id);
         setForm({
             alt_text: slide.alt_text,
+            link: slide.link || "",
             order: slide.order,
             is_active: slide.is_active,
         });
@@ -120,6 +122,7 @@ export default function HeroSlidesPage() {
                 // Edit mode (Single slide)
                 const formData = new FormData();
                 formData.append("alt_text", form.alt_text);
+                formData.append("link", form.link);
                 formData.append("order", form.order.toString());
                 formData.append("is_active", form.is_active ? "true" : "false");
 
@@ -147,7 +150,8 @@ export default function HeroSlidesPage() {
                     const formData = new FormData();
                     formData.append("image", file);
                     // Append metadata (optional: could append index to order)
-                    formData.append("alt_text", form.alt_text || file.name); // Use filename if alt empty
+                    formData.append("alt_text", form.alt_text || ""); // Use empty string if alt empty
+                    formData.append("link", form.link || "");
                     formData.append("order", (form.order + index).toString());
                     formData.append("is_active", form.is_active ? "true" : "false");
 
@@ -191,6 +195,7 @@ export default function HeroSlidesPage() {
                         <tr>
                             <th className="px-4 py-3">Image</th>
                             <th className="px-4 py-3">Alt Text</th>
+                            <th className="px-4 py-3">Link</th>
                             <th className="px-4 py-3">Order</th>
                             <th className="px-4 py-3">Status</th>
                             <th className="px-4 py-3 text-right">Actions</th>
@@ -210,6 +215,7 @@ export default function HeroSlidesPage() {
                                     </div>
                                 </td>
                                 <td className="px-4 py-3 font-medium text-slate-700">{slide.alt_text}</td>
+                                <td className="px-4 py-3 text-xs text-slate-500 truncate max-w-[150px]">{slide.link || "-"}</td>
                                 <td className="px-4 py-3">{slide.order}</td>
                                 <td className="px-4 py-3">
                                     {slide.is_active ? (
@@ -227,6 +233,7 @@ export default function HeroSlidesPage() {
                                         onClick={() => startEdit(slide)}
                                         className="p-1.5 hover:bg-orange-50 text-slate-500 hover:text-orange-600 rounded transition"
                                         title="Edit"
+                                        type="button"
                                     >
                                         <Pencil className="w-4 h-4" />
                                     </button>
@@ -234,6 +241,7 @@ export default function HeroSlidesPage() {
                                         onClick={() => handleDelete(slide.id)}
                                         className="p-1.5 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded transition"
                                         title="Delete"
+                                        type="button"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -309,6 +317,17 @@ export default function HeroSlidesPage() {
                             onChange={(e) => setForm({ ...form, alt_text: e.target.value })}
                             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
                             placeholder="Descriptive text"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Link URL (Optional)</label>
+                        <input
+                            type="text"
+                            value={form.link}
+                            onChange={(e) => setForm({ ...form, link: e.target.value })}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                            placeholder="https://test.com/page"
                         />
                     </div>
 
