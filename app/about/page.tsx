@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Building2, Target, Lightbulb, Award, School, Home, GraduationCap, Users, BookOpen, Heart, Sparkles } from 'lucide-react';
+import MagicalStorySection from '@/components/about/MagicalStorySection';
 
 interface CardProps {
     children: React.ReactNode;
@@ -148,78 +149,79 @@ export default function AboutPage() {
             {/* Wavy Divider */}
             <WavyDivider color="fill-white" />
 
-            {/* About T.I.M.E. Kids */}
+            {/* Our Magical Story with Aeroplanes */}
+            <MagicalStorySection />
+
+            {/* Fun Stats Section */}
             <section className="py-8 bg-white relative overflow-hidden">
                 <div className="container mx-auto px-4 relative z-10">
-                    <div className="max-w-5xl mx-auto">
-                        <div className="text-center mb-8 animate-on-scroll">
-                            <h2 className="font-bubblegum text-4xl md:text-5xl mb-3 text-[#003366] tracking-wide">
-                                Our <span className="text-[#ef5f5f]">Magical</span> Story
-                            </h2>
-                            <p className="text-gray-600 text-base">A journey of love, learning, and laughter!</p>
-                        </div>
+                    <div className="max-w-6xl mx-auto">
+                        {/* Fun Stats with Oval Icons */}
+                        <ul className="flex flex-wrap justify-center gap-8 md:gap-12">
+                            {/* 250+ Pre-schools */}
+                            <li className="text-center flex flex-col items-center">
+                                <figure className="w-32 h-20 md:w-40 md:h-24 flex items-center justify-center mb-3 transition-all duration-400 hover:rotate-[20deg] hover:rounded-2xl"
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgb(236, 178, 72) 0%, rgb(221, 103, 5) 100%)',
+                                        borderRadius: '67% 33% 39% 61% / 37% 57% 43% 63%',
+                                        boxShadow: '0px 0px 32px -3px rgba(0, 0, 0, 0.44)'
+                                    }}>
+                                    <span className="flex items-center justify-center">
+                                        <School className="w-12 h-12 md:w-14 md:h-14 text-white" />
+                                    </span>
+                                </figure>
+                                <div className="font-bold text-2xl md:text-3xl text-primary-600 mb-1">250+</div>
+                                <div className="text-sm md:text-base text-gray-600 font-medium">Pre-schools</div>
+                            </li>
 
-                        {/* Content Cards */}
-                        <div className="space-y-8 mb-12">
-                            <div className="flex items-start gap-6 p-8 bg-gradient-to-br from-blue-50 to-purple-50 shadow-lg cloud-card-1 hover-float transition-all relative z-10 animate-on-scroll delay-100">
-                                <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg animate-bounce" style={{ animationDuration: '3s' }}>
-                                    <School className="w-8 h-8 text-white" />
-                                </div>
-                                <p className="text-gray-700 leading-relaxed text-lg">
-                                    T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with <span className="font-bold text-primary-600">250+ pre-schools</span> is now poised for major expansion across the country.
-                                </p>
-                            </div>
+                            {/* 30+ Years Legacy */}
+                            <li className="text-center flex flex-col items-center">
+                                <figure className="w-32 h-20 md:w-40 md:h-24 flex items-center justify-center mb-3 transition-all duration-400 hover:rotate-[20deg] hover:rounded-2xl"
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgb(176, 205, 103) 0%, rgb(120, 159, 53) 100%)',
+                                        borderRadius: '42% 58% 37% 63% / 63% 44% 56% 37%',
+                                        boxShadow: '0px 0px 32px -3px rgba(0, 0, 0, 0.44)'
+                                    }}>
+                                    <span className="flex items-center justify-center">
+                                        <Award className="w-12 h-12 md:w-14 md:h-14 text-white" />
+                                    </span>
+                                </figure>
+                                <div className="font-bold text-2xl md:text-3xl text-secondary-600 mb-1">30+</div>
+                                <div className="text-sm md:text-base text-gray-600 font-medium">Years Legacy</div>
+                            </li>
 
-                            <div className="flex items-start gap-6 p-8 bg-gradient-to-br from-pink-50 to-purple-50 shadow-lg cloud-card-2 hover-float transition-all ml-4 md:ml-12 relative z-10 animate-on-scroll delay-200">
-                                <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg animate-bounce" style={{ animationDuration: '4s' }}>
-                                    <Home className="w-8 h-8 text-white" />
-                                </div>
-                                <p className="text-gray-700 leading-relaxed text-lg">
-                                    The programme at T.I.M.E. Kids pre-schools aims at making the transition from home to school easy, by providing the <span className="font-semibold text-secondary-600">warm, safe and caring learning environment</span> that young children have at home. Our play schools offer wholesome, fun-filled and memorable childhood education to our children.
-                                </p>
-                            </div>
+                            {/* 17+ Years in ECE */}
+                            <li className="text-center flex flex-col items-center">
+                                <figure className="w-32 h-20 md:w-40 md:h-24 flex items-center justify-center mb-3 transition-all duration-400 hover:rotate-[20deg] hover:rounded-2xl"
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgb(211, 102, 85) 0%, rgb(188, 85, 69) 40%, rgb(189, 43, 19) 100%)',
+                                        borderRadius: '69% 31% 53% 47% / 41% 69% 31% 59%',
+                                        boxShadow: '0px 0px 32px -3px rgba(0, 0, 0, 0.44)'
+                                    }}>
+                                    <span className="flex items-center justify-center">
+                                        <Heart className="w-12 h-12 md:w-14 md:h-14 text-white" />
+                                    </span>
+                                </figure>
+                                <div className="font-bold text-2xl md:text-3xl text-pink-600 mb-1">17+</div>
+                                <div className="text-sm md:text-base text-gray-600 font-medium">Years in ECE</div>
+                            </li>
 
-                            <div className="flex items-start gap-6 p-8 bg-gradient-to-br from-purple-50 to-blue-50 shadow-lg cloud-card-3 hover-float transition-all relative z-10 animate-on-scroll delay-300">
-                                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg animate-bounce" style={{ animationDuration: '3.5s' }}>
-                                    <GraduationCap className="w-8 h-8 text-white" />
-                                </div>
-                                <p className="text-gray-700 leading-relaxed text-lg">
-                                    T.I.M.E. Kids pre-schools are backed by our educational expertise of <span className="font-bold text-primary-600">over 30 years</span>, well trained care providers and a balanced educational programme. The programme at T.I.M.E. Kids pre-schools is based on the principles of age-appropriate child development practices.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Fun Stats with Icons */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 animate-on-scroll delay-400">
-                            <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105">
-                                <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg animate-ping" style={{ animationDuration: '3s' }}>
-                                    <School className="w-7 h-7 text-white" />
-                                </div>
-                                <div className="text-2xl font-bold text-primary-600 mb-1">250+</div>
-                                <div className="text-xs text-gray-600 font-medium">Pre-schools</div>
-                            </div>
-                            <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105">
-                                <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg animate-ping" style={{ animationDuration: '3.5s' }}>
-                                    <Award className="w-7 h-7 text-white" />
-                                </div>
-                                <div className="text-2xl font-bold text-secondary-600 mb-1">30+</div>
-                                <div className="text-xs text-gray-600 font-medium">Years Legacy</div>
-                            </div>
-                            <div className="text-center p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105">
-                                <div className="w-14 h-14 bg-gradient-to-br from-pink-400 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg animate-ping" style={{ animationDuration: '4s' }}>
-                                    <Heart className="w-7 h-7 text-white" />
-                                </div>
-                                <div className="text-2xl font-bold text-pink-600 mb-1">17+</div>
-                                <div className="text-xs text-gray-600 font-medium">Years in ECE</div>
-                            </div>
-                            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105">
-                                <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg animate-ping" style={{ animationDuration: '4.5s' }}>
-                                    <Users className="w-7 h-7 text-white" />
-                                </div>
-                                <div className="text-2xl font-bold text-purple-600 mb-1">1000s</div>
-                                <div className="text-xs text-gray-600 font-medium">Happy Kids</div>
-                            </div>
-                        </div>
+                            {/* 1000s Happy Kids */}
+                            <li className="text-center flex flex-col items-center">
+                                <figure className="w-32 h-20 md:w-40 md:h-24 flex items-center justify-center mb-3 transition-all duration-400 hover:rotate-[20deg] hover:rounded-2xl"
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgb(236, 178, 72) 0%, rgb(221, 103, 5) 100%)',
+                                        borderRadius: '67% 33% 39% 61% / 37% 57% 43% 63%',
+                                        boxShadow: '0px 0px 32px -3px rgba(0, 0, 0, 0.44)'
+                                    }}>
+                                    <span className="flex items-center justify-center">
+                                        <Users className="w-12 h-12 md:w-14 md:h-14 text-white" />
+                                    </span>
+                                </figure>
+                                <div className="font-bold text-2xl md:text-3xl text-purple-600 mb-1">1000s</div>
+                                <div className="text-sm md:text-base text-gray-600 font-medium">Happy Kids</div>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </section>
@@ -243,38 +245,39 @@ export default function AboutPage() {
                         <p className="text-gray-600 text-base">Our guiding stars in nurturing young minds</p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto mb-12">
-                        <div className="relative p-1">
-                            {/* Decorative backing for depth */}
-                            <div className="absolute inset-0 bg-[#ef5f5f] cloud-card-4 rotate-3 opacity-20"></div>
-                            <Card className="bg-gradient-to-br from-primary-500 to-primary-600 text-white cloud-card-1 hover-float relative overflow-hidden h-full">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-                                <div className="relative z-10">
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <Target className="w-16 h-16 animate-pulse" />
-                                        <h3 className="font-display font-bold text-3xl">Our Vision</h3>
+                    <div className="grid md:grid-cols-2 gap-12 max-w-7xl mx-auto mb-16">
+                        {/* Our Vision - Organic Shape 1 */}
+                        <div className="group relative">
+                            <div className="absolute inset-0 bg-[#ef5f5f] rounded-[40%_60%_70%_30%_/_40%_50%_60%_50%] transform rotate-3 scale-105 opacity-20 group-hover:rotate-6 transition-transform duration-500"></div>
+                            <div className="bg-gradient-to-br from-primary-500 to-primary-600 text-white relative rounded-[40%_60%_70%_30%_/_40%_50%_60%_50%] p-16 md:p-24 shadow-xl border-4 border-primary-300 hover:border-primary-200 transition-all duration-500 hover:-translate-y-2 h-full min-h-[500px] flex flex-col justify-center">
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-white opacity-10 rounded-full -mr-10 -mt-10 pointer-events-none"></div>
+                                <div className="relative z-10 flex flex-col items-center text-center">
+                                    <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6 backdrop-blur-sm shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                        <Target className="w-12 h-12 text-white animate-pulse-soft" />
                                     </div>
-                                    <p className="text-white/95 leading-relaxed text-lg">
+                                    <h3 className="font-display font-bold text-4xl mb-6">Our Vision</h3>
+                                    <p className="text-white/95 leading-relaxed text-xl font-medium max-w-md mx-auto">
                                         To be the most trusted and preferred preschool chain in India, providing world-class early childhood education that nurtures every child&apos;s potential and prepares them for a bright future.
                                     </p>
                                 </div>
-                            </Card>
+                            </div>
                         </div>
 
-                        <div className="relative p-1">
-                            <div className="absolute inset-0 bg-[#fbd267] cloud-card-3 -rotate-2 opacity-20"></div>
-                            <Card className="bg-gradient-to-br from-secondary-500 to-secondary-600 text-white cloud-card-2 hover-float relative overflow-hidden h-full">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-                                <div className="relative z-10">
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <Lightbulb className="w-16 h-16 animate-pulse" />
-                                        <h3 className="font-display font-bold text-3xl">Our Philosophy</h3>
+                        {/* Our Philosophy - Organic Shape 2 */}
+                        <div className="group relative">
+                            <div className="absolute inset-0 bg-secondary-500 rounded-[60%_40%_30%_70%_/_60%_30%_70%_40%] transform -rotate-2 scale-105 opacity-20 group-hover:-rotate-6 transition-transform duration-500"></div>
+                            <div className="bg-gradient-to-br from-secondary-500 to-secondary-600 text-white relative rounded-[60%_40%_30%_70%_/_60%_30%_70%_40%] p-16 md:p-24 shadow-xl border-4 border-secondary-300 hover:border-secondary-200 transition-all duration-500 hover:-translate-y-2 h-full min-h-[500px] flex flex-col justify-center">
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-white opacity-10 rounded-full -mr-10 -mt-10 pointer-events-none"></div>
+                                <div className="relative z-10 flex flex-col items-center text-center">
+                                    <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6 backdrop-blur-sm shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                        <Lightbulb className="w-12 h-12 text-white animate-pulse-soft" />
                                     </div>
-                                    <p className="text-white/95 leading-relaxed text-lg">
+                                    <h3 className="font-display font-bold text-4xl mb-6">Our Philosophy</h3>
+                                    <p className="text-white/95 leading-relaxed text-xl font-medium max-w-md mx-auto">
                                         We believe in holistic development through play-based learning, fostering creativity, curiosity, and confidence in every child. Our approach combines traditional values with modern educational practices.
                                     </p>
                                 </div>
-                            </Card>
+                            </div>
                         </div>
                     </div>
 
