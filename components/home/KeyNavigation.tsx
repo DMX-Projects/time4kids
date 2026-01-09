@@ -11,7 +11,7 @@ export default function KeyNavigation() {
                                 <img src="/icon-tour.png" alt="Virtual Tour" />
                             </span>
                         </figure>
-                        <a href="/virtual-tour">
+                        <a href="/media">
                             Virtual <br />Tour
                         </a>
                     </li>
@@ -21,7 +21,7 @@ export default function KeyNavigation() {
                                 <img src="/icon-gallery.png" alt="Photo / Video Gallery" />
                             </span>
                         </figure>
-                        <a href="/gallery">Photo / Video Gallery</a>
+                        <a href="/media">Photo / Video Gallery</a>
                     </li>
                     <li className="nav-link3">
                         <figure>
@@ -29,7 +29,7 @@ export default function KeyNavigation() {
                                 <img src="/icon-nearstcenter.png" alt="Find your Nearest Centre" />
                             </span>
                         </figure>
-                        <a href="/centres">Find your Nearest  Centre</a>
+                        <a href="/locate-centre">Find your Nearest  Centre</a>
                     </li>
                     <li className="nav-link1">
                         <figure>
@@ -45,7 +45,7 @@ export default function KeyNavigation() {
                                 <img src="/icon-brochure.png" alt="Download Brochure" />
                             </span>
                         </figure>
-                        <a href="/brochure">Download Brochure</a>
+                        <a href="https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf" target="_blank" rel="noopener noreferrer">Download Brochure</a>
                     </li>
                     <li className="nav-link3">
                         <figure>
