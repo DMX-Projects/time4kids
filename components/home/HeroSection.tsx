@@ -15,6 +15,7 @@ interface HeroSlide {
     id: number;
     image: string;
     alt_text: string;
+    link: string;
     order: number;
 }
 
@@ -92,18 +93,48 @@ export default function HeroSection() {
                 <div className="banner-slider">
                     {heroSlides.length > 0 ? (
                         <Slider {...settings}>
-                            {heroSlides.map((slide: any, index: number) => (
-                                <div className="slide" key={slide.id}>
-                                    <Image
-                                        src={mediaUrl(slide.image)}
-                                        alt={slide.alt_text || "T.I.M.E. Kids Slide"}
-                                        fill
-                                        sizes="100vw"
-                                        priority={index === 0}
-                                        className="slide-image"
-                                    />
-                                </div>
-                            ))}
+                            {heroSlides.map((slide: any, index: number) => {
+                                const SlideContent = () => (
+                                    <div className="slide-content relative h-full w-full">
+                                        <Image
+                                            src={mediaUrl(slide.image)}
+                                            alt={slide.alt_text || "T.I.M.E. Kids Slide"}
+                                            fill
+                                            sizes="100vw"
+                                            priority={index === 0}
+                                            className="slide-image"
+                                        />
+                                        {slide.alt_text && slide.alt_text.trim() && (
+                                            <div className="absolute bottom-24 right-4 md:right-10 flex justify-end pointer-events-none">
+                                                <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-lg text-white border-l-4 border-orange-500 shadow-lg max-w-xl mx-4 transform transition-all hover:scale-105">
+                                                    <h2 className="text-xl md:text-3xl font-bold font-display drop-shadow-md leading-tight">
+                                                        {slide.alt_text}
+                                                    </h2>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+
+                                // Determine if link is external
+                                const isExternalLink = slide.link && (slide.link.startsWith('http://') || slide.link.startsWith('https://'));
+
+                                return (
+                                    <div className="slide" key={slide.id}>
+                                        {slide.link ? (
+                                            <a
+                                                href={slide.link}
+                                                className="block w-full h-full cursor-pointer"
+                                                {...(isExternalLink ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                                            >
+                                                <SlideContent />
+                                            </a>
+                                        ) : (
+                                            <SlideContent />
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </Slider>
                     ) : (
                         <div className="slide" style={{ backgroundColor: '#000' }}></div>
