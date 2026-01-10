@@ -1,0 +1,13 @@
+@echo off
+REM Ensure we are in project folder
+cd /d "c:\Users\anush\OneDrive\Desktop\time0kids\time4kids"
+echo Installing Playwright (devDependency)...
+npm i -D playwright@1.57.0 --no-audit --no-fund --silent
+echo Installing Playwright browsers...
+npx playwright install --with-deps --quiet
+echo Capturing full page screenshot...
+npx playwright screenshot "http://localhost:3000/about" --output=about-full.png --fullPage
+echo Capturing cropped screenshot of feature cards...
+npx playwright screenshot "http://localhost:3000/about" --selector ".feature-card" --output=about-crop.png
+echo Done.
+exit /b %ERRORLEVEL%

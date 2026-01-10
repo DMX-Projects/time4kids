@@ -23,12 +23,13 @@ const ProgramsPreview = () => {
             yOffset: '-20px'
         },
         {
-            image: '/faq2.jpeg',
+            image: '/images/nursery_girl.png',
             programName: 'Nursery',
             ageGroup: '2.5 - 3.5 years',
             description: 'Building foundation for language, numbers, and expression.',
             color: '#fbd267',
-            yOffset: '40px'
+            yOffset: '40px',
+            imageStyle: { objectPosition: 'center 20%' }
         },
         {
             image: '/1.png',
@@ -209,7 +210,7 @@ const ProgramsPreview = () => {
 
                     {/* Program Cards (Static) */}
                     <div className="flex flex-nowrap overflow-x-auto pb-32 pt-10 gap-12 no-scrollbar md:justify-between">
-                        {programs.map((program, index) => (
+                        {programs.map((program: any, index) => (
                             <div
                                 key={index}
                                 className="flex-shrink-0 w-72 flex flex-col items-center text-center"
@@ -218,7 +219,14 @@ const ProgramsPreview = () => {
                                 <div className="relative group mb-6">
                                     <div className="absolute inset-0 rounded-full blur-2xl opacity-10" style={{ backgroundColor: program.color }} />
                                     <div className="relative w-48 h-48 rounded-full border-[10px] border-white shadow-xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                                        <Image src={program.image} alt={program.programName} fill sizes="(max-width: 768px) 100vw, 300px" className="object-cover" />
+                                        <Image
+                                            src={program.image}
+                                            alt={program.programName}
+                                            fill
+                                            sizes="(max-width: 768px) 100vw, 300px"
+                                            className="object-cover"
+                                            style={program.imageStyle}
+                                        />
                                     </div>
                                     <div className="absolute -bottom-2 right-2 px-4 py-1.5 rounded-full text-white font-black text-[10px] shadow-lg rotate-12" style={{ backgroundColor: program.color }}>
                                         {program.ageGroup}
