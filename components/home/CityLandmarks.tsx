@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
-// Detail Level: Very High - intricate line art for landmarks
+// API Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Type definitions
 export type LandmarkType =
     | 'backwaters'
     | 'fort_generic'
@@ -32,53 +35,65 @@ export type LandmarkType =
     | 'fort_moat';
 
 export interface CityData {
+    id?: number;
     name: string;
     landmark: string;
     type: LandmarkType;
 }
 
-export const cityLandmarks: CityData[] = [
+// Static fallback data (in case API fails)
+const fallbackCityLandmarks: CityData[] = [
     { name: "Alleppey", landmark: "Alappuzha Backwaters", type: "backwaters" },
-    { name: "Arcot", landmark: "Arcot Nawab Fort", type: "fort_generic" },
-    { name: "Barasat", landmark: "Dakshineswar Kali Temple", type: "temple_bengal" },
-    { name: "Belgaum", landmark: "Belgaum Fort", type: "fort_generic" },
     { name: "Bengaluru", landmark: "Vidhana Soudha", type: "vidhana_soudha" },
-    { name: "Bhadohi", landmark: "Carpet Weaving Hubs", type: "carpet" },
-    { name: "Bhadrak", landmark: "Akhandalamani Temple", type: "temple_kalinga" },
-    { name: "Bhubaneswar", landmark: "Lingaraja Temple", type: "temple_kalinga" },
-    { name: "Ernakulam", landmark: "Marine Drive Kochi", type: "marine_drive" },
-    { name: "Hooghly", landmark: "Bandel Church", type: "bandel_church" },
-    { name: "Hosur", landmark: "Chandira Choodeswarar Temple", type: "temple_hill" },
-    { name: "Howrah", landmark: "Howrah Bridge", type: "howrah_bridge" },
-    { name: "Hyderabad", landmark: "Charminar", type: "charminar" },
-    { name: "Idukki", landmark: "Idukki Arch Dam", type: "arch_dam" },
-    { name: "Jamnagar", landmark: "Lakhota Fort", type: "fort_water" },
-    { name: "Kanchipuram", landmark: "Kamakshi Amman Temple", type: "temple_gopuram" },
-    { name: "Kollam", landmark: "Ashtamudi Lake", type: "backwaters" },
-    { name: "Kottayam", landmark: "Vembanad Lake", type: "lake_generic" },
-    { name: "Kozhikode", landmark: "Kozhikode Beach", type: "beach_generic" },
-    { name: "Lucknow", landmark: "Bara Imambara", type: "bara_imambara" },
-    { name: "Malappuram", landmark: "Kottakkunnu Hills", type: "hill_park" },
     { name: "Mumbai", landmark: "Gateway of India", type: "gateway_of_india" },
-    { name: "Namakkal", landmark: "Namakkal Rock Fort", type: "rockfort" },
-    { name: "Nizamabad", landmark: "Nizamabad Fort", type: "fort_generic" },
-    { name: "Patna", landmark: "Golghar", type: "golghar" },
-    { name: "Pudukkottai", landmark: "Thirumayam Fort", type: "fort_generic" },
-    { name: "Pune", landmark: "Shaniwar Wada", type: "shaniwar_wada" },
-    { name: "Rajapalayam", landmark: "Ayyanar Falls", type: "waterfall" },
-    { name: "Ramanathapuram", landmark: "Ramanathaswamy Temple", type: "temple_gopuram" },
-    { name: "Rangareddy District", landmark: "Ananthagiri Hills", type: "hill_park" },
-    { name: "Ranipet District", landmark: "Walajapet Fort", type: "fort_generic" },
-    { name: "Ratlam", landmark: "Cactus Garden", type: "cactus_garden" },
-    { name: "Thiruninravur", landmark: "Veera Raghava Perumal Temple", type: "temple_gopuram" },
-    { name: "Thiruthangal", landmark: "Karunellinathar Temple", type: "temple_hill" },
-    { name: "Thrissur", landmark: "Vadakkunnathan Temple", type: "temple_kerala" },
-    { name: "Trichy", landmark: "Rockfort Temple", type: "rockfort" },
-    { name: "Trivandrum", landmark: "Padmanabhaswamy Temple", type: "temple_padmanabhaswamy" },
-    { name: "Vallioor", landmark: "Sri Adikesava Perumal Temple", type: "temple_gopuram" },
-    { name: "Vellore", landmark: "Vellore Fort", type: "fort_moat" },
-    { name: "Visakhapatnam", landmark: "RK Beach", type: "beach_rk" },
+    { name: "Hyderabad", landmark: "Charminar", type: "charminar" },
 ];
+
+// Custom hook to fetch city landmarks from API
+export const useCityLandmarks = () => {
+    const [cityLandmarks, setCityLandmarks] = useState<CityData[]>(fallbackCityLandmarks);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchLocations = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch(`${API_BASE_URL}/api/franchises/public/locations/`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Handle both paginated (DRF default) and non-paginated responses
+                const results = Array.isArray(data) ? data : (data.results || []);
+
+                // Transform API data to match CityData interface
+                const transformedData: CityData[] = results.map((item: any) => ({
+                    id: item.id,
+                    name: item.city_name,
+                    landmark: item.landmark_name,
+                    type: item.landmark_type as LandmarkType
+                }));
+
+                setCityLandmarks(transformedData);
+                setError(null);
+            } catch (err) {
+                console.error('Error fetching franchise locations:', err);
+                setError(err instanceof Error ? err.message : 'Failed to fetch locations');
+                // Keep fallback data on error
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLocations();
+    }, []);
+
+    return { cityLandmarks, loading, error };
+};
 
 export const LandmarkIcon = ({ type, className = "w-6 h-6" }: { type: LandmarkType, className?: string }) => {
     // Reference Style: High Detail Line Art, Monochrome (Black), Transparent Fills.
