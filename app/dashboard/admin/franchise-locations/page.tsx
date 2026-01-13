@@ -292,7 +292,7 @@ export default function FranchiseLocationsPage() {
                         className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition shadow-sm"
                     >
                         <Building2 className="w-5 h-5" />
-                        Create Franchise
+                        View Franchise
                     </a>
                 </div>
 

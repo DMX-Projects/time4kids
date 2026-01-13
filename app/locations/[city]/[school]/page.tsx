@@ -1,128 +1,72 @@
-"use client";
 
-import React, { useState, useEffect } from 'react';
-import { apiUrl } from '@/lib/api-client';
-import {
-    Info,
-    Camera,
-    Users
-} from 'lucide-react';
-import Link from 'next/link';
-import Button from '@/components/ui/Button';
-import AdmissionBar from '@/components/admission/AdmissionBar';
-import WelcomeSection from '@/components/school/WelcomeSection';
-import TeachingTools from '@/components/school/TeachingTools';
-import ClassesSection from '@/components/school/ClassesSection';
-import { slugify } from '@/lib/utils';
+import { notFound } from 'next/navigation';
+import { getFranchiseBySlug } from '@/lib/api/franchises';
+import SchoolHeroSection from '@/components/school/home/SchoolHeroSection';
+import SchoolIntroSection from '@/components/school/home/SchoolIntroSection';
+// 
+// import AboutSection from '@/components/school/AboutSection';
+import SchoolProgramsSection from '@/components/school/SchoolProgramsSection';
+import AdmissionSection from '@/components/school/AdmissionSection';
+import GallerySection from '@/components/school/GallerySection';
+import ContactSection from '@/components/school/ContactSection';
 
 
-export default function SchoolDetailPage({ params }: { params: { city: string, school: string } }) {
-    const city = decodeURIComponent(params.city);
+export const dynamic = 'force-dynamic';
+
+export default async function SchoolDetailsPage({ params }: { params: { city: string, school: string } }) {
     const schoolSlug = params.school;
 
-    const [school, setSchool] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    // Fetch from Backend API
+    const franchise = await getFranchiseBySlug(schoolSlug);
 
-    useEffect(() => {
-        const fetchSchool = async () => {
-            try {
-                // Fetch all centres to ensure we find the school even if the URL city name differs from backend city
-                const res = await fetch(apiUrl(`/franchises/public/`));
-                if (!res.ok) throw new Error('Failed to fetch data');
-                const data = await res.json();
-                const rawData = Array.isArray(data) ? data : (data.results || []);
-                // Match school using slug logic:
-                // 1. Exact match on slug
-                // 2. Fallback match on slugified name
-                const foundSchool = rawData.find((c: any) =>
-                    c.slug === schoolSlug || slugify(c.name) === schoolSlug
-                );
-
-                if (foundSchool) {
-                    setSchool(foundSchool);
-                } else {
-                    setSchool(null);
-                }
-            } catch (err) {
-                console.error(err);
-                setSchool(null);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (schoolSlug && city) {
-            fetchSchool();
-        } else {
-            setLoading(false);
-        }
-    }, [schoolSlug, city]);
-
-    const [activeSection, setActiveSection] = useState('overview');
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex flex-center items-center justify-center p-4">
-                <div className="text-center text-gray-500">Loading school details...</div>
-            </div>
-        );
+    if (!franchise) {
+        notFound();
     }
 
-    if (!school) {
-        return (
-            <div className="min-h-screen flex flex-center items-center justify-center p-4">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold mb-4">Centre Not Found</h1>
-                    <Link href={`/locations/${params.city}`}>
-                        <Button variant="primary">Back to {city}</Button>
-                    </Link>
-                </div>
-            </div>
-        );
-    }
+    // Map backend data to the shape expected by components
+    // Components expect 'school' object with specific fields.
+    // We can pass the franchise object directly if we update components, 
+    // or map it here to match the old 'centre' interface where possible.
 
-    const navItems = [
-        { id: 'overview', label: 'Overview', icon: Info },
-        { id: 'teaching-tools', label: 'Teaching Tools', icon: Camera },
-        { id: 'classes', label: 'Classes', icon: Users },
-    ];
+    const schoolData = {
+        name: franchise.name,
+        address: franchise.address,
+        city: franchise.city,
+        state: franchise.state,
+        pincode: franchise.postal_code,
+        phone: franchise.contact_phone,
+        email: franchise.contact_email,
+        mapLink: franchise.google_map_link,
+        // Add other fields if necessary
+    };
 
     return (
-        <>
-            {/* New Brand Header & Banner is now in Layout */}
+        <main className="min-h-screen bg-white scroll-smooth selection:bg-orange-100 selection:text-orange-900">
 
-            <main className="flex-1 space-y-24 py-16">
-                {/* Admission Bar Replacement - Keeping in container for centering */}
-                <div className="container mx-auto px-4 -mt-16 relative z-20">
-                    <AdmissionBar />
-                </div>
+            {/* --- SECTION: HOME --- */}
+            <section id="home">
+                <SchoolHeroSection
+                    schoolName={franchise.name}
+                />
+                <SchoolIntroSection schoolName={franchise.name} />
 
-                {/* Welcome Section Replacement */}
-                <div id="overview" className="scroll-mt-32 w-full">
-                    <WelcomeSection schoolName={school.name} />
-                </div>
+            </section>
 
-                {/* Teaching & Learning Tools Replacement */}
-                <div id="teaching-tools" className="scroll-mt-32 w-full">
-                    <TeachingTools />
-                </div>
+            {/* --- SECTION: ABOUT --- */}
+            {/* <AboutSection school={schoolData} /> */}
 
-                {/* Classes Section Replacement */}
-                <section id="classes" className="scroll-mt-32 w-full">
-                    <ClassesSection />
-                </section>
-            </main>
+            {/* --- SECTION: PROGRAMS --- */}
+            <SchoolProgramsSection />
 
-            {/* Footer is now in Layout */}
+            {/* --- SECTION: ADMISSIONS --- */}
+            <AdmissionSection franchiseSlug={schoolSlug} city={franchise.city} />
 
-            {/* Sticky Mobile Enrollment */}
-            <div className="lg:hidden sticky bottom-6 mx-4 p-2 bg-primary-600 rounded-2xl shadow-2xl shadow-primary-500/40 z-50 border border-primary-500/20">
-                <Link href="/admission">
-                    <Button className="w-full rounded-xl bg-white text-primary-600 border-0 hover:bg-gray-50 active:scale-95 transition-all text-sm font-bold uppercase tracking-widest py-4" size="lg">
-                        Enroll Your Child Now
-                    </Button>
-                </Link>
-            </div>
-        </>
+            {/* --- SECTION: GALLERY --- */}
+            <GallerySection schoolName={franchise.name} city={franchise.city} />
+
+            {/* --- SECTION: CONTACT --- */}
+            <ContactSection school={schoolData} />
+
+        </main>
     );
 }

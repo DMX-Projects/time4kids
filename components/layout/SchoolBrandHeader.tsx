@@ -75,62 +75,49 @@ const SchoolBrandHeader = ({ schoolName, basePath = "/", homeUrl }: SchoolBrandH
                         </div>
                     </Link>
 
+                    <div className="md:hidden">
+                        <Link href="/login" className="hover:opacity-90 transition-opacity relative block">
+                            <div className="relative w-24 h-8">
+                                <Image
+                                    src="/btn-login.png"
+                                    alt="Login"
+                                    fill
+                                    className="object-contain"
+                                />
+                                <span className="absolute inset-0 flex items-center justify-center pl-6 text-white font-bold text-[10px] tracking-wide">
+                                    LOGIN
+                                </span>
+                            </div>
+                        </Link>
+                    </div>
+
                     <nav className="hidden md:flex items-center space-x-8 text-gray-700 font-medium">
-                        <Link href={homeLink} className="hover:text-primary-600 transition-colors">Home</Link>
-                        <Link href={`${basePath}/about`} className="hover:text-primary-600 transition-colors">About us</Link>
-                        <Link href={`${basePath}/admission`} className="hover:text-primary-600 transition-colors">Admissions</Link>
-                        <Link href={`${basePath}/programs`} className="hover:text-primary-600 transition-colors">Classes</Link>
-                        <Link href={`${basePath}/gallery`} className="hover:text-primary-600 transition-colors">Gallery</Link>
-                        <Link href={`${basePath}/contact`} className="hover:text-primary-600 transition-colors">Contact us</Link>
+                        <Link href="#home" className="hover:text-primary-600 transition-colors scroll-smooth">Home</Link>
+                        <Link href="#about" className="hover:text-primary-600 transition-colors scroll-smooth">About us</Link>
+                        <Link href="#admission" className="hover:text-primary-600 transition-colors scroll-smooth">Admissions</Link>
+                        <Link href="#programs" className="hover:text-primary-600 transition-colors scroll-smooth">Classes</Link>
+                        <Link href="#gallery" className="hover:text-primary-600 transition-colors scroll-smooth">Gallery</Link>
+                        <Link href="#contact" className="hover:text-primary-600 transition-colors scroll-smooth">Contact us</Link>
+
+                        <Link href="/login" className="hover:opacity-90 transition-opacity relative block">
+                            <div className="relative w-32 h-10">
+                                <Image
+                                    src="/btn-login.png"
+                                    alt="Login"
+                                    fill
+                                    className="object-contain"
+                                />
+                                <span className="absolute inset-0 flex items-center justify-center pl-8 text-white font-bold text-sm tracking-wide">
+                                    LOGIN
+                                </span>
+                            </div>
+                        </Link>
                     </nav>
                 </div>
             </div>
 
 
-            {/* Teal Banner with Waves */}
-            <div className="relative bg-[#68b2b5] min-h-[300px] flex items-center justify-center overflow-hidden">
-                {/* Top Wavy Edge (White) - Animated */}
-                <div className="absolute top-0 left-0 w-full h-auto pointer-events-none z-10 overflow-hidden">
-                    <motion.div
-                        className="flex w-[200%]"
-                        animate={{ x: ["0%", "-50%"] }}
-                        transition={{
-                            repeat: Infinity,
-                            duration: 20,
-                            ease: "linear"
-                        }}
-                    >
-                        <svg viewBox="0 0 1440 50" className="w-1/2 h-auto block" preserveAspectRatio="none">
-                            <path fill="#ffffff" fillOpacity="1" d="M0,30 C30,10 50,10 80,30 C110,50 130,50 160,30 C190,10 210,10 240,30 C270,50 290,50 320,30 C350,10 370,10 400,30 C430,50 450,50 480,30 C510,10 530,10 560,30 C590,50 610,50 640,30 C670,10 690,10 720,30 C750,50 770,50 800,30 C830,10 850,10 880,30 C910,50 930,50 960,30 C990,10 1010,10 1040,30 C1070,50 1090,50 1120,30 C1150,10 1170,10 1200,30 C1230,50 1250,50 1280,30 C1310,10 1330,10 1360,30 C1390,50 1410,50 1440,30 L1440,0 L0,0 Z"></path>
-                        </svg>
-                        <svg viewBox="0 0 1440 50" className="w-1/2 h-auto block" preserveAspectRatio="none">
-                            <path fill="#ffffff" fillOpacity="1" d="M0,30 C30,10 50,10 80,30 C110,50 130,50 160,30 C190,10 210,10 240,30 C270,50 290,50 320,30 C350,10 370,10 400,30 C430,50 450,50 480,30 C510,10 530,10 560,30 C590,50 610,50 640,30 C670,10 690,10 720,30 C750,50 770,50 800,30 C830,10 850,10 880,30 C910,50 930,50 960,30 C990,10 1010,10 1040,30 C1070,50 1090,50 1120,30 C1150,10 1170,10 1200,30 C1230,50 1250,50 1280,30 C1310,10 1330,10 1360,30 C1390,50 1410,50 1440,30 L1440,0 L0,0 Z"></path>
-                        </svg>
-                    </motion.div>
-                </div>
 
-                {/* Decorative Elements - Animated */}
-                <div className="absolute inset-0 pointer-events-none opacity-30">
-                    <FloatingElement delay={0} duration={4} className="absolute top-20 left-[10%] text-white text-6xl font-bold">+</FloatingElement>
-                    <FloatingElement delay={1} duration={5} className="absolute top-32 right-[15%] text-yellow-300 text-6xl font-bold">*</FloatingElement>
-                    <FloatingElement delay={2} duration={3.5} className="absolute bottom-10 left-[20%] text-green-300 text-4xl font-bold">=</FloatingElement>
-                    <FloatingElement delay={0.5} duration={6} className="absolute top-1/2 right-[5%] text-pink-300 text-5xl font-bold">Aa</FloatingElement>
-                    <FloatingElement delay={1.5} duration={4.5} className="absolute bottom-20 right-[30%] text-blue-300 text-5xl font-bold">Bb</FloatingElement>
-                    <FloatingElement delay={2.5} duration={5.5} className="absolute top-40 left-[30%] text-purple-300 text-5xl font-bold">Cc</FloatingElement>
-                </div>
-
-                {/* Content */}
-                <div className="relative z-10 text-center text-white mt-8 mb-8">
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, ease: "easeOut" }}
-                        className="text-5xl md:text-6xl font-fredoka font-bold drop-shadow-md tracking-wide"
-                    >
-                        {schoolName}
-                    </motion.h1>
-                </div>
-            </div>
         </div>
     );
 };
