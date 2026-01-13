@@ -117,6 +117,9 @@ export default function Header() {
                                     <li className="nav-item">
                                         <Link href="/franchise">Franchise Opportunity</Link>
                                     </li>
+                                    <li className="nav-item">
+                                        <Link href="/locate-centre">Locate Centre</Link>
+                                    </li>
                                 </ul>
 
                                 <ul className="nav-list nav-list-right">

@@ -5,7 +5,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { cityLandmarks, CityData, LandmarkIcon } from './CityLandmarks';
+import { useCityLandmarks, CityData, LandmarkIcon } from './CityLandmarks';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -65,6 +65,7 @@ const LadderColumn = ({ items, columnIndex, onCityClick }: LadderColumnProps) =>
 
 const LocationsLadder = () => {
     const router = useRouter();
+    const { cityLandmarks, loading, error } = useCityLandmarks();
 
     // Sort cities alphabetically
     const sortedCities = [...cityLandmarks].sort((a, b) => a.name.localeCompare(b.name));
@@ -79,7 +80,7 @@ const LocationsLadder = () => {
     );
 
     const handleCityClick = (city: string) => {
-        router.push(`/locations/${encodeURIComponent(city)}`);
+        router.push(`/locate-centre?city=${encodeURIComponent(city)}`);
     };
 
     return (
@@ -118,17 +119,35 @@ const LocationsLadder = () => {
                     <div className="h-1.5 w-24 bg-[#fed509] mx-auto mt-4 rounded-full shadow-sm"></div>
                 </div>
 
+                {/* Loading State */}
+                {loading && (
+                    <div className="text-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent"></div>
+                        <p className="mt-4 text-gray-600">Loading locations...</p>
+                    </div>
+                )}
+
+                {/* Error State */}
+                {error && !loading && (
+                    <div className="text-center py-12">
+                        <p className="text-red-600 mb-2">⚠️ {error}</p>
+                        <p className="text-gray-600 text-sm">Showing limited locations</p>
+                    </div>
+                )}
+
                 {/* Responsive Grid for Columns */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 md:gap-4 justify-items-center">
-                    {columns.map((colItems, idx) => (
-                        <LadderColumn
-                            key={idx}
-                            items={colItems}
-                            columnIndex={idx}
-                            onCityClick={handleCityClick}
-                        />
-                    ))}
-                </div>
+                {!loading && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 md:gap-4 justify-items-center">
+                        {columns.map((colItems, idx) => (
+                            <LadderColumn
+                                key={idx}
+                                items={colItems}
+                                columnIndex={idx}
+                                onCityClick={handleCityClick}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             <style jsx>{`
