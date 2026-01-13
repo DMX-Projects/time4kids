@@ -212,72 +212,89 @@ export default function ProgramsPage() {
             </div>
 
             {/* Content Section - The Program Cards */}
-            <section className="relative bg-white pt-0 pb-20 z-10">
+            <section className="relative bg-white pt-10 pb-32 z-10">
                 <div className="container mx-auto px-4">
-                    <div className="flex flex-col gap-12 md:gap-16">
-                        {programs.map((program, index) => (
-                            <div key={index} className={`flex flex-col md:flex-row items-center gap-8 lg:gap-12 ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''}`}>
+                    <div className="flex flex-col gap-20 md:gap-32">
+                        {programs.map((program, index) => {
+                            const isDayCare = program.name === 'Day Care';
 
-                                {/* Image Side */}
-                                <div className="w-full md:w-5/12 relative group perspective-1000">
-                                    <div className={`absolute inset-0 bg-gradient-to-br ${program.colorStart} ${program.colorEnd} opacity-40 blur-xl transform scale-90 group-hover:scale-100 transition-all duration-700 rounded-full`}></div>
+                            return (
+                                <div key={index} className={`flex flex-col md:flex-row items-center gap-16 lg:gap-32 ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} ${isDayCare ? 'py-16 md:py-24' : ''}`}>
 
-                                    <div className={`relative w-full aspect-square md:aspect-[4/3] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-all duration-500 transform group-hover:rotate-1`} style={{ borderRadius: index % 2 === 0 ? '60% 40% 30% 70% / 60% 30% 70% 40%' : '30% 70% 70% 30% / 30% 30% 70% 70%' }}>
-                                        <div className="absolute inset-0 bg-white/20 z-10"></div>
-                                        <Image
-                                            src={program.image}
-                                            alt={program.name}
-                                            fill
-                                            className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                        />
+                                    {/* Special Background for Day Care */}
+                                    {isDayCare && (
+                                        <div className="absolute left-0 right-0 w-full h-[500px] bg-gradient-to-r from-blue-50/50 to-cyan-50/50 -skew-y-3 -z-10 rounded-3xl"></div>
+                                    )}
 
-                                        {/* Floating Badge */}
-                                        <div className={`absolute bottom-8 ${index % 2 === 0 ? 'right-8' : 'left-8'} z-20 bg-white p-4 rounded-full shadow-xl animate-float`}>
-                                            <program.icon className={`w-8 h-8 ${program.accent}`} />
+                                    {/* Image Side */}
+                                    <div className="w-full md:w-1/2 relative group perspective-1000">
+                                        <div className={`absolute inset-0 bg-gradient-to-br ${program.colorStart} ${program.colorEnd} opacity-30 blur-2xl transform scale-90 group-hover:scale-105 transition-all duration-700 rounded-full`}></div>
+
+                                        <div className={`relative w-full aspect-square md:aspect-[4/3] overflow-hidden shadow-2xl transition-all duration-500 transform group-hover:rotate-1 group-hover:-translate-y-2 border-4 border-white`} style={{ borderRadius: index % 2 === 0 ? '60% 40% 30% 70% / 60% 30% 70% 40%' : '30% 70% 70% 30% / 30% 30% 70% 70%' }}>
+                                            <div className="absolute inset-0 bg-black/5 z-10 group-hover:bg-transparent transition-colors duration-500"></div>
+                                            <Image
+                                                src={program.image}
+                                                alt={program.name}
+                                                fill
+                                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                            />
+
+                                            {/* Floating Badge - Enhanced */}
+                                            <div className={`absolute bottom-8 ${index % 2 === 0 ? 'right-8' : 'left-8'} z-20 bg-white/90 backdrop-blur-md p-5 rounded-full shadow-2xl animate-float border border-white/60 ring-4 ring-black/5`}>
+                                                <program.icon className={`w-10 h-10 ${program.accent}`} />
+                                            </div>
+                                        </div>
+
+                                        {isDayCare && (
+                                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+                                        )}
+                                    </div>
+
+                                    {/* Content Side */}
+                                    <div className="w-full md:w-1/2 text-center md:text-left space-y-10">
+                                        <div className="space-y-6">
+                                            <div className="inline-block">
+                                                <span className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-widest bg-white border ${program.accent} border-current shadow-sm`}>
+                                                    {program.ageGroup}
+                                                </span>
+                                            </div>
+
+                                            <h2 className="font-display font-black text-5xl md:text-7xl text-slate-800 leading-tight tracking-tight drop-shadow-sm">
+                                                {program.name}
+                                            </h2>
+                                        </div>
+
+                                        <div className="flex items-center justify-center md:justify-start gap-4 text-slate-500 font-bold text-lg">
+                                            <div className={`p-3 rounded-full bg-slate-100 ${program.accent}`}>
+                                                <Clock className="w-6 h-6" />
+                                            </div>
+                                            <span>{program.duration}</span>
+                                        </div>
+
+                                        <p className="text-xl md:text-2xl text-slate-600 leading-relaxed font-medium max-w-xl mx-auto md:mx-0">
+                                            {program.description}
+                                        </p>
+
+                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4">
+                                            {program.features.map((feature, idx) => (
+                                                <li key={idx} className="flex items-center gap-4 text-slate-700 font-bold text-lg bg-white px-5 py-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all group cursor-default">
+                                                    <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${program.colorStart} ${program.colorEnd} group-hover:scale-150 transition-transform`}></div>
+                                                    {feature}
+                                                </li>
+                                            ))}
+                                        </ul>
+
+                                        <div className="pt-10">
+                                            <Link href="/admission">
+                                                <Button className={`px-14 py-7 text-xl rounded-2xl font-bold shadow-2xl shadow-orange-200/50 hover:shadow-orange-300/60 hover:-translate-y-1 transition-all bg-gradient-to-r from-orange-500 to-red-500 text-white border-none uppercase tracking-wider`}>
+                                                    Enroll Your Child
+                                                </Button>
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Content Side */}
-                                <div className="w-full md:w-1/2 text-center md:text-left space-y-6">
-                                    <div className="inline-block">
-                                        <span className={`px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider bg-white border shadow-sm ${program.accent} border-current`}>
-                                            {program.ageGroup}
-                                        </span>
-                                    </div>
-
-                                    <h2 className="font-display font-black text-4xl md:text-5xl text-slate-800 leading-tight">
-                                        {program.name}
-                                    </h2>
-
-                                    <div className="flex items-center justify-center md:justify-start gap-2 text-slate-500 font-bold">
-                                        <Clock className="w-5 h-5" />
-                                        <span>{program.duration}</span>
-                                    </div>
-
-                                    <p className="text-xl text-slate-600 leading-relaxed font-medium">
-                                        {program.description}
-                                    </p>
-
-                                    <ul className="grid grid-cols-2 gap-3 pt-4">
-                                        {program.features.map((feature, idx) => (
-                                            <li key={idx} className="flex items-center gap-2 text-slate-700 font-semibold bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 hover:bg-white hover:shadow-md transition-all">
-                                                <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${program.colorStart} ${program.colorEnd}`}></div>
-                                                {feature}
-                                            </li>
-                                        ))}
-                                    </ul>
-
-                                    <div className="pt-6">
-                                        <Link href="/admission">
-                                            <Button className={`px-10 py-5 text-lg rounded-full font-bold shadow-xl shadow-orange-100 hover:shadow-orange-200 hover:-translate-y-1 transition-all bg-gradient-to-r ${program.colorStart} ${program.colorEnd} border-none`}>
-                                                Enroll Your Child
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </section>
