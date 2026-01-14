@@ -6,6 +6,7 @@ import QRCode from '@/components/ui/QRCode';
 import { useForm } from 'react-hook-form';
 import { CheckCircle } from 'lucide-react';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
+import { useToast } from '@/components/ui/Toast';
 
 interface FranchiseFormData {
     name: string;
@@ -23,6 +24,7 @@ const FranchiseForm = () => {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<FranchiseFormData>();
     const { addEnquiry } = useSchoolData();
+    const { showToast } = useToast();
 
     const onSubmit = async (data: FranchiseFormData) => {
         setSubmitError(null);
@@ -37,11 +39,13 @@ const FranchiseForm = () => {
             });
             setIsSubmitted(true);
             reset();
+            showToast("Franchise enquiry submitted successfully!");
             setTimeout(() => {
                 setIsSubmitted(false);
             }, 5000);
         } catch (err: any) {
             setSubmitError(err?.message || 'Unable to submit your enquiry. Please try again.');
+            showToast(err?.message || 'Submission failed. Please try again.', "error");
         }
     };
 

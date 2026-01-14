@@ -6,6 +6,7 @@ import QRCode from '@/components/ui/QRCode';
 import { useForm } from 'react-hook-form';
 import { CheckCircle } from 'lucide-react';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
+import { useToast } from '@/components/ui/Toast';
 
 interface AdmissionFormData {
     parentName: string;
@@ -33,6 +34,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
         }
     });
     const { addEnquiry } = useSchoolData();
+    const { showToast } = useToast();
 
     const onSubmit = async (data: AdmissionFormData) => {
         setSubmitError(null);
@@ -51,9 +53,11 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
             setIsSubmitted(true);
             setShowQR(true);
             reset();
+            showToast("Admission enquiry submitted successfully!");
             setTimeout(() => setIsSubmitted(false), 5000);
         } catch (err: any) {
             setSubmitError(err?.message || 'Unable to submit your enquiry. Please try again.');
+            showToast(err?.message || 'Unable to submit your enquiry. Please try again.', "error");
         }
     };
 

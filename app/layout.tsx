@@ -11,6 +11,7 @@ import ConditionalChrome from "@/components/layout/ConditionalChrome";
 import DiceCursor from "@/components/ui/DiceCursor";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
+import { ToastProvider } from "@/components/ui/Toast";
 
 const inter = Inter({
     subsets: ["latin"],
@@ -112,24 +113,26 @@ export default function RootLayout({
             </head>
             <body className="antialiased">
                 <AuthProvider>
-                    <SchoolDataProvider>
-                        <ConditionalChrome>
-                            <SmoothScroll />
-                            <BlobBackground />
-                            <ScrollProgress />
-                            <DiceCursor />
-                            <Header />
-                        </ConditionalChrome>
+                    <ToastProvider>
+                        <SchoolDataProvider>
+                            <ConditionalChrome>
+                                <SmoothScroll />
+                                <BlobBackground />
+                                <ScrollProgress />
+                                <DiceCursor />
+                                <Header />
+                            </ConditionalChrome>
 
-                        <main className="min-h-screen">
-                            {children}
-                        </main>
+                            <main className="min-h-screen">
+                                {children}
+                            </main>
 
-                        <ConditionalChrome>
-                            <Footer />
-                            <Chatbot />
-                        </ConditionalChrome>
-                    </SchoolDataProvider>
+                            <ConditionalChrome>
+                                <Footer />
+                                <Chatbot />
+                            </ConditionalChrome>
+                        </SchoolDataProvider>
+                    </ToastProvider>
                 </AuthProvider>
             </body>
         </html>

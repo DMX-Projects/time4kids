@@ -66,26 +66,20 @@ const RopeHarness = ({ direction }: { direction: 'left' | 'right' }) => (
             marginRight: direction === 'left' ? '-5px' : '-5px',
         }}>
         <svg viewBox="0 0 100 60" className="w-full h-full" style={{ overflow: 'visible' }}>
-            {/* The Bridle/Harness */}
+            {/* The Bridle/Harness - Simple Line for Pointed Tip */}
             {direction === 'right' ? (
                 <>
-                    {/* Connecting to Left (Banner) */}
-                    <path d="M-10,15 L60,30 L-10,45" fill="none" stroke="#fff" strokeWidth="2" />
-                    {/* Connecting to Right (Plane) - Extend line further right to ensure connection */}
-                    <path d="M60,30 L120,30" fill="none" stroke="#fff" strokeWidth="2" />
-                    {/* Dots for connection points */}
-                    <circle cx="-10" cy="15" r="3" fill="#fff" />
-                    <circle cx="-10" cy="45" r="3" fill="#fff" />
+                    {/* Connecting to Left (Banner Tip) */}
+                    <path d="M-10,30 L120,30" fill="none" stroke="#fff" strokeWidth="2" />
+                    {/* Dot for connection point */}
+                    <circle cx="-10" cy="30" r="3" fill="#fff" />
                 </>
             ) : (
                 <>
-                    {/* Connecting to Right (Banner) */}
-                    <path d="M110,15 L40,30 L110,45" fill="none" stroke="#fff" strokeWidth="2" />
-                    {/* Connecting to Left (Plane) - Extend line further left */}
-                    <path d="M40,30 L-20,30" fill="none" stroke="#fff" strokeWidth="2" />
-                    {/* Dots for connection points */}
-                    <circle cx="110" cy="15" r="3" fill="#fff" />
-                    <circle cx="110" cy="45" r="3" fill="#fff" />
+                    {/* Connecting to Right (Banner Tip) */}
+                    <path d="M110,30 L-20,30" fill="none" stroke="#fff" strokeWidth="2" />
+                    {/* Dot for connection point */}
+                    <circle cx="110" cy="30" r="3" fill="#fff" />
                 </>
             )}
         </svg>
@@ -93,15 +87,13 @@ const RopeHarness = ({ direction }: { direction: 'left' | 'right' }) => (
 );
 
 const BannerCard = ({ children, direction }: { children: React.ReactNode; direction: 'left' | 'right' }) => {
-    // direction='right': Plane is on Right. Banner on Left. Tail of banner is Left side.
-    // Cut notch on Left side.
+    // direction='right': Plane is on Right. Banner on Left. 
+    // Connected end (Right) becomes Pointed. Far end (Left) remains Notched.
     const clipPath = direction === 'right'
-        ? 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 30px 50%)'
-        : 'polygon(0% 0%, 100% 0%, calc(100% - 30px) 50%, 100% 100%, 0% 100%)';
+        ? 'polygon(0% 0%, calc(100% - 30px) 0%, 100% 50%, calc(100% - 30px) 100%, 0% 100%, 30px 50%)'
+        : 'polygon(30px 0%, 100% 0%, calc(100% - 30px) 50%, 100% 100%, 30px 100%, 0% 50%)';
 
-    const padding = direction === 'right'
-        ? 'py-8 pr-8 pl-14' // More padding on Left for notch
-        : 'py-8 pl-8 pr-14'; // More padding on Right for notch
+    const padding = 'py-8 pl-14 pr-14'; // Symmetric padding for Chevron shape
 
     return (
         <div className="relative filter drop-shadow-xl flex-1 w-full scale-100 md:scale-95">

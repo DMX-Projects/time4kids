@@ -42,7 +42,6 @@ export default function SchoolIntroSection({ schoolName }: SchoolIntroSectionPro
 
             <style jsx>{`
                 .wave-gray-bottom {
-                    float: left;
                     width: 100%;
                     height: 28px;
                     text-align: center;

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { Music, Palette, BookOpen, Star, Heart } from 'lucide-react';
 
 const programs = [
@@ -70,21 +69,16 @@ const programs = [
 
 export default function SchoolProgramsSection() {
     return (
-        <section id="programs" className="py-28 bg-white relative overflow-hidden scroll-mt-24">
+        <section id="programs" className="pt-8 pb-12 bg-white relative overflow-hidden scroll-mt-24">
             <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30 pointer-events-none"></div>
 
             <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-20">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="inline-block"
-                    >
+                    <div className="inline-block">
                         <span className="py-2 px-6 rounded-full bg-blue-50 text-blue-600 font-bold text-sm uppercase tracking-widest border border-blue-100 mb-6 inline-block">
                             Our Classes
                         </span>
-                    </motion.div>
+                    </div>
                     <h2 className="text-4xl md:text-6xl font-fredoka font-bold text-gray-900 mb-6">Learning Pathways</h2>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto font-medium">
                         Curated programs for every stage of your child&apos;s early years.
@@ -95,13 +89,8 @@ export default function SchoolProgramsSection() {
                     {programs.map((program, i) => {
                         const Icon = program.icon;
                         return (
-                            <motion.div
+                            <div
                                 key={i}
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                whileHover={{ y: -10 }}
-                                transition={{ delay: i * 0.1 }}
-                                viewport={{ once: true }}
                                 className={`group relative bg-white rounded-[2rem] overflow-hidden border-2 ${program.borderColor} hover:shadow-2xl transition-all duration-300 flex flex-col`}
                             >
                                 {/* Image Area */}
@@ -131,7 +120,7 @@ export default function SchoolProgramsSection() {
                                         {program.description}
                                     </p>
                                 </div>
-                            </motion.div>
+                            </div>
                         );
                     })}
                 </div>

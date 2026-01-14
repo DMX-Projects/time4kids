@@ -163,6 +163,7 @@ const mapEnquiry = (enq: ApiEnquiry): Enquiry => ({
     email: enq.email,
     phone: enq.phone,
     city: enq.city,
+    childAge: enq.child_age,
     message: enq.message || "",
     createdAt: enq.created_at,
     status: (enq.status as any) || "new",

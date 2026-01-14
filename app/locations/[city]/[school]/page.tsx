@@ -65,7 +65,7 @@ export default async function SchoolDetailsPage({ params }: { params: { city: st
             <GallerySection schoolName={franchise.name} city={franchise.city} />
 
             {/* --- SECTION: CONTACT --- */}
-            <ContactSection school={schoolData} />
+            <ContactSection school={schoolData} franchiseSlug={schoolSlug} />
 
         </main>
     );
