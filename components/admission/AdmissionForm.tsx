@@ -18,11 +18,20 @@ interface AdmissionFormData {
     message?: string;
 }
 
-const AdmissionForm = () => {
+interface AdmissionFormProps {
+    franchiseSlug?: string;
+    defaultCity?: string;
+}
+
+const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showQR, setShowQR] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const { register, handleSubmit, formState: { errors }, reset } = useForm<AdmissionFormData>();
+    const { register, handleSubmit, formState: { errors }, reset } = useForm<AdmissionFormData>({
+        defaultValues: {
+            city: defaultCity || ''
+        }
+    });
     const { addEnquiry } = useSchoolData();
 
     const onSubmit = async (data: AdmissionFormData) => {
@@ -36,6 +45,8 @@ const AdmissionForm = () => {
                 city: data.city,
                 childAge: data.childAge,
                 message: `Child: ${data.childName}, Age: ${data.childAge}, Program: ${data.program}, City: ${data.city}${data.message ? ' | Note: ' + data.message : ''}`,
+                // @ts-ignore - passing extra field that is handled by the provider but not in the strict type yet
+                franchiseSlug: franchiseSlug
             });
             setIsSubmitted(true);
             setShowQR(true);
@@ -199,12 +210,17 @@ const AdmissionForm = () => {
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 City *
                             </label>
-                            <input
+                            <select
                                 {...register('city', { required: 'City is required' })}
-                                type="text"
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                                placeholder="Enter your city"
-                            />
+                            >
+                                <option value="">Select City</option>
+                                {useSchoolData().locations.map((loc) => (
+                                    <option key={`${loc.city_name}-${loc.state}`} value={loc.city_name}>
+                                        {loc.city_name}, {loc.state}
+                                    </option>
+                                ))}
+                            </select>
                             {errors.city && (
                                 <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>
                             )}
