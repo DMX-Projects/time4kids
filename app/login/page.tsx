@@ -6,6 +6,7 @@ import Image from "next/image";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Shield, Building2, Users, Eye, EyeOff } from "lucide-react";
+import FranchiseHeroSlider from "@/components/franchise/FranchiseHeroSlider";
 
 export default function UniversalLoginPage() {
     const router = useRouter();
@@ -19,6 +20,7 @@ export default function UniversalLoginPage() {
     const [submitting, setSubmitting] = useState(false);
 
     const next = searchParams.get("next");
+    const franchiseSlug = searchParams.get("franchise"); // Support custom login page for franchise
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -43,16 +45,19 @@ export default function UniversalLoginPage() {
         <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 flex items-center justify-center px-4 py-12">
             <div className="w-full max-w-5xl grid md:grid-cols-2 gap-12 items-center">
                 {/* Left side - Branding */}
-                <div className="space-y-6">
-                    <div className="relative w-56 h-24">
-                        <Image src="/logo.jpg" alt="T.I.M.E. Kids Logo" fill sizes="(max-width: 768px) 224px, 280px" className="object-contain" priority />
+                {/* Left side - Branding or Slider */}
+                <div className="relative h-full min-h-[400px] md:min-h-[600px] rounded-3xl overflow-hidden shadow-2xl">
+                    <div className="absolute inset-0 bg-blue-50 flex flex-col justify-center p-12 space-y-6">
+                        <div className="relative w-56 h-24">
+                            <Image src="/logo.jpg" alt="T.I.M.E. Kids Logo" fill sizes="(max-width: 768px) 224px, 280px" className="object-contain" priority />
+                        </div>
+                        <h1 className="font-display text-5xl font-bold text-[#003366] leading-tight">
+                            Welcome Back
+                        </h1>
+                        <p className="text-lg text-gray-600 leading-relaxed max-w-md">
+                            Sign in to access your dashboard and manage your account.
+                        </p>
                     </div>
-                    <h1 className="font-display text-5xl font-bold text-[#003366] leading-tight">
-                        Welcome Back
-                    </h1>
-                    <p className="text-lg text-gray-600 leading-relaxed max-w-md">
-                        Sign in to access your dashboard and manage your account.
-                    </p>
                 </div>
 
                 {/* Right side - Login Form */}

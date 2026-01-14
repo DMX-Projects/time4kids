@@ -47,6 +47,7 @@ export default async function SchoolDetailsPage({ params }: { params: { city: st
             <section id="home">
                 <SchoolHeroSection
                     schoolName={franchise.name}
+                    slides={franchise.hero_slides}
                 />
                 <SchoolIntroSection schoolName={franchise.name} />
 
@@ -62,7 +63,7 @@ export default async function SchoolDetailsPage({ params }: { params: { city: st
             <AdmissionSection franchiseSlug={schoolSlug} city={franchise.city} />
 
             {/* --- SECTION: GALLERY --- */}
-            <GallerySection schoolName={franchise.name} city={franchise.city} />
+            <GallerySection schoolName={franchise.name} city={franchise.city} galleryItems={franchise.gallery_items} />
 
             {/* --- SECTION: CONTACT --- */}
             <ContactSection school={schoolData} franchiseSlug={schoolSlug} />

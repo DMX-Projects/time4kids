@@ -10,8 +10,8 @@ import BlobBackground from "@/components/animations/BlobBackground";
 import ConditionalChrome from "@/components/layout/ConditionalChrome";
 import DiceCursor from "@/components/ui/DiceCursor";
 import { AuthProvider } from "@/components/auth/AuthProvider";
-import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
 import { ToastProvider } from "@/components/ui/Toast";
+import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
 
 const inter = Inter({
     subsets: ["latin"],
