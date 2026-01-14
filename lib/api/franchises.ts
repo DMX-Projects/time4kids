@@ -21,6 +21,23 @@ export interface Franchise {
     programs: string;
     facilities: string;
     is_active: boolean;
+    hero_slides: {
+        id: number;
+        image: string;
+        alt_text: string;
+        link: string;
+        order: number;
+    }[];
+    gallery_items: {
+        id: number;
+        media_type: 'photo' | 'video';
+        title: string;
+        image: string;
+        video_link: string;
+        academic_year: string;
+        event_category: string;
+        created_at: string;
+    }[];
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';

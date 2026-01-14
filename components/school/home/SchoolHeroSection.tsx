@@ -8,11 +8,22 @@ import 'slick-carousel/slick/slick-theme.css';
 import Modal from '@/components/ui/Modal';
 import AdmissionForm from '@/components/admission/AdmissionForm';
 
-interface SchoolHeroSectionProps {
-    schoolName: string;
+import { mediaUrl } from '@/lib/api-client';
+
+interface HeroSlide {
+    id: number;
+    image: string;
+    alt_text: string;
+    link?: string;
 }
 
-export default function SchoolHeroSection({ schoolName }: SchoolHeroSectionProps) {
+interface SchoolHeroSectionProps {
+    schoolName: string;
+    slides?: HeroSlide[];
+}
+
+export default function SchoolHeroSection({ schoolName, slides }: SchoolHeroSectionProps) {
+    console.log('DEBUG SLIDES:', slides);
     const [showAdmissionModal, setShowAdmissionModal] = useState(false);
     const [particles, setParticles] = useState<Array<{ x: string, y: string, anim: string, top: string, left: string }>>([]);
 
@@ -42,8 +53,11 @@ export default function SchoolHeroSection({ schoolName }: SchoolHeroSectionProps
         nextArrow: <NextArrow />,
     };
 
-    // Static slides for School Pages (can be made dynamic later)
-    const heroSlides = [
+    // Use dynamic slides if available, otherwise use static defaults
+    const heroSlides = (slides && slides.length > 0) ? slides.map(s => ({
+        ...s,
+        image: mediaUrl(s.image)
+    })) : [
         {
             id: 1,
             image: '/images/landing-banner.jpg',
