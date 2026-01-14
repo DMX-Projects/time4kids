@@ -1,9 +1,7 @@
-"use client";
-
-import React from 'react';
 import { Phone, Mail, MapPin } from 'lucide-react';
+import SchoolContactForm from './SchoolContactForm';
 
-export default function ContactSection({ school }: { school: any }) {
+export default function ContactSection({ school, franchiseSlug }: { school: any, franchiseSlug?: string }) {
     if (!school) return null;
 
     return (
@@ -56,14 +54,8 @@ export default function ContactSection({ school }: { school: any }) {
                         </div>
                     </div>
 
-                    <div className="h-[600px] bg-gray-100 rounded-[2.5rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-8 border-white transform rotate-2 hover:rotate-0 transition-transform duration-700 ease-out relative">
-                        <div className="absolute inset-0 z-10 pointer-events-none shadow-[inset_0_0_40px_rgba(0,0,0,0.1)]"></div>
-                        <iframe
-                            className="w-full h-full"
-                            src={`https://maps.google.com/maps?q=${encodeURIComponent(school.address + ' ' + school.city + ' TIME Kids Preschool')}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                            allowFullScreen
-                            loading="lazy"
-                        />
+                    <div className="relative">
+                        <SchoolContactForm franchiseSlug={franchiseSlug} city={school.city} />
                     </div>
                 </div>
             </div>

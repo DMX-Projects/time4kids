@@ -8,7 +8,7 @@ interface AdmissionSectionProps {
 
 export default function AdmissionSection({ franchiseSlug, city }: AdmissionSectionProps) {
     return (
-        <section id="admission" className="py-28 bg-[#fffcf5] relative scroll-mt-24">
+        <section id="admission" className="py-16 bg-[#fffcf5] relative scroll-mt-24">
             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-orange-200 to-transparent"></div>
             <div className="container mx-auto px-4">
                 <div className="max-w-2xl mx-auto text-center mb-12">
