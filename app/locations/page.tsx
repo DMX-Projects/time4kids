@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-
+import { apiUrl } from '@/lib/api-client';
 import Link from 'next/link';
 import { MapPin, ChevronRight, GraduationCap } from 'lucide-react';
 import TwinklingStars from '@/components/animations/TwinklingStars';
@@ -16,9 +16,7 @@ export default function LocationsPage() {
     React.useEffect(() => {
         const fetchLocations = async () => {
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/franchises/public/locations/`
-                );
+                const res = await fetch(apiUrl('/franchises/public/locations/'));
                 if (!res.ok) throw new Error('Failed to fetch locations');
                 const data = await res.json();
                 setLocations(data);

@@ -1,4 +1,6 @@
 
+import { SERVER_URL } from '../api-client';
+
 export interface Franchise {
     id: number;
     name: string;
@@ -40,11 +42,9 @@ export interface Franchise {
     }[];
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
 export async function getFranchiseBySlug(slug: string): Promise<Franchise | null> {
     try {
-        const res = await fetch(`${API_URL}/api/franchises/public/${slug}/`, {
+        const res = await fetch(`${SERVER_URL}/api/franchises/public/${slug}/`, {
             cache: 'no-store', // Always fetch fresh data
         });
 

@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
-// API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { SERVER_URL } from '@/lib/api-client';
 
 // Type definitions
 export type LandmarkType =
@@ -41,17 +39,9 @@ export interface CityData {
     type: LandmarkType;
 }
 
-// Static fallback data (in case API fails)
-const fallbackCityLandmarks: CityData[] = [
-    { name: "Alleppey", landmark: "Alappuzha Backwaters", type: "backwaters" },
-    { name: "Bengaluru", landmark: "Vidhana Soudha", type: "vidhana_soudha" },
-    { name: "Mumbai", landmark: "Gateway of India", type: "gateway_of_india" },
-    { name: "Hyderabad", landmark: "Charminar", type: "charminar" },
-];
-
 // Custom hook to fetch city landmarks from API
 export const useCityLandmarks = () => {
-    const [cityLandmarks, setCityLandmarks] = useState<CityData[]>(fallbackCityLandmarks);
+    const [cityLandmarks, setCityLandmarks] = useState<CityData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +49,7 @@ export const useCityLandmarks = () => {
         const fetchLocations = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${API_BASE_URL}/api/franchises/public/locations/`);
+                const response = await fetch(`${SERVER_URL}/api/franchises/public/locations/`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -83,7 +73,7 @@ export const useCityLandmarks = () => {
             } catch (err) {
                 console.error('Error fetching franchise locations:', err);
                 setError(err instanceof Error ? err.message : 'Failed to fetch locations');
-                // Keep fallback data on error
+                setCityLandmarks([]);
             } finally {
                 setLoading(false);
             }
