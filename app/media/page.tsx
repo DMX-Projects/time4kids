@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MOCK_MEDIA_ITEMS, MediaItem } from '@/lib/mock-media-data';
 import { Play, X, ChevronLeft, ChevronRight, Image as ImageIcon, Film } from 'lucide-react';
+import { SERVER_URL } from '@/lib/api-client';
 
 export default function MediaPage() {
     const [selectedCategory, setSelectedCategory] = useState('All');
@@ -15,9 +16,7 @@ export default function MediaPage() {
     useEffect(() => {
         const fetchMedia = async () => {
             try {
-                // Determine API URL based on environment
-                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const res = await fetch(`${baseUrl}/api/media/`);
+                const res = await fetch(`${SERVER_URL}/api/media/`);
                 if (!res.ok) throw new Error('Failed to fetch media');
 
                 const data = await res.json();
@@ -27,7 +26,7 @@ export default function MediaPage() {
                 const mappedItems: MediaItem[] = results.map((item: any) => {
                     const fileUrl = item.file.startsWith('http')
                         ? item.file
-                        : `${baseUrl}${item.file.startsWith('/') ? '' : '/'}${item.file}`;
+                        : `${SERVER_URL}${item.file.startsWith('/') ? '' : '/'}${item.file}`;
 
                     return {
                         id: item.id,

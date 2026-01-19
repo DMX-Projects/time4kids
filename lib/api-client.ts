@@ -3,9 +3,44 @@ const normalizeBase = (value: string | undefined, fallback: string) => {
     return base.endsWith('/') ? base.slice(0, -1) : base;
 };
 
-export const API_BASE_URL = normalizeBase(process.env.NEXT_PUBLIC_API_BASE_URL, "http://localhost:8000/api");
-export const MEDIA_BASE_URL = normalizeBase(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, "http://localhost:8000/media");
-export const SERVER_URL = normalizeBase(process.env.NEXT_PUBLIC_SERVER_URL, "http://localhost:8000");
+// Dynamic API URL detection
+const getBaseUrl = () => {
+    // If explicitly set in environment, use that (highest priority)
+    if (process.env.NEXT_PUBLIC_API_URL) {
+        return process.env.NEXT_PUBLIC_API_URL;
+    }
+
+    // For server-side rendering, use localhost
+    if (typeof window === 'undefined') {
+        const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
+        return `http://localhost:${port}`;
+    }
+
+    // For client-side, detect the current host
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+
+    // If accessing via localhost, use localhost with backend port
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
+        return `http://localhost:${port}`;
+    }
+
+    // If accessing via dev tunnel or remote URL
+    // Use the backend dev tunnel URL if provided, otherwise use same host
+    if (process.env.NEXT_PUBLIC_BACKEND_DEV_TUNNEL) {
+        return process.env.NEXT_PUBLIC_BACKEND_DEV_TUNNEL;
+    }
+
+    // Fallback: use the same host (for cases where frontend and backend share same domain)
+    return `${protocol}//${hostname}`;
+};
+
+const BASE_URL = getBaseUrl();
+
+export const API_BASE_URL = normalizeBase(process.env.NEXT_PUBLIC_API_BASE_URL, `${BASE_URL}/api`);
+export const MEDIA_BASE_URL = normalizeBase(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, `${BASE_URL}/media`);
+export const SERVER_URL = normalizeBase(process.env.NEXT_PUBLIC_SERVER_URL, BASE_URL);
 export const apiUrl = (path: string) => `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
 export const mediaUrl = (path?: string | null) => {
