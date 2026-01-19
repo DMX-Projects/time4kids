@@ -31,7 +31,7 @@ export default function MediaPage() {
                     return {
                         id: item.id,
                         type: item.media_type,
-                        src: fileUrl,
+                        src: mediaUrl(item.file),
                         title: item.title,
                         category: item.category || 'Events',
                         size: 'normal',

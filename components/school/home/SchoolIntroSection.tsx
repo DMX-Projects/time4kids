@@ -9,7 +9,7 @@ interface SchoolIntroSectionProps {
 export default function SchoolIntroSection({ schoolName }: SchoolIntroSectionProps) {
     return (
         <>
-            <div className="intro-block">
+            <div id="about" className="intro-block scroll-mt-40">
                 <div className="container mx-auto px-4">
                     <div className="intro-content">
                         <h1>Welcome to T.I.M.E. Kids</h1>
