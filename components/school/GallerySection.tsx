@@ -50,27 +50,18 @@ export default function GallerySection({ schoolName, city, galleryItems = [] }: 
     };
 
     return (
-        <section id="gallery" className="py-24 bg-white scroll-mt-24">
+        <section id="gallery" className="py-16 bg-white scroll-mt-24">
             <style jsx global>{`
-                .wavy-grid-container {
-                    display: grid;
-                    grid-template-columns: repeat(3, auto);
-                    place-content: center;
-                    gap: 8px;
-                    margin: 0 auto 3rem auto; /* Centered with bottom margin */
-                    width: fit-content; /* Ensure container wraps tightly to grid */
-                }
-                
                 @keyframes shimmer {
                     0% { background-position: 0% 50%; }
                     50% { background-position: 100% 50%; }
                     100% { background-position: 0% 50%; }
                 }
 
-                .wavy-grid-image {
-                    --s: 12px;
-                    width: calc(3 * 4 * var(--s));
-                    aspect-ratio: 1;
+                .wavy-image-card {
+                    --s: 10px; /* Control curve size */
+                    width: 280px; 
+                    height: 280px;
                     padding: var(--s);
                     border: var(--s) solid transparent;
                     
@@ -79,43 +70,32 @@ export default function GallerySection({ schoolName, city, galleryItems = [] }: 
                     background-size: 300% 300%;
                     animation: shimmer 4s ease infinite;
 
-                    border-radius: calc(3.5 * var(--s));
+                    border-radius: calc(3 * var(--s));
                     mask:
-                        radial-gradient(calc(1.4142 * var(--s)), #000 calc(100% - 1px), transparent),
+                        radial-gradient(calc(1.414 * var(--s)), #000 calc(100% - 1px), transparent),
                         conic-gradient(#000 0 0) content-box,
-                        radial-gradient(calc(1.4142 * var(--s)), transparent 100%, #000 calc(100% + 1px)) var(--s) var(--s) padding-box;
+                        radial-gradient(calc(1.414 * var(--s)), transparent 100%, #000 calc(100% + 1px)) var(--s) var(--s) padding-box;
                     mask-size: calc(var(--s) * 4) calc(var(--s) * 4);
                     
                     position: relative;
                     overflow: hidden;
                     cursor: pointer;
-                    transition: transform 0.3s ease;
+                    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 }
                 
-                .wavy-grid-image:hover {
-                    transform: scale(1.02);
+                .wavy-image-card:hover {
+                    transform: scale(1.05) rotate(2deg);
                     z-index: 10;
-                    animation-duration: 2s; /* Speed up on hover */
+                    animation-duration: 2s;
                 }
                 
-                /* Responsive sizing */
                 @media (min-width: 768px) {
-                     .wavy-grid-image { --s: 16px; }
+                     .wavy-image-card { 
+                        width: 320px; 
+                        height: 320px;
+                        --s: 14px; 
+                     }
                 }
-                @media (min-width: 1024px) {
-                     .wavy-grid-image { --s: 20px; }
-                }
-
-                /* Specific Grid Positions (1-9) */
-                .wavy-grid-container .wavy-grid-image:nth-child(1) { translate: calc(2 * var(--s)) calc(4 * var(--s)); place-self: end; }
-                .wavy-grid-container .wavy-grid-image:nth-child(2) { translate: 0 calc(2 * var(--s)); }
-                .wavy-grid-container .wavy-grid-image:nth-child(3) { translate: calc(-2 * var(--s)) calc(4 * var(--s)); place-self: start; }
-                .wavy-grid-container .wavy-grid-image:nth-child(4) { translate: calc(4 * var(--s)) 0; width: calc(4 * 4 * var(--s)); height: calc(3 * 4 * var(--s)); place-self: center; }
-                .wavy-grid-container .wavy-grid-image:nth-child(5) { width: calc(2 * 4 * var(--s)); height: calc(4 * 4 * var(--s)); place-self: center; }
-                .wavy-grid-container .wavy-grid-image:nth-child(6) { translate: calc(-4 * var(--s)) 0; width: calc(4 * 4 * var(--s)); height: calc(3 * 4 * var(--s)); place-self: center; }
-                .wavy-grid-container .wavy-grid-image:nth-child(7) { translate: calc(2 * var(--s)) calc(-4 * var(--s)); place-self: end; }
-                .wavy-grid-container .wavy-grid-image:nth-child(8) { translate: 0 calc(-2 * var(--s)); }
-                .wavy-grid-container .wavy-grid-image:nth-child(9) { translate: calc(-2 * var(--s)) calc(-4 * var(--s)); place-self: start; }
             `}</style>
 
             <div className="container mx-auto px-4">
@@ -198,42 +178,41 @@ export default function GallerySection({ schoolName, city, galleryItems = [] }: 
                 <div className="min-h-[300px]">
                     <AnimatePresence mode='popLayout'>
                         {filteredItems.length > 0 && (
-                            <div className="flex flex-col items-center gap-12">
-                                {/* Chunk items into groups of 9 for the grid layout */}
-                                {Array.from({ length: Math.ceil(filteredItems.length / 9) }).map((_, i) => (
-                                    <div key={i} className="wavy-grid-container">
-                                        {filteredItems.slice(i * 9, (i + 1) * 9).map((item) => (
-                                            <motion.div
-                                                layout
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                key={item.id}
-                                                className="wavy-grid-image group"
-                                                onClick={() => handleItemClick(item)}
-                                                title={`${item.title} (${item.academic_year})`}
-                                            >
-                                                <Image
-                                                    src={mediaUrl(item.image)}
-                                                    alt={item.title}
-                                                    fill
-                                                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                                                    unoptimized
-                                                />
-                                                {/* Video Overlay */}
-                                                {item.media_type === 'video' && (
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                                                        <div className="w-10 h-10 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/60 shadow-lg group-hover:scale-110 transition-transform">
-                                                            <Play className="w-5 h-5 text-white fill-current translate-x-0.5" />
-                                                        </div>
+                            <div className="flex flex-wrap justify-center gap-8 md:gap-12">
+                                {filteredItems.map((item, index) => (
+                                    <motion.div
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                                        key={item.id}
+                                        className="wavy-image-card group"
+                                        onClick={() => handleItemClick(item)}
+                                        title={`${item.title} (${item.academic_year})`}
+                                    >
+                                        <div className="relative w-full h-full rounded-[10px] overflow-hidden bg-white">
+                                            <Image
+                                                src={mediaUrl(item.image)}
+                                                alt={item.title}
+                                                fill
+                                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                                unoptimized
+                                            />
+                                            {/* Video Overlay */}
+                                            {item.media_type === 'video' && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                                                    <div className="w-12 h-12 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/60 shadow-lg group-hover:scale-110 transition-transform">
+                                                        <Play className="w-6 h-6 text-white fill-current translate-x-0.5" />
                                                     </div>
-                                                )}
-                                                {/* Text Overlay on Hover */}
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                                                    <p className="text-white text-xs font-bold truncate w-full">{item.title}</p>
                                                 </div>
-                                            </motion.div>
-                                        ))}
-                                    </div>
+                                            )}
+                                            {/* Text Overlay on Hover */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                                                <p className="text-white text-base font-bold truncate w-full font-fredoka">{item.title}</p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
                                 ))}
                             </div>
                         )}

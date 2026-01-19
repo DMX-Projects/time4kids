@@ -9,9 +9,9 @@ export default function AboutSection({ school }: { school: any }) {
     if (!school) return null;
 
     return (
-        <section id="about" className="py-24 bg-[#fdfaf1] relative overflow-hidden scroll-mt-24">
+        <section id="about" className="py-16 md:py-20 bg-[#fdfaf1] relative overflow-hidden scroll-mt-24">
             <div className="container mx-auto px-4 relative z-10">
-                <div className="max-w-4xl mx-auto text-center mb-16">
+                <div className="max-w-4xl mx-auto text-center mb-12">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}

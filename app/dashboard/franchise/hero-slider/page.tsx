@@ -31,7 +31,8 @@ export default function ManageHeroSlider() {
     const [uploading, setUploading] = useState(false);
 
     const { register, handleSubmit, reset, setValue } = useForm();
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [previewImages, setPreviewImages] = useState<string[]>([]);
+    const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
 
     const fetchSlides = async () => {
         try {
@@ -59,11 +60,11 @@ export default function ManageHeroSlider() {
             setValue('alt_text', slide.alt_text);
             setValue('link', slide.link);
             setValue('order', slide.order);
-            setPreviewImage(mediaUrl(slide.image));
+            setPreviewImages([mediaUrl(slide.image)]);
         } else {
             setEditingSlide(null);
             reset();
-            setPreviewImage(null);
+            setPreviewImages([]);
             // Auto increment order
             const maxOrder = Math.max(...slides.map(s => s.order), 0);
             setValue('order', maxOrder + 1);
@@ -86,52 +87,103 @@ export default function ManageHeroSlider() {
 
     const onSubmit = async (data: any) => {
         setUploading(true);
-        const formData = new FormData();
-        formData.append('alt_text', data.alt_text);
-        formData.append('link', data.link);
-        formData.append('order', data.order);
-
-        if (data.image && data.image[0]) {
-            formData.append('image', data.image[0]);
-        }
+        setUploadProgress(null);
 
         try {
-            const url = editingSlide
-                ? apiUrl(`/franchises/franchise/hero-slides/${editingSlide.id}/`)
-                : apiUrl('/franchises/franchise/hero-slides/');
+            // EDIT MODE
+            if (editingSlide) {
+                const formData = new FormData();
+                formData.append('alt_text', data.alt_text);
+                formData.append('link', data.link);
+                formData.append('order', data.order);
+                if (data.image && data.image[0]) {
+                    formData.append('image', data.image[0]);
+                }
 
-            const method = editingSlide ? 'PATCH' : 'POST';
+                const response = await fetch(apiUrl(`/franchises/franchise/hero-slides/${editingSlide.id}/`), {
+                    method: 'PATCH',
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: formData,
+                });
 
-            const response = await fetch(url, {
-                method: method,
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData,
-            });
+                if (response.ok) {
+                    setIsModalOpen(false);
+                    fetchSlides();
+                    reset();
+                    showToast('Slide updated successfully!', 'success');
+                } else {
+                    const errData = await response.json().catch(() => ({}));
+                    showToast(errData.detail || 'Failed to update slide.', 'error');
+                }
+            }
+            // CREATE MODE (Batch Upload)
+            else {
+                const files = data.image ? Array.from(data.image as FileList) : [];
+                if (files.length === 0) {
+                    showToast('Please select at least one image.', 'error');
+                    setUploading(false);
+                    return;
+                }
 
-            if (response.ok) {
+                setUploadProgress({ current: 0, total: files.length });
+                let successCount = 0;
+                let failCount = 0;
+                let startOrder = parseInt(data.order) || 1;
+
+                // Upload sequentially to maintain order and prevent server overwhelm
+                for (let i = 0; i < files.length; i++) {
+                    const formData = new FormData();
+                    formData.append('alt_text', data.alt_text); // Same alt text for all in batch
+                    formData.append('link', data.link);
+                    formData.append('order', (startOrder + i).toString());
+                    formData.append('image', files[i]);
+
+                    try {
+                        const response = await fetch(apiUrl('/franchises/franchise/hero-slides/'), {
+                            method: 'POST',
+                            headers: { Authorization: `Bearer ${token}` },
+                            body: formData,
+                        });
+
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            failCount++;
+                            console.error(`Failed to upload file ${i + 1}`);
+                        }
+                    } catch (err) {
+                        failCount++;
+                        console.error(`Error uploading file ${i + 1}:`, err);
+                    }
+
+                    setUploadProgress({ current: i + 1, total: files.length });
+                }
+
                 setIsModalOpen(false);
                 fetchSlides();
                 reset();
-                showToast('Slide saved successfully!', 'success');
-            } else {
-                console.error("Save failed:", response.status, response.statusText);
-                const errData = await response.json().catch(() => ({}));
-                console.error("Error body:", errData);
-                showToast(errData.detail || 'Failed to save slide.', 'error');
+
+                if (failCount === 0) {
+                    showToast(`${successCount} slides saved successfully!`, 'success');
+                } else {
+                    showToast(`Saved ${successCount} slides. ${failCount} failed.`, 'info');
+                }
             }
         } catch (error) {
-            console.error('Error saving slide:', error);
+            console.error('Error saving slides:', error);
             showToast('An unexpected error occurred.', 'error');
         } finally {
             setUploading(false);
+            setUploadProgress(null);
         }
     };
 
     // Handle Image Preview
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setPreviewImage(URL.createObjectURL(file));
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
+            setPreviewImages(newPreviews);
         }
     };
 
@@ -201,19 +253,35 @@ export default function ManageHeroSlider() {
 
                     {/* Image Upload */}
                     <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700">Slide Image</label>
-                        <div className="relative h-48 w-full bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center overflow-hidden group hover:border-orange-400 transition-colors">
-                            {previewImage ? (
-                                <Image src={previewImage} alt="Preview" fill className="object-cover" />
+                        <label className="block text-sm font-semibold text-gray-700">
+                            Slide Image(s) {!editingSlide && <span className="text-gray-400 font-normal ml-1">(Can select multiple)</span>}
+                        </label>
+                        <div className="relative min-h-[12rem] w-full bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center overflow-hidden group hover:border-orange-400 transition-colors p-4">
+                            {previewImages.length > 0 ? (
+                                <div className={`grid gap-2 w-full h-full ${previewImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                    {previewImages.slice(0, 4).map((img, i) => (
+                                        <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-gray-200">
+                                            <Image src={img} alt={`Preview ${i}`} fill className="object-cover" />
+                                        </div>
+                                    ))}
+                                    {previewImages.length > 4 && (
+                                        <div className="flex items-center justify-center bg-gray-100 text-gray-500 text-sm font-medium rounded-lg">
+                                            +{previewImages.length - 4} more
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
                                 <div className="text-center p-4">
                                     <ImageIcon className="w-10 h-10 mx-auto text-gray-400 mb-2" />
-                                    <p className="text-sm text-gray-500">Click to upload image</p>
+                                    <p className="text-sm text-gray-500">
+                                        {editingSlide ? "Click to replace image" : "Click to upload image(s)"}
+                                    </p>
                                 </div>
                             )}
                             <input
                                 type="file"
                                 accept="image/*"
+                                multiple={!editingSlide}
                                 className="absolute inset-0 opacity-0 cursor-pointer"
                                 {...register('image', { required: !editingSlide, onChange: handleImageChange })}
                             />
