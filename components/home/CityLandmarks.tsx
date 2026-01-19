@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { apiUrl } from '@/lib/api-client';
+import { SERVER_URL } from '@/lib/api-client';
 
 // Type definitions
 export type LandmarkType =
@@ -49,7 +49,7 @@ export const useCityLandmarks = () => {
         const fetchLocations = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(apiUrl('/franchises/public/locations/'));
+                const response = await fetch(`${SERVER_URL}/api/franchises/public/locations/`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -73,7 +73,7 @@ export const useCityLandmarks = () => {
             } catch (err) {
                 console.error('Error fetching franchise locations:', err);
                 setError(err instanceof Error ? err.message : 'Failed to fetch locations');
-                // Keep fallback data on error
+                setCityLandmarks([]);
             } finally {
                 setLoading(false);
             }

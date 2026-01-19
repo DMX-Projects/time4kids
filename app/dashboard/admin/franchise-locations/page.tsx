@@ -14,8 +14,6 @@ interface FranchiseLocation {
     display_order: number;
 }
 
-
-
 export default function FranchiseLocationsPage() {
     const { authFetch } = useAuth();
     const [locations, setLocations] = useState<FranchiseLocation[]>([]);

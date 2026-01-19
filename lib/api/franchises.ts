@@ -1,5 +1,5 @@
 
-import { apiUrl } from '@/lib/api-client';
+import { SERVER_URL } from '../api-client';
 
 export interface Franchise {
     id: number;
@@ -44,7 +44,7 @@ export interface Franchise {
 
 export async function getFranchiseBySlug(slug: string): Promise<Franchise | null> {
     try {
-        const res = await fetch(apiUrl(`/franchises/public/${slug}/`), {
+        const res = await fetch(`${SERVER_URL}/api/franchises/public/${slug}/`, {
             cache: 'no-store', // Always fetch fresh data
         });
 
