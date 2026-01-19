@@ -116,7 +116,7 @@ const TestimonialSlider = () => {
                         pin: true,
                         scrub: 1, // Reduced from 2.5 for more responsive feel
                         start: "top top",
-                        end: () => "+=" + totalWidth,
+                        end: () => "+=" + (Math.max(600, totalWidth - viewWidth + 600)), // Adjusted to prevent getting stuck too long
                         invalidateOnRefresh: true,
                     },
                     force3D: true // Force hardware acceleration

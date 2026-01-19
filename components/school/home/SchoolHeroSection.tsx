@@ -86,13 +86,7 @@ export default function SchoolHeroSection({ schoolName, slides }: SchoolHeroSect
                                         priority={index === 0}
                                         className="slide-image"
                                     />
-                                    <div className="absolute bottom-24 right-4 md:right-10 flex justify-end pointer-events-none">
-                                        <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-lg text-white border-l-4 border-orange-500 shadow-lg max-w-xl mx-4 transform transition-all hover:scale-105">
-                                            <h2 className="text-xl md:text-3xl font-bold font-display drop-shadow-md leading-tight">
-                                                {slide.alt_text}
-                                            </h2>
-                                        </div>
-                                    </div>
+                                    {/* Text Overlay Removed as per request */}
                                 </div>
                             </div>
                         ))}
@@ -102,14 +96,14 @@ export default function SchoolHeroSection({ schoolName, slides }: SchoolHeroSect
                 <div className="banner-content">
                     <div className="container mx-auto px-4">
                         <div className="banner-content-inner">
-                            <p className="banner-text">
-                                Admissions Open at <span>{schoolName}</span>
+                            <p className="banner-text font-fredoka">
+                                Admissions Open at <span className="text-yellow-400">{schoolName}</span>
                             </p>
                             <button
                                 className="btn-enquiry magnetic-button"
                                 onClick={() => setShowAdmissionModal(true)}
                             >
-                                <span className="relative z-10">ADMISSION ENQUIRY</span>
+                                <span className="relative z-10 font-fredoka tracking-wide">ADMISSION ENQUIRY</span>
                                 <div className="particle-field">
                                     {particles.map((p, i) => (
                                         <div key={i} className="particle" style={{
@@ -152,19 +146,33 @@ export default function SchoolHeroSection({ schoolName, slides }: SchoolHeroSect
                 .banner-slider :global(.slick-prev:hover), .banner-slider :global(.slick-next:hover) { opacity: 0.8; }
                 
                 .banner-content {
-                    position: absolute; left: 0; bottom: 0; z-index: 22; width: 100%; min-height: 75px;
-                    line-height: 65px; background: rgba(0, 0, 0, 0.5); font-size: 25px; font-weight: 600; color: #fff;
+                    position: absolute; left: 0; bottom: 0; z-index: 22; width: 100%; min-height: 90px;
+                    display: flex; align-items: center;
+                    background: rgba(0, 0, 0, 0.75); 
+                    backdrop-filter: blur(12px);
+                    border-top: 1px solid rgba(255,255,255,0.1);
+                    font-size: 28px; font-weight: 600; color: #fff;
                 }
-                .banner-content-inner { display: flex; align-items: center; justify-content: space-between; }
-                .banner-text { margin: 0; padding: 0; flex: 1; }
-                .banner-text span { font-weight: 600; color: #d3e538; }
+                .banner-content-inner { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+                .banner-text { margin: 0; padding: 0; flex: 1; letter-spacing: 0.5px; }
+                .banner-text span { font-weight: 700; color: #fbbf24; }
                 
                 .btn-enquiry {
-                    float: right; background: url(/icon-hand.png) no-repeat left top; color: #f9d71c;
-                    font-size: 22px; line-height: 40px; padding: 0 0 0 50px; margin: 15px 0; border: none; cursor: pointer;
-                    font-family: 'Dosis', sans-serif; font-weight: 700; transition: all 0.3s ease;
+                    background: url(/icon-hand.png) no-repeat left center; 
+                    background-size: 40px;
+                    color: #fff;
+                    font-size: 20px; line-height: 50px; padding: 0 30px 0 60px; 
+                    margin: 0; border: none; cursor: pointer;
+                    font-family: inherit; font-weight: 700; transition: all 0.3s ease;
+                    border-radius: 50px;
+                    background-color: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
                 }
-                .btn-enquiry:hover { text-decoration: none; color: #fff; }
+                .btn-enquiry:hover { 
+                    transform: translateY(-2px); 
+                    background-color: rgba(255, 255, 255, 0.2);
+                    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+                }
                 
                 .magnetic-button { position: relative; overflow: visible !important; }
                 .particle-field { position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 0; }
@@ -175,10 +183,25 @@ export default function SchoolHeroSection({ schoolName, slides }: SchoolHeroSect
                 @media (max-width: 998px) {
                     .banner-slider :global(.slick-prev), .banner-slider :global(.slick-next) { width: 25px; height: 111px; background: url(/slider-arrows-mobile.png) no-repeat left top; }
                     .banner-slider :global(.slick-next) { background-position: right 0; }
-                    .banner-content { position: relative; min-height: auto; line-height: 30px; padding: 15px 0; background: #826b32; text-align: center; }
-                    .banner-content-inner { display: block; }
-                    .banner-text { font-size: 18px; line-height: 1.4; }
-                    .btn-enquiry { float: none; display: inline-block; margin: 15px 0; font-size: 18px; }
+                    
+                    .banner-content { 
+                        position: relative; min-height: auto; 
+                        padding: 24px 0; 
+                        background: #1a1a1a; 
+                        text-align: center;
+                        border-top: none;
+                    }
+                    .banner-content-inner { display: flex; flex-direction: column; gap: 16px; }
+                    .banner-text { font-size: 20px; line-height: 1.4; }
+                    
+                    .btn-enquiry { 
+                        float: none; display: inline-block; 
+                        font-size: 18px; line-height: 44px;
+                        background-position: 20px center;
+                        padding-left: 70px;
+                        padding-right: 30px;
+                    }
+                    
                     .slide { height: 300px; }
                     .slide-image { height: 300px; }
                 }
