@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Building2, Target, Lightbulb, Award, School, Home, GraduationCap, Users, BookOpen, Heart, Sparkles } from 'lucide-react';
 import MagicalStorySection from './MagicalStorySection';
+import { apiUrl } from '@/lib/api-client';
 
 interface CardProps {
     children: React.ReactNode;
@@ -86,6 +87,27 @@ const TwinklingStars = ({ count = 15 }) => (
 );
 
 export default function AboutPage() {
+    const [stats, setStats] = useState({
+        total_schools: 250,
+        total_cities: 80,
+        total_students: 50000
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch(apiUrl('/franchises/public/stats/'));
+                if (res.ok) {
+                    const data = await res.json();
+                    setStats(data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+            }
+        };
+        fetchStats();
+    }, []);
+
     const businesses = [
         {
             name: 'T.I.M.E.',
@@ -130,7 +152,7 @@ export default function AboutPage() {
                         <div className="inline-block mb-4 animate-on-scroll">
                             <span className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
                                 <Sparkles className="inline w-4 h-4 mr-2" />
-                                Trusted by 250+ Schools Nationwide
+                                Trusted by {stats.total_schools}{stats.total_schools >= 100 ? '+' : ''} Schools Nationwide
                             </span>
                         </div>
                         <h1 className="font-luckiest text-5xl md:text-7xl mb-4 animate-on-scroll delay-100 tracking-wider text-[#003366]">
@@ -170,7 +192,7 @@ export default function AboutPage() {
                                         <School className="w-12 h-12 md:w-14 md:h-14 text-white" />
                                     </span>
                                 </figure>
-                                <div className="font-bold text-2xl md:text-3xl text-primary-600 mb-1">250+</div>
+                                <div className="font-bold text-2xl md:text-3xl text-primary-600 mb-1">{stats.total_schools}{stats.total_schools >= 100 ? '+' : ''}</div>
                                 <div className="text-sm md:text-base text-gray-600 font-medium">Pre-schools</div>
                             </li>
 

@@ -21,7 +21,7 @@ export function AdminSidebar({ brand, navItems, open, onClose }: SidebarProps) {
 
     return (
         <aside
-            className={`fixed md:static z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
                 }`}
         >
             <div className="h-screen bg-white border-r border-[#E5E7EB] flex flex-col">
@@ -83,7 +83,7 @@ export function FranchiseSidebar({ brand, navItems, open, onClose }: SidebarProp
 
     return (
         <aside
-            className={`fixed md:static z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
                 }`}
         >
             <div className="h-screen bg-white border-r border-[#E5E7EB] flex flex-col">
@@ -147,7 +147,7 @@ export function ParentSidebar({ brand, navItems, open, onClose }: SidebarProps) 
 
     return (
         <aside
-            className={`fixed md:static z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
                 }`}
         >
             <div className="h-screen bg-white border-r border-[#E5E7EB] flex flex-col">

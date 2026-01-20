@@ -49,24 +49,31 @@ export default async function SchoolDetailsPage({ params }: { params: { city: st
                     schoolName={franchise.name}
                     slides={franchise.hero_slides}
                 />
+            </section>
+            {/* --- SECTION: ABOUT --- */}
+            <section id="about">
                 <SchoolIntroSection schoolName={franchise.name} />
-
             </section>
 
-            {/* --- SECTION: ABOUT --- */}
-            {/* <AboutSection school={schoolData} /> */}
-
             {/* --- SECTION: PROGRAMS --- */}
-            <SchoolProgramsSection />
+            <section id="programs">
+                <SchoolProgramsSection />
+            </section>
 
             {/* --- SECTION: ADMISSIONS --- */}
-            <AdmissionSection franchiseSlug={schoolSlug} city={franchise.city} />
+            <section id="admission">
+                <AdmissionSection franchiseSlug={schoolSlug} city={franchise.city} />
+            </section>
 
             {/* --- SECTION: GALLERY --- */}
-            <GallerySection schoolName={franchise.name} city={franchise.city} galleryItems={franchise.gallery_items} />
+            <section id="gallery">
+                <GallerySection schoolName={franchise.name} city={franchise.city} galleryItems={franchise.gallery_items} />
+            </section>
 
             {/* --- SECTION: CONTACT --- */}
-            <ContactSection school={schoolData} franchiseSlug={schoolSlug} />
+            <section id="contact">
+                <ContactSection school={schoolData} franchiseSlug={schoolSlug} />
+            </section>
 
         </main>
     );

@@ -225,6 +225,12 @@ export default function LocateCentrePage() {
         setSelectedCity(''); // Reset city when state changes
     };
 
+    // Determine if any filters are active
+    const isFiltered = !!(selectedState || selectedCity || debouncedSearchTerm);
+
+    // Filtered or limited centres to display
+    const displayedCentres = isFiltered ? centres : centres.slice(0, 4);
+
     return (
         <div className="min-h-screen relative bg-slate-50 font-sans selection:bg-pink-200 overflow-x-hidden">
             <InteractiveBubbles />
@@ -336,9 +342,9 @@ export default function LocateCentrePage() {
                             <div className="flex justify-center items-center py-20 min-h-[300px]">
                                 <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-pink-400"></div>
                             </div>
-                        ) : centres.length > 0 ? (
+                        ) : displayedCentres.length > 0 ? (
                             <div className="grid md:grid-cols-2 gap-10 lg:gap-14">
-                                {centres.map((centre) => (
+                                {displayedCentres.map((centre) => (
                                     <div
                                         key={centre.id}
                                         onClick={() => router.push(`/locations/${encodeURIComponent(centre.city)}/${centre.slug ?? slugify(centre.name)}`)}

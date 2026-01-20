@@ -66,20 +66,21 @@ const SchoolFooter = ({ homeUrl }: SchoolFooterProps) => {
             </div>
 
             {/* Floating Back Button */}
-            <motion.div
-                initial={{ y: -50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 1, type: "spring" }}
-                className="absolute top-[-20px] left-1/2 -translate-x-1/2 z-20"
-            >
-                <Link
-                    href="/"
-                    className="group flex items-center gap-2 px-8 py-3 bg-white border-2 border-orange-100 rounded-full text-orange-600 font-bold text-sm shadow-lg hover:shadow-orange-200/50 hover:-translate-y-1 transition-all active:scale-95"
+            <div className="absolute top-[-24px] left-0 w-full flex justify-center z-20">
+                <motion.div
+                    initial={{ y: -50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 1, type: "spring" }}
                 >
-                    <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                    <span>Back to Main Site</span>
-                </Link>
-            </motion.div>
+                    <Link
+                        href="/"
+                        className="group flex items-center gap-2 px-8 py-3 bg-white border-2 border-orange-100 rounded-full text-orange-600 font-bold text-sm shadow-lg hover:shadow-orange-200/50 hover:-translate-y-1 transition-all active:scale-95"
+                    >
+                        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                        <span>Back to Main Site</span>
+                    </Link>
+                </motion.div>
+            </div>
 
             {/* Decorative Background Elements */}
             <div className="absolute top-40 right-10 w-32 h-32 bg-yellow-200/40 rounded-full blur-3xl animate-pulse"></div>
@@ -135,11 +136,11 @@ const SchoolFooter = ({ homeUrl }: SchoolFooterProps) => {
                             <h4 className="text-2xl font-bold text-orange-500 mb-6 drop-shadow-sm">Quick Links</h4>
                             <ul className="space-y-4">
                                 {[
-                                    { name: 'Home', href: homeLink },
+                                    { name: 'Home', href: '#home' },
                                     { name: 'About Us', href: '#about' },
                                     { name: 'Classes', href: '#programs' },
                                     { name: 'Admission', href: '#admission' },
-                                    { name: 'Gallery', href: '/gallery' },
+                                    { name: 'Gallery', href: '#gallery' },
                                 ].map((link) => (
                                     <li key={link.name}>
                                         <Link

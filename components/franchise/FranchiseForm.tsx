@@ -49,6 +49,10 @@ const FranchiseForm = () => {
         }
     };
 
+    const onInvalid = () => {
+        showToast("Please fill all required fields correctly", "error");
+    };
+
     const formUrl = typeof window !== 'undefined' ? window.location.href : 'https://timekids.com/franchise';
 
     return (
@@ -69,10 +73,12 @@ const FranchiseForm = () => {
                 <div className="lg:col-span-2">
                     <h3 className="font-display font-bold text-2xl mb-6 text-gray-900">Franchise Enquiry Form</h3>
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Full Name <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     {...register('name', { required: 'Name is required' })}
                                     type="text"
@@ -83,7 +89,9 @@ const FranchiseForm = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Email Address <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     {...register('email', {
                                         required: 'Email is required',
@@ -97,7 +105,9 @@ const FranchiseForm = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Phone Number <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     {...register('phone', {
                                         required: 'Phone is required',
@@ -111,7 +121,9 @@ const FranchiseForm = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">City *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    City <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     {...register('city', { required: 'City is required' })}
                                     type="text"
@@ -122,7 +134,9 @@ const FranchiseForm = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">State *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    State <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     {...register('state', { required: 'State is required' })}
                                     type="text"
@@ -133,7 +147,9 @@ const FranchiseForm = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Investment Capacity *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Investment Capacity <span className="text-red-500">*</span>
+                                </label>
                                 <select
                                     {...register('investment', { required: 'Investment capacity is required' })}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -159,7 +175,9 @@ const FranchiseForm = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Additional Information</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Additional Information
+                            </label>
                             <textarea
                                 {...register('message')}
                                 rows={4}

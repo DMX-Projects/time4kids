@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, X, Building2, MapPin } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/Toast';
 
 interface FranchiseLocation {
     id?: number;
@@ -16,6 +17,7 @@ interface FranchiseLocation {
 
 export default function FranchiseLocationsPage() {
     const { authFetch } = useAuth();
+    const { showToast } = useToast();
     const [locations, setLocations] = useState<FranchiseLocation[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -91,17 +93,68 @@ export default function FranchiseLocationsPage() {
         fetchLocations();
     }, []);
 
+    const [createFranchise, setCreateFranchise] = useState(false);
+    const [franchiseData, setFranchiseData] = useState({
+        name: '',
+        owner_name: '',
+        email: '',
+        phone: '',
+        password: '',
+        address: ''
+    });
+
+    useEffect(() => {
+        if (formData.city_name && !franchiseData.name) {
+            setFranchiseData(prev => ({
+                ...prev,
+                name: `T.I.M.E. Kids - ${formData.city_name}`
+            }));
+        }
+    }, [formData.city_name]);
+
     const handleCreate = async () => {
+        if (!formData.city_name || !formData.state) {
+            alert('Please fill all required location fields');
+            return;
+        }
+
         try {
-            await authFetch('/franchises/admin/franchise-locations/', {
+            // 1. Create the location
+            const locationResponse = await authFetch<any>('/franchises/admin/franchise-locations/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
 
+            // 2. Optionally create the franchise
+            if (createFranchise) {
+                if (!franchiseData.email || !franchiseData.phone || !franchiseData.owner_name) {
+                    alert('Location created, but please fill all required franchise fields to create the franchise.');
+                    return;
+                }
+
+                await authFetch('/franchises/admin/franchises/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: franchiseData.name || `T.I.M.E. Kids - ${formData.city_name}`,
+                        city: formData.city_name,
+                        state: formData.state,
+                        contact_email: franchiseData.email,
+                        contact_phone: franchiseData.phone,
+                        address: franchiseData.address,
+                        franchise_email: franchiseData.email,
+                        franchise_password: franchiseData.password || franchiseData.email,
+                        franchise_full_name: franchiseData.owner_name,
+                        is_active: true
+                    })
+                });
+                showToast('Location and Franchise created successfully!', 'success');
+            } else {
+                showToast('Location created successfully!', 'success');
+            }
+
             await fetchLocations();
-
-
 
             setIsCreating(false);
             setFormData({
@@ -110,18 +163,25 @@ export default function FranchiseLocationsPage() {
                 is_active: true,
                 display_order: 0
             });
+            setCreateFranchise(false);
+            setFranchiseData({
+                name: '',
+                owner_name: '',
+                email: '',
+                phone: '',
+                password: '',
+                address: ''
+            });
+
         } catch (err: any) {
-            // Handle duplicate city error
             const errorMessage = err.message || 'Failed to create location';
             if (errorMessage.includes('UNIQUE constraint') || errorMessage.includes('city_name')) {
-                alert(`A location with the city name "${formData.city_name}" already exists. Please use a different city name.`);
+                showToast(`A location with the city name "${formData.city_name}" already exists.`, 'error');
             } else {
-                alert(errorMessage);
+                showToast(errorMessage, 'error');
             }
         }
     };
-
-
 
     const handleUpdate = async (id: number) => {
         try {
@@ -184,9 +244,8 @@ export default function FranchiseLocationsPage() {
                         <div>
                             <h3 className="text-sm font-semibold text-blue-800 mb-1">💡 How It Works</h3>
                             <p className="text-sm text-blue-700">
-                                Cities listed here are automatically generated from your <strong>Franchises</strong>.
-                                To add a new city, simply add a franchise with that city name in the Franchises section.
-                                For full franchise management, visit <a href="/dashboard/admin/franchises" className="underline font-semibold hover:text-blue-900">Franchises</a> or <a href="/dashboard/admin/manage-franchise" className="underline font-semibold hover:text-blue-900">Manage Franchise</a>.
+                                Cities listed here are shown on the website. Adding a location here makes it visible in "Our Presence" and "Locations" pages.
+                                You can optionally create an initial franchise for this city right here.
                             </p>
                         </div>
                     </div>
@@ -212,14 +271,16 @@ export default function FranchiseLocationsPage() {
 
             {/* Create Form */}
             {isCreating && (
-                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                <div className="bg-white p-6 rounded-lg shadow-lg mb-6 border-2 border-primary-100">
                     <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <MapPin className="w-6 h-6 text-primary-600" />
                         Add New Location
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">City Name *</label>
+
+                    {/* Location Part */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div className="col-span-1 md:col-span-2 lg:col-span-1">
+                            <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">City Name *</label>
                             <input
                                 type="text"
                                 value={formData.city_name}
@@ -229,7 +290,7 @@ export default function FranchiseLocationsPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">State *</label>
                             <select
                                 value={formData.state}
                                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
@@ -241,7 +302,7 @@ export default function FranchiseLocationsPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Display Order</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Order</label>
                             <input
                                 type="number"
                                 value={formData.display_order}
@@ -249,18 +310,107 @@ export default function FranchiseLocationsPage() {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             />
                         </div>
-                        <div className="flex items-center">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                        <div className="flex items-center pt-6">
+                            <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
                                     type="checkbox"
                                     checked={formData.is_active}
                                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                                    className="w-4 h-4 text-primary-600 rounded focus:ring-2 focus:ring-primary-500"
+                                    className="w-5 h-5 text-primary-600 rounded focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
                                 />
-                                <span className="text-sm font-medium text-gray-700">Active</span>
+                                <span className="text-sm font-bold text-gray-700 uppercase tracking-wider group-hover:text-primary-600 transition-colors">Active</span>
                             </label>
                         </div>
                     </div>
+
+                    <hr className="my-6 border-gray-200" />
+
+                    {/* Optional Franchise Part */}
+                    <div className="mb-6">
+                        <label className="flex items-center gap-3 cursor-pointer p-4 bg-primary-50 rounded-lg border border-primary-200 hover:bg-primary-100 transition-all">
+                            <input
+                                type="checkbox"
+                                checked={createFranchise}
+                                onChange={(e) => setCreateFranchise(e.target.checked)}
+                                className="w-6 h-6 text-primary-600 rounded focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
+                            />
+                            <div>
+                                <span className="text-lg font-bold text-primary-900 block font-fredoka">Create Initial Franchise for this location?</span>
+                                <span className="text-sm text-primary-700">Check this to add the first preschool center in this city immediately.</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    {createFranchise && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-6 bg-white border border-gray-200 rounded-xl shadow-inner animate-in fade-in slide-in-from-top-4 duration-300">
+                            <div className="col-span-full">
+                                <h3 className="text-md font-bold text-gray-900 mb-2 uppercase tracking-wide flex items-center gap-2">
+                                    <Building2 className="w-5 h-5 text-primary-600" />
+                                    Franchise Information
+                                </h3>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1 uppercase tracking-tight">Franchise Name *</label>
+                                <input
+                                    type="text"
+                                    value={franchiseData.name}
+                                    onChange={(e) => setFranchiseData({ ...franchiseData, name: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    placeholder="e.g., T.I.M.E. Kids - Mumbai Central"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Owner/Full Name *</label>
+                                <input
+                                    type="text"
+                                    value={franchiseData.owner_name}
+                                    onChange={(e) => setFranchiseData({ ...franchiseData, owner_name: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    placeholder="Enter full name of the owner"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Administrative Email *</label>
+                                <input
+                                    type="email"
+                                    value={franchiseData.email}
+                                    onChange={(e) => setFranchiseData({ ...franchiseData, email: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    placeholder="e.g., center.mumbai@timekids.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone *</label>
+                                <input
+                                    type="tel"
+                                    value={franchiseData.phone}
+                                    onChange={(e) => setFranchiseData({ ...franchiseData, phone: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    placeholder="e.g., 9876543210"
+                                />
+                            </div>
+                            <div className="col-span-full">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Center Address *</label>
+                                <textarea
+                                    value={franchiseData.address}
+                                    onChange={(e) => setFranchiseData({ ...franchiseData, address: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    placeholder="Enter the full physical address of the preschool center (e.g., Plot No. 123, Jubilee Hills, Hyderabad)"
+                                    rows={2}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Login Password (Optional)</label>
+                                <input
+                                    type="password"
+                                    value={franchiseData.password}
+                                    onChange={(e) => setFranchiseData({ ...franchiseData, password: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    placeholder="Leave empty to use email as password"
+                                />
+                            </div>
+                        </div>
+                    )}
                     <div className="flex gap-2 mt-4">
                         <button
                             onClick={handleCreate}

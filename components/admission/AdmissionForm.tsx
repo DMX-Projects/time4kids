@@ -61,6 +61,10 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
         }
     };
 
+    const onInvalid = () => {
+        showToast("Please fill all required fields correctly", "error");
+    };
+
     const formUrl = typeof window !== 'undefined' ? window.location.href : 'https://timekids.com/admission';
 
     return (
@@ -85,12 +89,12 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-6">
                             {/* Parent Name */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Parent/Guardian Name *
+                                    Parent/Guardian Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     {...register('parentName', { required: 'Name is required' })}
@@ -106,7 +110,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                             {/* Email */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Email Address *
+                                    Email Address <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     {...register('email', {
@@ -128,7 +132,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                             {/* Phone */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Phone Number *
+                                    Phone Number <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     {...register('phone', {
@@ -150,7 +154,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                             {/* Child Name */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Child&apos;s Name *
+                                    Child&apos;s Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     {...register('childName', { required: 'Child name is required' })}
@@ -166,7 +170,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                             {/* Child Age */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Child&apos;s Age *
+                                    Child&apos;s Age <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     {...register('childAge', { required: 'Age is required' })}
@@ -190,7 +194,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                             {/* Program */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Program of Interest *
+                                    Program of Interest <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     {...register('program', { required: 'Program is required' })}
@@ -212,7 +216,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                         {/* City */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                City *
+                                City <span className="text-red-500">*</span>
                             </label>
                             <select
                                 {...register('city', { required: 'City is required' })}
@@ -263,7 +267,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

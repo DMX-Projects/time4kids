@@ -49,6 +49,10 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
         }
     };
 
+    const onInvalid = () => {
+        showToast("Please fill all required fields correctly", "error");
+    };
+
     return (
         <div className="bg-white/90 backdrop-blur-md p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-white/50 relative overflow-hidden">
             {/* Background Decorative Element */}
@@ -71,10 +75,10 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
                 <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2 font-fredoka uppercase tracking-wider opacity-70">
-                        Full Name
+                        Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
                         {...register('name', { required: 'Name is required' })}
@@ -90,7 +94,7 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
                 <div className="grid md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2 font-fredoka uppercase tracking-wider opacity-70">
-                            Email
+                            Email <span className="text-red-500">*</span>
                         </label>
                         <input
                             {...register('email', {
@@ -110,7 +114,7 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2 font-fredoka uppercase tracking-wider opacity-70">
-                            Phone
+                            Phone <span className="text-red-500">*</span>
                         </label>
                         <input
                             {...register('phone', {
@@ -132,7 +136,7 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
 
                 <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2 font-fredoka uppercase tracking-wider opacity-70">
-                        Message
+                        Message <span className="text-red-500">*</span>
                     </label>
                     <textarea
                         {...register('message', { required: 'Message is required' })}

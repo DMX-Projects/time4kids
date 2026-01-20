@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { Building2, Plus, Settings, Trash2, Pencil } from "lucide-react";
 import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
+import { useToast } from "@/components/ui/Toast";
 
 type FranchiseFormState = {
     name: string;
@@ -35,12 +36,13 @@ import { useSearchParams } from "next/navigation";
 
 export function ManageFranchiseView({ initialFranchiseId }: { initialFranchiseId?: string }) {
     const { franchises, addFranchise, updateFranchise, deleteFranchise, savedLocations } = useAdminData();
+    const { showToast } = useToast();
     const searchParams = useSearchParams();
 
     const [form, setForm] = useState<FranchiseFormState>(emptyForm);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [selectedCity, setSelectedCity] = useState<string>("all");
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -84,19 +86,19 @@ export function ManageFranchiseView({ initialFranchiseId }: { initialFranchiseId
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!form.name.trim()) return;
-        setError(null);
-        setSubmitting(true);
         try {
             if (editingId) {
                 await updateFranchise(editingId, form);
+                showToast("Franchise updated successfully!", "success");
             } else {
                 await addFranchise(form);
+                showToast("Franchise added successfully!", "success");
             }
             setForm(emptyForm);
             setEditingId(null);
             setModalOpen(false);
         } catch (err: any) {
-            setError(err?.message || "Unable to save franchise");
+            showToast(err?.message || "Unable to save franchise", "error");
         } finally {
             setSubmitting(false);
         }
@@ -134,18 +136,28 @@ export function ManageFranchiseView({ initialFranchiseId }: { initialFranchiseId
     };
 
     const confirmDelete = async (id: string) => {
-        setError(null);
         setSubmitting(true);
         try {
             await deleteFranchise(id);
+            showToast("Franchise deleted successfully!", "success");
         } catch (err: any) {
-            setError(err?.message || "Unable to delete franchise");
+            showToast(err?.message || "Unable to delete franchise", "error");
         } finally {
             setSubmitting(false);
         }
     };
 
-    const totalActive = useMemo(() => franchises.filter((f) => (f.status || "").toLowerCase() === "active").length, [franchises]);
+    const cities = useMemo(() => {
+        const uniqueCities = new Set(franchises.map(f => f.region || f.city).filter(Boolean));
+        return Array.from(uniqueCities).sort();
+    }, [franchises]);
+
+    const filteredFranchises = useMemo(() => {
+        if (selectedCity === "all") return franchises;
+        return franchises.filter(f => (f.region || f.city) === selectedCity);
+    }, [franchises, selectedCity]);
+
+    const totalActive = useMemo(() => filteredFranchises.filter((f) => (f.status || "").toLowerCase() === "active").length, [filteredFranchises]);
 
     return (
         <div className="space-y-6">
@@ -163,11 +175,23 @@ export function ManageFranchiseView({ initialFranchiseId }: { initialFranchiseId
 
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2 text-sm text-slate-700">
-                        <Building2 className="w-4 h-4 text-orange-500" />
-                        <span>{franchises.length} total</span>
-                        <span className="text-slate-400">•</span>
-                        <span>{totalActive} active</span>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-sm text-slate-700">
+                            <Building2 className="w-4 h-4 text-orange-500" />
+                            <span>{filteredFranchises.length} total</span>
+                            <span className="text-slate-400">•</span>
+                            <span>{totalActive} active</span>
+                        </div>
+                        <select
+                            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            value={selectedCity}
+                            onChange={(e) => setSelectedCity(e.target.value)}
+                        >
+                            <option value="all">All Cities</option>
+                            {cities.map(city => (
+                                <option key={city} value={city}>{city}</option>
+                            ))}
+                        </select>
                     </div>
                     <Button variant="outline" size="sm" onClick={startCreate}>
                         Add Franchise
@@ -188,14 +212,14 @@ export function ManageFranchiseView({ initialFranchiseId }: { initialFranchiseId
                             </tr>
                         </thead>
                         <tbody className="text-slate-700">
-                            {franchises.length === 0 && (
+                            {filteredFranchises.length === 0 && (
                                 <tr>
                                     <td className="px-4 py-6 text-sm text-slate-500" colSpan={7}>
-                                        No franchises yet. Use Add Franchise to create one.
+                                        {selectedCity === "all" ? "No franchises yet. Use Add Franchise to create one." : `No franchises found in ${selectedCity}.`}
                                     </td>
                                 </tr>
                             )}
-                            {franchises.map((franchise, idx) => (
+                            {filteredFranchises.map((franchise, idx) => (
                                 <tr key={franchise.id} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/60"}>
                                     <td className="px-4 py-3 font-semibold text-slate-900">{franchise.name}</td>
                                     <td className="px-4 py-3">{franchise.owner || "—"}</td>
@@ -228,7 +252,6 @@ export function ManageFranchiseView({ initialFranchiseId }: { initialFranchiseId
                         </tbody>
                     </table>
                 </div>
-                {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
             </div>
 
             <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? "Edit Franchise" : "Add Franchise"} size="lg">
@@ -353,7 +376,6 @@ export function ManageFranchiseView({ initialFranchiseId }: { initialFranchiseId
                         <Button type="submit" size="sm" disabled={submitting}>{submitting ? "Saving..." : editingId ? "Save Changes" : "Create Franchise"}</Button>
                         <Button type="button" variant="outline" size="sm" onClick={() => setModalOpen(false)} disabled={submitting}>Cancel</Button>
                     </div>
-                    {error && <p className="text-sm text-red-600">{error}</p>}
                 </form>
             </Modal>
         </div >
