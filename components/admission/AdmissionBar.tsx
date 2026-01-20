@@ -1,9 +1,31 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
+import { apiUrl } from '@/lib/api-client';
 
 const AdmissionBar = () => {
+    const [stats, setStats] = useState({
+        total_schools: 350,
+        total_cities: 80,
+        total_students: 72000
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch(apiUrl('/franchises/public/stats/'));
+                if (res.ok) {
+                    const data = await res.json();
+                    setStats(data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+            }
+        };
+        fetchStats();
+    }, []);
+
     return (
         <div className="w-full bg-[#fffcf5] py-12 px-4 relative overflow-hidden">
             {/* Decorative Background Elements */}
@@ -87,17 +109,17 @@ const AdmissionBar = () => {
                 <div className="mt-8 flex flex-wrap justify-center items-center gap-x-8 gap-y-3 text-gray-600 font-medium text-sm md:text-base">
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-green-500" />
-                        <span>300+ Schools</span>
+                        <span>{stats.total_schools}{stats.total_schools >= 100 ? '+' : ''} Schools</span>
                     </div>
                     <div className="hidden md:block w-px h-4 bg-gray-300" />
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-500" />
-                        <span>72000+ Smart Students</span>
+                        <span>{stats.total_students}{stats.total_students >= 1000 ? '+' : ''} Smart Students</span>
                     </div>
                     <div className="hidden md:block w-px h-4 bg-gray-300" />
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-purple-500" />
-                        <span>80+ Cities</span>
+                        <span>{stats.total_cities}{stats.total_cities >= 50 ? '+' : ''} Cities</span>
                     </div>
                 </div>
             </div>

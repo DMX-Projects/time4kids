@@ -129,15 +129,15 @@ export default function CityLocationsPage({ params }: { params: { city: string }
                             </div>
                         ) : (
                             <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
-                                <div className="bg-blue-50 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                                    <MapPin className="w-10 h-10 text-[#003366]" />
+                                <div className="bg-primary-50 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
+                                    <MapPin className="w-10 h-10 text-primary-600" />
                                 </div>
-                                <h3 className="text-2xl font-bold text-[#003366] mb-2 font-fredoka">Coming Soon to {city}!</h3>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-2 font-fredoka">Looking for a school in {city}?</h3>
                                 <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                                    We are constantly expanding our presence. Please contact us to know when we are opening in your area.
+                                    We are currently establishing new centers in this area. Share your contact details to receive immediate updates as soon as we open.
                                 </p>
                                 <Link href="/contact">
-                                    <Button variant="primary" size="lg">Contact Us</Button>
+                                    <Button variant="primary" size="lg">Enquire Now</Button>
                                 </Link>
                             </div>
                         )}

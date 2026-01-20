@@ -79,9 +79,18 @@ export default function LocationsPage() {
                                             {city}
                                         </h3>
 
-                                        <div className="flex items-center text-gray-500 space-x-2 mb-6">
-                                            <GraduationCap className="w-4 h-4" />
-                                            <span className="text-sm font-medium">{franchise_count} Centres</span>
+                                        <div className="flex items-center text-primary-500 space-x-2 mb-6">
+                                            {franchise_count > 0 ? (
+                                                <>
+                                                    <GraduationCap className="w-4 h-4" />
+                                                    <span className="text-sm font-bold uppercase tracking-wide">{franchise_count} {franchise_count === 1 ? 'Centre' : 'Centres'}</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <GraduationCap className="w-4 h-4" />
+                                                    <span className="text-sm font-bold uppercase tracking-wide">Admissions Ongoing</span>
+                                                </>
+                                            )}
                                         </div>
 
                                         <div className="flex items-center text-primary-600 font-bold group-hover:translate-x-2 transition-transform duration-300">

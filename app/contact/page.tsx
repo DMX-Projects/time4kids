@@ -30,10 +30,9 @@ export default function ContactPage() {
 
     const onSubmit = async (data: ContactFormData) => {
         setSubmitError(null);
-        const type: 'admission' | 'franchise' | 'contact' = data.subject === 'admission' ? 'admission' : data.subject === 'franchise' ? 'franchise' : 'contact';
         try {
             await addEnquiry({
-                type,
+                type: 'contact',
                 name: data.name,
                 email: data.email,
                 phone: data.phone,
@@ -48,6 +47,10 @@ export default function ContactPage() {
             setSubmitError(err?.message || 'Unable to send your message. Please try again.');
             showToast(err?.message || 'Message sending failed.', "error");
         }
+    };
+
+    const onInvalid = () => {
+        showToast("Please fill all required fields correctly", "error");
     };
 
     return (
@@ -174,10 +177,12 @@ export default function ContactPage() {
                                     </div>
                                 )}
 
-                                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                                <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
                                     <div className="grid md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Name <span className="text-red-500">*</span>
+                                            </label>
                                             <input
                                                 {...register('name', { required: 'Name is required' })}
                                                 type="text"
@@ -188,7 +193,9 @@ export default function ContactPage() {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Email <span className="text-red-500">*</span>
+                                            </label>
                                             <input
                                                 {...register('email', {
                                                     required: 'Email is required',
@@ -204,7 +211,9 @@ export default function ContactPage() {
 
                                     <div className="grid md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Phone *</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Phone <span className="text-red-500">*</span>
+                                            </label>
                                             <input
                                                 {...register('phone', {
                                                     required: 'Phone is required',
@@ -218,7 +227,9 @@ export default function ContactPage() {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">City *</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                City <span className="text-red-500">*</span>
+                                            </label>
                                             <input
                                                 {...register('city', { required: 'City is required' })}
                                                 type="text"
@@ -230,7 +241,9 @@ export default function ContactPage() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Subject *</label>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Subject <span className="text-red-500">*</span>
+                                        </label>
                                         <select
                                             {...register('subject', { required: 'Subject is required' })}
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -246,7 +259,9 @@ export default function ContactPage() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Message *</label>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Message <span className="text-red-500">*</span>
+                                        </label>
                                         <textarea
                                             {...register('message', { required: 'Message is required' })}
                                             rows={6}
@@ -257,7 +272,7 @@ export default function ContactPage() {
                                     </div>
 
                                     <Button type="submit" size="lg" className="w-full">
-                                        <Send className="w-5 h-5" />
+                                        <Send className="w-5 h-5 mx-2" />
                                         Send Message
                                     </Button>
                                 </form>
