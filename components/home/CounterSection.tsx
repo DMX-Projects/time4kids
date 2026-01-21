@@ -41,6 +41,10 @@ const CountUpSection = () => {
             } as React.CSSProperties
         }));
         setBubbles(newBubbles);
+    }, []);
+
+    useEffect(() => {
+        if (bubbles.length === 0) return;
 
         const fetchStats = async () => {
             try {
@@ -143,7 +147,11 @@ const CountUpSection = () => {
             });
         }, sectionRef);
         return () => ctx.revert();
+<<<<<<< Updated upstream
     }, [isLoaded]);
+=======
+    }, [bubbles]);
+>>>>>>> Stashed changes
 
     return (
         <section ref={sectionRef} className="relative py-12 bg-[#E0F2FE] overflow-hidden">

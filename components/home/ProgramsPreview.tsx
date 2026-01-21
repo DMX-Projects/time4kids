@@ -139,7 +139,7 @@ const ProgramsPreview = () => {
                     width={80}
                     height={80}
                     className="absolute top-20 left-10 md:left-20 animate-bounce"
-                    style={{ animationDuration: '4s', height: 'auto' }}
+                    style={{ animationDuration: '4s' }}
                 />
                 <Image
                     src="/images/icon-bird2.png"
@@ -147,7 +147,7 @@ const ProgramsPreview = () => {
                     width={60}
                     height={60}
                     className="absolute top-40 right-16 md:right-32 animate-bounce"
-                    style={{ animationDuration: '5s', animationDelay: '1s', height: 'auto' }}
+                    style={{ animationDuration: '5s', animationDelay: '1s' }}
                 />
 
                 {/* Butterfly */}
@@ -157,7 +157,7 @@ const ProgramsPreview = () => {
                     width={70}
                     height={70}
                     className="absolute top-1/3 left-1/4 animate-pulse"
-                    style={{ animationDuration: '3s', height: 'auto' }}
+                    style={{ animationDuration: '3s' }}
                 />
 
                 {/* Whale - Floating Animation */}
@@ -167,7 +167,7 @@ const ProgramsPreview = () => {
                     width={100}
                     height={100}
                     className="floating-fish absolute bottom-40 right-10 md:right-20"
-                    style={{ height: 'auto' }}
+                    style={{}}
                 />
 
                 {/* School Bus */}
@@ -177,7 +177,7 @@ const ProgramsPreview = () => {
                     width={90}
                     height={90}
                     className="school-bus absolute bottom-32 opacity-80"
-                    style={{ height: 'auto', left: '100%' }} // Start off-screen Right
+                    style={{ left: '100%' }} // Start off-screen Right
                 />
             </div>
 

@@ -58,7 +58,7 @@ export default function SchoolIntroSection({ schoolName }: SchoolIntroSectionPro
 
                 .intro-block {
                     text-align: center;
-                    background: #f5f1dd url(/bg2.gif) repeat-x center bottom;
+                    background: #f5f1dd url(/images/bg2.gif) repeat-x center bottom;
                     font-weight: 500;
                     padding: 50px 0;
                 }

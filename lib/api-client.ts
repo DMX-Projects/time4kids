@@ -13,7 +13,7 @@ const getBaseUrl = () => {
     // For server-side rendering, use localhost
     if (typeof window === 'undefined') {
         const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
-        return `http://localhost:${port}`;
+        return `http://127.0.0.1:${port}`;
     }
 
     // For client-side, detect the current host
@@ -23,7 +23,7 @@ const getBaseUrl = () => {
     // If accessing via localhost, use localhost with backend port
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
         const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
-        return `http://localhost:${port}`;
+        return `http://127.0.0.1:${port}`;
     }
 
     // If accessing via dev tunnel or remote URL
