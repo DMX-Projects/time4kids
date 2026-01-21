@@ -1,347 +1,336 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { Plus, Trash2, Edit, ExternalLink, Image as ImageIcon, Video, Calendar, Folder } from 'lucide-react';
-import Image from 'next/image';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
+import { Plus, Calendar, MapPin, Edit, Trash2, Image as ImageIcon, Loader } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
+import { useForm } from 'react-hook-form';
+import EventMediaManager from '@/components/franchise/EventMediaManager';
 
-interface GalleryItem {
+interface Event {
     id: number;
-    media_type: 'photo' | 'video';
     title: string;
-    image: string;
-    video_link: string;
-    academic_year: string;
-    event_category: string;
-    is_active: boolean;
+    description: string;
+    start_date: string;
+    end_date?: string;
+    location: string;
+    year: number;
+    media: any[];
 }
 
 export default function ManageGallery() {
-    const { showToast } = useToast();
     const { tokens } = useAuth();
+    const { showToast } = useToast();
     const token = tokens?.access;
-    const [items, setItems] = useState<GalleryItem[]>([]);
+
+    const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
-    const [uploading, setUploading] = useState(false);
+    const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+    const [selectedEventForMedia, setSelectedEventForMedia] = useState<Event | null>(null);
+    const [saving, setSaving] = useState(false);
 
-    const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
 
-    // Watch media type to conditional rendering
-    const mediaType = watch('media_type', 'photo');
-
-    const fetchItems = async () => {
+    const fetchEvents = async () => {
+        if (!token) return;
         try {
-            const response = await fetch(apiUrl('/franchises/franchise/gallery/'), {
+            setLoading(true);
+            const response = await fetch(apiUrl('/events/franchise/'), {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (response.ok) {
                 const data = await response.json();
-                setItems(data.results || data);
+                setEvents(data.results || data);
+            } else {
+                showToast('Failed to fetch events', 'error');
             }
         } catch (error) {
-            console.error('Error fetching gallery items:', error);
+            console.error('Error fetching events:', error);
+            showToast('Error loading events', 'error');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (token) fetchItems();
+        fetchEvents();
     }, [token]);
 
-    const handleOpenModal = (item?: GalleryItem) => {
-        if (item) {
-            setEditingItem(item);
-            setValue('media_type', item.media_type);
-            setValue('title', item.title);
-            setValue('video_link', item.video_link);
-            setValue('academic_year', item.academic_year);
-            setValue('event_category', item.event_category);
-            setPreviewImage(mediaUrl(item.image));
+    const handleOpenModal = (event?: Event) => {
+        if (event) {
+            setEditingEvent(event);
+            setValue('title', event.title);
+            setValue('description', event.description);
+            setValue('start_date', event.start_date);
+            setValue('end_date', event.end_date || '');
+            setValue('location', event.location);
         } else {
-            setEditingItem(null);
+            setEditingEvent(null);
             reset({
-                media_type: 'photo',
-                academic_year: '2023-24', // Default
-                event_category: 'General'
+                title: '',
+                description: '',
+                location: '',
+                start_date: '',
+                end_date: '',
             });
-            setPreviewImage(null);
         }
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this item?')) return;
+    const onSubmit = async (data: any) => {
+        if (!token) return;
+        setSaving(true);
         try {
-            await fetch(apiUrl(`/franchises/franchise/gallery/${id}/`), {
+            const url = editingEvent
+                ? apiUrl(`/events/franchise/${editingEvent.id}/`)
+                : apiUrl('/events/franchise/');
+
+            const method = editingEvent ? 'PATCH' : 'POST';
+
+            const payload = {
+                title: data.title,
+                description: data.description,
+                start_date: data.start_date,
+                end_date: data.end_date || null,
+                location: data.location,
+            };
+
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+                showToast(editingEvent ? 'Event updated!' : 'Event created!', 'success');
+                setIsModalOpen(false);
+                fetchEvents();
+                reset();
+            } else {
+                const errorData = await response.json();
+                showToast(errorData.detail || 'Failed to save event', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving event:', error);
+            showToast('An error occurred', 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteEvent = async (eventId: number) => {
+        if (!token || !confirm('Are you sure you want to delete this event? All associated media will also be deleted.')) return;
+
+        try {
+            const response = await fetch(apiUrl(`/events/franchise/${eventId}/`), {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
             });
-            fetchItems();
-            showToast('Item deleted successfully', 'success');
-        } catch (error) {
-            console.error('Error deleting item:', error);
-            showToast('Failed to delete item', 'error');
-        }
-    };
 
-    const onSubmit = async (data: any) => {
-        setUploading(true);
-        try {
-            const promises = [];
-            const files = data.image as FileList;
-
-            // If editing or only one file or video, handle normally (single request)
-            if (editingItem || mediaType === 'video' || (files && files.length <= 1)) {
-                const formData = new FormData();
-                formData.append('media_type', data.media_type);
-                formData.append('title', data.title);
-                formData.append('academic_year', data.academic_year);
-                formData.append('event_category', data.event_category);
-
-                if (data.media_type === 'video') {
-                    formData.append('video_link', data.video_link);
-                } else {
-                    formData.append('video_link', '');
-                }
-
-                if (files && files[0]) {
-                    formData.append('image', files[0]);
-                }
-
-                const url = editingItem
-                    ? apiUrl(`/franchises/franchise/gallery/${editingItem.id}/`)
-                    : apiUrl('/franchises/franchise/gallery/');
-
-                const method = editingItem ? 'PATCH' : 'POST';
-
-                promises.push(
-                    fetch(url, {
-                        method: method,
-                        headers: { Authorization: `Bearer ${token}` },
-                        body: formData,
-                    })
-                );
+            if (response.ok) {
+                showToast('Event deleted successfully', 'success');
+                fetchEvents();
             } else {
-                // Bulk Upload for Photos
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    const formData = new FormData();
-                    formData.append('media_type', 'photo');
-                    // Append index to title if multiple files
-                    formData.append('title', `${data.title} ${i + 1}`);
-                    formData.append('academic_year', data.academic_year);
-                    formData.append('event_category', data.event_category);
-                    formData.append('video_link', '');
-                    formData.append('image', file);
-
-                    promises.push(
-                        fetch(apiUrl('/franchises/franchise/gallery/'), {
-                            method: 'POST',
-                            headers: { Authorization: `Bearer ${token}` },
-                            body: formData,
-                        })
-                    );
-                }
-            }
-
-            const responses = await Promise.all(promises);
-            const allOk = responses.every(r => r.ok);
-
-            if (allOk) {
-                setIsModalOpen(false);
-                fetchItems();
-                reset();
-                showToast(files && files.length > 1 ? 'All items uploaded successfully!' : 'Gallery item saved successfully!', 'success');
-            } else {
-                // Try to get error from first failed response
-                const failedRes = responses.find(r => !r.ok);
-                const errData = await failedRes?.json().catch(() => ({}));
-                console.error("Save failed:", errData);
-                showToast(errData.detail || 'Failed to save some items.', 'error');
+                showToast('Failed to delete event', 'error');
             }
         } catch (error) {
-            console.error('Error saving item:', error);
-            showToast('An unexpected error occurred.', 'error');
-        } finally {
-            setUploading(false);
+            console.error('Error deleting event:', error);
+            showToast('An error occurred', 'error');
         }
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setPreviewImage(URL.createObjectURL(file));
-        }
-    };
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <Loader className="w-8 h-8 animate-spin text-orange-500" />
+            </div>
+        );
+    }
+
+    // If an event is selected for media management, show the media manager
+    if (selectedEventForMedia) {
+        return (
+            <EventMediaManager
+                event={selectedEventForMedia}
+                onBack={() => {
+                    setSelectedEventForMedia(null);
+                    fetchEvents();
+                }}
+            />
+        );
+    }
 
     return (
         <div className="space-y-8 p-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-display font-bold text-gray-800">Gallery</h1>
-                    <p className="text-gray-500 mt-1">Manage photos and videos for your school gallery.</p>
+                    <h1 className="text-3xl font-display font-bold text-gray-800">Events & Gallery</h1>
+                    <p className="text-gray-500 mt-1">Manage events and upload photos/videos for your school gallery.</p>
                 </div>
                 <Button onClick={() => handleOpenModal()}>
-                    <Plus className="w-5 h-5 mr-2" /> Add Item
+                    <Plus className="w-5 h-5 mr-2" /> Add Event
                 </Button>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {items.map((item) => (
-                    <div key={item.id} className="bg-white group rounded-xl shadow-sm hover:shadow-md transition-all border border-gray-100 overflow-hidden flex flex-col">
-                        <div className="relative h-48 w-full bg-gray-100">
-                            <Image
-                                src={mediaUrl(item.image)}
-                                alt={item.title}
-                                fill
-                                className="object-cover"
-                            />
-                            {item.media_type === 'video' && (
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white">
-                                        <Video className="w-5 h-5 fill-white" />
-                                    </div>
-                                </div>
-                            )}
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                                <button
-                                    onClick={() => handleOpenModal(item)}
-                                    className="p-2 bg-white rounded-full hover:bg-orange-50 text-orange-600 transition-colors"
-                                >
-                                    <Edit className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(item.id)}
-                                    className="p-2 bg-white rounded-full hover:bg-red-50 text-red-600 transition-colors"
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="absolute top-2 right-2 flex gap-1">
-                                <span className="bg-white/90 text-gray-800 text-xs px-2 py-1 rounded font-medium shadow-sm">
-                                    {item.academic_year}
-                                </span>
-                            </div>
-                        </div>
-                        <div className="p-4 flex-1 flex flex-col">
-                            <h3 className="font-bold text-gray-800 truncate mb-1" title={item.title}>{item.title}</h3>
-                            <div className="flex items-center text-xs text-gray-500 gap-2 mb-2">
-                                <span className="flex items-center"><Folder className="w-3 h-3 mr-1" /> {item.event_category}</span>
-                            </div>
-                            {item.video_link && (
-                                <a href={item.video_link} target="_blank" rel="noopener noreferrer" className="mt-auto text-xs text-blue-600 flex items-center hover:underline truncate">
-                                    <ExternalLink className="w-3 h-3 mr-1 flex-shrink-0" /> {item.video_link}
-                                </a>
-                            )}
-                        </div>
-                    </div>
-                ))}
-
-                {items.length === 0 && !loading && (
-                    <div className="col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                        <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p>No gallery items added yet. Click "Add Item" to get started.</p>
-                    </div>
-                )}
-            </div>
-
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? "Edit Gallery Item" : "Add New Item"}>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="block text-sm font-semibold text-gray-700">Media Type</label>
-                            <select
-                                {...register('media_type')}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+            {events.length === 0 ? (
+                <div className="text-center py-20 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                    <Calendar className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-xl font-bold text-gray-600 mb-2">No Events Yet</h3>
+                    <p className="text-gray-500 mb-4">Create your first event to start adding photos and videos to your gallery.</p>
+                    <Button onClick={() => handleOpenModal()}>
+                        <Plus className="w-5 h-5 mr-2" /> Create Event
+                    </Button>
+                </div>
+            ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {events.map((event) => (
+                        <div
+                            key={event.id}
+                            className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all border border-gray-100 overflow-hidden group"
+                        >
+                            {/* Event Thumbnail */}
+                            <div
+                                className="relative h-48 bg-gradient-to-br from-orange-100 to-yellow-100 cursor-pointer"
+                                onClick={() => setSelectedEventForMedia(event)}
                             >
-                                <option value="photo">Photo</option>
-                                <option value="video">Video</option>
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="block text-sm font-semibold text-gray-700">Academic Year</label>
-                            <input
-                                {...register('academic_year')}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                                placeholder="e.g. 2023-24"
-                            />
-                        </div>
-                    </div>
+                                {event.media && event.media.length > 0 ? (
+                                    <img
+                                        src={mediaUrl(event.media[0].file)}
+                                        alt={event.title}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                ) : (
+                                    <div className="flex items-center justify-center h-full">
+                                        <ImageIcon className="w-16 h-16 text-gray-300" />
+                                    </div>
+                                )}
+                                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-700 shadow-sm flex items-center gap-1">
+                                    <ImageIcon className="w-3.5 h-3.5" />
+                                    {event.media?.length || 0}
+                                </div>
+                            </div>
 
+                            {/* Event Details */}
+                            <div className="p-5">
+                                <div className="flex items-center gap-2 text-sm text-orange-600 font-bold mb-2">
+                                    <Calendar className="w-4 h-4" />
+                                    {new Date(event.start_date).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    })}
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-800 mb-2">{event.title}</h3>
+                                {event.description && (
+                                    <p className="text-gray-500 text-sm line-clamp-2 mb-3">{event.description}</p>
+                                )}
+                                {event.location && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                                        <MapPin className="w-3.5 h-3.5" />
+                                        {event.location}
+                                    </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2 pt-3 border-t border-gray-100">
+                                    <button
+                                        onClick={() => setSelectedEventForMedia(event)}
+                                        className="flex-1 py-2 px-3 bg-orange-50 text-orange-600 rounded-lg font-semibold text-sm hover:bg-orange-100 transition-colors flex items-center justify-center gap-1"
+                                    >
+                                        <ImageIcon className="w-4 h-4" />
+                                        Manage Media
+                                    </button>
+                                    <button
+                                        onClick={() => handleOpenModal(event)}
+                                        className="p-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                                        title="Edit Event"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteEvent(event.id)}
+                                        className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                        title="Delete Event"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Event Create/Edit Modal */}
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingEvent ? 'Edit Event' : 'Create Event'}>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="space-y-2">
                         <label className="block text-sm font-semibold text-gray-700">
-                            {mediaType === 'video' || editingItem ? 'Title' : 'Title (Prefix for bulk upload)'}
+                            Event Title <span className="text-red-500">*</span>
                         </label>
                         <input
-                            {...register('title', { required: "Title is required" })}
+                            {...register('title', { required: 'Title is required' })}
                             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                            placeholder="e.g. Annual Day Fun"
+                            placeholder="e.g., Annual Day 2024"
                         />
                         {errors.title && <p className="text-xs text-red-500">{String(errors.title.message)}</p>}
                     </div>
 
                     <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700">Event Category</label>
-                        <input
-                            {...register('event_category')}
+                        <label className="block text-sm font-semibold text-gray-700">Description</label>
+                        <textarea
+                            {...register('description')}
                             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                            placeholder="e.g. Annual Day, Sports Day"
+                            rows={3}
+                            placeholder="Describe the event..."
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700">
-                            {mediaType === 'video' ? 'Thumbnail Image' : 'Photo(s)'} <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative h-40 w-full bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center overflow-hidden group hover:border-orange-400 transition-colors">
-                            {previewImage ? (
-                                <Image src={previewImage} alt="Preview" fill className="object-cover" />
-                            ) : (
-                                <div className="text-center p-4">
-                                    <ImageIcon className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                                    <p className="text-xs text-gray-500">
-                                        {mediaType === 'photo' && !editingItem ? 'Click to upload multiple photos' : 'Click to upload'}
-                                    </p>
-                                </div>
-                            )}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-gray-700">
+                                Start Date <span className="text-red-500">*</span>
+                            </label>
                             <input
-                                type="file"
-                                accept="image/*"
-                                multiple={mediaType === 'photo' && !editingItem}
-                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                {...register('image', { required: !editingItem && "Image is required", onChange: handleImageChange })}
+                                type="date"
+                                {...register('start_date', { required: 'Start date is required' })}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                            />
+                            {errors.start_date && <p className="text-xs text-red-500">{String(errors.start_date.message)}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-gray-700">End Date</label>
+                            <input
+                                type="date"
+                                {...register('end_date')}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                             />
                         </div>
-                        {errors.image && <p className="text-xs text-red-500">{String(errors.image.message)}</p>}
-                        {mediaType === 'photo' && !editingItem && <p className="text-xs text-gray-400 text-center">You can select multiple images.</p>}
                     </div>
 
-                    {mediaType === 'video' && (
-                        <div className="space-y-2">
-                            <label className="block text-sm font-semibold text-gray-700">Video Link (YouTube/Vimeo) <span className="text-red-500">*</span></label>
-                            <input
-                                {...register('video_link', { required: mediaType === 'video' && "Video link is required" })}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                                placeholder="https://..."
-                            />
-                            {errors.video_link && <p className="text-xs text-red-500">{String(errors.video_link.message)}</p>}
-                        </div>
-                    )}
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-700">Location</label>
+                        <input
+                            {...register('location')}
+                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                            placeholder="Event location"
+                        />
+                    </div>
 
                     <div className="flex justify-end gap-3 pt-4">
-                        <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                        <Button type="submit" disabled={uploading}>
-                            {uploading ? 'Saving...' : 'Save Item'}
+                        <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={saving}>
+                            {saving ? 'Saving...' : editingEvent ? 'Update Event' : 'Create Event'}
                         </Button>
                     </div>
                 </form>

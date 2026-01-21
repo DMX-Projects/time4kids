@@ -40,6 +40,19 @@ export interface Franchise {
         event_category: string;
         created_at: string;
     }[];
+    events: {
+        id: number;
+        title: string;
+        description: string;
+        start_date: string;
+        year: number;
+        media: {
+            id: number;
+            file: string;
+            media_type: 'IMAGE' | 'VIDEO';
+            caption: string;
+        }[];
+    }[];
 }
 
 export async function getFranchiseBySlug(slug: string): Promise<Franchise | null> {

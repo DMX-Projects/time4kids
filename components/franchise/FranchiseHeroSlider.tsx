@@ -90,6 +90,7 @@ export default function FranchiseHeroSlider({ franchiseSlug, slides: initialSlid
                                 src={mediaUrl(slide.image)}
                                 alt={slide.alt_text || "Franchise Slide"}
                                 fill
+                                sizes="100vw"
                                 className="object-cover"
                             />
                             {slide.alt_text && (

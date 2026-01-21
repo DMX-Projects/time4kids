@@ -105,6 +105,7 @@ const SchoolFooter = ({ homeUrl }: SchoolFooterProps) => {
                                         src="/logo.jpg"
                                         alt="T.I.M.E. Kids Logo"
                                         fill
+                                        sizes="160px"
                                         className="object-contain"
                                     />
                                 </div>

@@ -66,9 +66,17 @@ export default async function SchoolDetailsPage({ params }: { params: { city: st
             </section>
 
             {/* --- SECTION: GALLERY --- */}
+<<<<<<< Updated upstream
             <section id="gallery">
                 <GallerySection schoolName={franchise.name} city={franchise.city} galleryItems={franchise.gallery_items} />
             </section>
+=======
+            <GallerySection
+                schoolName={franchise.name}
+                city={franchise.city}
+                events={franchise.events}
+            />
+>>>>>>> Stashed changes
 
             {/* --- SECTION: CONTACT --- */}
             <section id="contact">
