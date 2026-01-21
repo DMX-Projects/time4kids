@@ -16,6 +16,18 @@ export type AdminFranchise = {
     about?: string;
     programs?: string;
     facilities?: string;
+    password?: string;
+
+    // New Fields
+    address?: string;
+    googleMapLink?: string;
+    socials?: {
+        facebook?: string;
+        instagram?: string;
+        twitter?: string;
+        linkedin?: string;
+        youtube?: string;
+    };
 };
 
 export type AdminCareer = {
@@ -78,6 +90,9 @@ export type AdminDataContextValue = {
 
     stats: AdminStats;
     refreshStats: () => Promise<void>;
+
+    savedLocations: { city_name: string, state: string }[];
+    refreshLocations: () => Promise<void>;
 };
 
 const AdminDataContext = createContext<AdminDataContextValue | undefined>(undefined);
@@ -96,6 +111,15 @@ type ApiFranchise = {
     about?: string;
     programs?: string;
     facilities?: string;
+
+    // New Fields from API
+    address?: string;
+    google_map_link?: string;
+    facebook_url?: string;
+    instagram_url?: string;
+    twitter_url?: string;
+    linkedin_url?: string;
+    youtube_url?: string;
 };
 
 type ApiCareer = {
@@ -134,6 +158,17 @@ const mapFranchise = (fr: ApiFranchise): AdminFranchise => ({
     about: fr.about || "",
     programs: fr.programs || "",
     facilities: fr.facilities || "",
+
+    // Map new fields
+    address: fr.address || "",
+    googleMapLink: fr.google_map_link || "",
+    socials: {
+        facebook: fr.facebook_url || "",
+        instagram: fr.instagram_url || "",
+        twitter: fr.twitter_url || "",
+        linkedin: fr.linkedin_url || "",
+        youtube: fr.youtube_url || "",
+    }
 });
 
 const mapCareer = (career: ApiCareer): AdminCareer => ({
@@ -243,6 +278,26 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    // New: Load saved locations for dropdown
+    const [savedLocations, setSavedLocations] = useState<{ city_name: string, state: string }[]>([]);
+
+    const loadSavedLocations = async () => {
+        try {
+            const data = await authFetch<any>('/franchises/admin/franchise-locations/');
+            // Handle both paginated and list responses
+            const items = Array.isArray(data) ? data : (data.results || []);
+            setSavedLocations(items);
+        } catch (err) {
+            console.error("Failed to load saved locations", err);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.role?.toLowerCase() === "admin") {
+            loadSavedLocations();
+        }
+    }, [user?.role]);
+
     const addFranchise = async (payload: Omit<AdminFranchise, "id">) => {
         const body = {
             name: payload.name,
@@ -250,9 +305,19 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             contact_email: payload.email,
             contact_phone: payload.phone,
             franchise_email: payload.email,
-            franchise_password: payload.email,
+            franchise_password: payload.password || payload.email, // Use provided password or default to email
             franchise_full_name: payload.owner || payload.name,
             is_active: payload.status ? payload.status.toLowerCase() === "active" : undefined,
+
+            // New fields
+            address: payload.address,
+            about: payload.about,
+            google_map_link: payload.googleMapLink,
+            facebook_url: payload.socials?.facebook,
+            instagram_url: payload.socials?.instagram,
+            twitter_url: payload.socials?.twitter,
+            linkedin_url: payload.socials?.linkedin,
+            youtube_url: payload.socials?.youtube,
         };
         const created = await authFetch<ApiFranchise>("/franchises/admin/franchises/", {
             method: "POST",
@@ -269,6 +334,16 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             contact_email: payload.email,
             contact_phone: payload.phone,
             is_active: payload.status ? payload.status.toLowerCase() === "active" : undefined,
+
+            // New fields
+            address: payload.address,
+            about: payload.about,
+            google_map_link: payload.googleMapLink,
+            facebook_url: payload.socials?.facebook,
+            instagram_url: payload.socials?.instagram,
+            twitter_url: payload.socials?.twitter,
+            linkedin_url: payload.socials?.linkedin,
+            youtube_url: payload.socials?.youtube,
         };
         const updated = await authFetch<ApiFranchise>(`/franchises/admin/franchises/${id}/`, {
             method: "PATCH",
@@ -389,8 +464,10 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             updateProfile,
             stats,
             refreshStats: loadStats,
+            savedLocations,
+            refreshLocations: loadSavedLocations,
         }),
-        [franchises, careers, events, profile, stats],
+        [franchises, careers, events, profile, stats, savedLocations],
     );
 
     return <AdminDataContext.Provider value={value}>{children}</AdminDataContext.Provider>;

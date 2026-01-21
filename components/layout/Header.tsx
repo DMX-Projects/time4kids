@@ -76,7 +76,6 @@ export default function Header() {
                                     width={200}
                                     height={80}
                                     priority
-                                    style={{ height: 'auto' }}
                                 />
                             </Link>
                         </div>
@@ -116,6 +115,9 @@ export default function Header() {
                                     </li>
                                     <li className="nav-item">
                                         <Link href="/franchise">Franchise Opportunity</Link>
+                                    </li>
+                                    <li className="nav-item">
+                                        <Link href="/locate-centre">Locate Centre</Link>
                                     </li>
                                 </ul>
 

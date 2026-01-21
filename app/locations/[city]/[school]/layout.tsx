@@ -17,7 +17,7 @@ export default function SchoolLayout({ children }: { children: React.ReactNode }
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <SchoolBrandHeader schoolName="School Details" basePath={basePath} homeUrl={cityHomeUrl} />
+            <SchoolBrandHeader schoolName="School Details" basePath={basePath} homeUrl={basePath} />
 
             <AnimatePresence mode="wait">
                 <motion.div

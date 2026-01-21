@@ -6,6 +6,7 @@ import QRCode from '@/components/ui/QRCode';
 import { useForm } from 'react-hook-form';
 import { CheckCircle } from 'lucide-react';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
+import { useToast } from '@/components/ui/Toast';
 
 interface AdmissionFormData {
     parentName: string;
@@ -18,12 +19,22 @@ interface AdmissionFormData {
     message?: string;
 }
 
-const AdmissionForm = () => {
+interface AdmissionFormProps {
+    franchiseSlug?: string;
+    defaultCity?: string;
+}
+
+const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showQR, setShowQR] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const { register, handleSubmit, formState: { errors }, reset } = useForm<AdmissionFormData>();
+    const { register, handleSubmit, formState: { errors }, reset } = useForm<AdmissionFormData>({
+        defaultValues: {
+            city: defaultCity || ''
+        }
+    });
     const { addEnquiry } = useSchoolData();
+    const { showToast } = useToast();
 
     const onSubmit = async (data: AdmissionFormData) => {
         setSubmitError(null);
@@ -36,14 +47,22 @@ const AdmissionForm = () => {
                 city: data.city,
                 childAge: data.childAge,
                 message: `Child: ${data.childName}, Age: ${data.childAge}, Program: ${data.program}, City: ${data.city}${data.message ? ' | Note: ' + data.message : ''}`,
+                // @ts-ignore - passing extra field that is handled by the provider but not in the strict type yet
+                franchiseSlug: franchiseSlug
             });
             setIsSubmitted(true);
             setShowQR(true);
             reset();
+            showToast("Admission enquiry submitted successfully!");
             setTimeout(() => setIsSubmitted(false), 5000);
         } catch (err: any) {
             setSubmitError(err?.message || 'Unable to submit your enquiry. Please try again.');
+            showToast(err?.message || 'Unable to submit your enquiry. Please try again.', "error");
         }
+    };
+
+    const onInvalid = () => {
+        showToast("Please fill all required fields correctly", "error");
     };
 
     const formUrl = typeof window !== 'undefined' ? window.location.href : 'https://timekids.com/admission';
@@ -70,12 +89,12 @@ const AdmissionForm = () => {
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-6">
                             {/* Parent Name */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Parent/Guardian Name *
+                                    Parent/Guardian Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     {...register('parentName', { required: 'Name is required' })}
@@ -91,7 +110,7 @@ const AdmissionForm = () => {
                             {/* Email */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Email Address *
+                                    Email Address <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     {...register('email', {
@@ -113,7 +132,7 @@ const AdmissionForm = () => {
                             {/* Phone */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Phone Number *
+                                    Phone Number <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     {...register('phone', {
@@ -135,7 +154,7 @@ const AdmissionForm = () => {
                             {/* Child Name */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Child&apos;s Name *
+                                    Child&apos;s Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     {...register('childName', { required: 'Child name is required' })}
@@ -151,7 +170,7 @@ const AdmissionForm = () => {
                             {/* Child Age */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Child&apos;s Age *
+                                    Child&apos;s Age <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     {...register('childAge', { required: 'Age is required' })}
@@ -175,7 +194,7 @@ const AdmissionForm = () => {
                             {/* Program */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Program of Interest *
+                                    Program of Interest <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     {...register('program', { required: 'Program is required' })}
@@ -197,14 +216,19 @@ const AdmissionForm = () => {
                         {/* City */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                City *
+                                City <span className="text-red-500">*</span>
                             </label>
-                            <input
+                            <select
                                 {...register('city', { required: 'City is required' })}
-                                type="text"
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                                placeholder="Enter your city"
-                            />
+                            >
+                                <option value="">Select City</option>
+                                {useSchoolData().locations.map((loc) => (
+                                    <option key={`${loc.city_name}-${loc.state}`} value={loc.city_name}>
+                                        {loc.city_name}, {loc.state}
+                                    </option>
+                                ))}
+                            </select>
                             {errors.city && (
                                 <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>
                             )}
@@ -243,7 +267,7 @@ const AdmissionForm = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

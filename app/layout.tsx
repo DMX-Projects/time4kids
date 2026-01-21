@@ -10,6 +10,7 @@ import BlobBackground from "@/components/animations/BlobBackground";
 import ConditionalChrome from "@/components/layout/ConditionalChrome";
 import DiceCursor from "@/components/ui/DiceCursor";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ToastProvider } from "@/components/ui/Toast";
 import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
 
 const inter = Inter({
@@ -112,24 +113,26 @@ export default function RootLayout({
             </head>
             <body className="antialiased">
                 <AuthProvider>
-                    <SchoolDataProvider>
-                        <ConditionalChrome>
-                            <SmoothScroll />
-                            <BlobBackground />
-                            <ScrollProgress />
-                            <DiceCursor />
-                            <Header />
-                        </ConditionalChrome>
+                    <ToastProvider>
+                        <SchoolDataProvider>
+                            <ConditionalChrome>
+                                <SmoothScroll />
+                                <BlobBackground />
+                                <ScrollProgress />
+                                <DiceCursor />
+                                <Header />
+                            </ConditionalChrome>
 
-                        <main className="min-h-screen">
-                            {children}
-                        </main>
+                            <main className="min-h-screen">
+                                {children}
+                            </main>
 
-                        <ConditionalChrome>
-                            <Footer />
-                            <Chatbot />
-                        </ConditionalChrome>
-                    </SchoolDataProvider>
+                            <ConditionalChrome>
+                                <Footer />
+                                <Chatbot />
+                            </ConditionalChrome>
+                        </SchoolDataProvider>
+                    </ToastProvider>
                 </AuthProvider>
             </body>
         </html>

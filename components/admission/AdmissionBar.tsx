@@ -1,70 +1,126 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
+import { apiUrl } from '@/lib/api-client';
 
 const AdmissionBar = () => {
+    const [stats, setStats] = useState({
+        total_schools: 350,
+        total_cities: 80,
+        total_students: 72000
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await fetch(apiUrl('/franchises/public/stats/'));
+                if (res.ok) {
+                    const data = await res.json();
+                    setStats(data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+            }
+        };
+        fetchStats();
+    }, []);
+
     return (
-        <div className="w-full bg-[#fdfaf1] py-10 px-4 rounded-3xl shadow-sm border border-orange-100/50">
-            <div className="max-w-7xl mx-auto text-center space-y-6">
-                {/* Colorful Title */}
-                <div className="flex flex-wrap justify-center items-center gap-x-2 text-2xl md:text-3xl font-bold font-fredoka uppercase tracking-wider">
-                    <span className="text-[#f44336]">Home Away</span>
-                    <span className="text-[#4caf50]">Form Home</span>
-                    <span className="text-[#2196f3]">For Your Child</span>
+        <div className="w-full bg-[#fffcf5] py-12 px-4 relative overflow-hidden">
+            {/* Decorative Background Elements */}
+            <div className="absolute top-0 left-0 w-32 h-32 bg-yellow-200/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-0 w-40 h-40 bg-orange-200/20 rounded-full blur-3xl" />
+
+            <div className="max-w-5xl mx-auto relative z-10">
+                {/* Title Section */}
+                <div className="text-center mb-8 space-y-3">
+                    <div className="flex flex-wrap justify-center items-center gap-x-3 text-xl md:text-2xl font-bold font-fredoka uppercase tracking-wider">
+                        <span className="text-[#ff6b6b]">Home Away</span>
+                        <span className="text-gray-300 transform rotate-12">/</span>
+                        <span className="text-[#4ecdc4]">From Home</span>
+                        <span className="text-gray-300 transform -rotate-12">/</span>
+                        <span className="text-[#45b7d1]">For Your Child</span>
+                    </div>
+                    <h3 className="text-3xl md:text-4xl font-extrabold text-[#2d3436] font-fredoka drop-shadow-sm">
+                        Admission Enquiry
+                    </h3>
+                    <div className="w-24 h-1 bg-orange-400 mx-auto rounded-full opacity-80" />
                 </div>
 
-                {/* Subtitle */}
-                <h3 className="text-3xl md:text-4xl font-bold text-[#333333] font-fredoka">
-                    Admission Enquiry
-                </h3>
+                {/* Form Container */}
+                <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl shadow-orange-100/50 border border-orange-50">
+                    <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div className="relative group">
+                            <input
+                                type="text"
+                                placeholder="Child's Name"
+                                className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 group-hover:bg-white"
+                            />
+                        </div>
 
-                {/* Horizontal Form */}
-                <div className="bg-white p-2 rounded-xl shadow-lg border border-gray-100 max-w-6xl mx-auto">
-                    <form className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 p-2 items-center">
-                        <input
-                            type="text"
-                            placeholder="Name"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 text-sm"
-                        />
-                        <select className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 text-sm text-gray-500">
-                            <option value="">Admission for</option>
-                            <option value="playgroup">Play Group</option>
-                            <option value="nursery">Nursery</option>
-                            <option value="pp1">PP-1</option>
-                            <option value="pp2">PP-2</option>
-                        </select>
-                        <input
-                            type="text"
-                            placeholder="Address"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 text-sm"
-                        />
-                        <input
-                            type="tel"
-                            placeholder="Mobile"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 text-sm"
-                        />
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 text-sm"
-                        />
+                        <div className="relative group">
+                            <select className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 text-gray-600 appearance-none group-hover:bg-white cursor-pointer">
+                                <option value="" disabled selected>Select Class</option>
+                                <option value="playgroup">Play Group</option>
+                                <option value="nursery">Nursery</option>
+                                <option value="pp1">PP-1</option>
+                                <option value="pp2">PP-2</option>
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                ▼
+                            </div>
+                        </div>
+
+                        <div className="relative group">
+                            <input
+                                type="text"
+                                placeholder="City / Area"
+                                className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 group-hover:bg-white"
+                            />
+                        </div>
+
+                        <div className="relative group">
+                            <input
+                                type="tel"
+                                placeholder="Parent's Mobile"
+                                className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 group-hover:bg-white"
+                            />
+                        </div>
+
+                        <div className="relative group">
+                            <input
+                                type="email"
+                                placeholder="Parent's Email"
+                                className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200 group-hover:bg-white"
+                            />
+                        </div>
+
                         <Button
                             type="submit"
-                            className="w-full bg-[#00c853] hover:bg-[#00a344] text-white py-3 rounded-lg font-bold border-0 shadow-md uppercase tracking-widest text-sm"
+                            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-3.5 rounded-xl font-bold border-0 shadow-lg shadow-orange-200 transform transition-all duration-200 hover:-translate-y-0.5 active:scale-95 uppercase tracking-wider text-sm"
                         >
-                            Submit
+                            Enquire Now
                         </Button>
                     </form>
                 </div>
 
                 {/* Stats Footer */}
-                <div className="pt-4 flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-gray-700 font-bold text-base md:text-lg">
-                    <span>300+ Schools</span>
-                    <span className="hidden sm:inline text-gray-300">|</span>
-                    <span>72000+ Smart Students</span>
-                    <span className="hidden sm:inline text-gray-300">|</span>
-                    <span>80+ Cities</span>
+                <div className="mt-8 flex flex-wrap justify-center items-center gap-x-8 gap-y-3 text-gray-600 font-medium text-sm md:text-base">
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-green-500" />
+                        <span>{stats.total_schools}{stats.total_schools >= 100 ? '+' : ''} Schools</span>
+                    </div>
+                    <div className="hidden md:block w-px h-4 bg-gray-300" />
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        <span>{stats.total_students}{stats.total_students >= 1000 ? '+' : ''} Smart Students</span>
+                    </div>
+                    <div className="hidden md:block w-px h-4 bg-gray-300" />
+                    <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-purple-500" />
+                        <span>{stats.total_cities}{stats.total_cities >= 50 ? '+' : ''} Cities</span>
+                    </div>
                 </div>
             </div>
         </div>

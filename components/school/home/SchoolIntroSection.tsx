@@ -2,35 +2,38 @@
 
 import React from 'react';
 
-export default function IntroSection() {
+interface SchoolIntroSectionProps {
+    schoolName: string;
+}
+
+export default function SchoolIntroSection({ schoolName }: SchoolIntroSectionProps) {
     return (
         <>
-            <div className="intro-block">
+            <div id="about" className="intro-block scroll-mt-40">
                 <div className="container mx-auto px-4">
                     <div className="intro-content">
                         <h1>Welcome to T.I.M.E. Kids</h1>
                         <h2>
-                            A chain of pre-schools launched by T.I.M.E., the national leader in
+                            A part of T.I.M.E. Kids - A chain of pre-schools launched by T.I.M.E., the national leader in
                             entrance exam training.
                         </h2>
                         <p>
-                            T.I.M.E. Kids pre-schools is a chain of pre-schools launched by
-                            T.I.M.E., the national leader in entrance exam training. After its
+                            {schoolName} is a part of the T.I.M.E. Kids network of pre-schools. After its
                             hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+
-                            pre-schools is now poised for major expansion across the country.
+                            pre-schools is now poised for major expansion across the country, and we are proud to serve your community.
                         </p>
                         <p>
-                            The programme at T.I.M.E. Kids pre-schools aims at making the transition
+                            The programme at {schoolName} aims at making the transition
                             from home to school easy, by providing the warm, safe and caring and
                             learning environment that young children have at home. Our play schools
                             offer wholesome, fun-filled and memorable childhood education to our
                             children.
                         </p>
                         <p>
-                            T.I.M.E. Kids pre-schools are backed by our educational expertise of over
+                            We are backed by our educational expertise of over
                             27 years, well trained care providers and a balanced educational
-                            programme. The programme at T.I.M.E. Kids pre-schools is based on the
-                            principles of age-appropriate child
+                            programme. The programme at {schoolName} is based on the
+                            principles of age-appropriate child development.
                         </p>
                     </div>
                 </div>
@@ -39,7 +42,6 @@ export default function IntroSection() {
 
             <style jsx>{`
                 .wave-gray-bottom {
-                    float: left;
                     width: 100%;
                     height: 28px;
                     text-align: center;
@@ -50,12 +52,8 @@ export default function IntroSection() {
                 }
 
                 @keyframes wave-slide-bottom {
-                    from {
-                        background-position: 0 0;
-                    }
-                    to {
-                        background-position: -4000px 0;
-                    }
+                    from { background-position: 0 0; }
+                    to { background-position: -4000px 0; }
                 }
 
                 .intro-block {
@@ -65,48 +63,26 @@ export default function IntroSection() {
                     padding: 50px 0;
                 }
 
-                .intro-content {
-                    max-width: 900px;
-                    margin: 0 auto;
-                }
+                .intro-content { max-width: 900px; margin: 0 auto; }
 
                 .intro-block h1 {
-                    font-family: 'Schoolbell', cursive;
-                    color: #fe5c61;
-                    font-size: 28px;
-                    line-height: 30px;
-                    font-weight: 600;
-                    margin: 0 0 25px 0;
+                    font-family: 'Schoolbell', cursive; color: #fe5c61; font-size: 28px;
+                    line-height: 30px; font-weight: 600; margin: 0 0 25px 0;
                 }
 
                 .intro-block h2 {
-                    font-family: 'Dosis', sans-serif;
-                    color: #333;
-                    font-size: 24px;
-                    line-height: 30px;
-                    font-weight: 700;
-                    margin: 0 0 25px 0;
+                    font-family: 'Dosis', sans-serif; color: #333; font-size: 24px;
+                    line-height: 30px; font-weight: 700; margin: 0 0 25px 0;
                 }
 
                 .intro-block p {
-                    margin: 0 0 15px 0;
-                    font-size: 16px;
-                    line-height: 24px;
-                    color: #333;
+                    margin: 0 0 15px 0; font-size: 16px; line-height: 24px; color: #333;
                 }
 
                 @media (max-width: 768px) {
-                    .intro-block {
-                        padding: 25px 0;
-                    }
-
-                    .intro-block h1 {
-                        font-size: 24px;
-                    }
-
-                    .intro-block h2 {
-                        font-size: 20px;
-                    }
+                    .intro-block { padding: 25px 0; }
+                    .intro-block h1 { font-size: 24px; }
+                    .intro-block h2 { font-size: 20px; }
                 }
             `}</style>
         </>

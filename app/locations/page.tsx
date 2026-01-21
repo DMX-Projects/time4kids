@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-
+import { apiUrl } from '@/lib/api-client';
 import Link from 'next/link';
 import { MapPin, ChevronRight, GraduationCap } from 'lucide-react';
 import TwinklingStars from '@/components/animations/TwinklingStars';
@@ -16,9 +16,7 @@ export default function LocationsPage() {
     React.useEffect(() => {
         const fetchLocations = async () => {
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/franchises/public/locations/`
-                );
+                const res = await fetch(apiUrl('/franchises/public/locations/'));
                 if (!res.ok) throw new Error('Failed to fetch locations');
                 const data = await res.json();
                 setLocations(data);
@@ -81,9 +79,18 @@ export default function LocationsPage() {
                                             {city}
                                         </h3>
 
-                                        <div className="flex items-center text-gray-500 space-x-2 mb-6">
-                                            <GraduationCap className="w-4 h-4" />
-                                            <span className="text-sm font-medium">{franchise_count} Centres</span>
+                                        <div className="flex items-center text-primary-500 space-x-2 mb-6">
+                                            {franchise_count > 0 ? (
+                                                <>
+                                                    <GraduationCap className="w-4 h-4" />
+                                                    <span className="text-sm font-bold uppercase tracking-wide">{franchise_count} {franchise_count === 1 ? 'Centre' : 'Centres'}</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <GraduationCap className="w-4 h-4" />
+                                                    <span className="text-sm font-bold uppercase tracking-wide">Admissions Ongoing</span>
+                                                </>
+                                            )}
                                         </div>
 
                                         <div className="flex items-center text-primary-600 font-bold group-hover:translate-x-2 transition-transform duration-300">

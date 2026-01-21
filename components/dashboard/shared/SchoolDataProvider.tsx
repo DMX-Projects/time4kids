@@ -65,6 +65,7 @@ export type Enquiry = {
     createdAt: string;
     status: "new" | "in-progress" | "closed";
     channel: "web" | "dashboard";
+    franchiseName?: string;
 };
 
 export type BulkGradeRow = {
@@ -99,6 +100,9 @@ export type SchoolDataContextValue = {
     getStudentsForParent: (parentId: string) => SchoolStudent[];
     getGradesForParent: (parentId: string) => GradeRecord[];
     getEventMediaForParent: (parentId: string) => EventMedia[];
+
+    locations: { city_name: string, state: string }[];
+    updateEnquiryStatus: (id: string, status: string) => Promise<void>;
 };
 
 const SchoolDataContext = createContext<SchoolDataContextValue | undefined>(undefined);
@@ -132,6 +136,8 @@ type ApiEnquiry = {
     city?: string;
     child_age?: string;
     created_at: string;
+    franchise_name?: string | null;
+    status?: string;
 };
 
 const mapEvent = (ev: ApiEvent): EventRecord => ({
@@ -156,10 +162,13 @@ const mapEnquiry = (enq: ApiEnquiry): Enquiry => ({
     name: enq.name,
     email: enq.email,
     phone: enq.phone,
+    city: enq.city,
+    childAge: enq.child_age,
     message: enq.message || "",
     createdAt: enq.created_at,
-    status: "new",
+    status: (enq.status as any) || "new",
     channel: "dashboard",
+    franchiseName: enq.franchise_name || undefined,
 });
 
 export function SchoolDataProvider({ children }: { children: React.ReactNode }) {
@@ -171,6 +180,37 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     const [events, setEvents] = useState<EventRecord[]>([]);
     const [eventMedia, setEventMedia] = useState<EventMedia[]>([]);
     const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+    const [locations, setLocations] = useState<{ city_name: string, state: string }[]>([]);
+
+    useEffect(() => {
+        // Only load locations if we are not in a critical auth state or just let it fail gracefully
+        loadLocations();
+    }, []);
+
+    const loadLocations = async () => {
+        try {
+            const url = apiUrl("/franchises/public/locations/");
+            console.log("Fetching locations from:", url);
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                setLocations(data);
+            } else {
+                console.error("Failed to load locations:", res.status, res.statusText);
+            }
+        } catch (err) {
+            console.error("Failed to load public locations", err);
+        }
+    };
+
+    const updateEnquiryStatus = async (id: string, status: string) => {
+        await authFetch(`/enquiries/admin/${id}/`, {
+            method: "PATCH",
+            headers: jsonHeaders(),
+            body: JSON.stringify({ status }),
+        });
+        setEnquiries((prev) => prev.map((e) => (e.id === id ? { ...e, status: status as any } : e)));
+    };
 
     useEffect(() => {
         if (!user) {
@@ -211,18 +251,22 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
 
     const loadAdminEnquiries = async () => {
         try {
-            const data = await authFetch<ApiEnquiry[]>("/enquiries/admin/");
-            setEnquiries(data.map(mapEnquiry));
-        } catch {
+            const data = await authFetch<ApiEnquiry[] | { results: ApiEnquiry[] }>("/enquiries/admin/");
+            const items = Array.isArray(data) ? data : (data.results || []);
+            setEnquiries(items.map(mapEnquiry));
+        } catch (err) {
+            console.error("Failed to load enquiries:", err);
             setEnquiries([]);
         }
     };
 
     const loadFranchiseEnquiries = async () => {
         try {
-            const data = await authFetch<ApiEnquiry[]>("/enquiries/franchise/");
-            setEnquiries(data.map(mapEnquiry));
-        } catch {
+            const data = await authFetch<ApiEnquiry[] | { results: ApiEnquiry[] }>("/enquiries/franchise/");
+            const items = Array.isArray(data) ? data : (data.results || []);
+            setEnquiries(items.map(mapEnquiry));
+        } catch (err) {
+            console.error("Failed to load franchise enquiries:", err);
             setEnquiries([]);
         }
     };
@@ -415,8 +459,10 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             getStudentsForParent,
             getGradesForParent,
             getEventMediaForParent,
+            locations,
+            updateEnquiryStatus,
         }),
-        [parents, students, grades, events, eventMedia, enquiries],
+        [parents, students, grades, events, eventMedia, enquiries, locations],
     );
 
     return <SchoolDataContext.Provider value={value}>{children}</SchoolDataContext.Provider>;

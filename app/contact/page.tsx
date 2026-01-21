@@ -10,11 +10,13 @@ import TwinklingStars from '@/components/animations/TwinklingStars';
 import { Mail, Phone, MapPin, Facebook, Instagram, Youtube, Send, Briefcase } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
+import { useToast } from '@/components/ui/Toast';
 
 interface ContactFormData {
     name: string;
     email: string;
     phone: string;
+    city: string;
     subject: string;
     message: string;
 }
@@ -24,24 +26,31 @@ export default function ContactPage() {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormData>();
     const { addEnquiry } = useSchoolData();
+    const { showToast } = useToast();
 
     const onSubmit = async (data: ContactFormData) => {
         setSubmitError(null);
-        const type: 'admission' | 'franchise' | 'contact' = data.subject === 'admission' ? 'admission' : data.subject === 'franchise' ? 'franchise' : 'contact';
         try {
             await addEnquiry({
-                type,
+                type: 'contact',
                 name: data.name,
                 email: data.email,
                 phone: data.phone,
+                city: data.city,
                 message: `${data.subject.toUpperCase()}: ${data.message}`,
             });
             setIsSubmitted(true);
             reset();
+            showToast("Your message has been sent successfully!");
             setTimeout(() => setIsSubmitted(false), 5000);
         } catch (err: any) {
             setSubmitError(err?.message || 'Unable to send your message. Please try again.');
+            showToast(err?.message || 'Message sending failed.', "error");
         }
+    };
+
+    const onInvalid = () => {
+        showToast("Please fill all required fields correctly", "error");
     };
 
     return (
@@ -168,10 +177,12 @@ export default function ContactPage() {
                                     </div>
                                 )}
 
-                                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                                <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
                                     <div className="grid md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Name <span className="text-red-500">*</span>
+                                            </label>
                                             <input
                                                 {...register('name', { required: 'Name is required' })}
                                                 type="text"
@@ -182,7 +193,9 @@ export default function ContactPage() {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Email <span className="text-red-500">*</span>
+                                            </label>
                                             <input
                                                 {...register('email', {
                                                     required: 'Email is required',
@@ -198,7 +211,9 @@ export default function ContactPage() {
 
                                     <div className="grid md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Phone *</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                Phone <span className="text-red-500">*</span>
+                                            </label>
                                             <input
                                                 {...register('phone', {
                                                     required: 'Phone is required',
@@ -212,24 +227,41 @@ export default function ContactPage() {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Subject *</label>
-                                            <select
-                                                {...register('subject', { required: 'Subject is required' })}
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                City <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                {...register('city', { required: 'City is required' })}
+                                                type="text"
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                            >
-                                                <option value="">Select subject</option>
-                                                <option value="admission">Admission Enquiry</option>
-                                                <option value="franchise">Franchise Enquiry</option>
-                                                <option value="general">General Query</option>
-                                                <option value="feedback">Feedback</option>
-                                                <option value="careers">Careers</option>
-                                            </select>
-                                            {errors.subject && <p className="text-red-500 text-sm mt-1">{errors.subject.message}</p>}
+                                                placeholder="e.g. Bengaluru"
+                                            />
+                                            {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>}
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Message *</label>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Subject <span className="text-red-500">*</span>
+                                        </label>
+                                        <select
+                                            {...register('subject', { required: 'Subject is required' })}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                        >
+                                            <option value="">Select subject</option>
+                                            <option value="admission">Admission Enquiry</option>
+                                            <option value="franchise">Franchise Enquiry</option>
+                                            <option value="general">General Query</option>
+                                            <option value="feedback">Feedback</option>
+                                            <option value="careers">Careers</option>
+                                        </select>
+                                        {errors.subject && <p className="text-red-500 text-sm mt-1">{errors.subject.message}</p>}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Message <span className="text-red-500">*</span>
+                                        </label>
                                         <textarea
                                             {...register('message', { required: 'Message is required' })}
                                             rows={6}
@@ -240,7 +272,7 @@ export default function ContactPage() {
                                     </div>
 
                                     <Button type="submit" size="lg" className="w-full">
-                                        <Send className="w-5 h-5" />
+                                        <Send className="w-5 h-5 mx-2" />
                                         Send Message
                                     </Button>
                                 </form>
@@ -248,10 +280,10 @@ export default function ContactPage() {
                         </div>
                     </div>
                 </div>
-            </section>
+            </section >
 
             {/* Careers Section */}
-            <section id="careers" className="py-20 bg-gradient-to-br from-primary-500 to-primary-600 text-white">
+            < section id="careers" className="py-20 bg-gradient-to-br from-primary-500 to-primary-600 text-white" >
                 <div className="container mx-auto px-4">
                     <div className="max-w-4xl mx-auto text-center">
                         <Briefcase className="w-16 h-16 mx-auto mb-6" />
@@ -264,7 +296,7 @@ export default function ContactPage() {
                         </Button>
                     </div>
                 </div>
-            </section>
-        </div>
+            </section >
+        </div >
     );
 }

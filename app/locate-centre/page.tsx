@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
-import { MapPin, Phone, Search, Navigation, Star, Sun } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { MapPin, Phone, Search, Navigation, Star, Sun, Facebook, Instagram, Youtube } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { slugify, cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api-client';
 
@@ -37,6 +37,11 @@ const InteractiveBubbles = () => {
 };
 
 // --- Types ---
+interface State {
+    code: string;
+    name: string;
+}
+
 interface Centre {
     id: number;
     name: string;
@@ -45,25 +50,65 @@ interface Centre {
     city: string;
     state: string;
     phone: string;
+    googleMapLink?: string;
+    socials?: {
+        facebook?: string;
+        instagram?: string;
+        twitter?: string;
+        linkedin?: string;
+        youtube?: string;
+    };
     color: string;
     borderColor: string;
-    bgColor: string; // New: Subtle background tint
+    bgColor: string;
     shape: string;
     rotate: string;
 }
 
 export default function LocateCentrePage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const cityFromUrl = searchParams.get('city');
+    const stateFromUrl = searchParams.get('state');
+
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedState, setSelectedState] = useState('');
-    const [selectedCity, setSelectedCity] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
+    // Initialize state from URL params to ensure first fetch is filtered
+    const [selectedState, setSelectedState] = useState(stateFromUrl || '');
+    const [selectedCity, setSelectedCity] = useState(cityFromUrl || '');
+
+    const [states, setStates] = useState<State[]>([]);
     const [centres, setCentres] = useState<Centre[]>([]);
+    const [allCentres, setAllCentres] = useState<Centre[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSearching, setIsSearching] = useState(false);
 
+    // Debounce search term (500ms delay)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    // Fetch states from backend
+    useEffect(() => {
+        const fetchStates = async () => {
+            try {
+                const response = await fetch(apiUrl('/franchises/state-choices/'));
+                const data = await response.json();
+                setStates(data);
+            } catch (error) {
+                console.error('Error fetching states:', error);
+            }
+        };
+        fetchStates();
+    }, []);
+
+    // Fetch franchises with filters
     useEffect(() => {
         const fetchCentres = async () => {
-            // Style presets to maintain the existing UI look
             const STYLE_PRESETS = [
                 { color: 'bg-pink-100 text-pink-600', bgColor: 'bg-pink-50/50', borderColor: 'border-pink-300', shape: 'rounded-[40%_60%_70%_30%_/_50%_60%_40%_50%]', rotate: '-rotate-1' },
                 { color: 'bg-blue-100 text-blue-600', bgColor: 'bg-blue-50/50', borderColor: 'border-blue-300', shape: 'rounded-[60%_40%_30%_70%_/_50%_40%_60%_50%]', rotate: 'rotate-1' },
@@ -76,16 +121,32 @@ export default function LocateCentrePage() {
             ];
 
             try {
-                const response = await fetch(apiUrl('/franchises/public/'));
-                if (!response.ok) {
-                    throw new Error('Failed to fetch data');
+                setIsLoading(true);
+                setIsSearching(true);
+
+                // Build query parameters
+                const queryParams = new URLSearchParams();
+                if (selectedState) queryParams.set('state', selectedState);
+                if (selectedCity) queryParams.set('city', selectedCity);
+
+                // Only search if 3+ characters or empty (show all)
+                if (debouncedSearchTerm) {
+                    if (debouncedSearchTerm.length >= 3) {
+                        queryParams.set('search', debouncedSearchTerm);
+                    }
                 }
+
+                const url = queryParams.toString()
+                    ? apiUrl(`/franchises/public/?${queryParams}`)
+                    : apiUrl('/franchises/public/');
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to fetch');
+
                 const json = await response.json();
-                const data = Array.isArray(json) ? json : json.results;
-                // 👈 THIS IS THE FIX
+                const data = Array.isArray(json) ? json : json.results || [];
 
                 const mappedCentres = data.map((item: any, index: number) => {
-
                     const style = STYLE_PRESETS[index % STYLE_PRESETS.length];
                     return {
                         id: item.id,
@@ -95,35 +156,80 @@ export default function LocateCentrePage() {
                         city: item.city,
                         state: item.state,
                         phone: item.contact_phone || item.phone,
+                        googleMapLink: item.google_map_link,
+                        socials: {
+                            facebook: item.facebook_url,
+                            instagram: item.instagram_url,
+                            twitter: item.twitter_url,
+                            linkedin: item.linkedin_url,
+                            youtube: item.youtube_url,
+                        },
                         ...style
                     };
                 });
 
                 setCentres(mappedCentres);
+                if (!searchTerm && !selectedState && !selectedCity) {
+                    setAllCentres(mappedCentres);
+                }
             } catch (error) {
                 console.error('Error fetching centres:', error);
             } finally {
                 setIsLoading(false);
+                setIsSearching(false);
             }
         };
 
         fetchCentres();
+    }, [selectedState, selectedCity, debouncedSearchTerm]);
+
+    // Handle URL parameters  
+    useEffect(() => {
+        if (stateFromUrl) setSelectedState(stateFromUrl);
+        if (cityFromUrl) setSelectedCity(cityFromUrl);
+    }, [stateFromUrl, cityFromUrl]);
+
+    const [availableLocations, setAvailableLocations] = useState<{ city_name: string, state: string }[]>([]);
+
+    // Fetch available locations for dropdowns
+    useEffect(() => {
+        const fetchLocations = async () => {
+            try {
+                const response = await fetch(apiUrl('/franchises/public/locations/'));
+                const data = await response.json();
+                setAvailableLocations(data);
+            } catch (error) {
+                console.error('Error fetching locations:', error);
+            }
+        };
+        fetchLocations();
     }, []);
 
-    const states = Array.from(new Set(centres.map(c => c.state))).sort();
-    const cities = selectedState
-        ? Array.from(new Set(centres.filter(c => c.state === selectedState).map(c => c.city))).sort()
-        : Array.from(new Set(centres.map(c => c.city))).sort();
+    // Helper to format city names (Title Case)
+    const toTitleCase = (str: string) => {
+        return str.replace(/\w\S*/g, (txt) => {
+            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+        });
+    };
 
-    const filteredCentres = centres.filter(centre => {
-        const matchesSearch = searchTerm === '' ||
-            centre.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            centre.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            centre.address.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesState = selectedState === '' || centre.state === selectedState;
-        const matchesCity = selectedCity === '' || centre.city === selectedCity;
-        return matchesSearch && matchesState && matchesCity;
-    });
+    // Get unique cities from available locations, filtered by state
+    const cities = Array.from(new Set(
+        availableLocations
+            .filter(loc => !selectedState || loc.state === selectedState)
+            .map(loc => loc.city_name)
+    )).sort();
+
+    // Handle state change - reset city
+    const handleStateChange = (newState: string) => {
+        setSelectedState(newState);
+        setSelectedCity(''); // Reset city when state changes
+    };
+
+    // Determine if any filters are active
+    const isFiltered = !!(selectedState || selectedCity || debouncedSearchTerm);
+
+    // Filtered or limited centres to display
+    const displayedCentres = isFiltered ? centres : centres.slice(0, 4);
 
     return (
         <div className="min-h-screen relative bg-slate-50 font-sans selection:bg-pink-200 overflow-x-hidden">
@@ -156,30 +262,48 @@ export default function LocateCentrePage() {
             {/* Search Filters Section */}
             <section className="relative z-20 pb-12">
                 <div className="container mx-auto px-4">
-                    {/* Irregular shape container for filters too */}
                     <div className="max-w-5xl mx-auto bg-white p-10 rounded-[50px] border-4 border-slate-100 shadow-xl relative transition-all duration-300 hover:scale-[1.01]">
                         <div className="absolute -top-6 -left-6 w-16 h-16 bg-yellow-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
                         <div className="absolute -bottom-6 -right-6 w-16 h-16 bg-pink-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
 
                         <div className="grid md:grid-cols-4 gap-6 relative z-10 items-center">
                             <div className="md:col-span-2 relative group">
-                                <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 group-hover:text-blue-500 transition-colors" />
+                                <Search className={cn(
+                                    "absolute left-5 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors",
+                                    isSearching ? "text-blue-500 animate-pulse" : "text-slate-400 group-hover:text-blue-500"
+                                )} />
                                 <input
                                     type="text"
                                     placeholder="Search by name, city, or area..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-slate-200 rounded-full text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-all shadow-sm hover:shadow-md"
+                                    className="w-full pl-12 pr-12 py-4 bg-slate-50 border-2 border-slate-200 rounded-full text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-all shadow-sm hover:shadow-md"
                                 />
+                                {searchTerm && (
+                                    <button
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-5 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
+                                        title="Clear search"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
+                                {searchTerm && searchTerm.length < 3 && (
+                                    <div className="absolute left-0 -bottom-6 text-xs text-amber-600 font-medium">
+                                        ⚠️ Type at least 3 characters to search
+                                    </div>
+                                )}
                             </div>
                             <div className="relative">
                                 <select
                                     value={selectedState}
-                                    onChange={(e) => { setSelectedState(e.target.value); setSelectedCity(''); }}
+                                    onChange={(e) => handleStateChange(e.target.value)}
                                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-200 rounded-full text-slate-700 focus:outline-none focus:border-pink-400 focus:bg-white transition-all shadow-sm hover:shadow-md appearance-none cursor-pointer"
                                 >
                                     <option value="">All States</option>
-                                    {states.map(state => <option key={state} value={state}>{state}</option>)}
+                                    {states.map(state => <option key={state.code} value={state.code}>{state.name}</option>)}
                                 </select>
                                 <div className="absolute right-5 top-1/2 transform -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
                             </div>
@@ -188,23 +312,29 @@ export default function LocateCentrePage() {
                                     value={selectedCity}
                                     onChange={(e) => setSelectedCity(e.target.value)}
                                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-200 rounded-full text-slate-700 focus:outline-none focus:border-purple-400 focus:bg-white transition-all shadow-sm hover:shadow-md appearance-none cursor-pointer"
+                                    disabled={!selectedState && cities.length === 0}
                                 >
                                     <option value="">All Cities</option>
-                                    {cities.map(city => <option key={city} value={city}>{city}</option>)}
+                                    {cities.map(city => <option key={city} value={city}>{toTitleCase(city)}</option>)}
                                 </select>
                                 <div className="absolute right-5 top-1/2 transform -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
                             </div>
                         </div>
                         <div className="mt-8 text-center">
-                            <span className="inline-block bg-slate-50 text-slate-500 px-4 py-1 rounded-full text-sm font-bold border border-slate-200">
-                                Found {filteredCentres.length} centres
+                            <span className={cn(
+                                "inline-block px-4 py-1 rounded-full text-sm font-bold border transition-all",
+                                isSearching
+                                    ? "bg-blue-50 text-blue-600 border-blue-200 animate-pulse"
+                                    : "bg-slate-50 text-slate-500 border-slate-200"
+                            )}>
+                                {isSearching ? '🔍 Searching...' : `Found ${centres.length} centre${centres.length !== 1 ? 's' : ''}`}
                             </span>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Results Grid - ENHANCED BLOB CARDS */}
+            {/* Results Grid */}
             <section className="py-12 relative z-10">
                 <div className="container mx-auto px-4">
                     <div className="max-w-6xl mx-auto">
@@ -212,26 +342,20 @@ export default function LocateCentrePage() {
                             <div className="flex justify-center items-center py-20 min-h-[300px]">
                                 <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-pink-400"></div>
                             </div>
-                        ) : filteredCentres.length > 0 ? (
+                        ) : displayedCentres.length > 0 ? (
                             <div className="grid md:grid-cols-2 gap-10 lg:gap-14">
-                                {filteredCentres.map((centre) => (
+                                {displayedCentres.map((centre) => (
                                     <div
                                         key={centre.id}
                                         onClick={() => router.push(`/locations/${encodeURIComponent(centre.city)}/${centre.slug ?? slugify(centre.name)}`)}
                                         className={`group relative transition-all duration-300 transform ${centre.rotate} hover:scale-[1.03] hover:z-20 cursor-pointer`}
                                     >
-
-                                        {/* Colored Shadow Blob (behind) - Now slightly stronger */}
                                         <div className={`absolute top-3 left-3 right-0 bottom-0 ${centre.color.split(' ')[0].replace('100', '200')} ${centre.shape} opacity-100 -z-10 transition-transform duration-300 group-hover:translate-x-1 group-hover:translate-y-1`}></div>
-
-                                        {/* Main Card - Fun Shape with Background Tint & Thicker Border */}
                                         <div className={`relative ${centre.bgColor} ${centre.shape} p-10 md:p-14 shadow-sm border-[4px] ${centre.borderColor} h-full flex flex-col justify-center min-h-[260px]`}>
                                             <div className="flex items-start gap-6">
-                                                {/* Icon Bubble */}
                                                 <div className={`w-16 h-16 bg-white rounded-full flex items-center justify-center flex-shrink-0 shadow-sm group-hover:rotate-12 transition-transform duration-500 border-2 ${centre.borderColor}`}>
                                                     <MapPin className={`w-8 h-8 ${centre.color.split(' ')[1]}`} />
                                                 </div>
-
                                                 <div className="flex-1 min-w-0 pt-1">
                                                     <h3 className="font-display font-black text-2xl mb-2 text-slate-800 group-hover:text-pink-600 transition-colors break-words leading-tight">
                                                         {centre.name}
@@ -239,25 +363,43 @@ export default function LocateCentrePage() {
                                                     <p className="text-slate-600 font-medium text-base mb-3 leading-relaxed break-words">
                                                         {centre.address}
                                                     </p>
-
                                                     <div className="flex items-center gap-2 mb-5 flex-wrap">
                                                         <span className="bg-white/80 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide border border-white/50 shadow-sm">
                                                             {centre.city}
                                                         </span>
-                                                        <span className="text-slate-400 text-xs">•</span>
-                                                        <span className="text-slate-500 text-xs font-bold uppercase tracking-wide">
-                                                            {centre.state}
-                                                        </span>
                                                     </div>
-
-                                                    <a
-                                                        href={`tel:${centre.phone}`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="inline-flex items-center gap-2 bg-slate-800 text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-slate-700 transition-all shadow-md hover:shadow-lg whitespace-nowrap group-hover:scale-105"
-                                                    >
-                                                        <Phone className="w-4 h-4" />
-                                                        {centre.phone}
-                                                    </a>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <a
+                                                            href={`tel:${centre.phone}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="inline-flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-slate-700 transition-all shadow-md hover:shadow-lg whitespace-nowrap group-hover:scale-105"
+                                                        >
+                                                            <Phone className="w-3.5 h-3.5" />
+                                                            call
+                                                        </a>
+                                                        {centre.googleMapLink && (
+                                                            <a
+                                                                href={centre.googleMapLink}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-full text-xs font-bold hover:bg-blue-100 transition-all shadow-sm hover:shadow-md whitespace-nowrap group-hover:scale-105"
+                                                            >
+                                                                <MapPin className="w-3.5 h-3.5" />
+                                                                Map
+                                                            </a>
+                                                        )}
+                                                        {/* Socials */}
+                                                        {centre.socials?.facebook && (
+                                                            <a href={centre.socials.facebook} target="_blank" onClick={(e) => e.stopPropagation()} className="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition"><Facebook className="w-4 h-4" /></a>
+                                                        )}
+                                                        {centre.socials?.instagram && (
+                                                            <a href={centre.socials.instagram} target="_blank" onClick={(e) => e.stopPropagation()} className="p-2 bg-pink-50 text-pink-600 rounded-full hover:bg-pink-100 transition"><Instagram className="w-4 h-4" /></a>
+                                                        )}
+                                                        {centre.socials?.youtube && (
+                                                            <a href={centre.socials.youtube} target="_blank" onClick={(e) => e.stopPropagation()} className="p-2 bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition"><Youtube className="w-4 h-4" /></a>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -275,7 +417,7 @@ export default function LocateCentrePage() {
                         )}
                     </div>
                 </div>
-            </section>
-        </div>
+            </section >
+        </div >
     );
 }

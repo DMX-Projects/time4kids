@@ -33,6 +33,7 @@ const Footer = () => {
                                 src="/logo.jpg"
                                 alt="Time Kids Logo"
                                 fill
+                                sizes="160px"
                                 className="object-contain object-left"
                             />
                         </div>

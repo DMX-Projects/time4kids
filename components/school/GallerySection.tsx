@@ -1,101 +1,88 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
+import { Play, Hand, Clock, ArrowLeft, Calendar, MapPin, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand } from 'lucide-react';
-import { SERVER_URL, mediaUrl } from '@/lib/api-client';
+import { mediaUrl } from '@/lib/api-client';
 
 interface MediaItem {
     id: number;
     file: string;
-    media_type: 'image' | 'video';
+    media_type: 'IMAGE' | 'VIDEO';
     caption: string;
 }
 
-interface EventGroup {
+interface EventItem {
+    id: number;
     title: string;
+    description: string;
+    start_date: string;
+    year: number;
     media: MediaItem[];
 }
 
-export default function MediaPage() {
-    const [events, setEvents] = useState<EventGroup[]>([]);
-    const [selectedEvent, setSelectedEvent] = useState<EventGroup | null>(null);
-    const [filterMediaType, setFilterMediaType] = useState<'all' | 'image' | 'video'>('all');
-    const [loading, setLoading] = useState(true);
+// Fallback for old gallery items if needed, though we prioritize events
+interface OldGalleryItem {
+    id: number;
+    media_type: 'photo' | 'video';
+    title: string;
+    image: string;
+    video_link?: string;
+    academic_year: string;
+    event_category: string;
+    created_at: string;
+}
 
-    // Fetch media from API and group by title
-    useEffect(() => {
-        const fetchMedia = async () => {
-            try {
-                console.log('🎬 Fetching media from API...');
-                const res = await fetch(`${SERVER_URL}/api/media/`);
+interface GallerySectionProps {
+    schoolName: string;
+    city: string;
+    galleryItems?: OldGalleryItem[];
+    events?: EventItem[];
+}
 
-                if (!res.ok) throw new Error('Failed to fetch media');
+export default function GallerySection({ schoolName, city, galleryItems = [], events = [] }: GallerySectionProps) {
+    // Debug logging to verify data
+    console.log('🎨 GallerySection Debug:', {
+        schoolName,
+        city,
+        eventsCount: events.length,
+        events: events.map(e => ({
+            id: e.id,
+            title: e.title,
+            mediaCount: e.media?.length || 0,
+            mediaItems: e.media
+        })),
+        galleryItemsCount: galleryItems.length
+    });
 
-                const data = await res.json();
-                const results = Array.isArray(data) ? data : data.results || [];
+    const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+    const [filterYear, setFilterYear] = useState<string>('');
+    const [filterMediaType, setFilterMediaType] = useState<'all' | 'IMAGE' | 'VIDEO'>('all');
 
-                console.log('📦 Fetched media items:', results.length);
+    // Extract Years from Events
+    const eventYears = useMemo(() => {
+        const years = new Set(events.map(e => e.year || new Date(e.start_date).getFullYear()));
+        return Array.from(years).sort().reverse();
+    }, [events]);
 
-                // Group media by extracting event name from title
-                // e.g., "anuall day - 1" -> event: "Annual Day"
-                const groupedEvents: { [key: string]: MediaItem[] } = {};
+    // Filter Events by Year
+    const filteredEvents = useMemo(() => {
+        if (!filterYear) return events;
+        return events.filter(e => (e.year || new Date(e.start_date).getFullYear()).toString() === filterYear);
+    }, [events, filterYear]);
 
-                results.forEach((item: any) => {
-                    // Extract event name from title (before the dash)
-                    const eventMatch = item.title.match(/^(.+?)\s*-\s*\d+$/);
-                    const eventName = eventMatch
-                        ? eventMatch[1].trim()
-                        : item.title;
-
-                    // Capitalize event name properly
-                    const formattedEventName = eventName
-                        .split(' ')
-                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                        .join(' ');
-
-                    if (!groupedEvents[formattedEventName]) {
-                        groupedEvents[formattedEventName] = [];
-                    }
-
-                    groupedEvents[formattedEventName].push({
-                        id: item.id,
-                        file: item.file,
-                        media_type: item.media_type,
-                        caption: item.title,
-                    });
-                });
-
-                // Convert to array of EventGroup
-                const eventGroups: EventGroup[] = Object.entries(groupedEvents).map(([title, media]) => ({
-                    title,
-                    media
-                }));
-
-                console.log('✅ Grouped into events:', eventGroups);
-                setEvents(eventGroups);
-                setLoading(false);
-            } catch (error) {
-                console.error('❌ Error loading media:', error);
-                setLoading(false);
-            }
-        };
-
-        fetchMedia();
-    }, []);
-
-    // Filter media within selected event
+    // Filter Media within Selected Event
     const filteredMedia = useMemo(() => {
         if (!selectedEvent) return [];
         if (filterMediaType === 'all') return selectedEvent.media;
         return selectedEvent.media.filter(m => m.media_type === filterMediaType);
     }, [selectedEvent, filterMediaType]);
 
-    const handleEventClick = (event: EventGroup) => {
+    const handleEventClick = (event: EventItem) => {
         console.log('📸 Event clicked:', event);
         setSelectedEvent(event);
-        setFilterMediaType('all');
+        setFilterMediaType('all'); // Reset media filter when opening an event
     };
 
     const handleBackToEvents = () => {
@@ -103,11 +90,58 @@ export default function MediaPage() {
     };
 
     const handleMediaClick = (item: MediaItem) => {
+        // Simple open in new tab for now, lightbox could be added later
         window.open(mediaUrl(item.file), '_blank');
     };
 
     return (
-        <div className="bg-[#FFFAF5] min-h-screen pt-32 pb-20">
+        <section id="gallery" className="py-16 bg-white scroll-mt-24 font-fredoka">
+            <style jsx global>{`
+                @keyframes shimmer {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+
+                .wavy-card {
+                    --s: 10px;
+                    padding: var(--s);
+                    border: var(--s) solid transparent;
+                    background: linear-gradient(45deg, #CD8C52, #FFD700, #F4A460, #8B4513, #CD8C52);
+                    background-size: 300% 300%;
+                    animation: shimmer 4s ease infinite;
+                    border-radius: calc(2 * var(--s));
+                    mask:
+                        linear-gradient(#fff 0 0) content-box,
+                        conic-gradient(#fff 0 0) padding-box; 
+                    -webkit-mask:
+                         linear-gradient(#fff 0 0) content-box,
+                        conic-gradient(#fff 0 0) padding-box;
+                    
+                    /* Note: The complex wavy mask from previous CSS might need checking. 
+                       Simplifying to a border gradient for robustness first, or reusing if proven works.
+                       Let's stick to a cleaner card style for events 
+                    */
+                    position: relative;
+                    overflow: hidden;
+                    transition: transform 0.3s ease;
+                }
+                
+                .event-card {
+                    background: white;
+                    border-radius: 20px;
+                    overflow: hidden;
+                    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+                    transition: all 0.3s ease;
+                    border: 2px solid #fff;
+                }
+                
+                .event-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                    border-color: #ffd700;
+                }
+            `}</style>
             <div className="container mx-auto px-4">
                 <div className="text-center mb-10">
                     <div className="flex items-center justify-center gap-3 mb-4">
@@ -116,14 +150,27 @@ export default function MediaPage() {
                             Gallery
                         </span>
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-bold text-[#003366] mb-4 font-luckiest tracking-wider drop-shadow-sm">
-                        {selectedEvent ? selectedEvent.title : (
-                            <>Our <span className="text-[#ef5f5f]">Gallery</span></>
-                        )}
-                    </h1>
-                    <p className="text-xl text-gray-500 max-w-2xl mx-auto font-medium italic">
-                        Capturing the smiles, learning, and unforgettable moments at T.I.M.E. Kids.
-                    </p>
+                    <h2 className="text-4xl md:text-6xl font-black text-gray-900 mb-6">
+                        {selectedEvent ? selectedEvent.title : `Life at ${schoolName}`}
+                    </h2>
+
+                    {!selectedEvent && (
+                        <div className="flex justify-center max-w-xs mx-auto">
+                            <div className="relative w-full">
+                                <select
+                                    value={filterYear}
+                                    onChange={(e) => setFilterYear(e.target.value)}
+                                    className="w-full appearance-none bg-white border-2 border-gray-100 text-gray-700 py-3 px-6 pr-10 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 font-bold text-base cursor-pointer hover:border-yellow-200 transition-colors"
+                                >
+                                    <option value="">All Years</option>
+                                    {eventYears.map(year => <option key={year} value={year}>{year}</option>)}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                    <Clock className="w-5 h-5" />
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -137,16 +184,12 @@ export default function MediaPage() {
                             transition={{ duration: 0.3 }}
                             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
                         >
-                            {loading ? (
-                                <div className="col-span-full text-center py-20">
-                                    <p className="text-gray-500 text-lg font-bold">Loading events...</p>
-                                </div>
-                            ) : events.length > 0 ? (
-                                events.map((event, index) => (
+                            {filteredEvents.length > 0 ? (
+                                filteredEvents.map((event) => (
                                     <div
-                                        key={index}
+                                        key={event.id}
                                         onClick={() => handleEventClick(event)}
-                                        className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer group border-2 border-transparent hover:border-[#fbd267]"
+                                        className="event-card group cursor-pointer h-full flex flex-col"
                                     >
                                         {/* Event Thumbnail (First Media Item) */}
                                         <div className="relative h-56 w-full overflow-hidden bg-gray-100">
@@ -159,22 +202,31 @@ export default function MediaPage() {
                                                 />
                                             ) : (
                                                 <div className="flex items-center justify-center h-full text-gray-300">
-                                                    <ImageIcon size={48} />
+                                                    <ImageIcon size={48} className="lucide-image" />
                                                 </div>
                                             )}
                                             <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-700 shadow-sm flex items-center gap-1">
-                                                <ImageIcon size={14} />
+                                                <ImageIcon size={14} className="lucide-image w-3.5 h-3.5" />
                                                 {event.media?.length || 0} Items
                                             </div>
                                         </div>
 
                                         {/* Event Details */}
-                                        <div className="p-6">
-                                            <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-[#ef5f5f] transition-colors">
+                                        <div className="p-6 flex-grow flex flex-col">
+                                            <div className="flex items-center gap-2 text-sm text-yellow-600 font-bold mb-3 uppercase tracking-wider">
+                                                <Calendar className="w-4 h-4" />
+                                                {new Date(event.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </div>
+                                            <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">
                                                 {event.title}
                                             </h3>
-                                            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                                                <span className="text-[#003366] font-bold text-sm group-hover:translate-x-1 transition-transform inline-flex items-center ml-auto">
+                                            {event.description && (
+                                                <p className="text-gray-500 text-sm line-clamp-2 mb-4 leading-relaxed font-medium">
+                                                    {event.description}
+                                                </p>
+                                            )}
+                                            <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+                                                <span className="text-blue-500 font-bold text-sm group-hover:translate-x-1 transition-transform inline-flex items-center ml-auto">
                                                     View Gallery <ArrowLeft className="w-4 h-4 rotate-180 ml-1" />
                                                 </span>
                                             </div>
@@ -184,7 +236,7 @@ export default function MediaPage() {
                             ) : (
                                 <div className="col-span-full text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
                                     <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                    <p className="text-gray-500 text-lg font-bold">No events found.</p>
+                                    <p className="text-gray-500 text-lg font-bold">No events found for the selected year.</p>
                                 </div>
                             )}
                         </motion.div>
@@ -214,14 +266,14 @@ export default function MediaPage() {
                                         All
                                     </button>
                                     <button
-                                        onClick={() => setFilterMediaType('image')}
-                                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${filterMediaType === 'image' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        onClick={() => setFilterMediaType('IMAGE')}
+                                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${filterMediaType === 'IMAGE' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
                                         Photos
                                     </button>
                                     <button
-                                        onClick={() => setFilterMediaType('video')}
-                                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${filterMediaType === 'video' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        onClick={() => setFilterMediaType('VIDEO')}
+                                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${filterMediaType === 'VIDEO' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
                                         Videos
                                     </button>
@@ -247,7 +299,7 @@ export default function MediaPage() {
                                                 className="object-cover transition-transform duration-700 group-hover:scale-110"
                                                 sizes="(max-width: 768px) 50vw, 33vw"
                                             />
-                                            {item.media_type === 'video' && (
+                                            {item.media_type === 'VIDEO' && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
                                                     <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                                                         <Play className="w-5 h-5 text-red-600 fill-current translate-x-0.5" />
@@ -266,6 +318,6 @@ export default function MediaPage() {
                     )}
                 </AnimatePresence>
             </div>
-        </div>
+        </section>
     );
 }

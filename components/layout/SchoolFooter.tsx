@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Phone, Mail, MessageCircle, ArrowLeft } from 'lucide-react';
+import { Phone, Mail, Instagram, Facebook, Twitter, ArrowLeft, ArrowRight, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface SchoolFooterProps {
@@ -12,123 +12,226 @@ interface SchoolFooterProps {
 
 const SchoolFooter = ({ homeUrl }: SchoolFooterProps) => {
     const homeLink = homeUrl || '/';
+    const currentYear = new Date().getFullYear();
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1, delayChildren: 0.3 }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: { type: 'spring', stiffness: 100 }
+        }
+    };
+
     return (
-        <footer className="relative w-full overflow-hidden bg-white mt-12">
-            {/* Back to Main Site Navigation - Kept above the visual elements */}
-            <div className="flex justify-center pb-12 bg-white relative z-10">
-                <Link
-                    href="/"
-                    data-no-loader="true"
-                    className="group flex items-center space-x-2 px-6 py-3 bg-white border-2 border-green-500 rounded-full text-green-700 font-bold max-w-xs hover:bg-green-50 transition-all hover:scale-105 active:scale-95 shadow-md"
-                >
-                    <div className="bg-green-100 p-1.5 rounded-full">
-                        <ArrowLeft className="w-4 h-4 text-green-700" />
-                    </div>
-                    <span>Back to Main Site</span>
-                </Link>
-            </div>
+        <footer className="relative w-full bg-[#fff9f0] mt-32 font-fredoka">
 
-            {/* Grass Top Decoration */}
-            <div className="absolute top-[80px] left-0 w-full h-[60px] z-10">
-                {/* Repeating Grass SVG pattern */}
-                <div className="w-full h-full" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320' preserveAspectRatio='none'%3E%3Cpath fill='%234ade80' fill-opacity='1' d='M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,250.7C960,235,1056,181,1152,165.3C1248,149,1344,171,1392,181.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E")`,
-                    backgroundSize: '100% 100%',
-                    backgroundPosition: 'bottom',
-                    backgroundRepeat: 'no-repeat'
-                }}></div>
-            </div>
-
-            {/* Main Footer Body with Gradient (Grass Green to Soil Brown) */}
-            <div className="bg-gradient-to-b from-green-500 via-[#689f38] to-[#5d4037] text-white pt-32 pb-12 px-6 relative">
-                {/* Visual Grass Top Overlay (extra layer for depth if needed, or just rely on gradient) */}
-
-                <div className="container mx-auto max-w-7xl relative z-20">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-
-                        {/* About Us Section */}
-                        <div className="space-y-4">
-                            <h3 className="font-fredoka text-3xl font-bold text-yellow-300 drop-shadow-sm">About us</h3>
-                            <p className="text-sm leading-relaxed text-white font-medium opacity-90">
-                                A good school plays an important role in the development of a child. It&apos;s the light that helps us choose the right path in the various walks of life. I am glad that I found T.I.M.E. Kids for my daughter. In just three months there has been a lot of development in Nandika, especially with respect to her linguistic skills and social skills. I like the way kids are handled and education is imparted at T.I.M.E. Kids. Thanks to all the wonderful teachers for enabling such remarkable change in my child.
-                            </p>
-                        </div>
-
-                        {/* Quick Links Section */}
-                        <div className="space-y-4 md:pl-12">
-                            <h3 className="font-fredoka text-3xl font-bold text-yellow-300 drop-shadow-sm">Quick Links</h3>
-                            <ul className="grid grid-cols-1 gap-2 font-bold text-base">
-                                <li><Link href={homeLink} className="hover:text-yellow-200 transition-colors">Home</Link></li>
-                                <li><Link href="/about" className="hover:text-yellow-200 transition-colors">About us</Link></li>
-                                <li><Link href="/admission" className="hover:text-yellow-200 transition-colors">Admissions</Link></li>
-                                <li><Link href="/programs" className="hover:text-yellow-200 transition-colors">Classes</Link></li>
-                                <li><Link href="/gallery" className="hover:text-yellow-200 transition-colors">Gallery</Link></li>
-                                <li><Link href="/contact" className="hover:text-yellow-200 transition-colors">Contact us</Link></li>
-                            </ul>
-                        </div>
-
-                        {/* Questions Section */}
-                        <div className="space-y-6">
-                            <h3 className="font-fredoka text-3xl font-bold text-yellow-300 drop-shadow-sm">Questions?</h3>
-                            <div className="space-y-4">
-                                <div className="flex items-center space-x-3">
-                                    <MessageCircle className="w-6 h-6 text-yellow-300" />
-                                    <a href="tel:+919999488885" className="text-xl font-bold hover:text-yellow-200 transition-colors">+91 99994 88885</a>
-                                </div>
-                                <div className="flex items-center space-x-3">
-                                    <Mail className="w-6 h-6 text-yellow-300" />
-                                    <a href="mailto:timekids.hyd@gmail.com" className="text-lg font-bold hover:text-yellow-200 transition-colors truncate">timekids.hyd@gmail.com</a>
-                                </div>
-                            </div>
-
-                            {/* Logo */}
-                            <div className="pt-4">
-                                <Link href={homeLink}>
-                                    <div className="bg-white p-4 rounded-xl inline-block shadow-lg -rotate-2 hover:rotate-0 transition-transform duration-300">
-                                        <div className="relative w-40 h-10">
-                                            <Image
-                                                src="/logo.jpg"
-                                                alt="Time Kids Logo"
-                                                fill
-                                                className="object-contain"
-                                            />
-                                        </div>
-                                        <p className="text-[10px] text-gray-800 font-bold mt-1 text-center italic">The pre-school that cares</p>
-                                    </div>
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Bottom Wavy Edge (Sand/White) - Animated */}
-            <div className="relative w-full h-auto bg-[#5d4037] overflow-hidden">
+            {/* Animated Scrolling Waves - Top Decoration */}
+            <div className="absolute top-[-50px] left-0 w-full h-[50px] overflow-hidden leading-none rotate-180 z-10">
+                {/* Background Wave (Orange Accent) */}
                 <motion.div
-                    className="flex w-[200%]"
-                    animate={{ x: ["-50%", "0%"] }}
-                    transition={{
-                        repeat: Infinity,
-                        duration: 20,
-                        ease: "linear"
-                    }}
+                    className="absolute top-0 left-0 flex w-[200%] h-full opacity-40 z-0"
+                    animate={{ x: ["0%", "-50%"] }}
+                    transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
                 >
-                    <svg viewBox="0 0 1440 50" className="w-1/2 h-auto block" preserveAspectRatio="none">
-                        <path fill="#ffffff" fillOpacity="1" d="M0,30 C30,10 50,10 80,30 C110,50 130,50 160,30 C190,10 210,10 240,30 C270,50 290,50 320,30 C350,10 370,10 400,30 C430,50 450,50 480,30 C510,10 530,10 560,30 C590,50 610,50 640,30 C670,10 690,10 720,30 C750,50 770,50 800,30 C830,10 850,10 880,30 C910,50 930,50 960,30 C990,10 1010,10 1040,30 C1070,50 1090,50 1120,30 C1150,10 1170,10 1200,30 C1230,50 1250,50 1280,30 C1310,10 1330,10 1360,30 C1390,50 1410,50 1440,30 L1440,50 L0,50 Z"></path>
+                    <svg viewBox="0 0 1440 50" className="w-1/2 h-full block" preserveAspectRatio="none">
+                        <path fill="#fb923c" fillOpacity="1" d="M0,30 C30,10 50,10 80,30 C110,50 130,50 160,30 C190,10 210,10 240,30 C270,50 290,50 320,30 C350,10 370,10 400,30 C430,50 450,50 480,30 C510,10 530,10 560,30 C590,50 610,50 640,30 C670,10 690,10 720,30 C750,50 770,50 800,30 C830,10 850,10 880,30 C910,50 930,50 960,30 C990,10 1010,10 1040,30 C1070,50 1090,50 1120,30 C1150,10 1170,10 1200,30 C1230,50 1250,50 1280,30 C1310,10 1330,10 1360,30 C1390,50 1410,50 1440,30 L1440,50 L0,50 Z"></path>
                     </svg>
-                    <svg viewBox="0 0 1440 50" className="w-1/2 h-auto block" preserveAspectRatio="none">
-                        <path fill="#ffffff" fillOpacity="1" d="M0,30 C30,10 50,10 80,30 C110,50 130,50 160,30 C190,10 210,10 240,30 C270,50 290,50 320,30 C350,10 370,10 400,30 C430,50 450,50 480,30 C510,10 530,10 560,30 C590,50 610,50 640,30 C670,10 690,10 720,30 C750,50 770,50 800,30 C830,10 850,10 880,30 C910,50 930,50 960,30 C990,10 1010,10 1040,30 C1070,50 1090,50 1120,30 C1150,10 1170,10 1200,30 C1230,50 1250,50 1280,30 C1310,10 1330,10 1360,30 C1390,50 1410,50 1440,30 L1440,50 L0,50 Z"></path>
+                    <svg viewBox="0 0 1440 50" className="w-1/2 h-full block" preserveAspectRatio="none">
+                        <path fill="#fb923c" fillOpacity="1" d="M0,30 C30,10 50,10 80,30 C110,50 130,50 160,30 C190,10 210,10 240,30 C270,50 290,50 320,30 C350,10 370,10 400,30 C430,50 450,50 480,30 C510,10 530,10 560,30 C590,50 610,50 640,30 C670,10 690,10 720,30 C750,50 770,50 800,30 C830,10 850,10 880,30 C910,50 930,50 960,30 C990,10 1010,10 1040,30 C1070,50 1090,50 1120,30 C1150,10 1170,10 1200,30 C1230,50 1250,50 1280,30 C1310,10 1330,10 1360,30 C1390,50 1410,50 1440,30 L1440,50 L0,50 Z"></path>
+                    </svg>
+                </motion.div>
+
+                {/* Foreground Wave (Footer Color) */}
+                <motion.div
+                    className="absolute top-0 left-0 flex w-[200%] h-full z-10"
+                    animate={{ x: ["-50%", "0%"] }}
+                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                >
+                    <svg viewBox="0 0 1440 50" className="w-1/2 h-full block" preserveAspectRatio="none">
+                        <path fill="#fff9f0" fillOpacity="1" d="M0,30 C30,10 50,10 80,30 C110,50 130,50 160,30 C190,10 210,10 240,30 C270,50 290,50 320,30 C350,10 370,10 400,30 C430,50 450,50 480,30 C510,10 530,10 560,30 C590,50 610,50 640,30 C670,10 690,10 720,30 C750,50 770,50 800,30 C830,10 850,10 880,30 C910,50 930,50 960,30 C990,10 1010,10 1040,30 C1070,50 1090,50 1120,30 C1150,10 1170,10 1200,30 C1230,50 1250,50 1280,30 C1310,10 1330,10 1360,30 C1390,50 1410,50 1440,30 L1440,50 L0,50 Z"></path>
+                    </svg>
+                    <svg viewBox="0 0 1440 50" className="w-1/2 h-full block" preserveAspectRatio="none">
+                        <path fill="#fff9f0" fillOpacity="1" d="M0,30 C30,10 50,10 80,30 C110,50 130,50 160,30 C190,10 210,10 240,30 C270,50 290,50 320,30 C350,10 370,10 400,30 C430,50 450,50 480,30 C510,10 530,10 560,30 C590,50 610,50 640,30 C670,10 690,10 720,30 C750,50 770,50 800,30 C830,10 850,10 880,30 C910,50 930,50 960,30 C990,10 1010,10 1040,30 C1070,50 1090,50 1120,30 C1150,10 1170,10 1200,30 C1230,50 1250,50 1280,30 C1310,10 1330,10 1360,30 C1390,50 1410,50 1440,30 L1440,50 L0,50 Z"></path>
                     </svg>
                 </motion.div>
             </div>
 
-            {/* Bottom Copyright Bar */}
-            <div className="bg-white py-4 text-center">
-                <p className="text-[10px] md:text-sm font-bold text-gray-500 tracking-wider">
-                    © {new Date().getFullYear()} ALL RIGHTS RESERVED T.I.M.E. (TRIUMPHANT INSTITUTE OF MANAGEMENT EDUCATION PVT. LTD.)
-                </p>
+            {/* Floating Back Button */}
+            <div className="absolute top-[-24px] left-0 w-full flex justify-center z-20">
+                <motion.div
+                    initial={{ y: -50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 1, type: "spring" }}
+                >
+                    <Link
+                        href="/"
+                        className="group flex items-center gap-2 px-8 py-3 bg-white border-2 border-orange-100 rounded-full text-orange-600 font-bold text-sm shadow-lg hover:shadow-orange-200/50 hover:-translate-y-1 transition-all active:scale-95"
+                    >
+                        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                        <span>Back to Main Site</span>
+                    </Link>
+                </motion.div>
             </div>
 
+            {/* Decorative Background Elements */}
+            <div className="absolute top-40 right-10 w-32 h-32 bg-yellow-200/40 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-20 left-10 w-40 h-40 bg-pink-200/40 rounded-full blur-3xl animate-pulse delay-700"></div>
+
+
+            <div className="relative pt-16 pb-12">
+                <div className="container mx-auto px-6 lg:px-8 relative z-10">
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                        className="grid grid-cols-1 lg:grid-cols-4 gap-12 lg:gap-8"
+                    >
+
+                        {/* Brand Column */}
+                        <motion.div variants={itemVariants} className="lg:col-span-1 space-y-6">
+                            <Link href={homeLink} className="inline-block bg-white p-4 rounded-3xl shadow-sm rotate-[-2deg] hover:rotate-0 transition-transform duration-300 border-2 border-orange-50">
+                                <div className="relative w-40 h-14">
+                                    <Image
+                                        src="/logo.jpg"
+                                        alt="T.I.M.E. Kids Logo"
+                                        fill
+                                        sizes="160px"
+                                        className="object-contain"
+                                    />
+                                </div>
+                            </Link>
+                            <p className="text-gray-600 text-base leading-relaxed font-medium max-w-sm">
+                                Empowering young minds with broadly based, age-appropriate, and wholesome education. We care for your child's future.
+                            </p>
+                            <div className="flex gap-4 pt-2">
+                                {[Facebook, Instagram, Twitter].map((Icon, i) => (
+                                    <motion.a
+                                        key={i}
+                                        href="#"
+                                        whileHover={{ y: -5, scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className={`w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-400 hover:text-white shadow-sm transition-colors border-2 border-gray-100
+                                            ${i === 0 ? 'hover:bg-[#1877F2] hover:border-[#1877F2]' : ''}
+                                            ${i === 1 ? 'hover:bg-[#E4405F] hover:border-[#E4405F]' : ''}
+                                            ${i === 2 ? 'hover:bg-[#1DA1F2] hover:border-[#1DA1F2]' : ''}
+                                        `}
+                                    >
+                                        <Icon size={20} />
+                                    </motion.a>
+                                ))}
+                            </div>
+                        </motion.div>
+
+                        {/* Quick Links */}
+                        <motion.div variants={itemVariants} className="lg:col-span-1 lg:pl-8">
+                            <h4 className="text-2xl font-bold text-orange-500 mb-6 drop-shadow-sm">Quick Links</h4>
+                            <ul className="space-y-4">
+                                {[
+                                    { name: 'Home', href: '#home' },
+                                    { name: 'About Us', href: '#about' },
+                                    { name: 'Classes', href: '#programs' },
+                                    { name: 'Admission', href: '#admission' },
+                                    { name: 'Gallery', href: '#gallery' },
+                                ].map((link) => (
+                                    <li key={link.name}>
+                                        <Link
+                                            href={link.href}
+                                            className="text-gray-600 hover:text-orange-500 font-bold text-base flex items-center group transition-colors"
+                                        >
+                                            <ArrowRight className="w-4 h-4 mr-2 text-orange-300 group-hover:text-orange-500 group-hover:translate-x-1 transition-all" />
+                                            {link.name}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </motion.div>
+
+                        {/* Programs */}
+                        <motion.div variants={itemVariants} className="lg:col-span-1">
+                            <h4 className="text-2xl font-bold text-green-500 mb-6 drop-shadow-sm">Our Programs</h4>
+                            <ul className="space-y-3">
+                                {[
+                                    { name: 'Play Group', color: 'bg-pink-100 text-pink-600' },
+                                    { name: 'Nursery', color: 'bg-purple-100 text-purple-600' },
+                                    { name: 'Pre-Primary I', color: 'bg-blue-100 text-blue-600' },
+                                    { name: 'Pre-Primary II', color: 'bg-green-100 text-green-600' },
+                                    { name: 'Day Care', color: 'bg-yellow-100 text-yellow-600' }
+                                ].map((item) => (
+                                    <li key={item.name} className="flex items-center gap-3 group cursor-default">
+                                        <span className={`w-8 h-8 rounded-lg ${item.color} flex items-center justify-center text-xs font-black shadow-sm group-hover:scale-110 transition-transform`}>
+                                            {item.name[0]}
+                                        </span>
+                                        <span className="text-gray-600 font-bold group-hover:text-gray-900 transition-colors">{item.name}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </motion.div>
+
+                        {/* Contact Preview */}
+                        <motion.div variants={itemVariants} className="lg:col-span-1">
+                            <h4 className="text-2xl font-bold text-blue-500 mb-6 drop-shadow-sm">Get in Touch</h4>
+                            <div className="space-y-6">
+                                <motion.a
+                                    whileHover={{ scale: 1.02 }}
+                                    href="tel:+919999488885"
+                                    className="flex items-center gap-4 group bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:border-green-200 hover:shadow-md transition-all"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors flex-shrink-0 shadow-inner">
+                                        <Phone size={20} className="fill-current" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 font-black uppercase tracking-wider mb-0.5">Phone</p>
+                                        <p className="text-gray-800 font-bold group-hover:text-green-600 transition-colors md:text-lg">+91 99994 88885</p>
+                                    </div>
+                                </motion.a>
+
+                                <motion.a
+                                    whileHover={{ scale: 1.02 }}
+                                    href="mailto:info@timekidspreschools.in"
+                                    className="flex items-center gap-4 group bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors flex-shrink-0 shadow-inner">
+                                        <Mail size={20} className="fill-current" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 font-black uppercase tracking-wider mb-0.5">Email</p>
+                                        <p className="text-gray-800 font-bold group-hover:text-blue-600 transition-colors break-all">info@timekidspreschools.in</p>
+                                    </div>
+                                </motion.a>
+                            </div>
+                        </motion.div>
+
+                    </motion.div>
+                </div>
+            </div>
+
+            {/* Copyright Bar style */}
+            <div className="bg-white border-t-2 border-dashed border-gray-200 py-8 relative z-10">
+                <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p className="text-sm font-bold text-gray-400 flex items-center gap-2">
+                        <span>© {currentYear} T.I.M.E. Kids</span>
+                        <Heart className="w-4 h-4 text-red-400 fill-current animate-pulse" />
+                        <span>All Rights Reserved.</span>
+                    </p>
+                    <div className="flex gap-6">
+                        <Link href="/privacy" className="text-sm font-bold text-gray-400 hover:text-orange-500 transition-colors underline decoration-dotted underline-offset-4">Privacy Policy</Link>
+                        <Link href="/terms" className="text-sm font-bold text-gray-400 hover:text-orange-500 transition-colors underline decoration-dotted underline-offset-4">Terms of Use</Link>
+                    </div>
+                </div>
+            </div>
+
+            {/* Rainbow Bottom Bar */}
+            <div className="h-3 w-full bg-gradient-to-r from-[#fc5c7d] via-[#6a82fb] to-[#38ef7d]"></div>
         </footer>
     );
 };

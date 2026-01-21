@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { apiUrl } from '@/lib/api-client';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -11,16 +12,66 @@ if (typeof window !== 'undefined') {
 const CountUpSection = () => {
     const sectionRef = useRef<HTMLElement>(null);
     const countersRef = useRef<HTMLDivElement>(null);
+    const [bubbles, setBubbles] = useState<{ id: number; style: React.CSSProperties }[]>([]);
+
+    const [dynamicStats, setDynamicStats] = useState({
+        total_schools: 0,
+        total_cities: 0,
+        total_students: 50000
+    });
+    const [isLoaded, setIsLoaded] = useState(false);
 
     const stats = [
-        { label: 'Schools', value: 350, color: 'text-[#003366]' },
-        { label: 'Cities', value: 83, color: 'text-[#4DA6FF]' },
-        { label: 'Smart Students Trained', value: 50000, color: 'text-[#FF9933]' },
+        { label: 'Schools', value: dynamicStats.total_schools, color: 'text-[#003366]' },
+        { label: 'Cities', value: dynamicStats.total_cities, color: 'text-[#4DA6FF]' },
+        { label: 'Smart Students Trained', value: dynamicStats.total_students, color: 'text-[#FF9933]' },
     ];
 
     const scallopPath = "M0,0 V12 Q15,24 30,12 T60,12 T90,12 T120,12 T150,12 T180,12 T210,12 T240,12 T270,12 T300,12 T330,12 T360,12 T390,12 T420,12 T450,12 T480,12 T510,12 T540,12 T570,12 T600,12 T630,12 T660,12 T690,12 T720,12 T750,12 T780,12 T810,12 T840,12 T870,12 T900,12 T930,12 T960,12 T990,12 T1020,12 T1050,12 T1080,12 T1110,12 T1140,12 T1170,12 T1200,12 V0 Z";
 
     useEffect(() => {
+        // Generate bubbles client-side to avoid hydration mismatch
+        const newBubbles = [...Array(15)].map((_, i) => ({
+            id: i,
+            style: {
+                width: `${Math.random() * 15 + 5}px`,
+                height: `${Math.random() * 15 + 5}px`,
+                left: `${Math.random() * 100}%`,
+                bottom: '-20px'
+            } as React.CSSProperties
+        }));
+        setBubbles(newBubbles);
+    }, []);
+
+    useEffect(() => {
+        if (bubbles.length === 0) return;
+
+        const fetchStats = async () => {
+            try {
+                const res = await fetch(apiUrl('/franchises/public/stats/'));
+                if (res.ok) {
+                    const data = await res.json();
+                    setDynamicStats(data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+                // Fallback to old defaults if API fails
+                setDynamicStats({
+                    total_schools: 350,
+                    total_cities: 83,
+                    total_students: 50000
+                });
+            } finally {
+                setIsLoaded(true);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    useEffect(() => {
+        if (!isLoaded) return;
+
         const ctx = gsap.context(() => {
             if (!countersRef.current) return;
 
@@ -49,7 +100,8 @@ const CountUpSection = () => {
                         ease: 'power2.out',
                         onUpdate: function () {
                             const val = Math.ceil(this.targets()[0].innerHTML);
-                            counterSpan.innerHTML = val.toLocaleString() + (target > 100 ? '+' : '');
+                            // Only add '+' if the final target is large
+                            counterSpan.innerHTML = val.toLocaleString() + (target >= 100 ? '+' : '');
                         }
                     }
                 )
@@ -95,7 +147,11 @@ const CountUpSection = () => {
             });
         }, sectionRef);
         return () => ctx.revert();
-    }, []);
+<<<<<<< Updated upstream
+    }, [isLoaded]);
+=======
+    }, [bubbles]);
+>>>>>>> Stashed changes
 
     return (
         <section ref={sectionRef} className="relative py-12 bg-[#E0F2FE] overflow-hidden">
@@ -130,16 +186,11 @@ const CountUpSection = () => {
 
             {/* Background Bubbles */}
             <div className="absolute inset-0 pointer-events-none">
-                {[...Array(15)].map((_, i) => (
+                {bubbles.map((bubble) => (
                     <div
-                        key={i}
+                        key={bubble.id}
                         className="bubble absolute bg-white/40 rounded-full border border-white/20"
-                        style={{
-                            width: `${Math.random() * 15 + 5}px`,
-                            height: `${Math.random() * 15 + 5}px`,
-                            left: `${Math.random() * 100}%`,
-                            bottom: '-20px'
-                        }}
+                        style={bubble.style}
                     />
                 ))}
             </div>
