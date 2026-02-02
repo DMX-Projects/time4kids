@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Building2, Home, GraduationCap } from 'lucide-react';
-import WaveBackground from '../../components/animations/WaveBackground';
+import WaveBackground from '../animations/WaveBackground';
 
 const RedBiplane = () => (
     <svg viewBox="80 20 420 180" className="w-full h-full drop-shadow-2xl filter" style={{ overflow: 'visible' }}>
