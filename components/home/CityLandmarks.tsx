@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SERVER_URL } from '@/lib/api-client';
+import { apiUrl } from '@/lib/api-client';
 
 // Type definitions
 export type LandmarkType =
@@ -49,7 +49,7 @@ export const useCityLandmarks = () => {
         const fetchLocations = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${SERVER_URL}/api/franchises/public/locations/`);
+                const response = await fetch(apiUrl('/franchises/public/locations/'));
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

@@ -46,8 +46,7 @@ export const apiUrl = (path: string) => `${API_BASE_URL}${path.startsWith('/') ?
 export const mediaUrl = (path?: string | null) => {
     if (!path) return "";
     if (/^https?:\/\//i.test(path)) return path;
-    if (path.startsWith('/media')) return `${SERVER_URL}${path}`;
-    return `${MEDIA_BASE_URL}/${path.replace(/^\/+/, "")}`;
+    return `${MEDIA_BASE_URL}/${path.replace(/^\/+/g, "")}`;
 };
 
 export type ApiError = Error & { status?: number; details?: unknown };
