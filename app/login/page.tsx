@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
@@ -8,7 +8,9 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { Shield, Building2, Users, Eye, EyeOff } from "lucide-react";
 import FranchiseHeroSlider from "@/components/franchise/FranchiseHeroSlider";
 
-export default function UniversalLoginPage() {
+export const dynamic = 'force-dynamic';
+
+function LoginContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { login } = useAuth();
@@ -194,5 +196,13 @@ export default function UniversalLoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function UniversalLoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-400"></div></div>}>
+            <LoginContent />
+        </Suspense>
     );
 }
