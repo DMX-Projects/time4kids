@@ -46,7 +46,8 @@ export const apiUrl = (path: string) => `${API_BASE_URL}${path.startsWith('/') ?
 export const mediaUrl = (path?: string | null) => {
     if (!path) return "";
     if (/^https?:\/\//i.test(path)) return path; // If it's already a full URL, return as is
-    if (path.startsWith('/media')) return `${MEDIA_BASE_URL}${path}`; // Avoid appending /media again
+    if (path.startsWith(MEDIA_BASE_URL)) return path; // If the path already includes MEDIA_BASE_URL, return as is
+    if (path.startsWith('/media')) return `${MEDIA_BASE_URL}${path.replace(/^\/media/, "")}`; // Avoid appending /media again
     return `${MEDIA_BASE_URL}/${path.replace(/^\/+/g, "")}`; // Append MEDIA_BASE_URL for other cases
 };
 
