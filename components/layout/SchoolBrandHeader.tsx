@@ -67,7 +67,7 @@ const SchoolBrandHeader = ({ schoolName, basePath = "/", homeUrl }: SchoolBrandH
                     <Link href={homeLink}>
                         <div className="relative w-40 h-12">
                             <Image
-                                src="/logo.jpg"
+                                src="/time-kids-logo-new.png"
                                 alt="TIME Kids Logo"
                                 fill
                                 className="object-contain object-left"

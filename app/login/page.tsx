@@ -48,8 +48,8 @@ export default function UniversalLoginPage() {
                 {/* Left side - Branding or Slider */}
                 <div className="relative h-full min-h-[400px] md:min-h-[600px] rounded-3xl overflow-hidden shadow-2xl">
                     <div className="absolute inset-0 bg-blue-50 flex flex-col justify-center p-12 space-y-6">
-                        <div className="relative w-56 h-24">
-                            <Image src="/logo.jpg" alt="T.I.M.E. Kids Logo" fill sizes="(max-width: 768px) 224px, 280px" className="object-contain" priority />
+                        <div className="relative w-56 h-24 mx-auto flex items-center justify-center">
+                            <Image src="/time-kids-logo-new.png" alt="T.I.M.E. Kids Logo" fill sizes="(max-width: 768px) 224px, 280px" className="object-contain" priority />
                         </div>
                         <h1 className="font-display text-5xl font-bold text-[#003366] leading-tight">
                             Welcome Back

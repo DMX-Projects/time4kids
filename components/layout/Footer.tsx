@@ -30,7 +30,7 @@ const Footer = () => {
                     <div className="space-y-4">
                         <div className="relative w-40 h-16">
                             <Image
-                                src="/logo.jpg"
+                                src="/time-kids-logo-new.png"
                                 alt="Time Kids Logo"
                                 fill
                                 sizes="160px"

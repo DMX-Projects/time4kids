@@ -2,9 +2,10 @@
 
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
-import { Play, Hand, Clock, ArrowLeft, Calendar, MapPin, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { Play, Hand, Clock, ArrowLeft, Calendar, MapPin, AlertCircle, Image as ImageIcon, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { mediaUrl } from '@/lib/api-client';
+import Modal from '@/components/ui/Modal';
 
 interface MediaItem {
     id: number;
@@ -59,6 +60,7 @@ export default function GallerySection({ schoolName, city, galleryItems = [], ev
     const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
     const [filterYear, setFilterYear] = useState<string>('');
     const [filterMediaType, setFilterMediaType] = useState<'all' | 'IMAGE' | 'VIDEO'>('all');
+    const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
     // Extract Years from Events
     const eventYears = useMemo(() => {
@@ -90,8 +92,12 @@ export default function GallerySection({ schoolName, city, galleryItems = [], ev
     };
 
     const handleMediaClick = (item: MediaItem) => {
-        // Simple open in new tab for now, lightbox could be added later
-        window.open(mediaUrl(item.file), '_blank');
+        console.log('🔍 Opening media in lightbox:', item);
+        setSelectedMedia(item);
+    };
+
+    const closeLightbox = () => {
+        setSelectedMedia(null);
     };
 
     return (
@@ -317,6 +323,49 @@ export default function GallerySection({ schoolName, city, galleryItems = [], ev
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Media Lightbox Modal */}
+                <Modal
+                    isOpen={!!selectedMedia}
+                    onClose={closeLightbox}
+                    size="xl"
+                >
+                    {selectedMedia && (
+                        <div className="relative w-full h-full flex flex-col items-center justify-center min-h-[50vh] bg-black/5 rounded-xl overflow-hidden group/modal">
+                            <button
+                                onClick={closeLightbox}
+                                className="absolute top-4 right-4 z-50 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+
+                            {selectedMedia.media_type === 'VIDEO' ? (
+                                <video
+                                    src={mediaUrl(selectedMedia.file)}
+                                    controls
+                                    autoPlay
+                                    className="max-w-full max-h-[70vh] rounded-lg shadow-2xl"
+                                />
+                            ) : (
+                                <div className="relative w-full h-[70vh]">
+                                    <Image
+                                        src={mediaUrl(selectedMedia.file)}
+                                        alt={selectedMedia.caption || "Gallery View"}
+                                        fill
+                                        className="object-contain"
+                                        priority
+                                    />
+                                </div>
+                            )}
+
+                            {selectedMedia.caption && (
+                                <div className="mt-4 p-4 text-center w-full">
+                                    <p className="text-gray-700 font-bold text-lg">{selectedMedia.caption}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </Modal>
             </div>
         </section>
     );

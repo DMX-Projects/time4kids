@@ -337,7 +337,7 @@ export default function AboutPage() {
             <WavyDivider flip={true} color="fill-white" />
 
             {/* T.I.M.E. Group Businesses */}
-            <section className="py-8 bg-white relative overflow-hidden">
+            <section className="py-8 pb-20 bg-white relative overflow-hidden">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-5">
                     <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500 rounded-full blur-3xl"></div>
