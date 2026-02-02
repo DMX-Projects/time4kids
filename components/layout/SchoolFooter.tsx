@@ -102,7 +102,7 @@ const SchoolFooter = ({ homeUrl }: SchoolFooterProps) => {
                             <Link href={homeLink} className="inline-block bg-white p-4 rounded-3xl shadow-sm rotate-[-2deg] hover:rotate-0 transition-transform duration-300 border-2 border-orange-50">
                                 <div className="relative w-40 h-14">
                                     <Image
-                                        src="/logo.jpg"
+                                        src="/time-kids-logo-new.png"
                                         alt="T.I.M.E. Kids Logo"
                                         fill
                                         sizes="160px"

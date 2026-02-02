@@ -66,9 +66,11 @@ export default async function SchoolDetailsPage({ params }: { params: { city: st
             </section>
 
             {/* --- SECTION: GALLERY --- */}
-            <section id="gallery">
-                <GallerySection schoolName={franchise.name} city={franchise.city} galleryItems={franchise.gallery_items} />
-            </section>
+            <GallerySection
+                schoolName={franchise.name}
+                city={franchise.city}
+                events={franchise.events}
+            />
 
             {/* --- SECTION: CONTACT --- */}
             <section id="contact">

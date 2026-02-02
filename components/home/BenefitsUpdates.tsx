@@ -5,6 +5,8 @@ import Image from 'next/image';
 import Slider from 'react-slick';
 import { apiUrl } from '@/lib/api-client';
 
+import BlobImage from '@/components/ui/BlobImage';
+
 export default function BenefitsUpdates() {
     const updatesSettings = {
         dots: true,
@@ -66,9 +68,9 @@ export default function BenefitsUpdates() {
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Benefits Column */}
-                    <div className="lg:col-span-7">
+                    <div className="lg:col-span-7 lg:pl-4">
                         <div className="grid grid-cols-12 gap-4">
-                            <div className="col-span-12 lg:col-span-7">
+                            <div className="col-span-12 lg:col-span-6 lg:col-start-2">
                                 <h3>
                                     Benefits of Becoming <br />a T.I.M.E. Kids Franchise
                                 </h3>
@@ -81,13 +83,11 @@ export default function BenefitsUpdates() {
                                     ))}
                                 </ul>
                             </div>
-                            <div className="col-span-12 lg:col-span-5 hidden lg:block">
-                                <Image
-                                    src="/benefit-pic.jpg"
+                            <div className="col-span-12 lg:col-span-4 hidden lg:block flex items-center justify-center pl-4">
+                                <BlobImage
+                                    src="/benefit-pic-new.png"
                                     alt="Benefits"
-                                    width={300}
-                                    height={400}
-                                    className="w-full h-auto"
+                                    className="w-full h-auto scale-110"
                                 />
                             </div>
                         </div>
@@ -115,7 +115,7 @@ export default function BenefitsUpdates() {
             <style jsx global>{`
                 .benefits-updates {
                     background: #fff;
-                    padding: 50px 0;
+                    padding: 30px 0;
                 }
 
                 .benefits-updates h3 {

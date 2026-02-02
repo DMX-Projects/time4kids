@@ -294,7 +294,7 @@ export default function FAQPage() {
     const [openAccordion, setOpenAccordion] = useState<number | null>(null);
     const [currentSlide, setCurrentSlide] = useState(0);
 
-    const bannerImages = ['/faq1.jpeg', '/images/baby-gilr.jpeg'];
+    const bannerImages = ['/faq-banner-new-1.png', '/faq-banner-new-2.png'];
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -357,7 +357,7 @@ export default function FAQPage() {
                                 <div className="frame-background"></div>
                                 <div className="main-circle perfect-frame">
                                     <Image
-                                        src="/images/baby-gilr.jpeg"
+                                        src="/faq-sidebar-teacher.png"
                                         alt="Kids learning"
                                         width={460}
                                         height={460}

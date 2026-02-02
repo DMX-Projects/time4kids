@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand } from 'lucide-react';
+import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, X } from 'lucide-react';
 import { SERVER_URL, mediaUrl } from '@/lib/api-client';
+import Modal from '@/components/ui/Modal';
 
 interface MediaItem {
     id: number;
@@ -23,6 +24,7 @@ export default function MediaPage() {
     const [selectedEvent, setSelectedEvent] = useState<EventGroup | null>(null);
     const [filterMediaType, setFilterMediaType] = useState<'all' | 'image' | 'video'>('all');
     const [loading, setLoading] = useState(true);
+    const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
     // Fetch media from API and group by title
     useEffect(() => {
@@ -52,7 +54,7 @@ export default function MediaPage() {
                     // Capitalize event name properly
                     const formattedEventName = eventName
                         .split(' ')
-                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                         .join(' ');
 
                     if (!groupedEvents[formattedEventName]) {
@@ -103,8 +105,49 @@ export default function MediaPage() {
     };
 
     const handleMediaClick = (item: MediaItem) => {
-        window.open(mediaUrl(item.file), '_blank');
+        console.log('🔍 Opening media in lightbox:', item);
+        setSelectedMedia(item);
     };
+
+    const closeLightbox = () => {
+        setSelectedMedia(null);
+    };
+
+    // Navigate to next/previous media with keyboard arrows
+    const navigateMedia = (direction: 'next' | 'prev') => {
+        if (!selectedMedia || !selectedEvent) return;
+
+        const currentIndex = filteredMedia.findIndex(m => m.id === selectedMedia.id);
+        let newIndex: number;
+
+        if (direction === 'next') {
+            // Loop to first if at end
+            newIndex = (currentIndex + 1) % filteredMedia.length;
+        } else {
+            // Loop to last if at beginning
+            newIndex = currentIndex - 1 < 0 ? filteredMedia.length - 1 : currentIndex - 1;
+        }
+
+        setSelectedMedia(filteredMedia[newIndex]);
+    };
+
+    // Keyboard navigation effect
+    useEffect(() => {
+        if (!selectedMedia) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowRight') {
+                navigateMedia('next');
+            } else if (e.key === 'ArrowLeft') {
+                navigateMedia('prev');
+            } else if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedMedia, filteredMedia]);
 
     return (
         <div className="bg-[#FFFAF5] min-h-screen pt-32 pb-20">
@@ -237,16 +280,25 @@ export default function MediaPage() {
                                             initial={{ opacity: 0, scale: 0.9 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: index * 0.05 }}
-                                            className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all hover:scale-[1.02]"
+                                            className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all hover:scale-[1.02] bg-gray-200"
                                             onClick={() => handleMediaClick(item)}
                                         >
-                                            <Image
-                                                src={mediaUrl(item.file)}
-                                                alt={item.caption || "Event Media"}
-                                                fill
-                                                className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                                sizes="(max-width: 768px) 50vw, 33vw"
-                                            />
+                                            {item.media_type === 'video' ? (
+                                                <video
+                                                    src={mediaUrl(item.file)}
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                    preload="metadata"
+                                                    muted
+                                                />
+                                            ) : (
+                                                <Image
+                                                    src={mediaUrl(item.file)}
+                                                    alt={item.caption || "Event Media"}
+                                                    fill
+                                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                                    sizes="(max-width: 768px) 50vw, 33vw"
+                                                />
+                                            )}
                                             {item.media_type === 'video' && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
                                                     <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
@@ -265,6 +317,49 @@ export default function MediaPage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Media Lightbox Modal */}
+                <Modal
+                    isOpen={!!selectedMedia}
+                    onClose={closeLightbox}
+                    size="xl"
+                >
+                    {selectedMedia && (
+                        <div className="relative w-full h-full flex flex-col items-center justify-center min-h-[50vh] rounded-xl overflow-hidden group/modal">
+                            <button
+                                onClick={closeLightbox}
+                                className="absolute top-4 right-4 z-50 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+
+                            {selectedMedia.media_type === 'video' ? (
+                                <video
+                                    src={mediaUrl(selectedMedia.file)}
+                                    controls
+                                    autoPlay
+                                    className="max-w-full max-h-[70vh] rounded-lg shadow-2xl"
+                                />
+                            ) : (
+                                <div className="relative w-full h-[70vh]">
+                                    <Image
+                                        src={mediaUrl(selectedMedia.file)}
+                                        alt={selectedMedia.caption || "Gallery View"}
+                                        fill
+                                        className="object-contain"
+                                        priority
+                                    />
+                                </div>
+                            )}
+
+                            {selectedMedia.caption && (
+                                <div className="mt-4 p-4 text-center w-full">
+                                    <p className="text-white font-bold text-lg">{selectedMedia.caption}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </Modal>
             </div>
         </div>
     );

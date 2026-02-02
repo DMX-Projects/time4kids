@@ -63,7 +63,7 @@ const Chatbot = () => {
         <>
             {/* Floating Child Character Button */}
             {!isOpen && (
-                <div className="fixed bottom-6 right-6 z-50">
+                <div className="fixed bottom-6 right-6 z-[9999]">
                     <button
                         onClick={() => setIsOpen(true)}
                         className="relative group cursor-pointer focus:outline-none"
@@ -93,7 +93,7 @@ const Chatbot = () => {
 
             {/* Chat Window */}
             {isOpen && (
-                <div className="fixed bottom-6 right-6 w-[350px] sm:w-[400px] h-[550px] sm:h-[600px] flex flex-col z-50 animate-scale-in">
+                <div className="fixed bottom-6 right-6 w-[350px] sm:w-[400px] h-[550px] sm:h-[600px] flex flex-col z-[9999] animate-scale-in">
                     {/* Decorative background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 rounded-3xl opacity-20 blur-2xl"></div>
 
@@ -129,7 +129,11 @@ const Chatbot = () => {
                         </div>
 
                         {/* Messages area with fun background */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-blue-50/30 to-purple-50/30">
+                        <div 
+                            className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-blue-50/30 to-purple-50/30"
+                            onWheel={(e) => e.stopPropagation()}
+                            style={{ overflowY: 'auto', scrollBehavior: 'smooth' }}
+                        >
                             {messages.map((message, index) => (
                                 <div
                                     key={index}

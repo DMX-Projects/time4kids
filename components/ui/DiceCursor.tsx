@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MousePointer2 } from 'lucide-react';
 
 // Pips component for a single face
 const Pips = ({ value }: { value: number }) => {
@@ -68,35 +69,61 @@ export default function DiceCursor() {
 
     // Event listeners
     useEffect(() => {
+        const isInteractiveElement = (target: HTMLElement | null) => {
+            // 0. If a modal/lightbox is open, force pointer (based on body overflow:hidden)
+            // This ensures when viewing full images/videos, the pointer stays active
+            if (typeof document !== 'undefined' && document.body.style.overflow === 'hidden') {
+                return true;
+            }
+
+            if (!target || !target.closest) return false;
+
+            // 1. Check common interactive tags and classes
+            const hasInteractiveSelector = !!target.closest('a, button, [role="button"], input, select, textarea, .interactive, .cursor-pointer');
+            if (hasInteractiveSelector) return true;
+
+            // 2. Fallback: Check computed style for "pointer" 
+            const computedStyle = window.getComputedStyle(target);
+            return computedStyle.cursor === 'pointer';
+        };
+
         const onMouseMove = (e: MouseEvent) => {
             mouseX.current = e.clientX;
             mouseY.current = e.clientY;
+
+            // Re-check hover on move for better responsiveness
+            const target = e.target as HTMLElement;
+            const isControl = isInteractiveElement(target);
+            setIsHovering(prev => prev !== isControl ? isControl : prev);
         };
 
         const onMouseDown = (e: MouseEvent) => {
             // Check if interactive
             const target = e.target as HTMLElement;
-            const isInteractive = target.closest('a, button, [role="button"], input, select, textarea, .interactive');
+            const isInteractive = isInteractiveElement(target);
 
             rollDice(isInteractive ? 8 : 4, !!isInteractive); // More spins if interactive
         };
 
         const onMouseOver = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            if (target.closest('a, button, [role="button"], input, select, textarea, .interactive')) {
-                setIsHovering(true);
-            } else {
-                setIsHovering(false);
-            }
+            if (!target || !target.closest) return;
+
+            const isControl = isInteractiveElement(target);
+            // Use functional update to avoid stale closure issues where isHovering was always 'false'
+            setIsHovering(prev => {
+                if (prev !== isControl) return isControl;
+                return prev;
+            });
         };
 
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mousedown', onMouseDown);
-        document.addEventListener('mouseover', onMouseOver);
+        document.addEventListener('mousemove', onMouseMove, { passive: true });
+        document.addEventListener('mousedown', onMouseDown, { passive: true });
+        document.addEventListener('mouseover', onMouseOver, { passive: true });
 
         // Handle visibility separately to avoid re-renders or checks
         const showCursor = () => setIsVisible(true);
-        document.addEventListener('mousemove', showCursor, { once: true });
+        document.addEventListener('mousemove', showCursor, { once: true, passive: true });
         document.addEventListener('mouseenter', showCursor);
         document.addEventListener('mouseleave', () => setIsVisible(false));
 
@@ -117,6 +144,9 @@ export default function DiceCursor() {
             const current = window.scrollY;
             const delta = current - lastScrollY;
             lastScrollY = current;
+
+            // Force dice cursor during scroll
+            setIsHovering(false);
 
             // Multiply delta for speed control. 
             // Y axis scroll -> Rotate X axis for tumbling forward/back
@@ -161,7 +191,7 @@ export default function DiceCursor() {
         <>
             {/* Global style to hide default cursor */}
             <style jsx global>{`
-                body, a, button, [role="button"], input {
+                * {
                     cursor: none !important;
                 }
             `}</style>
@@ -181,36 +211,61 @@ export default function DiceCursor() {
                     marginTop: -24
                 }}
             >
-                <div className="relative w-12 h-12" style={{ perspective: '600px' }}>
-                    <motion.div
-                        className="w-full h-full relative"
-                        style={{ transformStyle: 'preserve-3d' } as React.CSSProperties}
-                        animate={{
-                            rotateX: rotateX,
-                            rotateY: rotateY,
-                            scale: isHovering ? 1.2 : 1
-                        }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 100,
-                            damping: 15, // Boucy roll
-                            mass: 1
-                        }}
-                    >
-                        {/* Define the 6 faces for the cube */}
-                        {/* Front: 1 */}
-                        <Face translateZ={24} rotateY={0} value={1} />
-                        {/* Back: 6 */}
-                        <Face translateZ={24} rotateY={180} value={6} />
-                        {/* Right: 3 or 4 */}
-                        <Face translateZ={24} rotateY={90} value={3} />
-                        {/* Left: 4 or 3 */}
-                        <Face translateZ={24} rotateY={-90} value={4} />
-                        {/* Top: 2 or 5 */}
-                        <Face translateZ={24} rotateX={90} value={2} />
-                        {/* Bottom: 5 or 2 */}
-                        <Face translateZ={24} rotateX={-90} value={5} />
-                    </motion.div>
+                <div className="relative w-12 h-12" style={{ perspective: '800px' }}>
+                    <AnimatePresence>
+                        {!isHovering ? (
+                            <motion.div
+                                key="dice"
+                                initial={{ opacity: 0, scale: 0.3 }}
+                                animate={{
+                                    opacity: 1,
+                                    scale: 1,
+                                    rotateX: rotateX,
+                                    rotateY: rotateY
+                                }}
+                                exit={{ opacity: 0, scale: 0.3 }}
+                                className="w-full h-full relative"
+                                style={{ transformStyle: 'preserve-3d', willChange: 'transform' } as React.CSSProperties}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 300,
+                                    damping: 25,
+                                    mass: 0.5
+                                }}
+                            >
+                                {/* Define the 6 faces for the cube */}
+                                {/* Front: 1 */}
+                                <Face translateZ={24} rotateY={0} value={1} />
+                                {/* Back: 6 */}
+                                <Face translateZ={24} rotateY={180} value={6} />
+                                {/* Right: 3 or 4 */}
+                                <Face translateZ={24} rotateY={90} value={3} />
+                                {/* Left: 4 or 3 */}
+                                <Face translateZ={24} rotateY={-90} value={4} />
+                                {/* Top: 2 or 5 */}
+                                <Face translateZ={24} rotateX={90} value={2} />
+                                {/* Bottom: 5 or 2 */}
+                                <Face translateZ={24} rotateX={-90} value={5} />
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="pointer"
+                                initial={{ opacity: 0, scale: 0.5, rotate: -20 }}
+                                animate={{ opacity: 1, scale: 1.2, rotate: 0 }}
+                                exit={{ opacity: 0, scale: 0.5, rotate: 20 }}
+                                className="absolute inset-0 flex items-center justify-center"
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            >
+                                <div className="relative flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-primary-400/30 blur-md rounded-full scale-150 animate-pulse" />
+                                    <MousePointer2
+                                        className="w-10 h-10 text-primary-600 fill-white relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
+                                        strokeWidth={2.5}
+                                    />
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </>
