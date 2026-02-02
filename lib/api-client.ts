@@ -10,9 +10,10 @@ const getBaseUrl = () => {
         return process.env.NEXT_PUBLIC_API_URL;
     }
 
+    const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8001';
+
     // For server-side rendering, use localhost
     if (typeof window === 'undefined') {
-        const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
         return `http://127.0.0.1:${port}`;
     }
 
@@ -22,7 +23,6 @@ const getBaseUrl = () => {
 
     // If accessing via localhost, use localhost with backend port
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
         return `http://127.0.0.1:${port}`;
     }
 
@@ -32,8 +32,8 @@ const getBaseUrl = () => {
         return process.env.NEXT_PUBLIC_BACKEND_DEV_TUNNEL;
     }
 
-    // Fallback: use the same host (for cases where frontend and backend share same domain)
-    return `${protocol}//${hostname}`;
+    // Fallback: use the same host with backend port
+    return `${protocol}//${hostname}:${port}`;
 };
 
 const BASE_URL = getBaseUrl();

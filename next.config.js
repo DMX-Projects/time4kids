@@ -1,11 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
-        domains: ['localhost', '127.0.0.1'],
+        domains: ['localhost', '127.0.0.1', '103.65.21.176'],
         remotePatterns: [
             {
                 protocol: 'https',
                 hostname: '**',
+            },
+            {
+                protocol: 'http',
+                hostname: '103.65.21.176',
+                port: '8001',
+                pathname: '/media/**',
             },
         ],
         formats: ['image/avif', 'image/webp'],
