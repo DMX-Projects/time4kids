@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { MapPin, Phone, Search, Navigation, Star, Sun, Facebook, Instagram, Youtube } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -66,14 +66,6 @@ interface Centre {
 }
 
 export default function LocateCentrePage() {
-    return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-pink-400"></div></div>}>
-            <LocateCentreContent />
-        </Suspense>
-    );
-}
-
-function LocateCentreContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const cityFromUrl = searchParams.get('city');
