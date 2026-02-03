@@ -8,7 +8,8 @@ import { AdminDataProvider } from "@/components/dashboard/admin/AdminDataProvide
 const navItems: DashboardNavItem[] = [
     { label: "Media Files", href: "/dashboard/admin/media", icon: <Images className="w-5 h-5" /> },
     { label: "Dashboard", href: "/dashboard/admin", icon: <LayoutDashboard className="w-5 h-5" /> },
-    { label: "Franchise Locations", href: "/dashboard/admin/franchise-locations", icon: <MapPin className="w-5 h-5" /> },
+    { label: "Locations", href: "/dashboard/admin/locations", icon: <MapPin className="w-5 h-5" /> },
+    { label: "Franchise", href: "/dashboard/admin/add-franchise", icon: <Building2 className="w-5 h-5" /> },
     { label: "Careers", href: "/dashboard/admin/careers", icon: <Briefcase className="w-5 h-5" /> },
     { label: "Enquiries", href: "/dashboard/admin/enquiries", icon: <Inbox className="w-5 h-5" /> },
     { label: "Updates", href: "/dashboard/admin/updates", icon: <CalendarDays className="w-5 h-5" /> },
