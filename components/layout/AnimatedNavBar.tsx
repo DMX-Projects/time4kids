@@ -14,7 +14,7 @@ const navItems = [
     { name: 'LOCATE CENTRE', path: '/locate-centre', icon: MapPin },
     { name: 'ADMISSIONS', path: '/admission', icon: GraduationCap },
     { name: 'MEDIA', path: '/media', icon: ImageIcon },
-    { name: 'FAQ\'S', path: '/faqs', icon: HelpCircle },
+    { name: 'FAQ\'S', path: '/faq', icon: HelpCircle },
     { name: 'Login', path: '/login', icon: LogIn },
 ];
 

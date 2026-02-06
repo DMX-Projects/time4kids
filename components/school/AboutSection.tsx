@@ -1,41 +1,96 @@
-"use client";
+'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 
-
-
-export default function AboutSection({ school }: { school: any }) {
-    if (!school) return null;
-
+export default function IntroSection() {
     return (
-        <section id="about" className="pt-20 pb-16 md:py-24 bg-[#fdfaf1] relative overflow-hidden scroll-mt-40">
-            <div className="container mx-auto px-4 relative z-10">
-                <div className="max-w-4xl mx-auto text-center mb-12">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="inline-block"
-                    >
-                        <span className="py-2 px-6 rounded-full bg-orange-100 text-orange-600 font-bold text-sm uppercase tracking-widest border border-orange-200 mb-6 inline-block">
-                            About Us
-                        </span>
-                    </motion.div>
-                    <h2 className="text-4xl md:text-5xl font-fredoka font-bold text-gray-900 mb-8 leading-tight">
-                        Welcome to T.I.M.E. Kids <span className="text-orange-500 inline-block relative">
-                            <svg className="absolute w-full h-3 -bottom-1 left-0 text-orange-200 -z-10" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" /></svg>
-                        </span>
-                    </h2>
-                    <p className="text-xl text-gray-600 leading-relaxed font-medium">
-                        We are proud to be a part of the T.I.M.E. Kids family, bringing world-class early childhood education to your neighborhood.
-                        Our centre at <span className="text-gray-900 font-bold">{school.address}</span> is equipped with state-of-the-art facilities designed to provide a safe, secure, and stimulating environment.
-                    </p>
+        <>
+            <div className="intro-block">
+                <div className="container mx-auto px-4">
+                    <div className="intro-content">
+                        <h1>Welcome to T.I.M.E. Kids</h1>
+                        <h2>
+                            A chain of pre-schools launched by T.I.M.E., the national leader in
+                            entrance exam training.
+                        </h2>
+                        <p>
+                            T.I.M.E. Kids pre-schools is a chain of pre-schools launched by
+                            T.I.M.E., the national leader in entrance exam training. After its
+                            hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+
+                            pre-schools is now poised for major expansion across the country.
+                        </p>
+                        <p>
+                            The programme at T.I.M.E. Kids pre-schools aims at making the transition
+                            from home to school easy, by providing the warm, safe and caring and
+                            learning environment that young children have at home. Our play schools
+                            offer wholesome, fun-filled and memorable childhood education to our
+                            children.
+                        </p>
+                        <p>
+                            T.I.M.E. Kids pre-schools are backed by our educational expertise of over
+                            27 years, well trained care providers and a balanced educational
+                            programme. The programme at T.I.M.E. Kids pre-schools is based on the
+                            principles of age-appropriate child
+                        </p>
+                    </div>
                 </div>
-
-
-
             </div>
-        </section>
+
+
+            <style jsx>{`
+
+
+                .intro-block {
+                    text-align: center;
+                    background: #f5f1dd url(/images/bg2.gif) repeat-x center bottom;
+                    font-weight: 500;
+                    padding: 50px 0;
+                }
+
+                .intro-content {
+                    max-width: 900px;
+                    margin: 0 auto;
+                }
+
+                .intro-block h1 {
+                    font-family: 'Schoolbell', cursive;
+                    color: #fe5c61;
+                    font-size: 28px;
+                    line-height: 30px;
+                    font-weight: 600;
+                    margin: 0 0 25px 0;
+                }
+
+                .intro-block h2 {
+                    font-family: 'Dosis', sans-serif;
+                    color: #333;
+                    font-size: 24px;
+                    line-height: 30px;
+                    font-weight: 700;
+                    margin: 0 0 25px 0;
+                }
+
+                .intro-block p {
+                    margin: 0 0 15px 0;
+                    font-size: 16px;
+                    line-height: 24px;
+                    color: #333;
+                }
+
+                @media (max-width: 768px) {
+                    .intro-block {
+                        padding: 25px 0;
+                    }
+
+                    .intro-block h1 {
+                        font-size: 24px;
+                    }
+
+                    .intro-block h2 {
+                        font-size: 20px;
+                    }
+                }
+            `}</style>
+        </>
     );
 }

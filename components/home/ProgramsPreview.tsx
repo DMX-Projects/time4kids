@@ -103,32 +103,7 @@ const ProgramsPreview = () => {
     return (
         <section ref={sectionRef} className="relative py-12 bg-[#FFFAF5] overflow-hidden">
 
-            {/* Top Border - Parallax Animated */}
-            <div className="absolute top-0 left-0 w-full h-12 z-20 pointer-events-none overflow-hidden">
-                {/* Back Wave (Slower, Transparent) */}
-                <div className="wave-back absolute top-0 left-0 w-[200%] h-full opacity-40">
-                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
-                        <defs>
-                            <pattern id="progScallopPattern" x="0" y="0" width="60" height="24" patternUnits="userSpaceOnUse">
-                                <path d="M0 0 V12 Q15 24 30 12 T60 12 V0 H0 Z" fill="white" />
-                            </pattern>
-                        </defs>
-                        <rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPattern)" />
-                    </svg>
-                </div>
-                {/* Front Wave (Faster, Solid) */}
-                <div className="wave-front absolute top-0 left-0 w-[200%] h-full">
-                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
-                        {/* Reuse pattern via UNIQUE ID */}
-                        <defs>
-                            <pattern id="progScallopPatternFront" x="0" y="0" width="60" height="24" patternUnits="userSpaceOnUse">
-                                <path d="M0 0 V12 Q15 24 30 12 T60 12 V0 H0 Z" fill="white" />
-                            </pattern>
-                        </defs>
-                        <rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPatternFront)" />
-                    </svg>
-                </div>
-            </div>
+
 
             {/* Decorative Background Elements */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
@@ -249,20 +224,6 @@ const ProgramsPreview = () => {
                             Explore All Classes
                         </div>
                     </Link>
-                </div>
-            </div>{/* Bottom Scallop - Parallax Animated */}
-            <div className="absolute bottom-0 left-0 w-full h-12 z-20 pointer-events-none rotate-180 overflow-hidden">
-                {/* Back Wave */}
-                <div className="wave-back absolute top-0 left-0 w-[200%] h-full opacity-40">
-                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
-                        <rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPattern)" />
-                    </svg>
-                </div>
-                {/* Front Wave */}
-                <div className="wave-front absolute top-0 left-0 w-[200%] h-full">
-                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
-                        <rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPatternFront)" />
-                    </svg>
                 </div>
             </div>
             {/* CSS Animation for Dashed Line */}

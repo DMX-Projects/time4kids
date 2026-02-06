@@ -6,85 +6,65 @@ interface SchoolIntroSectionProps {
     schoolName: string;
 }
 
-export default function SchoolIntroSection({ schoolName }: SchoolIntroSectionProps) {
+const SchoolIntroSection = ({ schoolName }: SchoolIntroSectionProps) => {
     return (
-        <>
-            <div id="about" className="intro-block scroll-mt-40">
-                <div className="container mx-auto px-4">
-                    <div className="intro-content">
-                        <h1>Welcome to T.I.M.E. Kids</h1>
-                        <h2>
-                            A part of T.I.M.E. Kids - A chain of pre-schools launched by T.I.M.E., the national leader in
-                            entrance exam training.
+        <section className="bg-[#fcf8f1] py-16 px-4 relative overflow-hidden">
+            <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'url("/latest-scroll-bg.jpg")', backgroundSize: 'cover' }}></div>
+
+            <div className="container mx-auto max-w-7xl relative z-10">
+                <div className="flex flex-col lg:flex-row gap-12 items-center">
+                    {/* Left: YouTube Video */}
+                    <div className="w-full lg:w-1/2">
+                        <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl border-8 border-white">
+                            <iframe
+                                className="absolute inset-0 w-full h-full"
+                                src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                                title="Welcome to TIME Kids"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            ></iframe>
+                        </div>
+                        <div className="mt-4 flex justify-between items-center">
+                            <div className="bg-black py-2 px-4 rounded text-white text-xs font-bold inline-flex items-center gap-2">
+                                <span className="bg-red-600 px-1 rounded">Watch on</span> YouTube
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right: Text Content */}
+                    <div className="w-full lg:w-1/2 space-y-6">
+                        <h2 className="text-3xl md:text-4xl font-bold font-fredoka flex flex-wrap gap-x-2">
+                            <span className="text-red-500">Welcome</span>
+                            <span className="text-gray-800">to T.I.M.E. Kids</span>
+                            <span className="text-blue-600 space-x-2">{schoolName}</span>
                         </h2>
-                        <p>
-                            {schoolName} is a part of the T.I.M.E. Kids network of pre-schools. After its
-                            hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+
-                            pre-schools is now poised for major expansion across the country, and we are proud to serve your community.
-                        </p>
-                        <p>
-                            The programme at {schoolName} aims at making the transition
-                            from home to school easy, by providing the warm, safe and caring and
-                            learning environment that young children have at home. Our play schools
-                            offer wholesome, fun-filled and memorable childhood education to our
-                            children.
-                        </p>
-                        <p>
-                            We are backed by our educational expertise of over
-                            27 years, well trained care providers and a balanced educational
-                            programme. The programme at {schoolName} is based on the
-                            principles of age-appropriate child development.
-                        </p>
+
+                        <div className="space-y-4 text-gray-700 text-base md:text-lg leading-relaxed font-medium">
+                            <p>
+                                A chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training
+                                T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in
+                                entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids
+                                with 350+ pre-schools is now poised for major expansion across the country.
+                            </p>
+                            <p>
+                                The programme at T.I.M.E. Kids pre-schools aims at making the transition from home to
+                                school easy, by providing the warm, safe and caring and learning environment that young
+                                children have at home. Our play schools offer wholesome, fun-filled and memorable
+                                childhood education to our children.
+                            </p>
+                            <p>
+                                T.I.M.E. Kids pre-schools are backed by our educational expertise of over 27 years, well
+                                trained care providers and a balanced educational programme. The programme at T.I.M.E.
+                                Kids pre-schools is based on the principles of age-appropriate child development
+                                practices. All our Play schools are well-equipped with learning aids and educational toys
+                                suitable for different age groups.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div className="wave-gray-bottom" />
-
-            <style jsx>{`
-                .wave-gray-bottom {
-                    width: 100%;
-                    height: 28px;
-                    text-align: center;
-                    box-sizing: border-box;
-                    position: relative;
-                    background: url(/wave-gray2.png) repeat-x left top;
-                    animation: wave-slide-bottom 60s linear infinite;
-                }
-
-                @keyframes wave-slide-bottom {
-                    from { background-position: 0 0; }
-                    to { background-position: -4000px 0; }
-                }
-
-                .intro-block {
-                    text-align: center;
-                    background: #f5f1dd url(/images/bg2.gif) repeat-x center bottom;
-                    font-weight: 500;
-                    padding: 50px 0;
-                }
-
-                .intro-content { max-width: 900px; margin: 0 auto; }
-
-                .intro-block h1 {
-                    font-family: 'Schoolbell', cursive; color: #fe5c61; font-size: 28px;
-                    line-height: 30px; font-weight: 600; margin: 0 0 25px 0;
-                }
-
-                .intro-block h2 {
-                    font-family: 'Dosis', sans-serif; color: #333; font-size: 24px;
-                    line-height: 30px; font-weight: 700; margin: 0 0 25px 0;
-                }
-
-                .intro-block p {
-                    margin: 0 0 15px 0; font-size: 16px; line-height: 24px; color: #333;
-                }
-
-                @media (max-width: 768px) {
-                    .intro-block { padding: 25px 0; }
-                    .intro-block h1 { font-size: 24px; }
-                    .intro-block h2 { font-size: 20px; }
-                }
-            `}</style>
-        </>
+        </section>
     );
-}
+};
+
+export default SchoolIntroSection;

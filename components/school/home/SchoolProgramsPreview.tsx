@@ -33,20 +33,7 @@ const SchoolProgramsPreview = () => {
 
     return (
         <section ref={sectionRef} className="relative py-12 bg-[#FFFAF5] overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-12 z-20 pointer-events-none overflow-hidden">
-                <div className="wave-back absolute top-0 left-0 w-[200%] h-full opacity-40">
-                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
-                        <defs><pattern id="progScallopPattern" x="0" y="0" width="60" height="24" patternUnits="userSpaceOnUse"><path d="M0 0 V12 Q15 24 30 12 T60 12 V0 H0 Z" fill="white" /></pattern></defs>
-                        <rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPattern)" />
-                    </svg>
-                </div>
-                <div className="wave-front absolute top-0 left-0 w-[200%] h-full">
-                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
-                        <defs><pattern id="progScallopPatternFront" x="0" y="0" width="60" height="24" patternUnits="userSpaceOnUse"><path d="M0 0 V12 Q15 24 30 12 T60 12 V0 H0 Z" fill="white" /></pattern></defs>
-                        <rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPatternFront)" />
-                    </svg>
-                </div>
-            </div>
+
 
             <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
                 <Image src="/images/icon-bird1.png" alt="" width={80} height={80} className="absolute top-20 left-10 md:left-20 animate-bounce" style={{ animationDuration: '4s', height: 'auto' }} />
@@ -88,10 +75,7 @@ const SchoolProgramsPreview = () => {
                 </div>
             </div>
 
-            <div className="absolute bottom-0 left-0 w-full h-12 z-20 pointer-events-none rotate-180 overflow-hidden">
-                <div className="wave-back absolute top-0 left-0 w-[200%] h-full opacity-40"><svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24"><rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPattern)" /></svg></div>
-                <div className="wave-front absolute top-0 left-0 w-[200%] h-full"><svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24"><rect x="0" y="0" width="100%" height="24" fill="url(#progScallopPatternFront)" /></svg></div>
-            </div>
+
             <style jsx>{` .dashed-path { animation: dashMove 20s linear infinite; } @keyframes dashMove { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } } `}</style>
         </section>
     );

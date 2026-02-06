@@ -10,7 +10,7 @@ const getBaseUrl = () => {
         return process.env.NEXT_PUBLIC_API_URL;
     }
 
-    const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8001';
+    const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
 
     // For server-side rendering, use localhost
     if (typeof window === 'undefined') {

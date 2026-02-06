@@ -12,6 +12,7 @@ interface BlobImageProps {
 const BlobImage = ({ src, alt, className }: BlobImageProps) => {
     return (
         <div className={`relative ${className} flex items-center justify-center group`}>
+<<<<<<< Updated upstream
             {/* 1. Main Teal Blob Shape */}
             <svg
                 viewBox="0 0 500 500"
@@ -115,6 +116,16 @@ const BlobImage = ({ src, alt, className }: BlobImageProps) => {
                         className="w-full h-full object-contain p-4"
                     />
                 </div>
+=======
+            {/* Using the provided GIF as the main content */}
+            <div className="relative w-full h-full flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src="/bfba3104656e4bc08ddf686ed121a156.gif"
+                    alt={alt}
+                    className="w-full h-auto object-contain"
+                />
+>>>>>>> Stashed changes
             </div>
         </div>
     );

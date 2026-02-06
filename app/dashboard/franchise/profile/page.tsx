@@ -31,6 +31,34 @@ export default function FranchiseProfilePage() {
                         <Input label="Centre" value={form.centre} onChange={(e) => setForm({ ...form, centre: e.target.value })} />
                         <Input label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
                         <Input label="Photo URL" value={form.photo} onChange={(e) => setForm({ ...form, photo: e.target.value })} />
+                        <Input
+                            label="Facebook URL"
+                            type="url"
+                            value={form.facebookUrl || ''}
+                            onChange={(e) => setForm({ ...form, facebookUrl: e.target.value })}
+                            placeholder="https://facebook.com/yourpage"
+                        />
+                        <Input
+                            label="Instagram URL"
+                            type="url"
+                            value={form.instagramUrl || ''}
+                            onChange={(e) => setForm({ ...form, instagramUrl: e.target.value })}
+                            placeholder="https://instagram.com/yourpage"
+                        />
+                        <Input
+                            label="Twitter URL"
+                            type="url"
+                            value={form.twitterUrl || ''}
+                            onChange={(e) => setForm({ ...form, twitterUrl: e.target.value })}
+                            placeholder="https://twitter.com/yourpage"
+                        />
+                        <Input
+                            label="YouTube URL"
+                            type="url"
+                            value={form.youtubeUrl || ''}
+                            onChange={(e) => setForm({ ...form, youtubeUrl: e.target.value })}
+                            placeholder="https://youtube.com/@yourchannel"
+                        />
                     </div>
                     <Textarea label="Bio" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
                     <div className="flex gap-2">

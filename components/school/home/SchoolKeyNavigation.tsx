@@ -63,7 +63,7 @@ export default function SchoolKeyNavigation() {
             </div>
 
             {/* Wave divider below icons */}
-            <div className="wave-gray-divider" />
+
 
             <style jsx>{`
                 .key-nav-section {
@@ -74,24 +74,7 @@ export default function SchoolKeyNavigation() {
                     z-index: 10;
                 }
 
-                .wave-gray-divider {
-                    width: 100%;
-                    height: 50px;
-                    background: url(/wave-gray.png) repeat-x left top;
-                    background-size: auto 100%;
-                    position: relative;
-                    margin: 0;
-                    animation: wave-slide 60s linear infinite;
-                }
 
-                @keyframes wave-slide {
-                    from {
-                        background-position: 0 0;
-                    }
-                    to {
-                        background-position: -4000px 0;
-                    }
-                }
             `}</style>
         </section>
     );
