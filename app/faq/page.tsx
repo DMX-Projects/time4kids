@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PreschoolBackground, CuteSchoolBus, FloatingBalloon, PlayfulStar, PastelBlob } from '../../components/ui/PreschoolDecorations';
 
 const faqsData = [
     {
@@ -290,15 +292,125 @@ const AnimatedWave = ({ position = 'top', showObjects = false }: { position?: 't
     );
 };
 
+const SchoolFrame = ({ children }: { children: React.ReactNode }) => {
+    return (
+        <div className="school-frame-container">
+            {/* Outline Stars Background */}
+            <div className="star-background">
+                {[...Array(12)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        className={`outline-star star-${i} ${i % 2 === 0 ? 'star-blue' : 'star-gold'}`}
+                        animate={{
+                            opacity: [0.3, 0.7, 0.3],
+                            scale: [1, 1.1, 1],
+                        }}
+                        transition={{
+                            duration: 3 + Math.random() * 2,
+                            repeat: Infinity,
+                            delay: Math.random() * 2
+                        }}
+                    >
+                        ☆
+                    </motion.div>
+                ))}
+            </div>
+
+            {/* 🎈 Balloons Styling */}
+            <div className="balloon-garden">
+                <motion.div
+                    className="mini-balloon bal-red"
+                    animate={{ y: [0, -15, 0], rotate: [-5, 5, -5] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    style={{ top: '10%', left: '5%' }}
+                >
+                    <div className="balloon-string"></div>
+                </motion.div>
+                <motion.div
+                    className="mini-balloon bal-yellow"
+                    animate={{ y: [0, -20, 0], rotate: [5, -5, 5] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                    style={{ bottom: '15%', right: '5%' }}
+                >
+                    <div className="balloon-string"></div>
+                </motion.div>
+                <motion.div
+                    className="mini-balloon bal-green"
+                    animate={{ y: [0, -18, 0], rotate: [-3, 3, -3] }}
+                    transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                    style={{ top: '40%', right: '2%' }}
+                >
+                    <div className="balloon-string"></div>
+                </motion.div>
+            </div>
+
+            {/* 🧱 Toy Blocks & Doodles */}
+            <div className="playground-doodles">
+                <div className="toy-block block-pink">A</div>
+                <div className="toy-block block-mint">B</div>
+                <div className="toy-block block-blue">C</div>
+
+                <div className="doodle-item pencil-doodle">✏️</div>
+                <div className="doodle-item apple-doodle">🍎</div>
+                <div className="doodle-item music-note">🎵</div>
+            </div>
+
+            {/* Main Rounded Box */}
+            <div className="main-frame-box colorful-border">
+                <div className="inner-image-area">
+                    {children}
+                </div>
+
+                {/* 🔔 School Bell at Top Right */}
+                <motion.div
+                    className="school-bell-mount"
+                    whileHover={{ rotate: [0, -10, 10, -10, 10, 0] }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <div className="bell-dome school-yellow-bg">
+                        <div className="bell-clapper-arm"></div>
+                        <div className="bell-clapper-ball"></div>
+                    </div>
+                </motion.div>
+
+                {/* 🚌 Side-view School Bus at Bottom Left */}
+                <motion.div
+                    className="illustrative-bus-side"
+                    animate={{
+                        x: [0, 10, 0],
+                        y: [0, -2, 0]
+                    }}
+                    transition={{
+                        x: { duration: 5, repeat: Infinity, ease: "easeInOut" },
+                        y: { duration: 2.5, repeat: Infinity, ease: "easeInOut" }
+                    }}
+                >
+                    <div className="bus-side-body bus-red-primary">
+                        <div className="bus-side-windows">
+                            <div className="side-window window-blue"></div>
+                            <div className="side-window window-blue"></div>
+                        </div>
+                        <div className="bus-side-front bus-red-primary">
+                            <div className="bus-side-headlight"></div>
+                        </div>
+                        <div className="bus-side-wheel w-left"></div>
+                        <div className="bus-side-wheel w-right"></div>
+                    </div>
+                </motion.div>
+            </div>
+        </div>
+    );
+};
+
 export default function FAQPage() {
     const [openAccordion, setOpenAccordion] = useState<number | null>(null);
-    const [currentSlide, setCurrentSlide] = useState(0);
+    const [activeSlide, setActiveSlide] = useState(0);
 
     const bannerImages = ['/faq-banner-new-1.png', '/faq-banner-new-2.png'];
 
     useEffect(() => {
         const timer = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
+            setActiveSlide((prev) => (prev + 1) % bannerImages.length);
         }, 4000);
         return () => clearInterval(timer);
     }, []);
@@ -309,34 +421,104 @@ export default function FAQPage() {
             <AnimatedWave position="top" />
 
             {/* HERO / BANNER */}
-            <section className="faq-banner">
-                <div className="banner-inner">
+            <section className="faq-banner relative overflow-hidden">
+                {/* 1. LAYER: Classroom Background Image with Blur */}
+                <div className="classroom-bg absolute inset-0 z-0"></div>
 
-                    <div className="banner-text">
-                        <h1>T.I.M.E. Kids</h1>
-                        <p>the pre-school that cares</p>
+                {/* 2. LAYER: Strong White Overlay for Professional Look */}
+                <div className="white-overlay absolute inset-0 z-1"></div>
+
+                {/* 3. LAYER: Subtle Particles/Glows (kept for a touch of magic) */}
+                <div className="absolute inset-0 z-2 pointer-events-none opacity-40">
+                    {[...Array(6)].map((_, i) => (
+                        <motion.div
+                            key={i}
+                            className="subtle-glow"
+                            style={{
+                                top: `${Math.random() * 100}%`,
+                                left: `${Math.random() * 100}%`,
+                            }}
+                            animate={{
+                                scale: [1, 1.2, 1],
+                                opacity: [0.3, 0.6, 0.3],
+                            }}
+                            transition={{
+                                duration: 5 + Math.random() * 5,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                        />
+                    ))}
+                </div>
+
+                <div className="banner-inner relative z-10">
+                    <div className="logo-container relative">
+                        {/* Clean Backdrop for Logo */}
+                        <div className="logo-glass-backdrop"></div>
+
+                        {/* Floating Decorative Elements */}
+                        <div className="absolute inset-0 pointer-events-none overflow-visible">
+                            <motion.span className="deco-icon star-1" animate={{ y: [-10, 10, -10], rotate: [0, 20, 0] }} transition={{ duration: 4, repeat: Infinity }}>⭐</motion.span>
+                            <motion.span className="deco-icon star-2" animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }} transition={{ duration: 3, repeat: Infinity }}>✨</motion.span>
+                            <motion.span className="deco-icon bubble-1" animate={{ x: [-5, 5, -5] }} transition={{ duration: 5, repeat: Infinity }}>🫧</motion.span>
+                            <motion.span className="deco-icon bubble-2" animate={{ y: [5, -5, 5] }} transition={{ duration: 6, repeat: Infinity }}>🎈</motion.span>
+                        </div>
+
+                        <motion.div
+                            className="banner-text relative z-10"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 1, ease: "backOut" }}
+                        >
+                            <motion.h1
+                                className="logo-title flex flex-wrap items-center gap-x-2 gap-y-1"
+                                animate={{ y: [0, -5, 0] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                                <span className="letter-t">T</span>
+                                <span className="dot dot-red">.</span>
+                                <span className="letter-i">I</span>
+                                <span className="dot dot-yellow">.</span>
+                                <span className="letter-m">M</span>
+                                <span className="dot dot-blue">.</span>
+                                <span className="letter-e">E</span>
+                                <span className="kids-text ml-3">Kids</span>
+                            </motion.h1>
+                            <motion.p
+                                className="logo-tagline italic mt-3 opacity-95 text-2xl font-semibold"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.8, duration: 0.8 }}
+                            >
+                                <span className="mr-2 text-rose-400">❀</span>
+                                the pre-school that cares
+                                <span className="ml-2 text-sky-400">❀</span>
+                            </motion.p>
+                        </motion.div>
                     </div>
 
                     {/* ☁️ CLOUD NAVIGATION REMOVED FROM HERE */}
 
-                    {/* 🔴 FIXED CIRCULAR FRAME */}
-                    <div className="banner-frame">
-                        <div className="circle-frame">
-                            {bannerImages.map((img, index) => (
-                                <div
-                                    key={index}
-                                    className={`slide ${currentSlide === index ? 'active' : ''}`}
-                                >
-                                    <Image
-                                        src={img}
-                                        alt="Kids"
-                                        fill
-                                        priority={index === 0}
-                                        style={{ objectFit: 'cover' }}
-                                    />
-                                </div>
-                            ))}
-                        </div>
+                    {/* 🚌 REALISTIC FRONT-FACING SCHOOL BUS */}
+                    <div className="banner-visual">
+                        <SchoolFrame>
+                            <div className="image-slides-container">
+                                {bannerImages.map((img, index) => (
+                                    <div
+                                        key={index}
+                                        className={`slide ${index === activeSlide ? 'active' : ''}`}
+                                    >
+                                        <Image
+                                            src={img}
+                                            alt="FAQ Banner"
+                                            fill
+                                            style={{ objectFit: 'cover' }}
+                                            priority
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </SchoolFrame>
                     </div>
 
                 </div>
@@ -348,72 +530,56 @@ export default function FAQPage() {
             </div>
 
             {/* FAQ CONTENT */}
-            <section className="faq-content">
-                <div className="faq-layout">
+            <section className="faq-content relative">
+                <div className="faq-layout relative z-10">
 
-                    <div className="faq-side-content">
-                        <div className="designed-frame-container">
-                            <div className="designed-frame">
-                                <div className="frame-background"></div>
-                                <div className="main-circle perfect-frame">
-                                    <Image
-                                        src="/faq-sidebar-teacher.png"
-                                        alt="Kids learning"
-                                        width={460}
-                                        height={460}
-                                        className="object-cover zoom-child-image"
-                                    />
-                                </div>
-                                <div className="decorator top-left-pink">
-                                    <div className="inner-icon">🪁</div>
-                                </div>
-                                <div className="decorator right-yellow">
-                                    <div className="inner-icon">🎒</div>
-                                </div>
-                                <div className="decorator bottom-right-small">
-                                    <Image src="/infra.jpg" alt="preview" width={60} height={60} className="rounded-full border-2 border-white shadow-md" />
-                                </div>
-                                <div className="star purple-star">✦</div>
-                                <div className="dot pink-dot"></div>
-                                <div className="dot yellow-dot"></div>
-                                <div className="dot blue-dot"></div>
-                            </div>
+                    <PreschoolBackground className="rounded-3xl shadow-lg my-8 border border-white/50">
+                        {/* Extra floated elements for more fun */}
+                        <FloatingBalloon color="#FFCDD2" className="absolute left-[-20px] top-[10%] w-20 h-28 animate-bounce-slow opacity-90 hidden xl:block" style={{ animationDuration: '4s' }} />
+                        <FloatingBalloon color="#C8E6C9" className="absolute right-[-20px] bottom-[20%] w-16 h-24 animate-bounce-slow opacity-90 hidden xl:block" style={{ animationDuration: '5s' }} />
+
+                        <div className="hidden xl:block absolute right-[-50px] top-[40%]">
+                            <PlayfulStar className="w-12 h-12 text-yellow-400 animate-spin-slow" style={{ animationDuration: '10s' }} />
                         </div>
-                        <div className="banner-clouds sidebar-clouds">
-                            <a href="/franchise" className="cloud-btn green">
-                                FRANCHISE <br /> OPPORTUNITY
-                            </a>
-                            <a href="/media" className="cloud-btn orange">
-                                SCHOOL <br /> TOUR
-                            </a>
-                            <a href="/media" className="cloud-btn yellow">
-                                PHOTO/ VIDEO <br /> GALLERY
-                            </a>
+
+                        {/* Background Low Opacity Bus */}
+                        <div className="absolute left-[5%] bottom-[10%] opacity-5 pointer-events-none z-0 transform -rotate-12 scale-150 blur-[1px]">
+                            <CuteSchoolBus className="w-64 h-48" />
                         </div>
-                    </div>
 
-                    <div className="faq-wrapper">
-                        {faqsData.map((faq) => (
-                            <div key={faq.id} className="faq-item">
-                                <button
-                                    className="faq-question"
-                                    onClick={() => setOpenAccordion(openAccordion === faq.id ? null : faq.id)}
-                                >
-                                    {faq.question}
-                                    <span>{openAccordion === faq.id ? '−' : '+'}</span>
-                                </button>
+                        {/* Main FAQ List */}
+                        <div className="faq-wrapper mx-auto relative z-10 px-4 py-6">
+                            {faqsData.map((faq, index) => (
+                                <div key={faq.id} className={`faq-item faq-item-${index % 4} ${index === 1 ? 'featured-faq' : ''}`}>
+                                    <button
+                                        className="faq-question"
+                                        onClick={() => setOpenAccordion(openAccordion === faq.id ? null : faq.id)}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {index === 1 && <span className="text-xl animate-pulse">✨</span>}
+                                            {faq.question}
+                                        </div>
+                                        <span className={`icon-star ${openAccordion === faq.id ? 'rotate-180' : ''}`}>
+                                            {openAccordion === faq.id ? '★' : '☆'}
+                                        </span>
+                                    </button>
 
-                                {openAccordion === faq.id && (
-                                    <div className="faq-answer">
-                                        {faq.answer.map((line, i) => (
-                                            <p key={i}>{line}</p>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
+                                    {openAccordion === faq.id && (
+                                        <div className="faq-answer">
+                                            {faq.answer.map((line, i) => (
+                                                <p key={i}>{line}</p>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
 
+                        {/* Footer decoration for the section */}
+                        <div className="absolute bottom-4 right-4 z-20 opacity-90">
+                            <CuteSchoolBus className="w-32 h-20 md:w-48 md:h-32 transform hover:scale-105 transition-transform duration-500" />
+                        </div>
+                    </PreschoolBackground>
                 </div>
             </section>
 
@@ -422,13 +588,49 @@ export default function FAQPage() {
             <style jsx global>{`
                 .faq-page {
                     font-family: 'Dosis', sans-serif;
-                    background: #f5f5f5;
+                    background: radial-gradient(circle at center, #ffffff 0%, #fff9f0 35%, #f3e5f5 100%);
                     min-height: 100vh;
+                    overflow-x: hidden; /* Prevent horizontal scroll from absolute elements */
                 }
 
                 .faq-banner {
-                    background: linear-gradient(135deg, #cfefff, #fbe6ff);
-                    padding: 120px 20px 70px;
+                    padding: 130px 20px 80px;
+                    position: relative;
+                    background: linear-gradient(135deg, #fffcf5 0%, #fff9f0 100%); /* Warm cream primary background */
+                }
+                
+                /* ... (Keep existing banner styles if needed, or simplify) ... */
+                /* Reducing banner complexity for focus, or keeping as is */
+                .classroom-bg {
+                    background-image: url('/school-banner.png');
+                    background-size: cover;
+                    background-position: center;
+                    filter: blur(3.5px);
+                    transform: scale(1.05);
+                }
+
+                .white-overlay {
+                    background: rgba(255, 248, 225, 0.62); /* Warmer peach-cream overlay */
+                    backdrop-filter: saturate(120%) blur(2px);
+                }
+
+                .btn-glow {
+                    position: absolute;
+                    inset: -10px;
+                    background: radial-gradient(circle, rgba(255, 213, 79, 0.3) 0%, transparent 70%);
+                    border-radius: 50%;
+                    filter: blur(15px);
+                    z-index: -1;
+                    opacity: 0;
+                    transition: opacity 0.5s ease;
+                }
+
+                .logo-glass-backdrop {
+                    position: absolute;
+                    inset: 0;
+                    background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(255, 248, 225, 0.8) 50%, transparent 80%);
+                    z-index: -1;
+                    filter: blur(20px);
                 }
 
                 .banner-inner {
@@ -438,422 +640,511 @@ export default function FAQPage() {
                     align-items: center;
                     justify-content: space-between;
                     gap: 40px;
+                    position: relative;
+                    z-index: 10;
                 }
 
-                .banner-text h1 {
-                    font-size: 3.5rem;
-                    color: #1f4fa3;
-                    margin: 0;
+                .banner-text {
+                    flex: 1;
+                    z-index: 11;
                 }
 
-                .banner-text p {
-                    font-size: 1.5rem;
-                    color: #1f4fa3;
-                    font-style: italic;
-                    margin-top: 5px;
-                }
-
-                .banner-clouds {
+                .banner-visual {
+                    flex: 1;
                     display: flex;
-                    flex-direction: column;
-                    gap: 15px;
-                    z-index: 30;
-                }
-
-                .sidebar-clouds {
-                    margin-top: 40px;
-                    margin-bottom: 30px;
+                    justify-content: center;
                     align-items: center;
+                    min-height: 450px;
+                    z-index: 11;
                 }
 
-                /* ORGANIC CLOUD BUTTONS WITH FLOATING ANIMATION */
-                @keyframes float {
-                    0%, 100% { 
-                        transform: translateY(0px) rotate(0deg);
-                    }
-                    25% { 
-                        transform: translateY(-8px) rotate(1deg);
-                    }
-                    50% { 
-                        transform: translateY(-15px) rotate(-1deg);
-                    }
-                    75% { 
-                        transform: translateY(-8px) rotate(1deg);
-                    }
+                .logo-container { padding: 40px; }
+                 
+                 /* Banner Text Styles */
+                .banner-text h1.logo-title {
+                    font-size: 5.5rem;
+                    line-height: 1;
+                    font-weight: 900;
+                    margin: 0;
+                    color: white;
+                    text-transform: uppercase;
+                }
+                 .banner-text .logo-tagline {
+                    font-size: 2.2rem;
+                    color: #1f4fa3;
+                    font-weight: 700;
+                    letter-spacing: 1px;
+                    margin-top: 10px;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                }
+                
+                .letter-t, .letter-i, .letter-m, .letter-e {
+                    display: inline-block;
+                    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    cursor: pointer;
+                    position: relative;
+                }
+                .letter-t { color: #ff4d4d; text-shadow: 0 1px 0 #cc0000, 0 2px 0 #b30000; }
+                .letter-i { color: #5cb85c; text-shadow: 0 1px 0 #449d44, 0 2px 0 #398439; }
+                .letter-m { color: #ff9933; text-shadow: 0 1px 0 #cc7a00, 0 2px 0 #b36b00; }
+                .letter-e { color: #9933ff; text-shadow: 0 1px 0 #7a00cc, 0 2px 0 #6b00b3; }
+                
+                 .letter-t:hover, .letter-i:hover, .letter-m:hover, .letter-e:hover {
+                    transform: translateY(-5px) scale(1.1) rotate(3deg);
+                }
+                .dot { font-size: 5rem; vertical-align: middle; line-height: 0.1; }
+                .dot-red { color: #ff6b6b; } .dot-yellow { color: #feca57; } .dot-blue { color: #48dbfb; }
+                
+                .kids-text {
+                    font-family: var(--font-fredoka), 'Fredoka', sans-serif;
+                    background: linear-gradient(135deg, #1f4fa3 0%, #3498db 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    display: inline-block;
+                    transform: rotate(-2deg);
+                }
+                
+                /* Decorations */
+                .deco-icon { position: absolute; font-size: 2rem; z-index: 5; }
+                .star-1 { top: -20px; left: 10px; font-size: 2.5rem; }
+                .star-2 { top: 40px; right: -30px; }
+                .bubble-1 { bottom: -10px; left: -40px; font-size: 1.8rem; }
+                .bubble-2 { top: 10px; right: 20px; font-size: 2.2rem; }
+
+                 /* Banner Frame - Subtle Wave-Cut Asymmetric Style */
+                 /* Removed .banner-frame, .blob-frame, @keyframes blob-wave-minimal, .banner-frame::before, .banner-frame::after */
+
+                .slide { 
+                    position: absolute; 
+                    inset: 0; 
+                    opacity: 0; 
+                    transition: opacity 1s ease;
+                    /* Ensure image follows the morphing shape - inheriting border-radius from parent (blob-frame) works best if overflow is hidden there, 
+                       but slide needs to fill it. 
+                       Actually, relying on overflow:hidden on .blob-frame is sufficient for the cropping. */
+                     width: 100%;
+                     height: 100%;
+                }
+                .slide.active { opacity: 1; }
+                
+                .slide img {
+                    transform: scale(1.1); /* Slight zoom to cover edges dynamically */
                 }
 
-                .cloud-btn {
-                    width: 200px;
-                    height: 110px;
+                /* Removed .paper-plane-scene, .plane-orbit-simple, .paper-plane-container, .paper-plane-svg, .plane-trail-simple, .bubbles-layer, .question-bubble */
+
+                /* Story-like School Frame Styles */
+                .school-frame-container {
+                    position: relative;
+                    width: 420px;
+                    height: 330px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    text-align: center;
-                    font-weight: 800;
-                    font-size: 0.95rem;
-                    line-height: 1.2;
-                    color: #1f4fa3;
-                    text-decoration: none;
-                    position: relative;
-                    z-index: 10;
-                    animation: float 4s ease-in-out infinite;
-                    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
-                    transition: all 0.3s ease;
+                    padding: 30px;
+                    background: #fff;
+                    border-radius: 35px;
+                    box-shadow: 0 15px 45px rgba(255, 100, 100, 0.08);
                 }
 
-                .cloud-btn:hover {
-                    animation-play-state: paused;
-                    transform: translateY(-5px) scale(1.05);
-                    filter: drop-shadow(0 12px 24px rgba(0,0,0,0.2));
-                }
-
-                /* Main cloud body - organic irregular shape */
-                .cloud-btn::before {
-                    content: '';
+                /* Background Stars */
+                .star-background {
                     position: absolute;
                     inset: 0;
-                    background: inherit;
-                    border-radius: 45% 55% 52% 48% / 48% 45% 55% 52%;
-                    z-index: -1;
+                    pointer-events: none;
                 }
-
-                /* Cloud puff - left side */
-                .cloud-btn::after {
-                    content: '';
+                .outline-star {
                     position: absolute;
-                    width: 70px;
-                    height: 70px;
-                    background: inherit;
-                    border-radius: 50%;
-                    top: -15px;
-                    left: 15px;
-                    z-index: -2;
+                    font-size: 1.8rem;
+                    user-select: none;
+                }
+                .star-blue { color: #4fc3f7; }
+                .star-gold { color: #ffd54f; }
+                
+                .star-0 { top: 5%; left: 8%; }
+                .star-1 { top: 12%; right: 12%; }
+                .star-2 { bottom: 15%; left: 10%; }
+                .star-3 { bottom: 8%; right: 8%; }
+                .star-4 { top: 40%; left: 2%; }
+                .star-5 { top: 60%; right: 2%; }
+                .star-6 { top: 4%; left: 45%; }
+                .star-7 { bottom: 4%; left: 55%; }
+                .star-8 { top: 22%; left: 18%; font-size: 1rem; }
+                .star-9 { bottom: 22%; right: 18%; font-size: 1rem; }
+
+                /* 🎈 Balloons Styling */
+                .balloon-garden {
+                    position: absolute;
+                    inset: 0;
+                    pointer-events: none;
+                    z-index: 10;
+                }
+                .mini-balloon {
+                    position: absolute;
+                    width: 25px;
+                    height: 30px;
+                    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+                }
+                .bal-red { background: #ff5252; box-shadow: inset -5px -5px 0 rgba(0,0,0,0.1); }
+                .bal-yellow { background: #ffd740; box-shadow: inset -5px -5px 0 rgba(0,0,0,0.1); }
+                .bal-green { background: #69f0ae; box-shadow: inset -5px -5px 0 rgba(0,0,0,0.1); }
+                
+                .balloon-string {
+                    position: absolute;
+                    bottom: -15px;
+                    left: 50%;
+                    width: 1.5px;
+                    height: 20px;
+                    background: rgba(0,0,0,0.1);
+                    transform: translateX(-50%);
                 }
 
-                /* GREEN BUTTON - Fluffy cloud with multiple puffs */
-                .cloud-btn.green { 
-                    background: #9bd35f;
-                    animation-delay: 0s;
+                /* 🧱 Toy Blocks & Doodles */
+                .playground-doodles {
+                    position: absolute;
+                    inset: 0;
+                    pointer-events: none;
+                    z-index: 11;
                 }
-
-                .cloud-btn.green::before {
-                    border-radius: 48% 52% 55% 45% / 52% 48% 52% 48%;
+                .toy-block {
+                    position: absolute;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 6px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 900;
+                    color: white;
+                    font-size: 14px;
+                    box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
                 }
+                .block-pink { background: #ec407a; left: 10px; bottom: 80px; transform: rotate(-10deg); }
+                .block-mint { background: #26a69a; left: 35px; bottom: 85px; transform: rotate(15deg); }
+                .block-blue { background: #42a5f5; left: 22px; bottom: 110px; transform: rotate(-5deg); }
 
-                .cloud-btn.green::after {
-                    width: 80px;
-                    height: 65px;
-                    top: -20px;
-                    left: 20px;
-                    border-radius: 60% 40% 55% 45% / 50% 50% 50% 50%;
+                .doodle-item {
+                    position: absolute;
+                    font-size: 1.5rem;
+                    opacity: 0.8;
                 }
+                .pencil-doodle { top: 20px; left: 120px; transform: rotate(-45deg); }
+                .apple-doodle { bottom: 30px; right: 120px; }
+                .music-note { top: 80px; right: 25px; transform: rotate(20deg); }
 
-                /* ORANGE BUTTON - Wide oval cloud */
-                .cloud-btn.orange { 
-                    background: #ff9933; 
-                    color: #fff;
-                    animation-delay: 1.3s;
-                }
-
-                .cloud-btn.orange::before {
-                    border-radius: 42% 58% 50% 50% / 55% 52% 48% 45%;
-                }
-
-                .cloud-btn.orange::after {
-                    width: 75px;
-                    height: 75px;
-                    top: -18px;
-                    left: 12px;
-                    border-radius: 52% 48% 60% 40% / 48% 52% 48% 52%;
-                }
-
-                /* YELLOW BUTTON - Rounded cloud with soft edges */
-                .cloud-btn.yellow { 
-                    background: #ffcc00;
-                    animation-delay: 2.6s;
-                }
-
-                .cloud-btn.yellow::before {
-                    border-radius: 50% 50% 48% 52% / 45% 55% 52% 48%;
-                }
-
-                .cloud-btn.yellow::after {
-                    width: 85px;
-                    height: 70px;
-                    top: -22px;
-                    left: 18px;
-                    border-radius: 55% 45% 58% 42% / 52% 48% 55% 45%;
-                }
-
-                /* Circular Frame */
-                .banner-frame {
-                    width: 300px;
-                    height: 300px;
-                }
-
-                .circle-frame {
+                /* Main Box & Proportions - SHAPE SHIFTED TO ORGANIC BLOB */
+                .main-frame-box {
                     position: relative;
                     width: 100%;
                     height: 100%;
-                    border-radius: 50%;
+                    background: #fff;
+                    /* Organic asymmetric blob shape */
+                    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+                    z-index: 5;
+                    padding: 15px; /* Increased for better shape outline visibility */
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+                    transition: border-radius 0.5s ease; /* Smooth transition if shape ever morphs */
+                }
+                .colorful-border {
+                    border: 5px solid #ff7043;
+                    outline: 4px solid #fff;
+                    /* Trace the same organic shape */
+                    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+                    box-shadow: 0 0 0 8px #4fc3f7, 0 10px 40px rgba(0,0,0,0.1);
+                }
+
+                .inner-image-area {
+                    width: 100%;
+                    height: 100%;
+                    /* Organic inner shape with slight offset for depth */
+                    border-radius: 55% 45% 35% 65% / 55% 35% 65% 45%;
                     overflow: hidden;
-                    background: #bfe7ff;
-                    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+                    position: relative;
                 }
 
-                .slide {
+                /* 🔔 School Bell - Re-aligned to new curve */
+                .school-bell-mount {
                     position: absolute;
-                    inset: 0;
-                    opacity: 0;
-                    transition: opacity 1s ease;
+                    top: -10px;
+                    right: 15px; /* Pulled in to sit on the curve */
+                    width: 75px;
+                    height: 85px;
+                    z-index: 12;
+                    cursor: pointer;
+                }
+                .bell-dome {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    width: 55px;
+                    height: 55px;
+                    border: 3.5px solid #333;
+                    border-radius: 50%;
+                    box-shadow: inset -5px -5px 0 rgba(0,0,0,0.05);
+                }
+                .school-yellow-bg { background: #ffd740; }
+                
+                .bell-dome::after {
+                    content: '';
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 10px;
+                    height: 10px;
+                    background: #333;
+                    border-radius: 50%;
+                }
+                .bell-clapper-arm {
+                    position: absolute;
+                    top: 40px;
+                    right: -10px;
+                    width: 22px;
+                    height: 3.5px;
+                    background: #333;
+                    transform: rotate(30deg);
+                }
+                .bell-clapper-ball {
+                    position: absolute;
+                    top: 47px;
+                    right: -18px;
+                    width: 12px;
+                    height: 12px;
+                    background: #333;
+                    border-radius: 50%;
                 }
 
-                .slide.active {
-                    opacity: 1;
+                /* 🚌 Red School Bus */
+                .illustrative-bus-side {
+                    position: absolute;
+                    bottom: -10px; /* Adjusted from -22px to sit on the curve */
+                    left: 20px;   /* Adjusted from -20px to sit inside the corner curve */
+                    width: 95px;
+                    height: 65px;
+                    z-index: 12;
                 }
+                .bus-red-primary { background: #ff5252 !important; border-color: #333 !important; }
+                
+                .bus-side-body {
+                    position: relative;
+                    width: 85px;
+                    height: 42px;
+                    border: 3.5px solid #333;
+                    border-radius: 10px 10px 5px 5px;
+                    display: flex;
+                    align-items: center;
+                    padding-left: 8px;
+                }
+                .bus-side-windows {
+                    display: flex;
+                    gap: 5px;
+                }
+                .side-window {
+                    width: 15px;
+                    height: 13px;
+                    border: 2.5px solid #333;
+                    border-radius: 4px;
+                }
+                .window-blue { background: #b3e5fc; }
+
+                .bus-side-front {
+                    position: absolute;
+                    right: -8px;
+                    top: 7px;
+                    width: 26px;
+                    height: 30px;
+                    border: 3.5px solid #333;
+                    border-left: none;
+                    border-radius: 0 12px 5px 0;
+                }
+                .bus-side-headlight {
+                    position: absolute;
+                    bottom: 6px;
+                    right: 3px;
+                    width: 6px;
+                    height: 6px;
+                    background: #ffd740;
+                    border: 2px solid #333;
+                    border-radius: 50%;
+                }
+                .bus-side-wheel {
+                    position: absolute;
+                    bottom: -12px;
+                    width: 22px;
+                    height: 22px;
+                    background: #fff;
+                    border: 3.5px solid #333;
+                    border-radius: 50%;
+                }
+                .bus-side-wheel::after {
+                    content: '';
+                    position: absolute;
+                    inset: 4.5px;
+                    background: #333;
+                    border-radius: 50%;
+                }
+                .w-left { left: 12px; }
+                .w-right { right: 0px; }
+
+                /* Responsive Primary Colors Redesign */
+                @media (max-width: 1024px) {
+                    .school-frame-container { width: 340px; height: 280px; padding: 20px; }
+                    .illustrative-bus-side { scale: 0.8; bottom: -18px; left: -10px; }
+                    .school-bell-mount { scale: 0.8; top: -12px; right: -12px; }
+                    .doodle-item { scale: 0.75; }
+                }
+
+                @media (max-width: 768px) {
+                    .school-frame-container { width: 280px; height: 220px; padding: 12px; }
+                    .illustrative-bus-side { scale: 0.65; bottom: -12px; left: -8px; }
+                    .school-bell-mount { scale: 0.65; top: -8px; right: -8px; }
+                    .main-frame-box { border-radius: 30px; padding: 8px; }
+                    .toy-block { scale: 0.8; left: 5px; }
+                    .mini-balloon { scale: 0.7; }
+                    .doodle-item { display: none; } /* Hide doodles on mobile to keep it clean */
+                }
+
+
+
 
                 .faqs-header {
-                    background: #fff;
                     text-align: center;
-                    padding: 40px 0;
+                    padding: 40px 0 20px;
                 }
 
                 .faqs-header h2 {
                     color: #ff6633;
-                    font-size: 2.4rem;
+                    font-size: 2.8rem;
+                    font-weight: 800;
+                    letter-spacing: 1px;
+                    text-shadow: 2px 2px 0px rgba(255,200,150,0.5);
                 }
 
                 .faq-content {
-                    padding: 60px 20px 150px;
+                    padding: 20px 20px 100px;
+                    min-height: 60vh;
                 }
 
                 .faq-layout {
-                    max-width: 1100px;
-                    margin: auto;
-                    display: grid;
-                    grid-template-columns: 1fr 2fr;
-                    gap: 40px;
+                    max-width: 900px;
+                    margin: 0 auto;
+                    position: relative;
                 }
+                
+                .faq-wrapper {
+                    position: relative;
+                    z-index: 10;
+                }
+                
+                /* Removed sidebar styles */
 
-                .designed-frame-container {
+                .faq-wrapper {
                     display: flex;
-                    justify-content: center;
-                    align-items: center;
+                    flex-direction: column;
+                    gap: 12px;
                     width: 100%;
-                    padding: 40px 0;
+                    max-width: 800px;
                 }
 
-                .designed-frame {
-                    position: relative;
-                    width: 460px;
-                    height: 460px;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-
-                .frame-background {
-                    position: absolute;
-                    width: 420px;
-                    height: 420px;
-                    background: #ffedba; /* Light yellow background */
-                    border-radius: 50%;
-                    z-index: 1;
-                    opacity: 0.8;
-                }
-
-                /* Removed outer white rings for a cleaner look */
-
-                .main-circle {
-                    position: relative;
-                    width: 380px;
-                    height: 380px;
-                    border-radius: 50%;
-                    overflow: hidden;
-                    z-index: 2;
-                    border: 15px solid #fff;
-                    box-shadow: 0 15px 50px rgba(0,0,0,0.15), 0 0 30px rgba(255, 255, 255, 0.4); /* Premium outer glow */
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: #fff;
-                }
-
-                .perfect-frame::after {
-                    content: '';
-                    position: absolute;
-                    inset: 0;
-                    border-radius: 50%;
-                    box-shadow: inset 0 0 30px rgba(0,0,0,0.08); /* Enhanced inner shadow */
-                    pointer-events: none;
-                    z-index: 3;
-                }
-
-                .zoom-child-image {
-                    width: 100% !important;
-                    height: 100% !important;
-                    transform: scale(1.0); /* Full view to show complete purple background */
-                    transform-origin: center 48%; /* Adjusted down to prevent face cutoff at top */
-                    object-fit: cover; /* Cover to fill circle */
-                }
-
-                .decorator {
-                    position: absolute;
-                    z-index: 5;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border-radius: 50%;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-                    border: 2px solid #fff;
-                }
-
-                .top-left-pink {
-                    width: 60px;
-                    height: 60px;
-                    background: #fbc6e3;
-                    top: 5%;
-                    left: 0%;
-                }
-
-                .right-yellow {
-                    width: 70px;
-                    height: 70px;
-                    background: #fff;
-                    top: 30%;
-                    right: -5%;
-                    overflow: hidden;
-                }
-
-                .bottom-right-small {
-                    width: 70px;
-                    height: 70px;
-                    bottom: 15%;
-                    left: -5%;
-                    border: 4px solid #fff;
-                    border-radius: 50%;
-                    overflow: hidden;
-                    background: #fff;
-                }
-
-                .inner-icon {
-                    font-size: 1.5rem;
-                }
-
-                .star {
-                    position: absolute;
-                    font-size: 24px;
-                    z-index: 5;
-                }
-
-                .purple-star {
-                    color: #7c4dff;
-                    top: 15%;
-                    right: 15%;
-                }
-
-                .dot {
-                    position: absolute;
-                    width: 12px;
-                    height: 12px;
-                    border-radius: 50%;
-                    z-index: 5;
-                }
-
-                .pink-dot { background: #ff5c8d; top: 30%; left: 5%; }
-                .yellow-dot { background: #ffcd29; bottom: 15%; left: 20%; }
-                .blue-dot { background: #29b6f6; bottom: 10%; right: 25%; }
-
-                .faq-side-image img {
-                    width: 220px !important;
-                    height: auto !important;
-                    border-radius: 16px;
-                    margin-bottom: 20px;
-                    display: inline-block;
-                }
-
+                /* Bubble Card Styles */
                 .faq-item {
-                    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-                    border-radius: 50px;
-                    overflow: visible;
-                    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-                    transition: all 0.4s ease;
-                    margin-bottom: 25px;
-                    border: 2px solid transparent;
+                    border-radius: 16px;
+                    overflow: hidden; /* Ensure content stays inside rounded corners */
+                    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+                    border: 2px solid rgba(255,255,255,0.6);
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.02); 
+                    position: relative;
+                    background: rgba(255,255,255,0.4);
+                    backdrop-filter: blur(5px);
                 }
+                
+                /* Featured Card Style */
+                .featured-faq {
+                    border: 2px solid #ffd700; /* Gold header */
+                    background: rgba(255, 255, 240, 0.8);
+                    transform: scale(1.02);
+                    box-shadow: 0 8px 20px rgba(255, 215, 0, 0.15);
+                    z-index: 10;
+                }
+
+                .faq-item-0 { background-color: rgba(255, 249, 240, 0.9); } /* Light Cream */
+                .faq-item-1 { background-color: rgba(240, 255, 244, 0.9); } /* Light Mint */
+                .faq-item-2 { background-color: rgba(255, 240, 245, 0.9); } /* Light Pink */
+                .faq-item-3 { background-color: rgba(243, 229, 245, 0.9); } /* Light Purple */
 
                 .faq-item:hover {
-                    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-                    transform: translateY(-3px);
-                    border-color: rgba(92, 184, 92, 0.3);
+                    transform: translateY(-4px);
+                    box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+                    z-index: 15;
+                    border-color: #fff;
+                }
+                
+                .featured-faq:hover {
+                     transform: scale(1.03) translateY(-4px);
+                     box-shadow: 0 15px 30px rgba(255, 215, 0, 0.2);
                 }
 
                 .faq-question {
-                    background: linear-gradient(135deg, #5cb85c 0%, #4ea34e 100%);
-                    color: #fff;
-                    padding: 22px 32px;
+                    background: transparent;
+                    color: #444;
+                    padding: 12px 20px;
                     font-size: 1.1rem;
                     border: none;
                     display: flex;
                     justify-content: space-between;
+                    align-items: center;
                     cursor: pointer;
                     width: 100%;
-                    transition: all 0.3s ease;
-                    border-radius: 50px;
-                    font-weight: 600;
+                    font-weight: 700;
                     letter-spacing: 0.3px;
+                    text-align: left;
                 }
 
                 .faq-question:hover {
-                    background: linear-gradient(135deg, #4ea34e 0%, #5cb85c 100%);
-                    transform: scale(1.01);
+                    color: #000;
                 }
 
-                .faq-question span {
-                    font-size: 1.5rem;
-                    font-weight: bold;
-                    transition: transform 0.3s ease;
+                .icon-star {
+                    font-size: 1.2rem;
+                    color: #fb8c00;
+                    transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+                    line-height: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 32px;
+                    height: 32px;
+                    background: #fff;
+                    border-radius: 50%;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                }
+                
+                .rotate-180 {
+                    transform: rotate(180deg);
+                    background: #fb8c00;
+                    color: #fff;
+                    box-shadow: 0 4px 8px rgba(251, 140, 0, 0.3);
+                }
+                
+                .faq-question:hover .icon-star {
+                     transform: rotate(90deg) scale(1.1);
                 }
 
                 .faq-answer {
-                    padding: 28px 32px;
-                    background: linear-gradient(to bottom, #f9f9f9 0%, #ffffff 100%);
-                    animation: fadeIn 0.4s ease;
-                    border-radius: 0 0 50px 50px;
-                    margin-top: -10px;
-                }
-
-                .faq-answer p {
-                    margin: 0 0 10px;
+                    padding: 0 20px 20px;
                     color: #555;
                     line-height: 1.6;
-                }
-
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(-10px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
+                    font-size: 1rem;
+                    opacity: 0.95;
                 }
 
                 @media (max-width: 768px) {
-                    .banner-inner {
-                        flex-direction: column;
-                        text-align: center;
-                    }
-
-                    .faq-layout {
-                        grid-template-columns: 1fr;
-                    }
-
-                    .banner-frame {
-                        width: 240px;
-                        height: 240px;
-                    }
+                    .banner-inner { flex-direction: column; text-align: center; }
+                    .banner-frame { width: 240px; height: 240px; }
+                    .faq-item { border-radius: 20px; }
+                    .faq-question { padding: 15px 20px; font-size: 1.1rem; }
+                     /* Hide decorations on mobile */
+                    .absolute.text-9xl, .absolute.text-8xl { display: none; }
                 }
             `}</style>
         </div>
