@@ -4,7 +4,7 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import HeroSection from '@/components/home/HeroSection';
 import KeyNavigation from '@/components/home/KeyNavigation';
-import WelcomeSection from '@/components/school/WelcomeSection';
+import IntroSection from '@/components/home/IntroSection';
 
 // Lazy load below-the-fold components for faster initial page load
 const BenefitsUpdates = dynamic(() => import('@/components/home/BenefitsUpdates'), {
@@ -43,7 +43,7 @@ export default function Home() {
             <KeyNavigation />
 
             {/* Introduction Section */}
-            <WelcomeSection />
+            <IntroSection />
 
             {/* Benefits & Updates */}
             <BenefitsUpdates />
