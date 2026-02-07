@@ -32,12 +32,13 @@ const emptyForm: FranchiseFormState = {
     address: "", googleMapLink: "", about: "", facebook: "", instagram: "", linkedin: "", twitter: "", youtube: ""
 };
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export function ManageFranchiseView({ initialFranchiseId }: { initialFranchiseId?: string }) {
     const { franchises, addFranchise, updateFranchise, deleteFranchise, savedLocations } = useAdminData();
     const { showToast } = useToast();
     const searchParams = useSearchParams();
+    const router = useRouter();
 
     const [form, setForm] = useState<FranchiseFormState>(emptyForm);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -164,10 +165,10 @@ export function ManageFranchiseView({ initialFranchiseId }: { initialFranchiseId
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-xs uppercase tracking-wide font-semibold text-slate-500">Franchises</p>
-                    <h1 className="text-2xl font-semibold text-slate-900">Manage & onboard franchises</h1>
+                    <h1 className="text-2xl font-semibold text-slate-900">Franchise Directory</h1>
                     <p className="text-sm text-slate-600">Create, edit, or remove franchise records from one place.</p>
                 </div>
-                <Button size="sm" onClick={startCreate} className="inline-flex items-center gap-2">
+                <Button size="sm" onClick={() => router.push("/dashboard/admin/add-franchise")} className="inline-flex items-center gap-2">
                     <Plus className="w-4 h-4" />
                     New Franchise
                 </Button>
@@ -193,7 +194,7 @@ export function ManageFranchiseView({ initialFranchiseId }: { initialFranchiseId
                             ))}
                         </select>
                     </div>
-                    <Button variant="outline" size="sm" onClick={startCreate}>
+                    <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/admin/add-franchise")}>
                         Add Franchise
                     </Button>
                 </div>

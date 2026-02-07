@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import SchoolContactForm from './SchoolContactForm';
 
@@ -5,60 +6,95 @@ export default function ContactSection({ school, franchiseSlug }: { school: any,
     if (!school) return null;
 
     return (
-        <section id="contact" className="pt-8 pb-16 md:pt-12 md:pb-20 bg-gradient-to-b from-[#fdfbf7] to-white relative overflow-hidden scroll-mt-24">
-            {/* Decorative Blobs */}
-            <div className="absolute top-20 right-0 w-64 h-64 bg-green-200/30 rounded-full blur-3xl -z-10"></div>
-            <div className="absolute bottom-20 left-0 w-80 h-80 bg-orange-200/30 rounded-full blur-3xl -z-10"></div>
+        <section id="contact" className="relative py-20 lg:py-32 overflow-hidden font-fredoka scroll-mt-24">
+            {/* Background */}
+            <div className="absolute inset-0 z-0">
+                <Image
+                    src="/classes-bg.png"
+                    alt="Background"
+                    fill
+                    className="object-cover object-center opacity-40"
+                    priority
+                />
+            </div>
 
-            <div className="container mx-auto px-4">
-                <div className="text-center mb-8">
-                    <span className="inline-block py-2 px-6 rounded-full bg-green-100 text-green-700 font-bold text-sm uppercase tracking-widest mb-4 border border-green-200">
-                        Get in Touch
+            <div className="container mx-auto px-4 relative z-10">
+                {/* Header */}
+                <div className="text-center mb-16">
+                    <span className="inline-block py-2 px-8 rounded-full bg-green-100/80 text-green-700 font-bold text-sm uppercase tracking-widest mb-6 border border-green-200">
+                        GET IN TOUCH
                     </span>
-                    <h2 className="text-4xl md:text-5xl font-fredoka font-bold text-gray-900 drop-shadow-sm">Contact Us</h2>
+                    <h2 className="text-5xl md:text-6xl font-black text-[#1F2937] drop-shadow-sm flex items-center justify-center gap-4">
+                        Contact Us
+                        <span className="text-yellow-400 text-4xl">✨</span>
+                    </h2>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 max-w-7xl mx-auto items-start">
-                    <div className="space-y-8">
-                        {/* Address Card */}
-                        <div className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-orange-100/50 flex items-start gap-6 hover:shadow-[0_8px_30px_rgb(249,115,22,0.15)] transition-all duration-500 group">
-                            <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center flex-shrink-0 text-white shadow-lg shadow-orange-200 group-hover:scale-110 transition-transform duration-500">
-                                <MapPin size={24} strokeWidth={2.5} />
+                <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-start max-w-7xl mx-auto">
+                    {/* Left Column: Contact Info & Bear */}
+                    <div className="space-y-8 relative">
+                        {/* Visit Us */}
+                        <div className="bg-white rounded-[2rem] p-8 flex gap-6 shadow-xl shadow-orange-100/50 border-2 border-orange-50 items-start hover:-translate-y-1 transition-transform duration-300">
+                            <div className="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-orange-200">
+                                <MapPin strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h4 className="text-xs font-bold text-orange-500 mb-2 uppercase tracking-widest">Visit Us</h4>
-                                <p className="text-gray-800 leading-snug text-lg font-bold font-fredoka">{school.address}</p>
+                                <h4 className="text-orange-500 font-black mb-2 uppercase tracking-wide">VISIT US</h4>
+                                <p className="font-bold text-gray-700 text-lg leading-relaxed">{school.address}</p>
                             </div>
                         </div>
 
-                        {/* Phone Card */}
-                        <div className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-green-100/50 flex items-start gap-6 hover:shadow-[0_8px_30px_rgb(34,197,94,0.15)] transition-all duration-500 group">
-                            <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center flex-shrink-0 text-white shadow-lg shadow-green-200 group-hover:scale-110 transition-transform duration-500">
-                                <Phone size={24} strokeWidth={2.5} />
+                        {/* Call Us */}
+                        <div className="bg-white rounded-[2rem] p-8 flex gap-6 shadow-xl shadow-green-100/50 border-2 border-green-50 items-center hover:-translate-y-1 transition-transform duration-300">
+                            <div className="w-14 h-14 bg-green-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-green-200">
+                                <Phone strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h4 className="text-xs font-bold text-green-500 mb-2 uppercase tracking-widest">Call Us</h4>
-                                <a href={`tel:${school.phone}`} className="text-gray-800 hover:text-green-600 text-xl font-bold transition-colors block tracking-tight font-fredoka">{school.phone}</a>
+                                <h4 className="text-green-500 font-black mb-2 uppercase tracking-wide">CALL US</h4>
+                                <a href={`tel:${school.phone}`} className="font-bold text-gray-700 text-xl hover:text-green-600 transition-colors">
+                                    {school.phone}
+                                </a>
                             </div>
                         </div>
 
-                        {/* Email Card */}
-                        <div className="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-blue-100/50 flex items-start gap-6 hover:shadow-[0_8px_30px_rgb(59,130,246,0.15)] transition-all duration-500 group">
-                            <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0 text-white shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform duration-500">
-                                <Mail size={24} strokeWidth={2.5} />
+                        {/* Email Us */}
+                        <div className="bg-white rounded-[2rem] p-8 flex gap-6 shadow-xl shadow-blue-100/50 border-2 border-blue-50 items-center hover:-translate-y-1 transition-transform duration-300">
+                            <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
+                                <Mail strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h4 className="text-xs font-bold text-blue-500 mb-2 uppercase tracking-widest">Email Us</h4>
-                                <a href={`mailto:${school.email}`} className="text-gray-800 hover:text-blue-600 text-lg font-bold transition-colors block break-all font-fredoka">{school.email || 'info@timekidspreschools.com'}</a>
+                                <h4 className="text-blue-500 font-black mb-2 uppercase tracking-wide">EMAIL US</h4>
+                                <a href={`mailto:${school.email}`} className="font-bold text-gray-700 text-lg break-all hover:text-blue-600 transition-colors">
+                                    {school.email || 'info@timekidspreschools.com'}
+                                </a>
+                            </div>
+                        </div>
+
+                        <div className="relative h-64 mt-10 hidden md:block">
+                            <div className="absolute bottom-0 left-0 z-10 w-48 animate-bounce">
+                                <Image src="/teddy-bear.png" width={200} height={200} alt="Bear" className="drop-shadow-xl" />
+                            </div>
+                            <div className="absolute bottom-0 left-40 z-0">
+                                <Image src="/science-blocks.png" width={120} height={120} alt="Blocks" className="drop-shadow-lg" />
                             </div>
                         </div>
                     </div>
 
+                    {/* Right Column: Form & Robot */}
                     <div className="relative">
                         <SchoolContactForm franchiseSlug={franchiseSlug} city={school.city} />
+
+                        {/* Decorative Robot */}
+                        <div className="absolute -bottom-12 -right-16 z-20 pointer-events-none hidden xl:block w-48">
+                            <Image src="/robot.png" width={200} height={200} alt="Robot" className="drop-shadow-2xl" />
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
     );
 }
+
+// Helper for animations if motion is not available in standard imports, but we can assume standard CSS or just static
+// I'll stick to static functionality for now to avoid module resolution issues if motion isn't set up perfectly or used in this file
+// Note: I removed motion-div to avoid errors; if animation is needed we can add standard CSS classes.

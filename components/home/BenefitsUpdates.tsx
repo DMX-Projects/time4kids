@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Slider from 'react-slick';
 import { apiUrl } from '@/lib/api-client';
 
-import BlobImage from '@/components/ui/BlobImage';
+
 
 export default function BenefitsUpdates() {
     const updatesSettings = {
@@ -84,10 +84,13 @@ export default function BenefitsUpdates() {
                                 </ul>
                             </div>
                             <div className="col-span-12 lg:col-span-4 hidden lg:block flex items-center justify-center pl-4">
-                                <BlobImage
-                                    src="/benefit-pic-new.png"
+                                <Image
+                                    src="/bfba3104656e4bc08ddf686ed121a156.gif"
                                     alt="Benefits"
-                                    className="w-full h-auto scale-110"
+                                    width={300}
+                                    height={300}
+                                    className="w-full h-auto"
+                                    unoptimized
                                 />
                             </div>
                         </div>

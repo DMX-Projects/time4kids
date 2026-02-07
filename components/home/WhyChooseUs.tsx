@@ -112,7 +112,7 @@ const WhyChooseUs = () => {
                 </svg>
             </div>
 
-            <div className="container mx-auto px-6 relative z-10">
+            <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-16 md:mb-20">
                     <h2 className="font-fredoka font-bold text-4xl md:text-7xl text-[#003366]">
                         Why Choose <span className="text-[#E67E22]">T.I.M.E. Kids?</span>

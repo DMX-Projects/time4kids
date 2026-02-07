@@ -6,7 +6,19 @@ import { jsonHeaders, mediaUrl } from "@/lib/api-client";
 
 export type FranchiseParent = { id: string; name: string; student: string; email: string; phone: string };
 export type FranchiseEvent = { id: string; title: string; date: string; venue: string; notes: string };
-export type FranchiseProfile = { name: string; email: string; phone: string; centre: string; city: string; bio: string; photo: string };
+export type FranchiseProfile = {
+    name: string;
+    email: string;
+    phone: string;
+    centre: string;
+    city: string;
+    bio: string;
+    photo: string;
+    facebookUrl?: string;
+    instagramUrl?: string;
+    twitterUrl?: string;
+    youtubeUrl?: string;
+};
 
 export type FranchiseDataContextValue = {
     parents: FranchiseParent[];
@@ -49,6 +61,10 @@ type ApiProfile = {
     contact_email?: string;
     contact_phone?: string;
     hero_image?: string;
+    facebook_url?: string;
+    instagram_url?: string;
+    twitter_url?: string;
+    youtube_url?: string;
 };
 
 const mapParent = (parent: ApiParent): FranchiseParent => ({
@@ -75,6 +91,10 @@ const mapProfile = (profile: ApiProfile): FranchiseProfile => ({
     city: profile.city || "",
     bio: profile.about || "",
     photo: mediaUrl(profile.hero_image),
+    facebookUrl: profile.facebook_url || "",
+    instagramUrl: profile.instagram_url || "",
+    twitterUrl: profile.twitter_url || "",
+    youtubeUrl: profile.youtube_url || "",
 });
 
 export function FranchiseDataProvider({ children }: { children: React.ReactNode }) {
@@ -82,7 +102,19 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
 
     const [parents, setParents] = useState<FranchiseParent[]>([]);
     const [events, setEvents] = useState<FranchiseEvent[]>([]);
-    const [profile, setProfile] = useState<FranchiseProfile>({ name: "", email: "", phone: "", centre: "", city: "", bio: "", photo: "" });
+    const [profile, setProfile] = useState<FranchiseProfile>({
+        name: "",
+        email: "",
+        phone: "",
+        centre: "",
+        city: "",
+        bio: "",
+        photo: "",
+        facebookUrl: "",
+        instagramUrl: "",
+        twitterUrl: "",
+        youtubeUrl: "",
+    });
 
     useEffect(() => {
         if (user?.role !== "franchise") return;
@@ -197,6 +229,10 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
             contact_phone: payload.phone,
             city: payload.city,
             about: payload.bio,
+            facebook_url: payload.facebookUrl,
+            instagram_url: payload.instagramUrl,
+            twitter_url: payload.twitterUrl,
+            youtube_url: payload.youtubeUrl,
         };
         const updated = await authFetch<ApiProfile>("/franchises/franchise/profile/", {
             method: "PATCH",

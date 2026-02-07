@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
+import { motion } from 'framer-motion';
 
 interface WelcomeSectionProps {
     schoolName: string;
@@ -8,64 +10,102 @@ interface WelcomeSectionProps {
 
 const WelcomeSection = ({ schoolName }: WelcomeSectionProps) => {
     return (
-        <section className="bg-[#fcf8f1] py-16 px-4 relative overflow-hidden">
-            {/* Background Pattern Placeholder - Can be replaced with a real doodle image if available */}
-            <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'url("/latest-scroll-bg.jpg")', backgroundSize: 'cover' }}></div>
+        <section className="relative py-24 px-4 overflow-hidden bg-[#fdf9e9]">
 
-            <div className="container mx-auto max-w-7xl relative z-10">
-                <div className="flex flex-col lg:flex-row gap-12 items-center">
-                    {/* Left: YouTube Video */}
-                    <div className="w-full lg:w-1/2">
-                        <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl border-8 border-white">
-                            <iframe
-                                className="absolute inset-0 w-full h-full"
-                                src="https://www.youtube.com/embed/dQw4w9WgXcQ" // Placeholder Video
-                                title="Welcome to TIME Kids"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                            ></iframe>
-                        </div>
-                        <div className="mt-4 flex justify-between items-center">
-                            <div className="bg-black py-2 px-4 rounded text-white text-xs font-bold inline-flex items-center gap-2">
-                                <span className="bg-red-600 px-1 rounded">Watch on</span> YouTube
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Right: Text Content */}
-                    <div className="w-full lg:w-1/2 space-y-6">
-                        <h2 className="text-3xl md:text-4xl font-bold font-fredoka flex flex-wrap gap-x-2">
-                            <span className="text-red-500">Welcome</span>
-                            <span className="text-gray-800">to T.I.M.E. Kids</span>
-                            <span className="text-blue-600">{schoolName}</span>
-                        </h2>
+            {/* Background Doodles Pattern */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'url("/images/bg2.gif")',
+                    backgroundRepeat: 'repeat',
+                    backgroundSize: '400px'
+                }}
+            />
 
-                        <div className="space-y-4 text-gray-700 text-base md:text-lg leading-relaxed font-medium">
-                            <p>
-                                A chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training
-                                T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in
-                                entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids
-                                with 350+ pre-schools is now poised for major expansion across the country.
-                            </p>
-                            <p>
-                                The programme at T.I.M.E. Kids pre-schools aims at making the transition from home to
-                                school easy, by providing the warm, safe and caring and learning environment that young
-                                children have at home. Our play schools offer wholesome, fun-filled and memorable
-                                childhood education to our children.
-                            </p>
-                            <p>
-                                T.I.M.E. Kids pre-schools are backed by our educational expertise of over 27 years, well
-                                trained care providers and a balanced educational programme. The programme at T.I.M.E.
-                                Kids pre-schools is based on the principles of age-appropriate child development
-                                practices. All our Play schools are well-equipped with learning aids and educational toys
-                                suitable for different age groups.
-                            </p>
+            <div className="container mx-auto max-w-4xl relative z-10 text-center">
+                {/* Decorative Elements - Left */}
+                <div className="absolute -left-20 top-1/2 -translate-y-1/2 hidden xl:block">
+                    <motion.div
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        className="relative"
+                    >
+                        {/* Stars Stack Left */}
+                        <div className="flex flex-col gap-4 items-center">
+                            <StarIcon className="w-8 h-8 text-yellow-400 rotate-12" />
+                            <StarIcon className="w-12 h-12 text-orange-400 -rotate-12" />
+                            <StarIcon className="w-10 h-10 text-yellow-500 rotate-45" />
                         </div>
+
+                    </motion.div>
+                </div>
+
+                {/* Decorative Elements - Right */}
+                <div className="absolute -right-20 top-1/2 -translate-y-1/2 hidden xl:block">
+                    <motion.div
+                        animate={{ y: [0, 10, 0] }}
+                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                        className="relative"
+                    >
+                        {/* Stars Stack Right */}
+                        <div className="flex flex-col gap-4 items-center">
+                            <StarIcon className="w-10 h-10 text-yellow-400 -rotate-12" />
+                            <StarIcon className="w-12 h-12 text-orange-400 rotate-12" />
+                            <StarIcon className="w-8 h-8 text-yellow-500 -rotate-45" />
+                        </div>
+
+                    </motion.div>
+                </div>
+
+                {/* Content */}
+                <div className="space-y-8">
+                    <h1 className="text-4xl md:text-5xl font-bold font-schoolbell text-[#fe5c61] drop-shadow-sm">
+                        Welcome to T.I.M.E. Kids <br />
+                        <span className="text-3xl md:text-4xl mt-2 block">{schoolName}</span>
+                    </h1>
+
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 font-dosis max-w-3xl mx-auto leading-tight">
+                        A chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training.
+                    </h2>
+
+                    <div className="space-y-6 text-gray-700 text-lg md:text-xl font-medium leading-relaxed">
+                        <p>
+                            T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training.
+                            After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+ pre-schools is now poised for major
+                            expansion across the country.
+                        </p>
+                        <p>
+                            The programme at T.I.M.E. Kids pre-schools aims at making the transition from home to school easy, by providing the
+                            warm, safe and caring and learning environment that young children have at home. Our play schools offer wholesome,
+                            fun-filled and memorable childhood education to our children.
+                        </p>
+                        <p>
+                            T.I.M.E. Kids pre-schools are backed by our educational expertise of over 27 years, well trained care providers and a
+                            balanced educational programme. The programme at T.I.M.E. Kids pre-schools is based on the principles of age-appropriate child
+                        </p>
                     </div>
                 </div>
             </div>
+
+
+
+            <style jsx>{`
+                .font-schoolbell {
+                    font-family: 'Schoolbell', cursive;
+                }
+                .font-dosis {
+                    font-family: 'Dosis', sans-serif;
+                }
+            `}</style>
         </section>
     );
 };
+
+// Helper component for Star
+const StarIcon = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+    </svg>
+);
 
 export default WelcomeSection;

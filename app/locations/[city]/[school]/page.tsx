@@ -2,9 +2,7 @@
 import { notFound } from 'next/navigation';
 import { getFranchiseBySlug } from '@/lib/api/franchises';
 import SchoolHeroSection from '@/components/school/home/SchoolHeroSection';
-import SchoolIntroSection from '@/components/school/home/SchoolIntroSection';
-// 
-// import AboutSection from '@/components/school/AboutSection';
+import WelcomeSection from '@/components/school/WelcomeSection';
 import SchoolProgramsSection from '@/components/school/SchoolProgramsSection';
 import AdmissionSection from '@/components/school/AdmissionSection';
 import GallerySection from '@/components/school/GallerySection';
@@ -51,9 +49,7 @@ export default async function SchoolDetailsPage({ params }: { params: { city: st
                 />
             </section>
             {/* --- SECTION: ABOUT --- */}
-            <section id="about">
-                <SchoolIntroSection schoolName={franchise.name} />
-            </section>
+            <WelcomeSection schoolName={franchise.name} />
 
             {/* --- SECTION: PROGRAMS --- */}
             <section id="programs">
@@ -73,9 +69,7 @@ export default async function SchoolDetailsPage({ params }: { params: { city: st
             />
 
             {/* --- SECTION: CONTACT --- */}
-            <section id="contact">
-                <ContactSection school={schoolData} franchiseSlug={schoolSlug} />
-            </section>
+            <ContactSection school={schoolData} franchiseSlug={schoolSlug} />
 
         </main>
     );

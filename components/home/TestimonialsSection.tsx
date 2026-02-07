@@ -8,9 +8,10 @@ import { apiUrl, mediaUrl } from '@/lib/api-client';
 
 const TestimonialsSection = () => {
     const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
-    const [testimonials, setTestimonials] = useState<any[]>([]);
+    const [groups, setGroups] = useState<any[]>([]);
+    const [activeGroupIndex, setActiveGroupIndex] = useState<number | null>(null);
+    const [activeItemIndex, setActiveItemIndex] = useState<number>(0);
 
     const STATIC_TESTIMONIALS = [
         {
@@ -84,32 +85,57 @@ const TestimonialsSection = () => {
     useEffect(() => {
         const fetchMedia = async () => {
             try {
-                // Fetch from the media endpoint (mapped to gallery app)
+                // Fetch from the media endpoint
                 const response = await fetch(apiUrl('/media/'));
+                let itemsToGroup = [];
+
                 if (response.ok) {
                     const data = await response.json();
-                    const results = Array.isArray(data) ? data : data.results || [];
-
-                    if (results.length > 0) {
-                        // Map backend fields to frontend format
-                        const mappedItems = results.map((item: any) => ({
-                            title: item.title,
-                            author: item.author || 'T.I.M.E. Kids',
-                            location: item.location || 'Main Branch',
-                            thumbnailUrl: mediaUrl(item.file),
-                            videoUrl: item.media_type === 'video' ? mediaUrl(item.file) : null,
-                            type: item.media_type
-                        }));
-                        setTestimonials(mappedItems);
-                    } else {
-                        setTestimonials(STATIC_TESTIMONIALS);
-                    }
-                } else {
-                    setTestimonials(STATIC_TESTIMONIALS);
+                    itemsToGroup = Array.isArray(data) ? data : data.results || [];
                 }
+
+                if (itemsToGroup.length === 0) {
+                    // Fallback to static items if API is empty or fails
+                    itemsToGroup = STATIC_TESTIMONIALS.map((item, id) => ({
+                        ...item,
+                        id: `static-${id}`,
+                        file: item.thumbnailUrl // For consistent mapping
+                    }));
+                }
+
+                // Group items by title (removing numerical suffixes like " - 1")
+                const groupsMap: Record<string, any[]> = {};
+                itemsToGroup.forEach((item: any) => {
+                    const baseTitle = item.title.replace(/\s*-\s*\d+$/, '').trim();
+                    if (!groupsMap[baseTitle]) {
+                        groupsMap[baseTitle] = [];
+                    }
+                    groupsMap[baseTitle].push({
+                        title: item.title,
+                        author: item.author || 'T.I.M.E. Kids',
+                        location: item.location || 'Main Branch',
+                        thumbnailUrl: item.file?.startsWith('http') ? item.file : mediaUrl(item.file || item.thumbnailUrl),
+                        videoUrl: (item.media_type === 'video' || item.type === 'video') ? (item.file?.startsWith('http') ? item.file : mediaUrl(item.file || item.videoUrl)) : null,
+                        type: item.media_type || item.type || 'image'
+                    });
+                });
+
+                const grouped = Object.entries(groupsMap).map(([title, items]) => ({
+                    title,
+                    items
+                }));
+
+                setGroups(grouped);
             } catch (error) {
                 console.error('Error fetching media:', error);
-                setTestimonials(STATIC_TESTIMONIALS);
+                // Fallback on error
+                const fallbackGroupsMap: Record<string, any[]> = {};
+                STATIC_TESTIMONIALS.forEach((item: any) => {
+                    const baseTitle = item.title.replace(/\s*-\s*\d+$/, '').trim();
+                    if (!fallbackGroupsMap[baseTitle]) fallbackGroupsMap[baseTitle] = [];
+                    fallbackGroupsMap[baseTitle].push(item);
+                });
+                setGroups(Object.entries(fallbackGroupsMap).map(([title, items]) => ({ title, items })));
             } finally {
                 setLoading(false);
             }
@@ -120,14 +146,16 @@ const TestimonialsSection = () => {
 
 
     const nextMedia = () => {
-        if (lightboxIndex !== null) {
-            setLightboxIndex((lightboxIndex + 1) % testimonials.length);
+        if (activeGroupIndex !== null) {
+            const group = groups[activeGroupIndex];
+            setActiveItemIndex((activeItemIndex + 1) % group.items.length);
         }
     };
 
     const prevMedia = () => {
-        if (lightboxIndex !== null) {
-            setLightboxIndex((lightboxIndex - 1 + testimonials.length) % testimonials.length);
+        if (activeGroupIndex !== null) {
+            const group = groups[activeGroupIndex];
+            setActiveItemIndex((activeItemIndex - 1 + group.items.length) % group.items.length);
         }
     };
 
@@ -160,24 +188,24 @@ const TestimonialsSection = () => {
     };
 
     useEffect(() => {
-        if (lightboxIndex !== null) {
+        if (activeGroupIndex !== null) {
             document.body.classList.add('lightbox-open');
         } else {
             document.body.classList.remove('lightbox-open');
         }
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (lightboxIndex === null) return;
+            if (activeGroupIndex === null) return;
             if (e.key === 'ArrowRight') nextMedia();
             if (e.key === 'ArrowLeft') prevMedia();
-            if (e.key === 'Escape') setLightboxIndex(null);
+            if (e.key === 'Escape') setActiveGroupIndex(null);
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
             document.body.classList.remove('lightbox-open');
         };
-    }, [lightboxIndex]);
+    }, [activeGroupIndex, activeItemIndex]);
 
     return (
         <section className="relative py-24 bg-white overflow-hidden">
@@ -196,32 +224,51 @@ const TestimonialsSection = () => {
 
 
             <div className="container mx-auto px-4 relative z-10">
-                <div className={`grid grid-cols-1 md:grid-cols-3 relative z-10 h-auto max-w-7xl mx-auto gap-8 ${testimonials.length > 0 ? 'md:h-[1100px] md:grid-rows-4' : ''}`}>
+                <div className={`grid grid-cols-1 md:grid-cols-3 relative z-10 h-auto max-w-7xl mx-auto gap-8 ${groups.length > 0 ? 'md:h-[1100px] md:grid-rows-4' : ''}`}>
                     {loading ? (
                         <div className="col-span-3 flex items-center justify-center h-64">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F15A29]"></div>
                         </div>
                     ) : (
-                        testimonials.map((testimonial, index) => (
+                        groups.map((group, index) => (
                             <motion.div
                                 key={index}
                                 className={`relative group cursor-pointer overflow-hidden rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] ${getGridClass(index)}`}
                                 whileHover={{ y: -10, scale: 1.01 }}
                                 transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                                onClick={() => setLightboxIndex(index)}
+                                onClick={() => {
+                                    setActiveGroupIndex(index);
+                                    setActiveItemIndex(0);
+                                }}
                             >
                                 <img
-                                    src={testimonial.thumbnailUrl}
-                                    alt={testimonial.title}
+                                    src={group.items[0].thumbnailUrl}
+                                    alt={group.title}
                                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                                 />
+
+                                {/* Album Badge */}
+                                <div className="absolute top-6 left-6 z-20">
+                                    <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg border border-white/20">
+                                        <h3 className="text-[#003366] text-sm font-black uppercase tracking-wider">{group.title}</h3>
+                                    </div>
+                                </div>
+
+                                {/* Count Badge */}
+                                {group.items.length > 1 && (
+                                    <div className="absolute bottom-6 right-6 z-20">
+                                        <div className="bg-[#F15A29] text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-lg">
+                                            {group.items.length} Files
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Hover Overlay */}
                                 <div className="absolute inset-0 bg-blue-900/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                                     <motion.div
                                         initial={{ scale: 0.5, opacity: 0 }}
                                         whileInView={{ scale: 1, opacity: 1 }}
-                                        className="w-20 h-20 bg-[#F15A29] rounded-full flex items-center justify-center shadow-2xl"
+                                        className="w-20 h-20 bg-[#F15A29] rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95"
                                     >
                                         <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
@@ -229,8 +276,8 @@ const TestimonialsSection = () => {
                                     </motion.div>
                                 </div>
 
-                                {/* Play Button for videos (non-hover) */}
-                                {testimonial.type === 'video' && (
+                                {/* Play Button for video featured albums */}
+                                {group.items[0].type === 'video' && (
                                     <div className="absolute inset-0 flex items-center justify-center group-hover:opacity-0 transition-opacity">
                                         <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
                                             <svg className="w-6 h-6 text-[#F15A29] ml-1" fill="currentColor" viewBox="0 0 20 20">
@@ -244,19 +291,18 @@ const TestimonialsSection = () => {
                 </div>
             </div>
 
-            {/* Lightbox */}
             <AnimatePresence>
-                {lightboxIndex !== null && (
+                {activeGroupIndex !== null && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setLightboxIndex(null)}
+                        onClick={() => setActiveGroupIndex(null)}
                         className="fixed inset-0 z-[10000] bg-gray-900/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-12"
                     >
                         {/* Close button */}
                         <button
-                            onClick={() => setLightboxIndex(null)}
+                            onClick={() => setActiveGroupIndex(null)}
                             className="absolute top-8 right-8 text-white/70 hover:text-white transition-colors z-50 p-2"
                         >
                             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,27 +311,31 @@ const TestimonialsSection = () => {
                         </button>
 
                         {/* Navigation buttons */}
-                        <button
-                            onClick={(e) => { e.stopPropagation(); prevMedia(); }}
-                            className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors p-2 z-50"
-                        >
-                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
+                        {groups[activeGroupIndex].items.length > 1 && (
+                            <>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); prevMedia(); }}
+                                    className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors p-2 z-50"
+                                >
+                                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
 
-                        <button
-                            onClick={(e) => { e.stopPropagation(); nextMedia(); }}
-                            className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors p-2 z-50"
-                        >
-                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); nextMedia(); }}
+                                    className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors p-2 z-50"
+                                >
+                                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </>
+                        )}
 
                         {/* Content */}
                         <motion.div
-                            key={lightboxIndex}
+                            key={`${activeGroupIndex}-${activeItemIndex}`}
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
@@ -293,28 +343,28 @@ const TestimonialsSection = () => {
                             className="relative w-auto max-w-[90vw] max-h-[85vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col"
                         >
                             <div className="flex-1 flex items-center justify-center overflow-hidden bg-black/20">
-                                {testimonials[lightboxIndex].type === 'video' ? (
+                                {groups[activeGroupIndex].items[activeItemIndex].type === 'video' ? (
                                     <video
-                                        src={testimonials[lightboxIndex].videoUrl}
+                                        src={groups[activeGroupIndex].items[activeItemIndex].videoUrl}
                                         controls
                                         autoPlay
                                         className="max-w-full max-h-[60vh] w-auto h-auto"
                                     />
                                 ) : (
                                     <img
-                                        src={testimonials[lightboxIndex].thumbnailUrl}
-                                        alt={testimonials[lightboxIndex].title}
+                                        src={groups[activeGroupIndex].items[activeItemIndex].thumbnailUrl}
+                                        alt={groups[activeGroupIndex].items[activeItemIndex].title}
                                         className="max-w-full max-h-[60vh] w-auto h-auto object-contain"
                                     />
                                 )}
                             </div>
 
-                            {/* Caption - more minimal like the 2nd image */}
+                            {/* Caption */}
                             <div className="p-6 bg-white/10 backdrop-blur-md">
-                                <h3 className="text-white text-xl font-bold">{testimonials[lightboxIndex].title}</h3>
-                                <p className="text-white/60 text-sm">{testimonials[lightboxIndex].author} - {testimonials[lightboxIndex].location}</p>
-                                <div className="mt-2 text-white/40 text-[10px] uppercase tracking-widest">
-                                    {lightboxIndex + 1} of {testimonials.length}
+                                <h3 className="text-white text-xl font-black uppercase tracking-tight">{groups[activeGroupIndex].items[activeItemIndex].title}</h3>
+                                <p className="text-white/60 text-sm font-bold">{groups[activeGroupIndex].items[activeItemIndex].author} - {groups[activeGroupIndex].items[activeItemIndex].location}</p>
+                                <div className="mt-2 text-white/40 text-[10px] font-black uppercase tracking-[0.2em]">
+                                    {activeItemIndex + 1} of {groups[activeGroupIndex].items.length} in {groups[activeGroupIndex].title}
                                 </div>
                             </div>
                         </motion.div>
