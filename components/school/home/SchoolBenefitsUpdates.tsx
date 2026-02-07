@@ -255,8 +255,8 @@ export default function SchoolBenefitsUpdates() {
                 /* Updates Slider */
                 .time-updates {
                     border-radius: 20px;
-                    border: 10px solid #f7cc7e;
-                    color: #fff;
+                    border: none;
+                    color: #333;
                     text-align: center;
                     font-weight: 300;
                     line-height: 24px;
@@ -265,16 +265,12 @@ export default function SchoolBenefitsUpdates() {
 
                 .updates-inner {
                     padding: 30px;
-                    box-shadow: inset 8px -10px 70px 54px rgba(1, 53, 61, 1);
-                    border-radius: 10px;
-                    background-color: #005968;
-                    border-left: 1px solid #fff;
-                    border-bottom: 1px solid #fff;
+                    background-color: transparent;
                 }
 
                 .updates-inner h5 {
                     font-weight: 600;
-                    color: #fed509;
+                    color: #085390;
                     font-size: 18px;
                     margin: 0 0 15px 0;
                 }
@@ -301,7 +297,7 @@ export default function SchoolBenefitsUpdates() {
                 }
 
                 .updates-inner .slick-dots .slick-active {
-                    background-color: #fed509;
+                    background-color: #085390;
                 }
 
                 @media (max-width: 768px) {
