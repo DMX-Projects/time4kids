@@ -12,8 +12,12 @@ const getBaseUrl = () => {
 
     const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
 
-    // For server-side rendering, use localhost
+    // For server-side rendering
     if (typeof window === 'undefined') {
+        // If running in Docker/Container, use the internal network URL
+        if (process.env.INTERNAL_API_URL) {
+            return process.env.INTERNAL_API_URL;
+        }
         return `http://127.0.0.1:${port}`;
     }
 
@@ -41,6 +45,16 @@ const BASE_URL = getBaseUrl();
 export const API_BASE_URL = normalizeBase(process.env.NEXT_PUBLIC_API_BASE_URL, `${BASE_URL}/api`);
 export const MEDIA_BASE_URL = normalizeBase(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, `${BASE_URL}/media`);
 export const SERVER_URL = normalizeBase(process.env.NEXT_PUBLIC_SERVER_URL, BASE_URL);
+
+// Server-side initialization log
+if (typeof window === 'undefined') {
+    console.log('--- API Client Configuration (Server) ---');
+    console.log('NEXT_PUBLIC_SERVER_URL:', process.env.NEXT_PUBLIC_SERVER_URL || 'Not Set');
+    console.log('BASE_URL (Computed):', BASE_URL);
+    console.log('FINAL SERVER_URL:', SERVER_URL);
+    console.log('-----------------------------------------');
+}
+
 export const apiUrl = (path: string) => `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
 export const mediaUrl = (path?: string | null) => {
