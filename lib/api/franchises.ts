@@ -57,18 +57,24 @@ export interface Franchise {
 
 export async function getFranchiseBySlug(slug: string): Promise<Franchise | null> {
     try {
-        const res = await fetch(`${SERVER_URL}/api/franchises/public/${slug}/`, {
+        const url = `${SERVER_URL}/api/franchises/public/${slug}/`;
+        console.log(`[SSR] Fetching franchise from: ${url}`);
+
+        const res = await fetch(url, {
             cache: 'no-store', // Always fetch fresh data
         });
 
         if (!res.ok) {
+            console.error(`[SSR] API Error: ${res.status} ${res.statusText} for URL: ${url}`);
             if (res.status === 404) return null;
             throw new Error(`Failed to fetch franchise: ${res.statusText}`);
         }
 
-        return await res.json();
+        const data = await res.json();
+        console.log(`[SSR] Successfully fetched franchise: ${data.name}`);
+        return data;
     } catch (error) {
-        console.error("Error fetching franchise:", error);
+        console.error("[SSR] Connection Error fetching franchise:", error);
         return null;
     }
 }
