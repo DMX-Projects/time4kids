@@ -33,6 +33,9 @@ export default function AnimatedNavBar({ mobile = false }: { mobile?: boolean })
                     const isActive = activeTab === item.path;
                     const isLogin = item.name === 'Login';
 
+                    // Skip Login item on mobile as it's handled separately in Header
+                    if (mobile && isLogin) return null;
+
                     return (
                         <li key={item.path} className={`relative z-10 ${mobile ? 'w-full' : ''}`}>
                             <Link
