@@ -383,29 +383,6 @@ export default function Header() {
                     background: linear-gradient(135deg, rgba(255, 153, 51, 1) 0%, rgba(255, 102, 51, 1) 100%);
                 }
 
-                /* Mobile Menu Button */
-                .nav-button {
-                    display: none;
-                    float: right;
-                    background: rgba(228, 110, 26, 0.9);
-                    backdrop-filter: blur(10px);
-                    -webkit-backdrop-filter: blur(10px);
-                    width: 50px;
-                    height: 50px;
-                    border-radius: 100%;
-                    text-align: center;
-                    line-height: 50px;
-                    margin: 5px 15px 0 0;
-                    color: #fff;
-                    font-size: 18px;
-                    border: 1px solid rgba(255, 255, 255, 0.3);
-                    cursor: pointer;
-                    position: absolute;
-                    right: 0;
-                    top: 10px;
-                    z-index: 999;
-                }
-
                 /* Responsive Mobile */
                 @media (max-width: 1023px) {
                     .header-inner {

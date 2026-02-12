@@ -23,10 +23,10 @@ const nextConfig = {
     // Optimize font loading
     optimizeFonts: true,
     // Faster compilation in development
-    swcMinify: true,
+    swcMinify: false,
     // Enable prefetching for better navigation performance
     experimental: {
-        optimizeCss: true,
+        optimizeCss: false,
         // Reduce compilation time
         optimizePackageImports: ['lucide-react', 'framer-motion', 'gsap'],
     },
