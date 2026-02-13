@@ -17,8 +17,8 @@ export default function BenefitsUpdates() {
         autoplay: true,
         autoplaySpeed: 4000,
         arrows: false,
-        vertical: true,
-        verticalSwiping: true,
+        vertical: false,
+        verticalSwiping: false,
     };
 
     const benefits = [
@@ -44,24 +44,24 @@ export default function BenefitsUpdates() {
         },
     ]);
 
-    React.useEffect(() => {
-        const fetchUpdates = async () => {
-            try {
-                const response = await fetch(apiUrl('/updates/'));
-                if (response.ok) {
-                    const data = await response.json();
-                    const items = Array.isArray(data) ? data : data.results || [];
-                    if (items.length > 0) {
-                        setUpdates(items);
-                    }
-                }
-            } catch (err) {
-                console.error('Failed to fetch updates:', err);
-            }
-        };
+    // React.useEffect(() => {
+    //     const fetchUpdates = async () => {
+    //         try {
+    //             const response = await fetch(apiUrl('/updates/'));
+    //             if (response.ok) {
+    //                 const data = await response.json();
+    //                 const items = Array.isArray(data) ? data : data.results || [];
+    //                 if (items.length > 0) {
+    //                     setUpdates(items);
+    //                 }
+    //             }
+    //         } catch (err) {
+    //             console.error('Failed to fetch updates:', err);
+    //         }
+    //     };
 
-        fetchUpdates();
-    }, []);
+    //     fetchUpdates();
+    // }, []);
 
     return (
         <div className="benefits-updates">
@@ -83,9 +83,9 @@ export default function BenefitsUpdates() {
                                     ))}
                                 </ul>
                             </div>
-                            <div className="col-span-12 lg:col-span-4 hidden lg:block flex items-center justify-center pl-4">
+                            <div className="col-span-12 lg:col-span-4 hidden lg:block flex items-center justify-center pl-4 mt-12">
                                 <Image
-                                    src="/bfba3104656e4bc08ddf686ed121a156.gif"
+                                    src="/girl_on_books.gif"
                                     alt="Benefits"
                                     width={300}
                                     height={300}
@@ -256,36 +256,47 @@ export default function BenefitsUpdates() {
                 }
 
                 /* Updates Slider */
+                /* Updates Slider Board Style */
                 .time-updates {
-                    border-radius: 20px;
-                    border: none;
-                    color: #333;
+                    border-radius: 30px;
+                    border: 12px solid #fceeb5;
+                    background: radial-gradient(circle at center, #055a64 0%, #002b30 100%);
+                    color: #fff;
                     text-align: center;
-                    font-weight: 300;
-                    line-height: 24px;
+                    font-weight: 400;
+                    line-height: 1.6;
                     font-size: 16px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                    overflow: hidden;
+                    min-height: 300px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
 
                 .updates-inner {
-                    padding: 30px;
-                    background-color: transparent;
+                    padding: 40px;
+                    width: 100%;
                 }
 
                 .updates-inner h5 {
-                    font-weight: 600;
-                    color: #085390;
-                    font-size: 18px;
-                    margin: 0 0 15px 0;
+                    font-weight: 800;
+                    color: #fceeb5;
+                    font-size: 22px;
+                    margin: 20px 0 0 0;
+                    font-family: 'Schoolbell', cursive;
+                    letter-spacing: 1px;
                 }
 
                 .updates-inner p {
                     margin: 0;
+                    font-size: 18px;
                 }
 
                 .updates-inner .slick-dots {
                     position: relative;
-                    bottom: 0;
-                    margin: 15px 0 0 0;
+                    bottom: -10px;
+                    margin: 20px 0 0 0;
                 }
 
                 .updates-inner .slick-dotted.slick-slider {
@@ -293,14 +304,22 @@ export default function BenefitsUpdates() {
                 }
 
                 .updates-inner .slick-dots li {
-                    background-color: #668138;
-                    margin: 0 3px;
-                    width: 10px;
-                    height: 10px;
+                    background-color: #0d383e;
+                    margin: 0 5px;
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 2px;
+                    cursor: pointer;
+                    display: inline-block;
+                }
+                
+                .updates-inner .slick-dots li button {
+                    display: none;
                 }
 
                 .updates-inner .slick-dots .slick-active {
-                    background-color: #085390;
+                    background-color: #fceeb5;
+                    transform: scale(1.2);
                 }
 
                 @media (max-width: 768px) {

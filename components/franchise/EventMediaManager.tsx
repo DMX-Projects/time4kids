@@ -69,29 +69,44 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
 
         setUploading(true);
         try {
-            const uploadPromises = Array.from(selectedFiles).map(async (file) => {
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const file of Array.from(selectedFiles)) {
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('media_type', mediaType);
                 formData.append('caption', caption || file.name);
 
-                return fetch(apiUrl(`/events/franchise/${event.id}/media/`), {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: formData,
-                });
-            });
+                try {
+                    const response = await fetch(apiUrl(`/events/franchise/${event.id}/media/`), {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: formData,
+                    });
 
-            const responses = await Promise.all(uploadPromises);
-            const allSuccess = responses.every(r => r.ok);
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                        const errBody = await response.text().catch(() => 'No response body');
+                        console.error('Failed to upload', file.name, 'Status:', response.status, errBody);
+                    }
+                } catch (err) {
+                    failCount++;
+                    console.error('Error uploading', file.name, err);
+                }
+            }
 
-            if (allSuccess) {
-                showToast(`Successfully uploaded ${selectedFiles.length} file(s)!`, 'success');
+            if (successCount > 0) {
+                showToast(`Successfully uploaded ${successCount} file(s)! ${failCount > 0 ? `${failCount} failed.` : ''}`, failCount > 0 ? 'info' : 'success');
                 setSelectedFiles(null);
                 setCaption('');
                 fetchMedia();
-            } else {
-                showToast('Some files failed to upload', 'error');
+            } else if (failCount > 0) {
+                showToast('All file uploads failed. Check server connection.', 'error');
             }
         } catch (error) {
             console.error('Upload error:', error);

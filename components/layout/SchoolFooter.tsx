@@ -11,9 +11,11 @@ interface SchoolFooterProps {
     facebookUrl?: string;
     instagramUrl?: string;
     twitterUrl?: string;
+    contactPhone?: string;
+    contactEmail?: string;
 }
 
-const SchoolFooter = ({ homeUrl, facebookUrl, instagramUrl, twitterUrl }: SchoolFooterProps) => {
+const SchoolFooter = ({ homeUrl, facebookUrl, instagramUrl, twitterUrl, contactPhone, contactEmail }: SchoolFooterProps) => {
     const homeLink = homeUrl || '/';
     const currentYear = new Date().getFullYear();
 
@@ -203,7 +205,7 @@ const SchoolFooter = ({ homeUrl, facebookUrl, instagramUrl, twitterUrl }: School
                                     </div>
                                     <div>
                                         <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">PHONE</p>
-                                        <p className="text-[#2D3142] font-black text-xl">+91 99994 88885</p>
+                                        <p className="text-[#2D3142] font-black text-xl">{contactPhone || '+91 99994 88885'}</p>
                                     </div>
                                 </motion.div>
 
@@ -216,7 +218,7 @@ const SchoolFooter = ({ homeUrl, facebookUrl, instagramUrl, twitterUrl }: School
                                     </div>
                                     <div>
                                         <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">EMAIL</p>
-                                        <p className="text-[#2D3142] font-black text-sm break-all font-sans">info@timekidspreschools.in</p>
+                                        <p className="text-[#2D3142] font-black text-sm break-all font-sans">{contactEmail || 'info@timekidspreschools.in'}</p>
                                     </div>
                                 </motion.div>
                             </div>

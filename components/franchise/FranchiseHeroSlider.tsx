@@ -59,13 +59,16 @@ export default function FranchiseHeroSlider({ franchiseSlug, slides: initialSlid
         slidesToShow: 1,
         slidesToScroll: 1,
         autoplay: true,
-        autoplaySpeed: 3000,
-        speed: 500,
+        autoplaySpeed: 4000,
+        speed: 800,
         arrows: false,
+        cssEase: "ease-in-out",
+        pauseOnHover: false,
+        pauseOnFocus: false,
     };
 
     if (loading) {
-        return <div className="w-full h-full bg-gray-100 animate-pulse rounded-2xl"></div>;
+        return <div className="w-full h-full bg-gray-900 animate-pulse rounded-2xl"></div>;
     }
 
     // Default Fallback
@@ -81,7 +84,7 @@ export default function FranchiseHeroSlider({ franchiseSlug, slides: initialSlid
     }
 
     return (
-        <div className="relative w-full h-full overflow-hidden rounded-2xl shadow-xl">
+        <div className="relative w-full h-full overflow-hidden rounded-2xl shadow-xl bg-black">
             <Slider {...settings} className="h-full">
                 {dSlides.map((slide) => {
                     const SlideContent = () => (

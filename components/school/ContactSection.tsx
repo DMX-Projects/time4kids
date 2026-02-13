@@ -51,8 +51,8 @@ export default function ContactSection({ school, franchiseSlug }: { school: any,
                             </div>
                             <div>
                                 <h4 className="text-green-500 font-black mb-2 uppercase tracking-wide">CALL US</h4>
-                                <a href={`tel:${school.phone}`} className="font-bold text-gray-700 text-xl hover:text-green-600 transition-colors">
-                                    {school.phone}
+                                <a href={`tel:${school.contact_phone}`} className="font-bold text-gray-700 text-xl hover:text-green-600 transition-colors">
+                                    {school.contact_phone || '+91 123 456 7890'}
                                 </a>
                             </div>
                         </div>
@@ -64,8 +64,8 @@ export default function ContactSection({ school, franchiseSlug }: { school: any,
                             </div>
                             <div>
                                 <h4 className="text-blue-500 font-black mb-2 uppercase tracking-wide">EMAIL US</h4>
-                                <a href={`mailto:${school.email}`} className="font-bold text-gray-700 text-lg break-all hover:text-blue-600 transition-colors">
-                                    {school.email || 'info@timekidspreschools.com'}
+                                <a href={`mailto:${school.contact_email}`} className="font-bold text-gray-700 text-lg break-all hover:text-blue-600 transition-colors">
+                                    {school.contact_email || 'info@timekidspreschools.com'}
                                 </a>
                             </div>
                         </div>

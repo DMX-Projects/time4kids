@@ -57,6 +57,8 @@ export default function SchoolLayout({ children }: { children: React.ReactNode }
                 facebookUrl={franchise?.facebook_url}
                 instagramUrl={franchise?.instagram_url}
                 twitterUrl={franchise?.twitter_url}
+                contactPhone={franchise?.contact_phone}
+                contactEmail={franchise?.contact_email}
             />
         </div>
     );
