@@ -51,6 +51,7 @@ interface Centre {
     address: string;
     city: string;
     state: string;
+    postal_code?: string;
     phone: string;
     googleMapLink?: string;
     socials?: {
@@ -150,13 +151,30 @@ function LocateCentreContent() {
 
                 const mappedCentres = data.map((item: any, index: number) => {
                     const style = STYLE_PRESETS[index % STYLE_PRESETS.length];
+
+                    // Temporary override for Banashankari
+                    let address = item.address;
+                    let city = item.city;
+                    let state = item.state;
+                    let postal_code = item.postal_code;
+
+                    if (item.name.includes("Banashankari")) {
+                        address = "#491, Shambavi, 10th Cross Road, Vaddarapalya, Banashankari 5th Stage, Bengaluru - 560 0061. Karnataka.";
+                        // Prevent duplicates in formatAddress
+                        // We leave city/state for the badge, but might need to trick formatAddress?
+                        // formatAddress uses the centre object passed to it.
+                        // We can just rely on intelligent duplicate checking or accept one specific duplicate.
+                        // Providing the full address in 'address' is best.
+                    }
+
                     return {
                         id: item.id,
                         name: item.name,
                         slug: item.slug,
-                        address: item.address,
-                        city: item.city,
-                        state: item.state,
+                        address: address,
+                        city: city,
+                        state: state,
+                        postal_code: postal_code,
                         phone: item.contact_phone || item.phone,
                         googleMapLink: item.google_map_link,
                         socials: {
@@ -232,6 +250,33 @@ function LocateCentreContent() {
 
     // Filtered or limited centres to display
     const displayedCentres = isFiltered ? centres : centres.slice(0, 4);
+
+    // Helper to format full address
+    const formatAddress = (centre: Centre) => {
+        // If address already looks complete (has state/pin), return it as is
+        if (centre.address.includes("Bengaluru") || centre.address.includes("Karnataka")) {
+            return centre.address;
+        }
+
+        const parts = [centre.address];
+
+        // Add City if not present
+        if (centre.city && !centre.address?.toLowerCase().includes(centre.city.toLowerCase())) {
+            parts.push(centre.city);
+        }
+
+        // Add State if not present
+        if (centre.state && !centre.address?.toLowerCase().includes(centre.state.toLowerCase())) {
+            parts.push(centre.state);
+        }
+
+        // Add Postal Code if not present
+        if (centre.postal_code && !centre.address?.includes(centre.postal_code)) {
+            parts.push(`${centre.postal_code}`); // Just pin code, sometimes displayed with hyphen
+        }
+
+        return parts.filter(Boolean).join(', ');
+    };
 
     return (
         <div className="min-h-screen relative bg-slate-50 font-sans selection:bg-pink-200 overflow-x-hidden">
@@ -363,7 +408,7 @@ function LocateCentreContent() {
                                                         {centre.name}
                                                     </h3>
                                                     <p className="text-slate-600 font-medium text-base mb-3 leading-relaxed break-words">
-                                                        {centre.address}
+                                                        {formatAddress(centre)}
                                                     </p>
                                                     <div className="flex items-center gap-2 mb-5 flex-wrap">
                                                         <span className="bg-white/80 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide border border-white/50 shadow-sm">

@@ -9,6 +9,7 @@ import Image from 'next/image';
 interface AdmissionSectionProps {
     franchiseSlug?: string;
     city?: string;
+    contactPhone?: string;
 }
 
 const FloatingElement = ({ children, className, delay = 0, duration = 4 }: { children: React.ReactNode, className: string, delay?: number, duration?: number }) => (
@@ -130,7 +131,7 @@ const WavyLine = () => (
     </svg>
 );
 
-export default function AdmissionSection({ franchiseSlug, city }: AdmissionSectionProps) {
+export default function AdmissionSection({ franchiseSlug, city, contactPhone }: AdmissionSectionProps) {
     return (
         <section id="admission" className="py-24 relative overflow-hidden scroll-mt-24"
             style={{
@@ -261,7 +262,7 @@ export default function AdmissionSection({ franchiseSlug, city }: AdmissionSecti
                         <SparkleElement delay={1} size={16} top="50%" left="2%" />
                         <StarElement delay={0.8} size={18} top="30%" right="3%" />
 
-                        <AdmissionForm franchiseSlug={franchiseSlug} defaultCity={city} />
+                        <AdmissionForm franchiseSlug={franchiseSlug} defaultCity={city} contactPhone={contactPhone} />
                     </div>
                 </motion.div>
             </div>

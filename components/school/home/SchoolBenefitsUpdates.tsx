@@ -15,8 +15,8 @@ export default function SchoolBenefitsUpdates() {
         autoplay: true,
         autoplaySpeed: 4000,
         arrows: false,
-        vertical: true,
-        verticalSwiping: true,
+        vertical: false, // Changed to horizontal
+        verticalSwiping: false, // Changed to horizontal
     };
 
     const benefits = [
@@ -101,8 +101,8 @@ export default function SchoolBenefitsUpdates() {
                                 <Slider {...updatesSettings}>
                                     {updates.map((update, index) => (
                                         <div key={index}>
-                                            <h5>{update.date}</h5>
                                             <p>{update.text}</p>
+                                            <h5>{update.date}</h5>
                                         </div>
                                     ))}
                                 </Slider>
@@ -254,29 +254,34 @@ export default function SchoolBenefitsUpdates() {
 
                 /* Updates Slider */
                 .time-updates {
-                    border-radius: 20px;
-                    border: none;
-                    color: #333;
+                    background-color: #314d42; /* Chalkboard Green */
+                    border: 8px solid #6d4c41; /* Wood Border */
+                    border-radius: 10px;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                    padding: 10px;
+                    color: #fff;
                     text-align: center;
                     font-weight: 300;
                     line-height: 24px;
                     font-size: 16px;
+                    font-family: 'Schoolbell', cursive; /* Handwritten font if available */
                 }
 
                 .updates-inner {
-                    padding: 30px;
+                    padding: 20px;
                     background-color: transparent;
                 }
 
                 .updates-inner h5 {
                     font-weight: 600;
-                    color: #085390;
+                    color: #fbbf24; /* Chalk Yellow for date */
                     font-size: 18px;
-                    margin: 0 0 15px 0;
+                    margin: 10px 0 0 0;
                 }
 
                 .updates-inner p {
                     margin: 0;
+                    color: #fff;
                 }
 
                 .updates-inner .slick-dots {
@@ -290,14 +295,15 @@ export default function SchoolBenefitsUpdates() {
                 }
 
                 .updates-inner .slick-dots li {
-                    background-color: #668138;
+                    background-color: rgba(255, 255, 255, 0.3);
                     margin: 0 3px;
                     width: 10px;
                     height: 10px;
+                    border-radius: 50%;
                 }
 
                 .updates-inner .slick-dots .slick-active {
-                    background-color: #085390;
+                    background-color: #fff;
                 }
 
                 @media (max-width: 768px) {

@@ -86,13 +86,13 @@ export default function Header() {
                         {/* Right Side - Navigation & Mobile Menu */}
                         <div className="flex items-center justify-end gap-4">
                             {/* Desktop Navigation */}
-                            <div className="hidden lg:flex">
+                            <div className="hidden xl:flex">
                                 <AnimatedNavBar />
                             </div>
 
                             {/* Mobile Menu Toggle */}
                             <button
-                                className="nav-button lg:hidden"
+                                className="nav-button xl:hidden"
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                                 aria-label="Toggle menu"
                             >
@@ -102,7 +102,7 @@ export default function Header() {
 
                         {/* Mobile Navigation Drawer */}
                         {isMenuOpen && (
-                            <div className="lg:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md shadow-xl z-[2000] p-6 border-t border-gray-100 flex flex-col items-center gap-6 animate-in slide-in-from-top duration-300">
+                            <div className="xl:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md shadow-xl z-[2000] p-6 border-t border-gray-100 flex flex-col items-center gap-6 animate-in slide-in-from-top duration-300">
                                 <AnimatedNavBar mobile={true} />
                                 <Link href="/login" className="btn-login w-full text-center py-3">
                                     LOGIN

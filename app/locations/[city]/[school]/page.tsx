@@ -46,6 +46,7 @@ export default async function SchoolPage({ params }: PageProps) {
             <AdmissionSection
                 franchiseSlug={franchise.slug}
                 city={franchise.city}
+                contactPhone={franchise.contact_phone}
             />
 
             {/* Media / Gallery Section - Component has internal id="gallery" */}

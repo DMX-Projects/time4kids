@@ -24,9 +24,10 @@ interface AdmissionFormData {
 interface AdmissionFormProps {
     franchiseSlug?: string;
     defaultCity?: string;
+    contactPhone?: string;
 }
 
-const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
+const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFormProps) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<AdmissionFormData>({
@@ -172,7 +173,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                         <div className="space-y-2 relative z-10">
                             <p className="text-gray-500 font-bold">Or call us at</p>
                             <p className="text-[#FF7A2F] font-fredoka font-black text-3xl tracking-wide">
-                                +91 123 456 7890
+                                {contactPhone || '+91 123 456 7890'}
                             </p>
                         </div>
 

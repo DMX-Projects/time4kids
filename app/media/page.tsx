@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, X } from 'lucide-react';
+import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SERVER_URL, mediaUrl } from '@/lib/api-client';
 import Modal from '@/components/ui/Modal';
 
@@ -114,10 +114,12 @@ export default function MediaPage() {
     };
 
     // Navigate to next/previous media with keyboard arrows
-    const navigateMedia = (direction: 'next' | 'prev') => {
-        if (!selectedMedia || !selectedEvent) return;
+    const navigateMedia = useCallback((direction: 'next' | 'prev') => {
+        if (!selectedMedia) return;
 
         const currentIndex = filteredMedia.findIndex(m => m.id === selectedMedia.id);
+        if (currentIndex === -1) return;
+
         let newIndex: number;
 
         if (direction === 'next') {
@@ -125,11 +127,11 @@ export default function MediaPage() {
             newIndex = (currentIndex + 1) % filteredMedia.length;
         } else {
             // Loop to last if at beginning
-            newIndex = currentIndex - 1 < 0 ? filteredMedia.length - 1 : currentIndex - 1;
+            newIndex = (currentIndex - 1 + filteredMedia.length) % filteredMedia.length;
         }
 
         setSelectedMedia(filteredMedia[newIndex]);
-    };
+    }, [selectedMedia, filteredMedia]);
 
     // Keyboard navigation effect
     useEffect(() => {
@@ -147,7 +149,7 @@ export default function MediaPage() {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedMedia, filteredMedia]);
+    }, [selectedMedia, navigateMedia]);
 
     return (
         <div className="bg-[#FFFAF5] min-h-screen pt-32 pb-20">
@@ -325,13 +327,38 @@ export default function MediaPage() {
                     size="xl"
                 >
                     {selectedMedia && (
-                        <div className="relative w-full h-full flex flex-col items-center justify-center min-h-[50vh] rounded-xl overflow-hidden group/modal">
+                        <div className="relative w-full h-full flex flex-col items-center justify-center min-h-[50vh] rounded-xl overflow-hidden group/modal bg-black">
+                            {/* Close Button */}
                             <button
                                 onClick={closeLightbox}
-                                className="absolute top-4 right-4 z-50 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
+                                className="absolute top-4 right-4 z-[60] p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors backdrop-blur-md"
                             >
                                 <X className="w-6 h-6" />
                             </button>
+
+                            {/* Navigation Buttons */}
+                            {filteredMedia.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigateMedia('prev');
+                                        }}
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 z-[60] p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all backdrop-blur-md hover:scale-110"
+                                    >
+                                        <ChevronLeft className="w-8 h-8" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigateMedia('next');
+                                        }}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 z-[60] p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all backdrop-blur-md hover:scale-110"
+                                    >
+                                        <ChevronRight className="w-8 h-8" />
+                                    </button>
+                                </>
+                            )}
 
                             {selectedMedia.media_type === 'video' ? (
                                 <video
@@ -341,7 +368,7 @@ export default function MediaPage() {
                                     className="max-w-full max-h-[70vh] rounded-lg shadow-2xl"
                                 />
                             ) : (
-                                <div className="relative w-full h-[70vh]">
+                                <div className="relative w-full h-[70vh] bg-black">
                                     <Image
                                         src={mediaUrl(selectedMedia.file)}
                                         alt={selectedMedia.caption || "Gallery View"}
@@ -353,7 +380,7 @@ export default function MediaPage() {
                             )}
 
                             {selectedMedia.caption && (
-                                <div className="mt-4 p-4 text-center w-full">
+                                <div className="mt-4 p-4 text-center w-full z-50">
                                     <p className="text-white font-bold text-lg">{selectedMedia.caption}</p>
                                 </div>
                             )}

@@ -22,7 +22,7 @@ interface HeroSlide {
 
 export default function ManageHeroSlider() {
     const { showToast } = useToast();
-    const { tokens } = useAuth();
+    const { authFetch, tokens } = useAuth();
     const token = tokens?.access;
     const [slides, setSlides] = useState<HeroSlide[]>([]);
     const [loading, setLoading] = useState(true);
@@ -30,19 +30,22 @@ export default function ManageHeroSlider() {
     const [editingSlide, setEditingSlide] = useState<HeroSlide | null>(null);
     const [uploading, setUploading] = useState(false);
 
-    const { register, handleSubmit, reset, setValue } = useForm();
+    const { register, handleSubmit, reset, setValue, watch } = useForm({
+        defaultValues: {
+            alt_text: '',
+            link: '',
+            order: 0,
+            is_active: true,
+            image: null as any
+        }
+    });
     const [previewImages, setPreviewImages] = useState<string[]>([]);
     const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
 
     const fetchSlides = async () => {
         try {
-            const response = await fetch(apiUrl('/franchises/franchise/hero-slides/'), {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setSlides(data.results || data);
-            }
+            const data = await authFetch<HeroSlide[] | { results: HeroSlide[] }>('/franchises/franchise/hero-slides/');
+            setSlides(Array.isArray(data) ? data : data.results || []);
         } catch (error) {
             console.error('Error fetching slides:', error);
         } finally {
@@ -51,15 +54,16 @@ export default function ManageHeroSlider() {
     };
 
     useEffect(() => {
-        if (token) fetchSlides();
-    }, [token]);
+        fetchSlides();
+    }, []);
 
     const handleOpenModal = (slide?: HeroSlide) => {
         if (slide) {
             setEditingSlide(slide);
-            setValue('alt_text', slide.alt_text);
-            setValue('link', slide.link);
-            setValue('order', slide.order);
+            setValue('alt_text', slide.alt_text || '');
+            setValue('link', slide.link || '');
+            setValue('order', slide.order || 0);
+            setValue('is_active', slide.is_active ?? true);
             setPreviewImages([mediaUrl(slide.image)]);
         } else {
             setEditingSlide(null);
@@ -75,10 +79,7 @@ export default function ManageHeroSlider() {
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this slide?')) return;
         try {
-            await fetch(apiUrl(`/franchises/franchise/hero-slides/${id}/`), {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await authFetch(`/franchises/franchise/hero-slides/${id}/`, { method: 'DELETE' });
             fetchSlides();
         } catch (error) {
             console.error('Error deleting slide:', error);
@@ -93,16 +94,20 @@ export default function ManageHeroSlider() {
             // EDIT MODE
             if (editingSlide) {
                 const formData = new FormData();
-                formData.append('alt_text', data.alt_text);
-                formData.append('link', data.link);
-                formData.append('order', data.order);
+                formData.append('alt_text', data.alt_text || '');
+                formData.append('link', data.link || '');
+                formData.append('order', String(data.order || 0));
+                formData.append('is_active', data.is_active ? 'true' : 'false');
                 if (data.image && data.image[0]) {
                     formData.append('image', data.image[0]);
                 }
 
                 const response = await fetch(apiUrl(`/franchises/franchise/hero-slides/${editingSlide.id}/`), {
                     method: 'PATCH',
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: 'application/json'
+                    },
                     body: formData,
                 });
 
@@ -113,7 +118,8 @@ export default function ManageHeroSlider() {
                     showToast('Slide updated successfully!', 'success');
                 } else {
                     const errData = await response.json().catch(() => ({}));
-                    showToast(errData.detail || 'Failed to update slide.', 'error');
+                    const errText = !errData.detail ? await response.text().catch(() => '') : '';
+                    showToast(errData.detail || errText.substring(0, 100) || 'Failed to update slide.', 'error');
                 }
             }
             // CREATE MODE (Batch Upload)
@@ -121,6 +127,15 @@ export default function ManageHeroSlider() {
                 const files = data.image ? Array.from(data.image as FileList) : [];
                 if (files.length === 0) {
                     showToast('Please select at least one image.', 'error');
+                    setUploading(false);
+                    return;
+                }
+
+                // File Size Validation
+                const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+                const oversizedFiles = files.filter(file => file.size > MAX_SIZE);
+                if (oversizedFiles.length > 0) {
+                    showToast(`Some files are too large (Max 5MB). Please resize: ${oversizedFiles.map(f => f.name).join(', ')}`, 'error');
                     setUploading(false);
                     return;
                 }
@@ -133,15 +148,18 @@ export default function ManageHeroSlider() {
                 // Upload sequentially to maintain order and prevent server overwhelm
                 for (let i = 0; i < files.length; i++) {
                     const formData = new FormData();
-                    formData.append('alt_text', data.alt_text); // Same alt text for all in batch
-                    formData.append('link', data.link);
+                    formData.append('alt_text', data.alt_text || ''); // Same alt text for all in batch
+                    formData.append('link', data.link || '');
                     formData.append('order', (startOrder + i).toString());
+                    formData.append('is_active', data.is_active ? 'true' : 'false');
                     formData.append('image', files[i]);
 
                     try {
                         const response = await fetch(apiUrl('/franchises/franchise/hero-slides/'), {
                             method: 'POST',
-                            headers: { Authorization: `Bearer ${token}` },
+                            headers: {
+                                Authorization: `Bearer ${token}`
+                            },
                             body: formData,
                         });
 
@@ -149,7 +167,8 @@ export default function ManageHeroSlider() {
                             successCount++;
                         } else {
                             failCount++;
-                            console.error(`Failed to upload file ${i + 1}`);
+                            const errBody = await response.text().catch(() => 'No response body');
+                            console.error(`Failed to upload file ${i + 1}. Status: ${response.status}`, errBody);
                         }
                     } catch (err) {
                         failCount++;
@@ -307,13 +326,25 @@ export default function ManageHeroSlider() {
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-700">Display Order</label>
-                        <input
-                            type="number"
-                            {...register('order')}
-                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                        />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-gray-700">Display Order</label>
+                            <input
+                                type="number"
+                                {...register('order')}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                            />
+                        </div>
+                        <div className="flex items-end pb-2">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    {...register('is_active')}
+                                    className="w-4 h-4 rounded text-orange-600 border-gray-300 focus:ring-orange-500"
+                                />
+                                <span className="text-sm font-medium text-gray-700">Active</span>
+                            </label>
+                        </div>
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4">
