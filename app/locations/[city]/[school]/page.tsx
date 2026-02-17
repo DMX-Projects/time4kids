@@ -6,6 +6,7 @@ import SchoolProgramsSection from '@/components/school/SchoolProgramsSection';
 import AdmissionSection from '@/components/school/AdmissionSection';
 import GallerySection from '@/components/school/GallerySection';
 import ContactSection from '@/components/school/ContactSection';
+import SchoolUpdatesSection from '@/components/school/SchoolUpdatesSection';
 
 interface PageProps {
     params: {
@@ -37,6 +38,11 @@ export default async function SchoolPage({ params }: PageProps) {
             {/* About Us Section */}
             <div id="about">
                 <SchoolIntroSection schoolName={franchise.name} />
+            </div>
+
+            {/* Updates Section */}
+            <div id="updates">
+                <SchoolUpdatesSection franchiseSlug={franchise.slug} />
             </div>
 
             {/* Classes Section - Component has internal id="programs" */}
