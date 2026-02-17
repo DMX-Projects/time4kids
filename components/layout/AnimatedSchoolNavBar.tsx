@@ -4,11 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Info, BookOpen, GraduationCap, Camera, Phone, Users, Briefcase, MapPin, HelpCircle, Handshake, Backpack } from 'lucide-react';
+import { Home, Info, BookOpen, GraduationCap, Camera, Phone, Users, Briefcase, MapPin, HelpCircle, Handshake, Backpack, SquarePen } from 'lucide-react';
 
 const schoolNavItems = [
     { name: 'Home', href: '#home', icon: Home },
     { name: 'About Us', href: '#about', icon: Info },
+    { name: 'Updates', href: '#updates', icon: SquarePen },
     { name: 'Classes', href: '#programs', icon: BookOpen },
     { name: 'Admissions', href: '#admission', icon: GraduationCap },
     { name: 'Media', href: '#gallery', icon: Camera },

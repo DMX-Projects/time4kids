@@ -115,6 +115,18 @@ const sections: ResourceSection[] = [
             { title: "Summer Camp", description: "Event assets, calendars, and recap templates.", actions: [{ label: "Open", href: "#", tone: "orange" }] },
         ],
     },
+    {
+        id: "updates",
+        title: "Webpage Updates",
+        accent: "orange",
+        items: [
+            {
+                title: "Latest Announcements",
+                description: "Post dynamic updates and notices to your school webpage.",
+                actions: [{ label: "Manage", href: "/dashboard/franchise/updates", tone: "orange" }]
+            },
+        ],
+    },
 ];
 
 export default function FranchiseDashboardPage() {
