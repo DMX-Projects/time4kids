@@ -46,11 +46,11 @@ export default function ManageGallery() {
                 const data = await response.json();
                 setEvents(data.results || data);
             } else {
-                showToast('Failed to fetch events', 'error');
+                showToast('Could not load events. Please try again.', 'error');
             }
         } catch (error) {
             console.error('Error fetching events:', error);
-            showToast('Error loading events', 'error');
+            showToast('Could not load events. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -109,17 +109,17 @@ export default function ManageGallery() {
             });
 
             if (response.ok) {
-                showToast(editingEvent ? 'Event updated!' : 'Event created!', 'success');
+                showToast('Saved successfully.', 'success');
                 setIsModalOpen(false);
                 fetchEvents();
                 reset();
             } else {
                 const errorData = await response.json();
-                showToast(errorData.detail || 'Failed to save event', 'error');
+                showToast(errorData.detail || 'Could not save. Please try again.', 'error');
             }
         } catch (error) {
             console.error('Error saving event:', error);
-            showToast('An error occurred', 'error');
+            showToast('Could not save. Please try again.', 'error');
         } finally {
             setSaving(false);
         }
@@ -135,14 +135,14 @@ export default function ManageGallery() {
             });
 
             if (response.ok) {
-                showToast('Event deleted successfully', 'success');
+                showToast('Deleted successfully.', 'success');
                 fetchEvents();
             } else {
-                showToast('Failed to delete event', 'error');
+                showToast('Could not delete. Please try again.', 'error');
             }
         } catch (error) {
             console.error('Error deleting event:', error);
-            showToast('An error occurred', 'error');
+            showToast('Could not delete. Please try again.', 'error');
         }
     };
 

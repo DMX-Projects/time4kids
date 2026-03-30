@@ -34,18 +34,18 @@ const ClassesSection = () => {
     const programs = [
         {
             title: 'Play Group',
-            subTitle: '18 months to 2.5 year',
-            ageGroup: '1.5 yrs - 2.5 yrs',
+            subTitle: '2 to 3 years',
+            ageGroup: '2 yrs - 3 yrs',
             timings: '8:30am - 12:30pm (4 hrs per day)',
             days: 'Monday - Friday',
-            description: 'Between 1yr to 3 yrs. of age, small children are curious and generally love to explore the world around them. They can assimilate information rapidly and express interest...',
+            description: 'Between 2 to 3 years of age, small children are curious and generally love to explore the world around them. They can assimilate information rapidly and express interest...',
             color: 'bg-[#ff9800]',
             btnColor: 'bg-[#ff9800] hover:bg-[#e68a00]'
         },
         {
             title: 'Nursery',
-            subTitle: '2.5 to 3.5 year',
-            ageGroup: '2.5 yrs - 3.5 yrs',
+            subTitle: '3 to 4 years',
+            ageGroup: '3 yrs - 4 yrs',
             timings: '8:30am - 12:30pm (4 hrs per day)',
             days: 'Monday - Friday',
             description: 'At Timekids, Nursery curriculum sets the pace for active learning through various fun filled activities. Children are introduced to varied learning materials, a large number of shapes and colours...',
@@ -54,8 +54,8 @@ const ClassesSection = () => {
         },
         {
             title: 'Pre Primary I',
-            subTitle: '3.5 to 4.5 year',
-            ageGroup: '3.5 yrs - 4.5 yrs',
+            subTitle: '4 to 5 years',
+            ageGroup: '4 yrs - 5 yrs',
             timings: '8:30am - 1:00pm (4.5 hrs per day)',
             days: 'Monday - Friday',
             description: 'Coming to PP1, our children expand their knowledge from the realm of school to the neighbourhood and beyond. They are inquisitive, seeking answers, interacting with other children and also...',
@@ -64,8 +64,8 @@ const ClassesSection = () => {
         },
         {
             title: 'Pre Primary II',
-            subTitle: '4.5 to 5.5 year',
-            ageGroup: '4.5 yrs - 5.5 yrs',
+            subTitle: '5 to 6 years',
+            ageGroup: '5 yrs - 6 yrs',
             timings: '8:30am - 1:00pm (4.5 hrs per day)',
             days: 'Monday - Friday',
             description: 'The highly motivated children of PP2 at Timekids are so well equipped to face the challenges of formal schooling system. They are confident individuals, good at communicating thoughts...',

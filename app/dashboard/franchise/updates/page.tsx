@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Calendar, FileText, Loader2, Save, Pencil } from "lucide-react";
+import { Plus, Trash2, Calendar, FileText, Loader2, Save, Pencil, CheckCircle2, Clock, Image as ImageIcon, Video as VideoIcon, XCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { mediaUrl } from "@/lib/api-client";
 
 interface Update {
     id: number;
@@ -23,6 +24,18 @@ interface FormValues {
     end_date?: string;
 }
 
+type SocialMediaUpload = {
+    id: number;
+    media_type: "image" | "video";
+    title?: string;
+    caption?: string;
+    file: string;
+    status: "pending" | "approved" | "rejected" | string;
+    admin_notes?: string;
+    created_at: string;
+    franchise_name?: string;
+};
+
 export default function UpdatesPage() {
     const { authFetch } = useAuth();
     const [updates, setUpdates] = useState<Update[]>([]);
@@ -33,22 +46,62 @@ export default function UpdatesPage() {
     const { register, handleSubmit, reset, setValue, formState: { isSubmitting } } = useForm<FormValues>();
     const { showToast } = useToast();
 
-    const fetchUpdates = async () => {
+    // Social Media Uploads & Support Files
+    const [socialUploads, setSocialUploads] = useState<SocialMediaUpload[]>([]);
+    const [socialLoading, setSocialLoading] = useState(true);
+    const [socialSubmitting, setSocialSubmitting] = useState(false);
+    const [socialMediaType, setSocialMediaType] = useState<"image" | "video">("image");
+    const [socialTitle, setSocialTitle] = useState("");
+    const [socialCaption, setSocialCaption] = useState("");
+    const [socialFile, setSocialFile] = useState<File | null>(null);
+
+    const fetchUpdates = async (signal?: { cancelled: boolean }) => {
         try {
             const data = await authFetch<any>("/updates/");
-            // Handle DRF pagination if present
+            if (signal?.cancelled) return;
             const updatesList = Array.isArray(data) ? data : data?.results || [];
             setUpdates(updatesList);
         } catch (error) {
             console.error("Failed to fetch updates", error);
-            showToast("Failed to load updates", "error");
+            if (!signal?.cancelled) {
+                showToast("Could not load updates. Please try again.", "error");
+            }
         } finally {
-            setLoading(false);
+            if (!signal?.cancelled) setLoading(false);
+        }
+    };
+
+    const fetchSocialUploads = async (signal?: { cancelled: boolean }) => {
+        try {
+            const data = await authFetch<any>("/updates/social-media/");
+            if (signal?.cancelled) return;
+            const items = Array.isArray(data) ? data : data?.results || [];
+            setSocialUploads(items);
+        } catch (error) {
+            console.error("Failed to fetch social uploads", error);
+            if (signal?.cancelled) return;
+            const status =
+                error && typeof error === "object" && "status" in error
+                    ? (error as { status?: number }).status
+                    : undefined;
+            const msg =
+                status === 403
+                    ? "Social uploads require a franchise centre login. If you are a centre user, contact support."
+                    : "Could not load social uploads. Check that the API is running and try again.";
+            showToast(msg, "error");
+        } finally {
+            if (!signal?.cancelled) setSocialLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchUpdates();
+        const signal = { cancelled: false };
+        void fetchUpdates(signal);
+        void fetchSocialUploads(signal);
+        return () => {
+            signal.cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const onSubmit = async (data: FormValues) => {
@@ -67,12 +120,12 @@ export default function UpdatesPage() {
                 body: JSON.stringify(payload),
             });
 
-            showToast(editingUpdate ? "Update modified successfully" : "Update added successfully", "success");
+            showToast("Saved successfully.", "success");
             closeModal();
             fetchUpdates();
         } catch (error) {
             console.error("Error saving update", error);
-            showToast("Failed to save update", "error");
+            showToast("Could not save. Please try again.", "error");
         }
     };
 
@@ -97,12 +150,58 @@ export default function UpdatesPage() {
                 method: "DELETE",
             });
 
-            showToast("Update deleted", "success");
+            showToast("Deleted successfully.", "success");
             setUpdates(prev => prev.filter(u => u.id !== id));
         } catch (error) {
             console.error("Error deleting update", error);
-            showToast("Something went wrong", "error");
+            showToast("Could not delete. Please try again.", "error");
         }
+    };
+
+    const handleSocialUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!socialFile) {
+            showToast("Please choose an image/video first.", "error");
+            return;
+        }
+
+        setSocialSubmitting(true);
+        try {
+            const formData = new FormData();
+            formData.append("media_type", socialMediaType);
+            formData.append("title", socialTitle);
+            formData.append("caption", socialCaption);
+            formData.append("file", socialFile);
+
+            await authFetch("/updates/social-media/", {
+                method: "POST",
+                body: formData,
+            });
+
+            showToast("Upload submitted for approval.", "success");
+            setSocialTitle("");
+            setSocialCaption("");
+            setSocialFile(null);
+            setSocialMediaType("image");
+            await fetchSocialUploads();
+        } catch (error) {
+            console.error("Failed to upload social media", error);
+            showToast("Could not submit upload. Please try again.", "error");
+        } finally {
+            setSocialSubmitting(false);
+        }
+    };
+
+    const renderStatusIcon = (status: SocialMediaUpload["status"]) => {
+        if (status === "approved") return <CheckCircle2 className="w-4 h-4 text-green-600" />;
+        if (status === "rejected") return <XCircle className="w-4 h-4 text-red-600" />;
+        return <Clock className="w-4 h-4 text-[#FF922B]" />;
+    };
+
+    const statusText = (status: SocialMediaUpload["status"]) => {
+        if (status === "approved") return "Approved";
+        if (status === "rejected") return "Rejected";
+        return "Pending";
     };
 
     const filteredUpdates = updates.filter(update =>
@@ -161,6 +260,122 @@ export default function UpdatesPage() {
                     </div>
                 </form>
             </Modal>
+
+            {/* Social Media Uploads & Support Files */}
+            <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900">Social Media Uploads & Support Files</h2>
+                        <p className="text-sm text-gray-500">Upload image/video posts. HO will approve or reject them.</p>
+                    </div>
+                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-orange-50 text-orange-600 border border-orange-100">
+                        {socialUploads.length} uploads
+                    </span>
+                </div>
+
+                <form onSubmit={handleSocialUpload} className="bg-white border border-gray-200 rounded-2xl p-4 space-y-4">
+                    <div className="grid md:grid-cols-3 gap-4">
+                        <label className="space-y-2">
+                            <span className="block text-sm font-medium text-gray-700">Type</span>
+                            <select
+                                value={socialMediaType}
+                                onChange={(e) => setSocialMediaType(e.target.value as "image" | "video")}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF9F1C] focus:outline-none"
+                            >
+                                <option value="image">Image</option>
+                                <option value="video">Video</option>
+                            </select>
+                        </label>
+
+                        <label className="space-y-2">
+                            <span className="block text-sm font-medium text-gray-700">Title (optional)</span>
+                            <input
+                                value={socialTitle}
+                                onChange={(e) => setSocialTitle(e.target.value)}
+                                placeholder="e.g., Admissions Poster"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF9F1C] focus:outline-none"
+                            />
+                        </label>
+
+                        <label className="space-y-2">
+                            <span className="block text-sm font-medium text-gray-700">File</span>
+                            <input
+                                type="file"
+                                accept={socialMediaType === "image" ? "image/*" : "video/*"}
+                                onChange={(e) => setSocialFile(e.target.files?.[0] || null)}
+                                className="w-full text-sm"
+                            />
+                        </label>
+                    </div>
+
+                    <label className="space-y-2 block">
+                        <span className="block text-sm font-medium text-gray-700">Caption (optional)</span>
+                        <textarea
+                            value={socialCaption}
+                            onChange={(e) => setSocialCaption(e.target.value)}
+                            rows={3}
+                            placeholder="Short description for HO review..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF9F1C] focus:outline-none resize-none"
+                        />
+                    </label>
+
+                    <div className="flex justify-end">
+                        <Button type="submit" className="bg-[#FF9F1C] hover:bg-[#FFA935] text-white" disabled={socialSubmitting}>
+                            {socialSubmitting ? "Uploading..." : "Submit for Approval"}
+                        </Button>
+                    </div>
+                </form>
+
+                <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-3">
+                    {socialLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+                        </div>
+                    ) : socialUploads.length === 0 ? (
+                        <p className="text-sm text-gray-500">No uploads yet.</p>
+                    ) : (
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {socialUploads.map((u) => (
+                                <div key={u.id} className="border border-gray-200 rounded-xl p-4 space-y-2">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
+                                                {u.media_type === "video" ? (
+                                                    <VideoIcon className="w-5 h-5 text-orange-600" />
+                                                ) : (
+                                                    <ImageIcon className="w-5 h-5 text-orange-600" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-900 text-sm">{u.title || (u.media_type === "video" ? "Video Upload" : "Image Upload")}</p>
+                                                <p className="text-xs text-gray-500 truncate">{u.caption || "—"}</p>
+                                            </div>
+                                        </div>
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200">
+                                            {renderStatusIcon(u.status)}
+                                            <span className="text-xs font-semibold text-gray-800">{statusText(u.status)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-3 pt-1">
+                                        <span className="text-[11px] text-gray-500">
+                                            {u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB") : ""}
+                                        </span>
+                                        <a
+                                            href={mediaUrl(u.file)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs font-semibold text-orange-600 hover:underline"
+                                        >
+                                            Open
+                                        </a>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
 
             {/* Search and Filter */}
             <div className="flex items-center gap-2 max-w-sm">

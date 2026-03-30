@@ -1,14 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { LoginPageContent } from "@/components/auth/LoginPageContent";
 
-export default function ParentLoginRedirect() {
-    const router = useRouter();
+export const dynamic = "force-dynamic";
 
-    useEffect(() => {
-        router.replace('/login/');
-    }, [router]);
-
-    return null;
+export default function ParentLoginPage() {
+    return <LoginPageContent variant="parent" />;
 }

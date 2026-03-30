@@ -3,6 +3,7 @@
 import { ClipboardList } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
+import { formatStudentClassCaption } from "@/lib/parent-dashboard-utils";
 
 export default function MarksGradesPage() {
     const { user } = useAuth();
@@ -32,7 +33,9 @@ export default function MarksGradesPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-semibold text-orange-900">{student.name}</p>
-                            <p className="text-xs text-orange-700">Roll: {student.rollNumber} · {student.grade} · Section {student.section || "-"}</p>
+                            <p className="text-xs text-orange-700">
+                                Roll: {student.rollNumber || "—"} · {formatStudentClassCaption(student)}
+                            </p>
                         </div>
                         <span className="text-xs px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">{grades.length} subjects</span>
                     </div>

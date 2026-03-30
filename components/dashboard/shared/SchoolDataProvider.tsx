@@ -3,6 +3,13 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { apiUrl, jsonHeaders, mediaUrl, toApiError } from "@/lib/api-client";
+import {
+    mapApiGrade,
+    mapApiStudent,
+    normalizeApiList,
+    normalizeStudentList,
+    parseParentDashboard,
+} from "@/lib/parent-school-api";
 
 export type SchoolParent = {
     id: string;
@@ -18,6 +25,10 @@ export type SchoolStudent = {
     grade: string;
     section: string;
     parentId: string;
+    /** When loaded from parent API */
+    blood?: string;
+    emergency?: string;
+    dateOfBirth?: string;
 };
 
 export type GradeRecord = {
@@ -103,6 +114,8 @@ export type SchoolDataContextValue = {
 
     locations: { city_name: string, state: string }[];
     updateEnquiryStatus: (id: string, status: string) => Promise<void>;
+
+    parentSchoolLoading: boolean;
 };
 
 const SchoolDataContext = createContext<SchoolDataContextValue | undefined>(undefined);
@@ -181,6 +194,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     const [eventMedia, setEventMedia] = useState<EventMedia[]>([]);
     const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
     const [locations, setLocations] = useState<{ city_name: string, state: string }[]>([]);
+    const [parentSchoolLoading, setParentSchoolLoading] = useState(false);
 
     useEffect(() => {
         // Only load locations if we are not in a critical auth state or just let it fail gracefully
@@ -212,25 +226,6 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         setEnquiries((prev) => prev.map((e) => (e.id === id ? { ...e, status: status as any } : e)));
     };
 
-    useEffect(() => {
-        if (!user) {
-            setEvents([]);
-            setEventMedia([]);
-            setEnquiries([]);
-            return;
-        }
-
-        if (user.role === "parent") {
-            loadParentEvents();
-        } else if (user.role === "franchise") {
-            loadFranchiseEvents();
-            loadFranchiseEnquiries();
-        } else if (user.role === "admin") {
-            loadAdminEnquiries();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.role]);
-
     const loadParentEvents = async () => {
         try {
             const data = await authFetch<ApiEvent[]>("/events/parent/");
@@ -239,6 +234,84 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             setEvents([]);
         }
     };
+
+    const loadGradesForParentStudents = async (mappedStudents: SchoolStudent[]) => {
+        const allGrades: GradeRecord[] = [];
+        for (const s of mappedStudents) {
+            try {
+                const gData = await authFetch<unknown>(`/students/parent/students/${s.id}/grades/`);
+                const gList = normalizeApiList(gData);
+                for (const raw of gList) {
+                    allGrades.push(mapApiGrade(raw, s.id));
+                }
+            } catch {
+                /* grades optional per student */
+            }
+        }
+        setGrades(allGrades);
+    };
+
+    const loadParentStudentsAndGrades = async () => {
+        if (!user || user.role !== "parent") return;
+        setParentSchoolLoading(true);
+        try {
+            let dash: unknown = null;
+            try {
+                dash = await authFetch<unknown>("/students/parent/dashboard/");
+            } catch {
+                dash = null;
+            }
+            const parsed = dash ? parseParentDashboard(dash, user.id) : null;
+            if (parsed && parsed.students.length > 0) {
+                setStudents(parsed.students);
+                if (parsed.grades.length > 0) {
+                    setGrades(parsed.grades);
+                } else {
+                    await loadGradesForParentStudents(parsed.students);
+                }
+                return;
+            }
+
+            const listData = await authFetch<unknown>("/students/parent/students/");
+            let list = normalizeStudentList(listData);
+            if (list.length === 0) list = normalizeApiList(listData);
+            const mappedStudents = list.map((raw) => mapApiStudent(raw, user.id));
+            setStudents(mappedStudents);
+            if (mappedStudents.length === 0) {
+                setGrades([]);
+                return;
+            }
+            await loadGradesForParentStudents(mappedStudents);
+        } catch {
+            setStudents([]);
+            setGrades([]);
+        } finally {
+            setParentSchoolLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!user) {
+            setEvents([]);
+            setEventMedia([]);
+            setEnquiries([]);
+            setStudents([]);
+            setGrades([]);
+            setParentSchoolLoading(false);
+            return;
+        }
+
+        if (user.role === "parent") {
+            void loadParentEvents();
+            void loadParentStudentsAndGrades();
+        } else if (user.role === "franchise") {
+            loadFranchiseEvents();
+            loadFranchiseEnquiries();
+        } else if (user.role === "admin") {
+            loadAdminEnquiries();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id, user?.role]);
 
     const loadFranchiseEvents = async () => {
         try {
@@ -461,8 +534,9 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             getEventMediaForParent,
             locations,
             updateEnquiryStatus,
+            parentSchoolLoading,
         }),
-        [parents, students, grades, events, eventMedia, enquiries, locations],
+        [parents, students, grades, events, eventMedia, enquiries, locations, parentSchoolLoading],
     );
 
     return <SchoolDataContext.Provider value={value}>{children}</SchoolDataContext.Provider>;

@@ -1,13 +1,21 @@
 "use client";
 
+import { useMemo } from "react";
 import { Images } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 
 export default function EventGalleryPage() {
     const { user } = useAuth();
-    const { getEventMediaForParent } = useSchoolData();
+    const { getEventMediaForParent, events } = useSchoolData();
     const media = getEventMediaForParent(user?.id || "parent-1");
+    const eventTitleById = useMemo(() => {
+        const m = new Map<string, string>();
+        for (const ev of events) {
+            m.set(ev.id, ev.title);
+        }
+        return m;
+    }, [events]);
 
     return (
         <div className="space-y-6">
@@ -23,7 +31,7 @@ export default function EventGalleryPage() {
                     <div key={ph.id} className="overflow-hidden rounded-xl border border-orange-100 shadow-sm bg-white">
                         {ph.type === "video" ? (
                             <div className="h-40 w-full bg-black flex items-center justify-center">
-                                <iframe className="w-full h-40" src={ph.url} title={ph.title} allowFullScreen />
+                                <video className="w-full h-40 object-contain" src={ph.url} controls playsInline preload="metadata" aria-label={ph.title || "Event video"} />
                             </div>
                         ) : ph.url ? (
                             <img src={ph.url} alt={ph.title} className="h-40 w-full object-cover" />
@@ -33,7 +41,11 @@ export default function EventGalleryPage() {
                         <div className="p-3 flex items-center justify-between text-sm text-orange-900">
                             <div>
                                 <p className="font-semibold">{ph.title || "Media"}</p>
-                                {ph.eventId && <p className="text-xs text-orange-700">Event: {ph.eventId}</p>}
+                                {ph.eventId && (
+                                    <p className="text-xs text-orange-700">
+                                        Event: {eventTitleById.get(ph.eventId) || `#${ph.eventId}`}
+                                    </p>
+                                )}
                             </div>
                             <span className="text-[11px] px-2 py-1 rounded-full bg-orange-50 border border-orange-100">{ph.type}</span>
                         </div>

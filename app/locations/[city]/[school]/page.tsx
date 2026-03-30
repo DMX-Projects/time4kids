@@ -26,9 +26,9 @@ export default async function SchoolPage({ params }: PageProps) {
     }
 
     return (
-        <main className="min-h-screen bg-white">
+        <main className="min-h-screen bg-slate-50">
             {/* Home / Hero Section */}
-            <div id="home">
+            <div id="home" className="bg-white">
                 <SchoolHeroSection
                     schoolName={franchise.name}
                     slides={franchise.hero_slides}
@@ -36,38 +36,46 @@ export default async function SchoolPage({ params }: PageProps) {
             </div>
 
             {/* About Us Section */}
-            <div id="about">
+            <div id="about" className="border-t border-slate-200/80 bg-[#fffaf0]">
                 <SchoolIntroSection schoolName={franchise.name} />
             </div>
 
             {/* Updates Section */}
-            <div id="updates">
+            <div id="updates" className="border-t border-slate-200/80 bg-[#f7fbff]">
                 <SchoolUpdatesSection franchiseSlug={franchise.slug} />
             </div>
 
             {/* Classes Section - Component has internal id="programs" */}
-            <SchoolProgramsSection />
+            <div className="border-t border-slate-200/80 bg-[#f9fff7]">
+                <SchoolProgramsSection />
+            </div>
 
             {/* Admissions Section - Component has internal id="admission" */}
-            <AdmissionSection
-                franchiseSlug={franchise.slug}
-                city={franchise.city}
-                contactPhone={franchise.contact_phone}
-            />
+            <div className="border-t border-slate-200/80 bg-[#fff9f2]">
+                <AdmissionSection
+                    franchiseSlug={franchise.slug}
+                    city={franchise.city}
+                    contactPhone={franchise.contact_phone}
+                />
+            </div>
 
             {/* Media / Gallery Section - Component has internal id="gallery" */}
-            <GallerySection
-                schoolName={franchise.name}
-                city={franchise.city}
-                events={franchise.events}
-                galleryItems={franchise.gallery_items}
-            />
+            <div className="border-t border-slate-200/80 bg-[#f8f7ff]">
+                <GallerySection
+                    schoolName={franchise.name}
+                    city={franchise.city}
+                    events={franchise.events}
+                    galleryItems={franchise.gallery_items}
+                />
+            </div>
 
             {/* Contact Section - Component has internal id="contact" */}
-            <ContactSection
-                school={franchise}
-                franchiseSlug={franchise.slug}
-            />
+            <div className="border-t border-slate-200/80 bg-[#f7fcff]">
+                <ContactSection
+                    school={franchise}
+                    franchiseSlug={franchise.slug}
+                />
+            </div>
         </main>
     );
 }

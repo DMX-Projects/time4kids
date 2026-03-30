@@ -48,6 +48,7 @@ export default function ManageHeroSlider() {
             setSlides(Array.isArray(data) ? data : data.results || []);
         } catch (error) {
             console.error('Error fetching slides:', error);
+            showToast('Could not load slides. Please try again.', 'error');
         } finally {
             setLoading(false);
         }
@@ -81,8 +82,10 @@ export default function ManageHeroSlider() {
         try {
             await authFetch(`/franchises/franchise/hero-slides/${id}/`, { method: 'DELETE' });
             fetchSlides();
+            showToast('Deleted successfully.', 'success');
         } catch (error) {
             console.error('Error deleting slide:', error);
+            showToast('Could not delete. Please try again.', 'error');
         }
     };
 
@@ -115,11 +118,11 @@ export default function ManageHeroSlider() {
                     setIsModalOpen(false);
                     fetchSlides();
                     reset();
-                    showToast('Slide updated successfully!', 'success');
+                    showToast('Saved successfully.', 'success');
                 } else {
                     const errData = await response.json().catch(() => ({}));
                     const errText = !errData.detail ? await response.text().catch(() => '') : '';
-                    showToast(errData.detail || errText.substring(0, 100) || 'Failed to update slide.', 'error');
+                    showToast(errData.detail || errText.substring(0, 100) || 'Could not save. Please try again.', 'error');
                 }
             }
             // CREATE MODE (Batch Upload)
@@ -183,14 +186,14 @@ export default function ManageHeroSlider() {
                 reset();
 
                 if (failCount === 0) {
-                    showToast(`${successCount} slides saved successfully!`, 'success');
+                    showToast('Saved successfully.', 'success');
                 } else {
                     showToast(`Saved ${successCount} slides. ${failCount} failed.`, 'info');
                 }
             }
         } catch (error) {
             console.error('Error saving slides:', error);
-            showToast('An unexpected error occurred.', 'error');
+            showToast('Could not save. Please try again.', 'error');
         } finally {
             setUploading(false);
             setUploadProgress(null);

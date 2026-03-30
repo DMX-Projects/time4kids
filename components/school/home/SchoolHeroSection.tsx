@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import Slider from 'react-slick';
-import { motion } from 'framer-motion';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { mediaUrl } from '@/lib/api-client';
@@ -18,8 +17,6 @@ interface SchoolHeroSectionProps {
 }
 
 export default function SchoolHeroSection({ schoolName, slides }: SchoolHeroSectionProps) {
-    const [currentSlide, setCurrentSlide] = useState(0);
-
     const settings = {
         dots: false,
         infinite: true,
@@ -27,10 +24,11 @@ export default function SchoolHeroSection({ schoolName, slides }: SchoolHeroSect
         slidesToShow: 1,
         slidesToScroll: 1,
         autoplay: true,
-        autoplaySpeed: 3000,
+        autoplaySpeed: 4500,
         speed: 1000,
+        pauseOnHover: true,
+        lazyLoad: 'ondemand' as const,
         arrows: true,
-        afterChange: (current: number) => setCurrentSlide(current),
     };
 
     return (

@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
     Music,
     Palette,
@@ -21,7 +22,7 @@ const programs = [
         id: 1,
         title: 'Play Group',
         icon: Music,
-        age: '1.5 - 2.5 YEARS',
+        age: '2 - 3 YEARS',
         description: 'Sensory play, music, and social skills.',
         themeColor: '#FF6F91',
         bgColor: 'bg-[#FFF0F3]',
@@ -33,7 +34,7 @@ const programs = [
         id: 2,
         title: 'Nursery',
         icon: Palette,
-        age: '2.5 - 3.5 YEARS',
+        age: '3 - 4 YEARS',
         description: 'Curiosity, language, and creativity.',
         themeColor: '#9B6BFF',
         bgColor: 'bg-[#F5F0FF]',
@@ -45,7 +46,7 @@ const programs = [
         id: 3,
         title: 'Pre-Primary',
         icon: BookOpen,
-        age: '3.5 - 4.5 YEARS',
+        age: '4 - 5 YEARS',
         description: 'Phonics, writing, and numbers.',
         themeColor: '#4ADE80',
         bgColor: 'bg-[#F0FFF4]',
@@ -57,7 +58,7 @@ const programs = [
         id: 4,
         title: 'Pre-Primary',
         icon: Star,
-        age: '4.5 - 5.5 YEARS',
+        age: '5 - 6 YEARS',
         description: 'Math, science, and school readiness.',
         themeColor: '#FDBA74',
         bgColor: 'bg-[#FFF7ED]',
@@ -69,7 +70,7 @@ const programs = [
         id: 5,
         title: 'Day Care',
         icon: Heart,
-        age: '1.5 - 10 YEARS',
+        age: '2 - 10 YEARS',
         description: 'Safe, loving care with homework help.',
         themeColor: '#60A5FA',
         bgColor: 'bg-[#EFF6FF]',
@@ -134,6 +135,15 @@ const SchoolProgramsSection = () => {
                     >
                         Curated programs for every stage of your child's early years.
                     </motion.p>
+
+                    <div className="mt-5">
+                        <Link
+                            href="/programs"
+                            className="inline-flex items-center rounded-full bg-[#FF922B] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-105"
+                        >
+                            View Full Program Details
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Programs Horizontal List */}

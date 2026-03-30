@@ -4,6 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { DashboardNavItem } from "./DashboardShell";
 
+/** Exact match or a real child path (`href/...`), never sibling URLs that only share a string prefix (e.g. /events vs /event-gallery). */
+export function isDashboardNavActive(pathname: string, href: string, dashboardRootHref: string): boolean {
+    const norm = (s: string) => s.replace(/\/+$/, "") || "/";
+    const p = norm(pathname);
+    const h = norm(href);
+    const root = norm(dashboardRootHref);
+    if (p === h) return true;
+    if (h === root) return false;
+    return p.startsWith(`${h}/`);
+}
+
 type SidebarProps = {
     brand: {
         initials: string;
@@ -21,8 +32,9 @@ export function AdminSidebar({ brand, navItems, open, onClose }: SidebarProps) {
 
     return (
         <aside
-            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-                }`}
+            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${
+                open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none md:translate-x-0 md:pointer-events-auto"
+            }`}
         >
             <div className="h-screen bg-white border-r border-[#E5E7EB] flex flex-col">
                 {/* Header */}
@@ -83,8 +95,9 @@ export function FranchiseSidebar({ brand, navItems, open, onClose }: SidebarProp
 
     return (
         <aside
-            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-                }`}
+            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${
+                open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none md:translate-x-0 md:pointer-events-auto"
+            }`}
         >
             <div className="h-screen bg-white border-r border-[#E5E7EB] flex flex-col">
                 {/* Header */}
@@ -99,9 +112,9 @@ export function FranchiseSidebar({ brand, navItems, open, onClose }: SidebarProp
                 </div>
 
                 {/* Navigation */}
-                <nav className="px-3 py-3 space-y-1">
+                <nav className="px-3 py-3 space-y-1 flex-1 min-h-0 overflow-y-auto">
                     {navItems.map((item, idx) => {
-                        const active = pathname === item.href;
+                        const active = isDashboardNavActive(pathname, item.href, "/dashboard/franchise");
                         return (
                             <Link
                                 key={item.href}
@@ -120,22 +133,6 @@ export function FranchiseSidebar({ brand, navItems, open, onClose }: SidebarProp
                         );
                     })}
                 </nav>
-
-                {/* Spacer to push footer to bottom */}
-                <div className="flex-1"></div>
-
-                {/* Footer */}
-                <div className="px-4 py-3 border-t border-[#E5E7EB] flex-shrink-0">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl border border-orange-100">
-                        <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-yellow-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-white text-xs font-bold">?</span>
-                        </div>
-                        <div>
-                            <div className="text-xs font-semibold text-[#1F2937]">Need Help?</div>
-                            <div className="text-[10px] text-[#6B7280]">Contact support</div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </aside>
     );
@@ -147,8 +144,9 @@ export function ParentSidebar({ brand, navItems, open, onClose }: SidebarProps) 
 
     return (
         <aside
-            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-                }`}
+            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${
+                open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none md:translate-x-0 md:pointer-events-auto"
+            }`}
         >
             <div className="h-screen bg-white border-r border-[#E5E7EB] flex flex-col">
                 {/* Header */}
@@ -163,9 +161,9 @@ export function ParentSidebar({ brand, navItems, open, onClose }: SidebarProps) 
                 </div>
 
                 {/* Navigation */}
-                <nav className="px-3 py-3 space-y-1">
+                <nav className="px-3 py-3 space-y-1 flex-1 min-h-0 overflow-y-auto">
                     {navItems.map((item, idx) => {
-                        const active = pathname === item.href;
+                        const active = isDashboardNavActive(pathname, item.href, "/dashboard/parent");
                         return (
                             <Link
                                 key={item.href}
@@ -184,22 +182,6 @@ export function ParentSidebar({ brand, navItems, open, onClose }: SidebarProps) 
                         );
                     })}
                 </nav>
-
-                {/* Spacer to push footer to bottom */}
-                <div className="flex-1"></div>
-
-                {/* Footer */}
-                <div className="px-4 py-3 border-t border-[#E5E7EB] flex-shrink-0">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-50 to-blue-50 rounded-xl border border-orange-100">
-                        <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-white text-xs font-bold">?</span>
-                        </div>
-                        <div>
-                            <div className="text-xs font-semibold text-[#1F2937]">Need Help?</div>
-                            <div className="text-[10px] text-[#6B7280]">Contact support</div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </aside>
     );

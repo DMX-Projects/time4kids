@@ -1,3 +1,12 @@
+/** Shape used by `/media` page when API has no items or the request fails */
+export type GalleryMediaItem = {
+    id: number;
+    file: string;
+    media_type: "image" | "video";
+    caption: string;
+};
+
+export type GalleryEventGroup = { title: string; media: GalleryMediaItem[] };
 
 export interface MediaItem {
     id: number;
@@ -56,3 +65,20 @@ export const MOCK_MEDIA_ITEMS: MediaItem[] = [
     { id: 17, type: 'image', src: '/24@2x.png', title: 'Little Graduates', category: 'Events', size: 'normal' },
     { id: 18, type: 'image', src: '/5@2x.png', title: 'Focus & Fun', category: 'Classroom', size: 'normal' },
 ];
+
+/** Sample gallery grouped by category (images only — avoids broken video files when none exist in public/) */
+export function buildFallbackGalleryFromMock(): GalleryEventGroup[] {
+    const imagesOnly = MOCK_MEDIA_ITEMS.filter((m) => m.type === "image");
+    const byCategory = new Map<string, GalleryMediaItem[]>();
+    for (const m of imagesOnly) {
+        const list = byCategory.get(m.category) ?? [];
+        list.push({
+            id: m.id,
+            file: m.src,
+            media_type: "image",
+            caption: m.title,
+        });
+        byCategory.set(m.category, list);
+    }
+    return Array.from(byCategory.entries()).map(([title, media]) => ({ title, media }));
+}

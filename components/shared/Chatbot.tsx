@@ -43,7 +43,7 @@ const Chatbot = () => {
             const lowerMsg = message.toLowerCase();
 
             if (lowerMsg.includes('admission') || lowerMsg.includes('join') || lowerMsg.includes('enroll')) {
-                response = "Admissions are open! 🎒 We accept children from 1.5 to 5.5 years. You can fill out the enquiry form on our Admissions page, and our team will contact you within 24 hours.";
+                response = "Admissions are open! 🎒 We accept children from 2 to 6 years. You can fill out the enquiry form on our Admissions page, and our team will contact you within 24 hours.";
             } else if (lowerMsg.includes('fee') || lowerMsg.includes('cost') || lowerMsg.includes('price')) {
                 response = "Our fee structure is designed to be affordable while maintaining premium quality standards. 💰 exact fees depend on your location. Would you like to locate the nearest centre?";
             } else if (lowerMsg.includes('centre') || lowerMsg.includes('location') || lowerMsg.includes('near me')) {

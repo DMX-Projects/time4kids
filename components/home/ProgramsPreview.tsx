@@ -17,7 +17,7 @@ const ProgramsPreview = () => {
         {
             image: '/day care.png',
             programName: 'Play Group',
-            ageGroup: '1.5 - 2.5 years',
+            ageGroup: '2 - 3 years',
             description: 'Introduction to social interaction and basic motor skills.',
             color: '#ef5f5f',
             yOffset: '-20px'
@@ -25,7 +25,7 @@ const ProgramsPreview = () => {
         {
             image: '/images/nursery_girl.png',
             programName: 'Nursery',
-            ageGroup: '2.5 - 3.5 years',
+            ageGroup: '3 - 4 years',
             description: 'Building foundation for language, numbers, and expression.',
             color: '#fbd267',
             yOffset: '40px',
@@ -34,7 +34,7 @@ const ProgramsPreview = () => {
         {
             image: '/1.png',
             programName: 'PP-1 & PP-2',
-            ageGroup: '3.5 - 5.5 years',
+            ageGroup: '4 - 6 years',
             description: 'Preparing for formal schooling with comprehensive education.',
             color: '#6cc3d5',
             yOffset: '-30px'
@@ -42,7 +42,7 @@ const ProgramsPreview = () => {
         {
             image: '/images/landing-banner.jpg',
             programName: 'Day Care',
-            ageGroup: '1.5 - 5.5 years',
+            ageGroup: '2 - 10 years',
             description: 'Extended care with engaging activities throughout the day.',
             color: '#ff9f43',
             yOffset: '30px'

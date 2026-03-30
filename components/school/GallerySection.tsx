@@ -43,20 +43,6 @@ interface GallerySectionProps {
 }
 
 export default function GallerySection({ schoolName, city, galleryItems = [], events = [] }: GallerySectionProps) {
-    // Debug logging to verify data
-    console.log('🎨 GallerySection Debug:', {
-        schoolName,
-        city,
-        eventsCount: events.length,
-        events: events.map(e => ({
-            id: e.id,
-            title: e.title,
-            mediaCount: e.media?.length || 0,
-            mediaItems: e.media
-        })),
-        galleryItemsCount: galleryItems.length
-    });
-
     const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
     const [filterYear, setFilterYear] = useState<string>('');
     const [filterMediaType, setFilterMediaType] = useState<'all' | 'IMAGE' | 'VIDEO'>('all');
@@ -82,7 +68,6 @@ export default function GallerySection({ schoolName, city, galleryItems = [], ev
     }, [selectedEvent, filterMediaType]);
 
     const handleEventClick = (event: EventItem) => {
-        console.log('📸 Event clicked:', event);
         setSelectedEvent(event);
         setFilterMediaType('all'); // Reset media filter when opening an event
     };
@@ -92,7 +77,6 @@ export default function GallerySection({ schoolName, city, galleryItems = [], ev
     };
 
     const handleMediaClick = (item: MediaItem) => {
-        console.log('🔍 Opening media in lightbox:', item);
         setSelectedMedia(item);
     };
 
