@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import QRCode from '@/components/ui/QRCode';
 import AnimatedLetters from '@/components/animations/AnimatedLetters';
 import TwinklingStars from '@/components/animations/TwinklingStars';
+import Link from 'next/link';
 
 import { Mail, Phone, MapPin, Facebook, Instagram, Youtube, Send, Briefcase } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -291,9 +292,11 @@ export default function ContactPage() {
                         <p className="text-xl text-white/90 mb-8">
                             Be part of a passionate team dedicated to shaping young minds. Explore career opportunities at T.I.M.E. Kids.
                         </p>
-                        <Button variant="outline" size="lg" className="bg-white text-primary-600 hover:bg-gray-100 border-0">
-                            View Open Positions
-                        </Button>
+                        <Link href="/careers">
+                            <Button variant="outline" size="lg" className="bg-white text-primary-600 hover:bg-gray-100 border-0">
+                                View Open Positions
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </section >

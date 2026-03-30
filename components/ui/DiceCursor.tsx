@@ -6,28 +6,28 @@ import { MousePointer2 } from 'lucide-react';
 
 // Pips component for a single face
 const Pips = ({ value }: { value: number }) => {
-    // Positions for pips on a 3x3 grid (0, 1, 2)
-    const pipMap: Record<number, number[][]> = {
-        1: [[1, 1]],
-        2: [[0, 0], [2, 2]],
-        3: [[0, 0], [1, 1], [2, 2]],
-        4: [[0, 0], [0, 2], [2, 0], [2, 2]],
-        5: [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]],
-        6: [[0, 0], [0, 2], [1, 0], [1, 2], [2, 0], [2, 2]],
+    // Dot positions on a 3x3 logical grid (% from top/left)
+    const pipMap: Record<number, Array<{ x: number; y: number }>> = {
+        1: [{ x: 50, y: 50 }],
+        2: [{ x: 25, y: 25 }, { x: 75, y: 75 }],
+        3: [{ x: 25, y: 25 }, { x: 50, y: 50 }, { x: 75, y: 75 }],
+        4: [{ x: 25, y: 25 }, { x: 75, y: 25 }, { x: 25, y: 75 }, { x: 75, y: 75 }],
+        5: [{ x: 25, y: 25 }, { x: 75, y: 25 }, { x: 50, y: 50 }, { x: 25, y: 75 }, { x: 75, y: 75 }],
+        6: [{ x: 25, y: 25 }, { x: 75, y: 25 }, { x: 25, y: 50 }, { x: 75, y: 50 }, { x: 25, y: 75 }, { x: 75, y: 75 }],
     };
 
     return (
-        <div className="relative w-full h-full p-2 grid grid-cols-3 grid-rows-3 gap-1">
-            {/* Render grid to place pips correctly */}
-            {[0, 1, 2].map(row => (
-                [0, 1, 2].map(col => {
-                    const hasPip = pipMap[value]?.some(p => p[0] === row && p[1] === col);
-                    return (
-                        <div key={`${row}-${col}`} className="flex items-center justify-center">
-                            {hasPip && <div className="w-2.5 h-2.5 bg-black rounded-full" />}
-                        </div>
-                    );
-                })
+        <div className="relative w-full h-full">
+            {(pipMap[value] || []).map((pip, idx) => (
+                <span
+                    key={`${value}-${idx}`}
+                    className="absolute w-2.5 h-2.5 rounded-full bg-black shadow-[0_0_0_0.5px_rgba(0,0,0,0.25)]"
+                    style={{
+                        left: `${pip.x}%`,
+                        top: `${pip.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                    }}
+                />
             ))}
         </div>
     );
@@ -35,8 +35,10 @@ const Pips = ({ value }: { value: number }) => {
 
 export default function DiceCursor() {
     const cursorRef = useRef<HTMLDivElement>(null);
+    const [isEnabled, setIsEnabled] = useState(true);
     const [isVisible, setIsVisible] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
+    const [isTextZone, setIsTextZone] = useState(false);
 
     // Rotation state for the cube
     const [rotateX, setRotateX] = useState(0);
@@ -47,12 +49,21 @@ export default function DiceCursor() {
     const mouseY = useRef(0);
     const cursorX = useRef(0);
     const cursorY = useRef(0);
+    const hoverRef = useRef(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+        setIsEnabled(!(reduceMotion || coarsePointer));
+    }, []);
 
     // Frame loop for smooth position update (better performance than state)
     useEffect(() => {
+        if (!isEnabled) return;
         const moveCursor = () => {
             // Lerp factor
-            const ease = 0.15;
+            const ease = 0.3;
 
             cursorX.current += (mouseX.current - cursorX.current) * ease;
             cursorY.current += (mouseY.current - cursorY.current) * ease;
@@ -65,10 +76,11 @@ export default function DiceCursor() {
         };
         const animId = requestAnimationFrame(moveCursor);
         return () => cancelAnimationFrame(animId);
-    }, []);
+    }, [isEnabled]);
 
     // Event listeners
     useEffect(() => {
+        if (!isEnabled) return;
         const isInteractiveElement = (target: HTMLElement | null) => {
             // 0. If a modal/lightbox is open, force pointer (based on body overflow:hidden)
             // This ensures when viewing full images/videos, the pointer stays active
@@ -93,8 +105,13 @@ export default function DiceCursor() {
 
             // Re-check hover on move for better responsiveness
             const target = e.target as HTMLElement;
+            const readingZone = !!target?.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote, article');
+            setIsTextZone(readingZone);
             const isControl = isInteractiveElement(target);
-            setIsHovering(prev => prev !== isControl ? isControl : prev);
+            if (hoverRef.current !== isControl) {
+                hoverRef.current = isControl;
+                setIsHovering(isControl);
+            }
         };
 
         const onMouseDown = (e: MouseEvent) => {
@@ -110,11 +127,10 @@ export default function DiceCursor() {
             if (!target || !target.closest) return;
 
             const isControl = isInteractiveElement(target);
-            // Use functional update to avoid stale closure issues where isHovering was always 'false'
-            setIsHovering(prev => {
-                if (prev !== isControl) return isControl;
-                return prev;
-            });
+            if (hoverRef.current !== isControl) {
+                hoverRef.current = isControl;
+                setIsHovering(isControl);
+            }
         };
 
         document.addEventListener('mousemove', onMouseMove, { passive: true });
@@ -135,10 +151,11 @@ export default function DiceCursor() {
             document.removeEventListener('mouseenter', showCursor);
             document.removeEventListener('mouseleave', () => setIsVisible(false));
         };
-    }, []);
+    }, [isEnabled]);
 
     // Scroll handling
     useEffect(() => {
+        if (!isEnabled) return;
         let lastScrollY = window.scrollY;
         const onScroll = () => {
             const current = window.scrollY;
@@ -146,6 +163,7 @@ export default function DiceCursor() {
             lastScrollY = current;
 
             // Force dice cursor during scroll
+            hoverRef.current = false;
             setIsHovering(false);
 
             // Multiply delta for speed control. 
@@ -156,7 +174,7 @@ export default function DiceCursor() {
         };
         window.addEventListener('scroll', onScroll, { passive: true });
         return () => window.removeEventListener('scroll', onScroll);
-    }, []);
+    }, [isEnabled]);
 
     // Blast effect state
     const [blasts, setBlasts] = useState<{ id: number, x: number, y: number }[]>([]);
@@ -192,10 +210,12 @@ export default function DiceCursor() {
             {/* Global style to hide default cursor */}
             <style jsx global>{`
                 * {
-                    cursor: none !important;
+                    cursor: ${isEnabled ? 'none' : 'auto'} !important;
                 }
             `}</style>
 
+            {!isEnabled ? null : (
+                <>
             {/* Blasts Container */}
             {blasts.map(blast => (
                 <Blast key={blast.id} x={blast.x} y={blast.y} />
@@ -205,13 +225,13 @@ export default function DiceCursor() {
                 ref={cursorRef}
                 className="fixed top-0 left-0 pointer-events-none z-[99999]"
                 style={{
-                    opacity: isVisible ? 1 : 0,
-                    // Center the cursor. Assuming 48x48 dim
-                    marginLeft: -24,
-                    marginTop: -24
+                    opacity: isVisible ? (isTextZone && !isHovering ? 0.35 : 0.9) : 0,
+                    // Center the cursor. Assuming 40x40 dim
+                    marginLeft: -20,
+                    marginTop: -20
                 }}
             >
-                <div className="relative w-12 h-12" style={{ perspective: '800px' }}>
+                <div className="relative w-10 h-10" style={{ perspective: '800px' }}>
                     <AnimatePresence>
                         {!isHovering ? (
                             <motion.div
@@ -235,17 +255,17 @@ export default function DiceCursor() {
                             >
                                 {/* Define the 6 faces for the cube */}
                                 {/* Front: 1 */}
-                                <Face translateZ={24} rotateY={0} value={1} />
+                                <Face translateZ={20} rotateY={0} value={1} />
                                 {/* Back: 6 */}
-                                <Face translateZ={24} rotateY={180} value={6} />
+                                <Face translateZ={20} rotateY={180} value={6} />
                                 {/* Right: 3 or 4 */}
-                                <Face translateZ={24} rotateY={90} value={3} />
+                                <Face translateZ={20} rotateY={90} value={3} />
                                 {/* Left: 4 or 3 */}
-                                <Face translateZ={24} rotateY={-90} value={4} />
+                                <Face translateZ={20} rotateY={-90} value={4} />
                                 {/* Top: 2 or 5 */}
-                                <Face translateZ={24} rotateX={90} value={2} />
+                                <Face translateZ={20} rotateX={90} value={2} />
                                 {/* Bottom: 5 or 2 */}
-                                <Face translateZ={24} rotateX={-90} value={5} />
+                                <Face translateZ={20} rotateX={-90} value={5} />
                             </motion.div>
                         ) : (
                             <motion.div
@@ -268,6 +288,8 @@ export default function DiceCursor() {
                     </AnimatePresence>
                 </div>
             </div>
+                </>
+            )}
         </>
     );
 }
@@ -316,7 +338,7 @@ const Blast = ({ x, y }: { x: number, y: number }) => {
 
 const Face = ({ translateZ, rotateY = 0, rotateX = 0, value }: { translateZ: number, rotateY?: number, rotateX?: number, value: number }) => (
     <motion.div
-        className="absolute inset-0 w-12 h-12 bg-white border-2 border-slate-200 rounded-lg flex items-center justify-center shadow-sm backface-hidden"
+        className="absolute inset-0 w-10 h-10 bg-white border-2 border-slate-200 rounded-lg flex items-center justify-center shadow-sm backface-hidden"
         style={{
             transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(${translateZ}px)`,
             backfaceVisibility: 'hidden',

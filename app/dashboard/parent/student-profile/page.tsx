@@ -1,43 +1,75 @@
 "use client";
 
 import type React from "react";
+import Link from "next/link";
 import { User } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
-import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 
-export default function StudentProfilePage() {
+export default function ParentDetailsPage() {
     const { user } = useAuth();
-    const { getStudentsForParent } = useSchoolData();
-    const { studentProfile } = useParentData();
-    const linkedStudents = getStudentsForParent(user?.id || "parent-1");
-    const fallbackStudent = linkedStudents.length === 0 ? [studentProfile] : linkedStudents;
+    const { parentProfile, parentProfileLoading } = useParentData();
 
     return (
         <div className="space-y-6">
             <Section
-                id="student-profile"
-                title="Student Profile"
-                description="View your child's personal details and class info. Franchise-managed and read-only."
+                id="parent-details"
+                title="Parent / guardian details"
+                description="Your contact information on file with the centre. Student records are managed by the school."
                 icon={<User className="w-5 h-5 text-orange-600" />}
             >
-                <p className="text-sm text-orange-700">For updates, please reach out to your franchise. Parent edits are limited to the parent profile page.</p>
+                <p className="text-sm text-orange-700">
+                    To change your phone, address, or name, use{" "}
+                    <Link href="/dashboard/parent/profile" className="font-semibold text-orange-800 underline underline-offset-2">
+                        Edit contact details
+                    </Link>
+                    .
+                </p>
             </Section>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {fallbackStudent.map((stu, idx) => (
-                    <div key={"id" in stu ? stu.id : `fallback-${idx}`} className="bg-white border border-orange-100 rounded-xl p-4 shadow-sm space-y-2">
-                        <div className="flex items-center justify-between">
-                            <span className="font-semibold text-orange-900 text-sm">{"name" in stu ? stu.name : studentProfile.name}</span>
-                            <span className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">{"grade" in stu ? stu.grade : studentProfile.grade}</span>
+            <div className="rounded-2xl border border-orange-100 bg-white p-6 shadow-sm space-y-4">
+                {parentProfileLoading ? (
+                    <p className="text-sm text-orange-700">Loading your details…</p>
+                ) : (
+                    <dl className="grid gap-4 text-sm text-orange-900">
+                        <div className="flex flex-wrap gap-2 border-b border-orange-50 pb-3">
+                            <dt className="font-semibold text-orange-700 min-w-[8rem]">Name</dt>
+                            <dd>{parentProfile.name || user?.fullName || "—"}</dd>
                         </div>
-                        <p className="text-xs text-orange-700">Section: {"section" in stu ? stu.section || "-" : studentProfile.section}</p>
-                        <p className="text-xs text-orange-700">Roll: {"rollNumber" in stu ? stu.rollNumber || "-" : "-"}</p>
-                        <p className="text-xs text-orange-700">Emergency: {"parentId" in stu ? "Refer franchise records" : studentProfile.emergency}</p>
-                        <p className="text-xs text-orange-700">Blood Group: {"blood" in stu ? stu.blood || "-" : studentProfile.blood}</p>
-                    </div>
-                ))}
-                {fallbackStudent.length === 0 && <p className="text-sm text-orange-700">No student records found for this account.</p>}
+                        <div className="flex flex-wrap gap-2 border-b border-orange-50 pb-3">
+                            <dt className="font-semibold text-orange-700 min-w-[8rem]">Email</dt>
+                            <dd>{parentProfile.email || user?.email || "—"}</dd>
+                        </div>
+                        <div className="flex flex-wrap gap-2 border-b border-orange-50 pb-3">
+                            <dt className="font-semibold text-orange-700 min-w-[8rem]">Mobile</dt>
+                            <dd>{parentProfile.phone || "—"}</dd>
+                        </div>
+                        <div className="flex flex-wrap gap-2 border-b border-orange-50 pb-3">
+                            <dt className="font-semibold text-orange-700 min-w-[8rem]">City</dt>
+                            <dd>{parentProfile.city || "—"}</dd>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <dt className="font-semibold text-orange-700 min-w-[8rem]">Address</dt>
+                            <dd className="max-w-xl whitespace-pre-wrap">{parentProfile.address || "—"}</dd>
+                        </div>
+                        {(parentProfile.franchiseName || parentProfile.franchisePhone || parentProfile.franchiseEmail) && (
+                            <div className="rounded-xl bg-orange-50/80 border border-orange-100 p-4 mt-2 space-y-1">
+                                <p className="text-xs font-bold uppercase tracking-wide text-orange-700">Your centre</p>
+                                {parentProfile.franchiseName && <p className="text-sm text-orange-900">{parentProfile.franchiseName}</p>}
+                                {parentProfile.franchisePhone && (
+                                    <p className="text-sm text-orange-800">
+                                        Phone: <a href={`tel:${parentProfile.franchisePhone}`}>{parentProfile.franchisePhone}</a>
+                                    </p>
+                                )}
+                                {parentProfile.franchiseEmail && (
+                                    <p className="text-sm text-orange-800">
+                                        Email: <a href={`mailto:${parentProfile.franchiseEmail}`}>{parentProfile.franchiseEmail}</a>
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </dl>
+                )}
             </div>
         </div>
     );
@@ -47,9 +79,7 @@ function Section({ id, title, description, icon, children }: { id: string; title
     return (
         <section id={id} className="bg-white border border-orange-100 rounded-2xl shadow-sm p-6 space-y-3">
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
-                    {icon}
-                </div>
+                <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">{icon}</div>
                 <div>
                     <h2 className="text-lg font-semibold text-orange-900">{title}</h2>
                     <p className="text-sm text-orange-700">{description}</p>

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SERVER_URL, mediaUrl } from '@/lib/api-client';
+import { buildFallbackGalleryFromMock } from '@/lib/mock-media-data';
 import Modal from '@/components/ui/Modal';
 
 interface MediaItem {
@@ -25,20 +26,23 @@ export default function MediaPage() {
     const [filterMediaType, setFilterMediaType] = useState<'all' | 'image' | 'video'>('all');
     const [loading, setLoading] = useState(true);
     const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+    const [usingFallback, setUsingFallback] = useState(false);
 
-    // Fetch media from API and group by title
+    // Fetch media from API and group by title; use local sample data if API is empty or unavailable
     useEffect(() => {
         const fetchMedia = async () => {
+            const applyFallback = () => {
+                setEvents(buildFallbackGalleryFromMock());
+                setUsingFallback(true);
+            };
+
             try {
-                console.log('🎬 Fetching media from API...');
                 const res = await fetch(`${SERVER_URL}/api/media/`);
 
                 if (!res.ok) throw new Error('Failed to fetch media');
 
                 const data = await res.json();
                 const results = Array.isArray(data) ? data : data.results || [];
-
-                console.log('📦 Fetched media items:', results.length);
 
                 // Group media by extracting event name from title
                 // e.g., "anuall day - 1" -> event: "Annual Day"
@@ -75,11 +79,15 @@ export default function MediaPage() {
                     media
                 }));
 
-                console.log('✅ Grouped into events:', eventGroups);
-                setEvents(eventGroups);
+                if (eventGroups.length === 0) {
+                    applyFallback();
+                } else {
+                    setEvents(eventGroups);
+                    setUsingFallback(false);
+                }
                 setLoading(false);
-            } catch (error) {
-                console.error('❌ Error loading media:', error);
+            } catch {
+                applyFallback();
                 setLoading(false);
             }
         };
@@ -95,7 +103,6 @@ export default function MediaPage() {
     }, [selectedEvent, filterMediaType]);
 
     const handleEventClick = (event: EventGroup) => {
-        console.log('📸 Event clicked:', event);
         setSelectedEvent(event);
         setFilterMediaType('all');
     };
@@ -105,7 +112,6 @@ export default function MediaPage() {
     };
 
     const handleMediaClick = (item: MediaItem) => {
-        console.log('🔍 Opening media in lightbox:', item);
         setSelectedMedia(item);
     };
 
@@ -169,6 +175,11 @@ export default function MediaPage() {
                     <p className="text-xl text-gray-500 max-w-2xl mx-auto font-medium italic">
                         Capturing the smiles, learning, and unforgettable moments at T.I.M.E. Kids.
                     </p>
+                    {usingFallback && (
+                        <p className="mt-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 max-w-2xl mx-auto">
+                            Showing sample gallery from bundled images. When the media API returns items, live content will appear here automatically.
+                        </p>
+                    )}
                 </div>
 
                 <AnimatePresence mode="wait">

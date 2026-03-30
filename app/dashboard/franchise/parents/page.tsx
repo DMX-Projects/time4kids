@@ -90,7 +90,7 @@ export default function FranchiseParentsPage() {
             <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="space-y-2">
                     <div className="inline-flex items-center gap-2 rounded-full bg-[#FFF4CC] px-3 py-1 text-xs font-semibold text-[#1F2937] shadow-sm">
-                        <Sparkles className="w-4 h-4" /> Franchise Parents Hub
+                        <Sparkles className="w-4 h-4" /> Parent Records Hub
                     </div>
                     <h1 className="text-3xl font-bold text-[#1F2937] leading-tight">Families at your centre</h1>
                     <p className="text-sm text-[#4B5563]">All parents are live from the backend. Search, view, edit, or add in one place.</p>

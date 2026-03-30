@@ -6,12 +6,12 @@ import Image from 'next/image';
 
 export default function MethodologySection() {
     const methodologyItems = [
-        { icon: '/methodology-icon1.png', label: 'Modular Furniture', class: 'nav-item1' },
-        { icon: '/methodology-icon2.png', label: 'Play-Learn methods', class: 'nav-item2' },
-        { icon: '/methodology-icon3.png', label: 'After School fun', class: 'nav-item3' },
-        { icon: '/methodology-icon4.png', label: 'Prioritizing Hygiene', class: 'nav-item4' },
-        { icon: '/methodology-icon5.png', label: 'Teaching Aids', class: 'nav-item5' },
-        { icon: '/methodology-icon6.png', label: 'Health Check-up', class: 'nav-item6' },
+        { icon: '/methodology-icon1.png', label: 'Modular Furniture', class: 'nav-item1', href: '/programs' },
+        { icon: '/methodology-icon2.png', label: 'Play-Learn methods', class: 'nav-item2', href: '/programs' },
+        { icon: '/methodology-icon3.png', label: 'After School fun', class: 'nav-item3', href: '/admission' },
+        { icon: '/methodology-icon4.png', label: 'Prioritizing Hygiene', class: 'nav-item4', href: '/programs' },
+        { icon: '/methodology-icon5.png', label: 'Teaching Aids', class: 'nav-item5', href: '/programs' },
+        { icon: '/methodology-icon6.png', label: 'Health Check-up', class: 'nav-item6', href: '/programs' },
     ];
 
     return (
@@ -21,7 +21,7 @@ export default function MethodologySection() {
                 <ul className="methodology-nav">
                     {methodologyItems.map((item, index) => (
                         <li key={index} className={item.class}>
-                            <Link href="#">
+                            <Link href={item.href}>
                                 <span>
                                     <Image src={item.icon} alt={item.label} width={60} height={60} style={{ height: 'auto' }} />
                                 </span>

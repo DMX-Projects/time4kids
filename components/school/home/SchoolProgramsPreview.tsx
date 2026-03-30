@@ -14,10 +14,10 @@ const SchoolProgramsPreview = () => {
     const sectionRef = useRef(null);
 
     const programs = [
-        { image: '/day care.png', programName: 'Play Group', ageGroup: '1.5 - 2.5 years', description: 'Introduction to social interaction and basic motor skills.', color: '#ef5f5f', yOffset: '-20px' },
-        { image: '/faq2.jpeg', programName: 'Nursery', ageGroup: '2.5 - 3.5 years', description: 'Building foundation for language, numbers, and expression.', color: '#fbd267', yOffset: '40px' },
-        { image: '/1.png', programName: 'PP-1 & PP-2', ageGroup: '3.5 - 5.5 years', description: 'Preparing for formal schooling with comprehensive education.', color: '#6cc3d5', yOffset: '-30px' },
-        { image: '/images/landing-banner.jpg', programName: 'Day Care', ageGroup: '1.5 - 5.5 years', description: 'Extended care with engaging activities throughout the day.', color: '#ff9f43', yOffset: '30px' }
+        { image: '/day care.png', programName: 'Play Group', ageGroup: '2 - 3 years', description: 'Introduction to social interaction and basic motor skills.', color: '#ef5f5f', yOffset: '-20px' },
+        { image: '/faq2.jpeg', programName: 'Nursery', ageGroup: '3 - 4 years', description: 'Building foundation for language, numbers, and expression.', color: '#fbd267', yOffset: '40px' },
+        { image: '/1.png', programName: 'PP-1 & PP-2', ageGroup: '4 - 6 years', description: 'Preparing for formal schooling with comprehensive education.', color: '#6cc3d5', yOffset: '-30px' },
+        { image: '/images/landing-banner.jpg', programName: 'Day Care', ageGroup: '2 - 10 years', description: 'Extended care with engaging activities throughout the day.', color: '#ff9f43', yOffset: '30px' }
     ];
 
     useEffect(() => {

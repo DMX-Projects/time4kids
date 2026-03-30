@@ -97,7 +97,7 @@ export default function ProgramsPage() {
         {
             image: '/1.png',
             name: 'Play Group',
-            ageGroup: '1.5 - 2.5 years',
+            ageGroup: '2 - 3 years',
             duration: '2-3 hours',
             description: 'A magical start to learning! We focus on sensory play, making friends, and discovering the colorful world around us.',
             features: ['Messy & Sensory Play', 'Music & Dance', 'Making Friends', 'Fun with Colors'],
@@ -111,7 +111,7 @@ export default function ProgramsPage() {
         {
             image: '/2 (1).png',
             name: 'Nursery',
-            ageGroup: '2.5 - 3.5 years',
+            ageGroup: '3 - 4 years',
             duration: '3-4 hours',
             description: 'Building bridges to big ideas! Hands-on activities that spark curiosity, language, and creativity in little minds.',
             features: ['Story Time Fun', 'Arts & Crafts', 'Counting Games', 'Outdoor Exploration'],
@@ -125,7 +125,7 @@ export default function ProgramsPage() {
         {
             image: '/2.png',
             name: 'Pre-Primary 1',
-            ageGroup: '3.5 - 4.5 years',
+            ageGroup: '4 - 5 years',
             duration: '4 hours',
             description: 'Ready, set, grow! We introduce phonics, writing, and numbers through exciting themes and interactive play.',
             features: ['Phonics & Reading', 'Writing Fun', 'Number Magic', 'World Around Us'],
@@ -139,7 +139,7 @@ export default function ProgramsPage() {
         {
             image: '/16.png',
             name: 'Pre-Primary 2',
-            ageGroup: '4.5 - 5.5 years',
+            ageGroup: '5 - 6 years',
             duration: '4-5 hours',
             description: 'Future school superstars! Advanced concepts in math, science, and language to prep for big school with confidence.',
             features: ['Little Scientists', 'Math Whiz', 'Creative Writing', 'Public Speaking'],
@@ -153,7 +153,7 @@ export default function ProgramsPage() {
         {
             image: '/day care.png',
             name: 'Day Care',
-            ageGroup: '1.5 - 10 years',
+            ageGroup: '2 - 10 years',
             duration: 'Full Day',
             description: 'A home away from home! Safe, loving, and engaging care with nutritious meals and help with homework.',
             features: ['Homework Help', 'Yummy Meals', 'Nap Time', 'Free Play'],

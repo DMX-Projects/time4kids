@@ -1,18 +1,59 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import type { SchoolStudent } from "@/components/dashboard/shared/SchoolDataProvider";
+import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
+import { jsonHeaders } from "@/lib/api-client";
 
 export type StudentProfile = { name: string; grade: string; section: string; blood: string; emergency: string };
 export type GradeRow = { id: string; subject: string; grade: string; term: string };
 export type EventRow = { id: string; title: string; date: string; venue: string; rsvp?: string };
-export type AchievementRow = { id: string; title: string; date: string; notes: string };
+export type AchievementRow = { id: string; title: string; date: string; notes: string; studentName?: string | null; scope?: string };
 export type PhotoRow = { id: string; title: string; url: string };
-export type ParentProfile = { name: string; email: string; phone: string; address: string; city: string; photo: string };
+
+export type ParentProfile = {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    photo: string;
+    franchiseName?: string;
+    franchisePhone?: string;
+    franchiseEmail?: string;
+    notifications_muted?: boolean;
+};
+
+type ParentProfileApi = {
+    full_name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    photo_url?: string;
+    franchise_name?: string;
+    franchise_contact_phone?: string;
+    franchise_contact_email?: string;
+    notifications_muted?: boolean;
+};
+
+type AchievementApi = {
+    id: number;
+    title: string;
+    notes?: string;
+    achieved_date?: string | null;
+    student_name?: string | null;
+    scope?: string;
+};
 
 export type ParentDataContextValue = {
     studentProfile: StudentProfile;
     updateStudentProfile: (payload: Partial<StudentProfile>) => void;
+
+    linkedStudents: SchoolStudent[];
+    selectedStudentId: string | null;
+    setSelectedStudentId: (id: string | null) => void;
 
     grades: GradeRow[];
     addGrade: (payload: Omit<GradeRow, "id">) => void;
@@ -25,61 +66,157 @@ export type ParentDataContextValue = {
     deleteEvent: (id: string) => void;
 
     achievements: AchievementRow[];
-    addAchievement: (payload: Omit<AchievementRow, "id">) => void;
-    updateAchievement: (id: string, payload: Partial<AchievementRow>) => void;
-    deleteAchievement: (id: string) => void;
+    achievementsLoading: boolean;
+    reloadAchievements: () => Promise<void>;
 
     photos: PhotoRow[];
     addPhoto: (payload: Omit<PhotoRow, "id">) => void;
     deletePhoto: (id: string) => void;
 
     parentProfile: ParentProfile;
-    updateParentProfile: (payload: Partial<ParentProfile>) => void;
+    parentProfileLoading: boolean;
+    updateParentProfile: (payload: Partial<ParentProfile>) => Promise<void>;
 };
 
 const ParentDataContext = createContext<ParentDataContextValue | undefined>(undefined);
 
 export function ParentDataProvider({ children }: { children: React.ReactNode }) {
-    const { user } = useAuth();
+    const { user, authFetch, refreshUser } = useAuth();
+    const { getStudentsForParent, parentSchoolLoading, students } = useSchoolData();
+
     const [studentProfile, setStudentProfile] = useState<StudentProfile>({
-        name: "Aarav T.",
-        grade: "KG-2",
-        section: "A",
-        blood: "B+",
-        emergency: "+91 90000 33333",
+        name: "",
+        grade: "",
+        section: "",
+        blood: "",
+        emergency: "",
     });
 
-    const [grades, setGrades] = useState<GradeRow[]>([{ id: "g-1", subject: "Math", grade: "A", term: "Term 1" }]);
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
-    const [events, setEvents] = useState<EventRow[]>([
-        { id: "ev-1", title: "Annual Day", date: "2025-01-20", venue: "Auditorium", rsvp: "Going" },
-    ]);
-
-    const [achievements, setAchievements] = useState<AchievementRow[]>([
-        { id: "a-1", title: "Star Reader", date: "2024-12-05", notes: "Completed 10 books" },
-    ]);
-
-    const [photos, setPhotos] = useState<PhotoRow[]>([
-        { id: "ph-1", title: "Sports Day", url: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60" },
-    ]);
+    const [grades, setGrades] = useState<GradeRow[]>([]);
+    const [events, setEvents] = useState<EventRow[]>([]);
+    const [achievements, setAchievements] = useState<AchievementRow[]>([]);
+    const [achievementsLoading, setAchievementsLoading] = useState(false);
+    const [photos, setPhotos] = useState<PhotoRow[]>([]);
 
     const [parentProfile, setParentProfile] = useState<ParentProfile>({
-        name: "Tarun Mehta",
-        email: "parent@time4kids.com",
-        phone: "+91 98888 44444",
-        address: "12, Lake View Road",
-        city: "Bangalore",
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        city: "",
         photo: "",
+        notifications_muted: false,
     });
+    const [parentProfileLoading, setParentProfileLoading] = useState(true);
+
+    const parentId = user?.id ?? "";
+    const linkedStudents = user?.role === "parent" ? getStudentsForParent(parentId) : [];
+
+    useEffect(() => {
+        if (user?.role !== "parent" || parentSchoolLoading) return;
+        if (linkedStudents.length === 0) {
+            setSelectedStudentId(null);
+            return;
+        }
+        setSelectedStudentId((prev) => {
+            if (prev && linkedStudents.some((s) => s.id === prev)) return prev;
+            return linkedStudents[0].id;
+        });
+    }, [user?.role, parentSchoolLoading, linkedStudents]);
+
+    useEffect(() => {
+        if (user?.role !== "parent" || parentSchoolLoading || !user.id) {
+            if (user?.role !== "parent") {
+                setStudentProfile({ name: "", grade: "", section: "", blood: "", emergency: "" });
+            }
+            return;
+        }
+        if (linkedStudents.length === 0) {
+            setStudentProfile({ name: "", grade: "", section: "", blood: "", emergency: "" });
+            return;
+        }
+        const sid = selectedStudentId && linkedStudents.some((s) => s.id === selectedStudentId) ? selectedStudentId : linkedStudents[0].id;
+        const s = linkedStudents.find((x) => x.id === sid) ?? linkedStudents[0];
+        setStudentProfile({
+            name: s.name,
+            grade: s.grade,
+            section: s.section,
+            blood: s.blood || "",
+            emergency: s.emergency || "",
+        });
+    }, [user?.role, user?.id, parentSchoolLoading, linkedStudents, selectedStudentId]);
+
+    useEffect(() => {
+        if (user?.role !== "parent") {
+            setParentProfileLoading(false);
+            return;
+        }
+        let cancelled = false;
+        setParentProfileLoading(true);
+        (async () => {
+            try {
+                const data = await authFetch<ParentProfileApi>("/accounts/parent/profile/");
+                if (cancelled) return;
+                setParentProfile({
+                    name: String(data.full_name ?? user.fullName ?? ""),
+                    email: String(data.email ?? user.email ?? ""),
+                    phone: String(data.phone ?? ""),
+                    address: String(data.address ?? ""),
+                    city: String(data.city ?? ""),
+                    photo: String(data.photo_url ?? ""),
+                    franchiseName: String(data.franchise_name ?? ""),
+                    franchisePhone: String(data.franchise_contact_phone ?? ""),
+                    franchiseEmail: String(data.franchise_contact_email ?? ""),
+                    notifications_muted: Boolean(data.notifications_muted),
+                });
+            } catch {
+                if (!cancelled) {
+                    setParentProfile((prev) => ({
+                        ...prev,
+                        name: user.fullName || prev.name || user.email,
+                        email: user.email,
+                    }));
+                }
+            } finally {
+                if (!cancelled) setParentProfileLoading(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.role, user?.id, user?.email, user?.fullName, authFetch]);
+
+    const mapAchievements = useCallback((list: AchievementApi[]): AchievementRow[] => {
+        return list.map((a) => ({
+            id: String(a.id),
+            title: a.title,
+            date: a.achieved_date || "",
+            notes: a.notes || "",
+            studentName: a.student_name ?? null,
+            scope: a.scope,
+        }));
+    }, []);
+
+    const reloadAchievements = useCallback(async () => {
+        if (user?.role !== "parent") return;
+        setAchievementsLoading(true);
+        try {
+            const raw = await authFetch<AchievementApi[] | { results?: AchievementApi[] }>("/students/parent/achievements/");
+            const list = Array.isArray(raw) ? raw : raw?.results ?? [];
+            setAchievements(mapAchievements(list));
+        } catch {
+            setAchievements([]);
+        } finally {
+            setAchievementsLoading(false);
+        }
+    }, [authFetch, mapAchievements, user?.role]);
 
     useEffect(() => {
         if (user?.role !== "parent") return;
-        setParentProfile((prev) => ({
-            ...prev,
-            name: user.fullName || prev.name || user.email,
-            email: user.email,
-        }));
-    }, [user]);
+        void reloadAchievements();
+    }, [user?.role, user?.id, reloadAchievements]);
 
     const updateStudentProfile = (payload: Partial<StudentProfile>) => setStudentProfile((prev) => ({ ...prev, ...payload }));
 
@@ -91,39 +228,60 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
     const updateEvent = (id: string, payload: Partial<EventRow>) => setEvents((prev) => prev.map((ev) => (ev.id === id ? { ...ev, ...payload } : ev)));
     const deleteEvent = (id: string) => setEvents((prev) => prev.filter((ev) => ev.id !== id));
 
-    const addAchievement = (payload: Omit<AchievementRow, "id">) => setAchievements((prev) => [...prev, { id: crypto.randomUUID(), ...payload }]);
-    const updateAchievement = (id: string, payload: Partial<AchievementRow>) => setAchievements((prev) => prev.map((a) => (a.id === id ? { ...a, ...payload } : a)));
-    const deleteAchievement = (id: string) => setAchievements((prev) => prev.filter((a) => a.id !== id));
-
     const addPhoto = (payload: Omit<PhotoRow, "id">) => setPhotos((prev) => [...prev, { id: crypto.randomUUID(), ...payload }]);
     const deletePhoto = (id: string) => setPhotos((prev) => prev.filter((p) => p.id !== id));
 
-    const updateParentProfile = (payload: Partial<ParentProfile>) => setParentProfile((prev) => ({ ...prev, ...payload }));
-
-    const value = useMemo(
-        () => ({
-            studentProfile,
-            updateStudentProfile,
-            grades,
-            addGrade,
-            updateGrade,
-            deleteGrade,
-            events,
-            addEvent,
-            updateEvent,
-            deleteEvent,
-            achievements,
-            addAchievement,
-            updateAchievement,
-            deleteAchievement,
-            photos,
-            addPhoto,
-            deletePhoto,
-            parentProfile,
-            updateParentProfile,
-        }),
-        [studentProfile, grades, events, achievements, photos, parentProfile],
+    const updateParentProfile = useCallback(
+        async (payload: Partial<ParentProfile>) => {
+            let merged!: ParentProfile;
+            setParentProfile((prev) => {
+                merged = { ...prev, ...payload };
+                return merged;
+            });
+            const patchBody: Record<string, unknown> = {
+                full_name: merged.name,
+                phone: merged.phone,
+                address: merged.address,
+                city: merged.city,
+                photo_url: merged.photo,
+            };
+            if (merged.notifications_muted !== undefined) {
+                patchBody.notifications_muted = merged.notifications_muted;
+            }
+            await authFetch("/accounts/parent/profile/", {
+                method: "PATCH",
+                headers: jsonHeaders(),
+                body: JSON.stringify(patchBody),
+            });
+            await refreshUser();
+        },
+        [authFetch, refreshUser],
     );
+
+    const value: ParentDataContextValue = {
+        studentProfile,
+        updateStudentProfile,
+        linkedStudents,
+        selectedStudentId,
+        setSelectedStudentId,
+        grades,
+        addGrade,
+        updateGrade,
+        deleteGrade,
+        events,
+        addEvent,
+        updateEvent,
+        deleteEvent,
+        achievements,
+        achievementsLoading,
+        reloadAchievements,
+        photos,
+        addPhoto,
+        deletePhoto,
+        parentProfile,
+        parentProfileLoading,
+        updateParentProfile,
+    };
 
     return <ParentDataContext.Provider value={value}>{children}</ParentDataContext.Provider>;
 }

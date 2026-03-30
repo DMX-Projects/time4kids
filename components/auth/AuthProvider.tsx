@@ -1,8 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiUrl, jsonHeaders, toApiError } from "@/lib/api-client";
+import { AccessLoading } from "@/components/auth/AccessLoading";
 
 type Role = "admin" | "franchise" | "parent";
 
@@ -15,59 +16,141 @@ type User = {
 
 type Tokens = { access: string; refresh: string };
 
+type LoginOptions = {
+    /** Default: `/auth/login/`. Use `/auth/parent/login/` on the parent-only sign-in page. */
+    authPath?: string;
+};
+
 type AuthContextValue = {
     user: User | null;
     tokens: Tokens | null;
     loading: boolean;
-    login: (email: string, password: string) => Promise<User>;
+    login: (email: string, password: string, options?: LoginOptions) => Promise<User>;
     logout: () => void;
     refreshTokens: () => Promise<Tokens | false>;
+    /** Re-fetch `/auth/me/` and update stored session (e.g. after parent updates display name). */
+    refreshUser: () => Promise<void>;
     authFetch: <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "tk-auth-session";
+/** @deprecated single-session key; migrated to per-role keys */
+const LEGACY_STORAGE_KEY = "tk-auth-session";
+const LAST_ROLE_KEY = "tk-auth-last-role";
 
-const normalizeRole = (role?: string | null): Role => {
-    const mapped = (role || "").toLowerCase();
+const storageKeyForRole = (role: Role) => `tk-auth-${role}`;
+
+export const normalizeRole = (role?: string | null): Role => {
+    const mapped = String(role ?? "")
+        .trim()
+        .toLowerCase();
     if (mapped === "admin") return "admin";
     if (mapped === "franchise") return "franchise";
     return "parent";
 };
+
+/** Role implied by URL, e.g. /dashboard/franchise/... → franchise */
+function pathnameDashboardRole(): Role | null {
+    if (typeof window === "undefined") return null;
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    if (parts[0] !== "dashboard") return null;
+    const r = parts[1];
+    if (r === "parent" || r === "franchise" || r === "admin") return r;
+    return null;
+}
 
 type StoredAuth = {
     user: User;
     tokens: Tokens;
 };
 
+function migrateLegacyIfNeeded(): void {
+    if (typeof window === "undefined") return;
+    const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!raw) return;
+    try {
+        const parsed = JSON.parse(raw) as StoredAuth;
+        const role = normalizeRole(parsed.user.role);
+        const key = storageKeyForRole(role);
+        if (!localStorage.getItem(key)) {
+            localStorage.setItem(key, raw);
+        }
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        localStorage.setItem(LAST_ROLE_KEY, role);
+    } catch {
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+}
+
+/** Pick which saved session to restore so franchise refresh does not load parent tokens from the same browser. */
+function readStoredSessionRaw(): string | null {
+    if (typeof window === "undefined") return null;
+    migrateLegacyIfNeeded();
+
+    const pathRole = pathnameDashboardRole();
+
+    if (pathRole) {
+        const key = storageKeyForRole(pathRole);
+        const direct = localStorage.getItem(key);
+        if (direct) return direct;
+        return null;
+    }
+
+    const last = localStorage.getItem(LAST_ROLE_KEY) as Role | null;
+    if (last === "parent" || last === "franchise" || last === "admin") {
+        const fromLast = localStorage.getItem(storageKeyForRole(last));
+        if (fromLast) return fromLast;
+    }
+
+    for (const r of ["admin", "franchise", "parent"] as const) {
+        const raw = localStorage.getItem(storageKeyForRole(r));
+        if (raw) return raw;
+    }
+    return null;
+}
+
+function persistSession(next: StoredAuth | null, previousUser: User | null) {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    if (!next) {
+        if (previousUser) {
+            localStorage.removeItem(storageKeyForRole(previousUser.role));
+        }
+        return;
+    }
+    const role = normalizeRole(next.user.role);
+    localStorage.setItem(storageKeyForRole(role), JSON.stringify(next));
+    localStorage.setItem(LAST_ROLE_KEY, role);
+}
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [tokens, setTokens] = useState<Tokens | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const persist = (next: StoredAuth | null) => {
-        if (typeof window === "undefined") return;
-        if (!next) {
-            localStorage.removeItem(STORAGE_KEY);
-            return;
-        }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    };
-
     useEffect(() => {
         const load = async () => {
+            setLoading(true);
             try {
-                const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+                const saved = readStoredSessionRaw();
                 if (saved) {
                     const parsed = JSON.parse(saved) as StoredAuth;
-                    setUser(parsed.user);
+                    const restored: User = {
+                        ...parsed.user,
+                        id: String(parsed.user.id),
+                        role: normalizeRole(parsed.user.role as string),
+                    };
                     setTokens(parsed.tokens);
-                    await hydrateUser(parsed.tokens, parsed.user);
+                    setUser(restored);
+                    await hydrateUser(parsed.tokens, restored);
+                } else {
+                    setUser(null);
+                    setTokens(null);
                 }
             } catch {
-                // ignore corrupt storage
-                persist(null);
+                setUser(null);
+                setTokens(null);
             } finally {
                 setLoading(false);
             }
@@ -86,8 +169,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 cache: "no-store",
             });
             if (res.status === 401) {
-                const refreshed = await refreshTokens(existingTokens);
-                if (refreshed) return hydrateUser(refreshed, existingUser);
+                const userForRefresh = existingUser ?? null;
+                const refreshed = await refreshTokensInner(existingTokens, userForRefresh);
+                if (refreshed) return hydrateUser(refreshed, userForRefresh);
                 return;
             }
             if (!res.ok) return;
@@ -100,14 +184,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             };
             setUser(nextUser);
             setTokens(existingTokens);
-            persist({ user: nextUser, tokens: existingTokens });
+            persistSession({ user: nextUser, tokens: existingTokens }, null);
         } catch {
             // fail silently; will require login
         }
     };
 
-    const login = async (email: string, password: string) => {
-        const res = await fetch(apiUrl("/auth/login/"), {
+    const login = async (email: string, password: string, options?: LoginOptions) => {
+        const path = options?.authPath ?? "/auth/login/";
+        const res = await fetch(apiUrl(path), {
             method: "POST",
             headers: jsonHeaders(),
             body: JSON.stringify({ email, password }),
@@ -123,17 +208,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
         setTokens(nextTokens);
         setUser(nextUser);
-        persist({ tokens: nextTokens, user: nextUser });
+        persistSession({ tokens: nextTokens, user: nextUser }, user);
         return nextUser;
     };
 
     const logout = () => {
+        const prev = user;
         setUser(null);
         setTokens(null);
-        persist(null);
+        persistSession(null, prev);
+        if (typeof window !== "undefined") {
+            localStorage.removeItem(LAST_ROLE_KEY);
+        }
     };
 
-    const refreshTokens = async (current: Tokens | null = tokens): Promise<Tokens | false> => {
+    const refreshTokensInner = async (current: Tokens | null, userForPersist: User | null): Promise<Tokens | false> => {
         if (!current?.refresh) return false;
         const res = await fetch(apiUrl("/auth/refresh/"), {
             method: "POST",
@@ -147,8 +236,60 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const data = await res.json();
         const next: Tokens = { access: data.access, refresh: current.refresh };
         setTokens(next);
-        if (user) persist({ user, tokens: next });
+        if (userForPersist) persistSession({ user: userForPersist, tokens: next }, null);
         return next;
+    };
+
+    const refreshTokens = async (current: Tokens | null = tokens): Promise<Tokens | false> => {
+        return refreshTokensInner(current, user);
+    };
+
+    const refreshUser = async () => {
+        if (!tokens?.access) return;
+        try {
+            const res = await fetch(apiUrl("/auth/me/"), {
+                headers: {
+                    Authorization: `Bearer ${tokens.access}`,
+                    Accept: "application/json",
+                },
+                cache: "no-store",
+            });
+            if (res.status === 401) {
+                const refreshed = await refreshTokensInner(tokens, user);
+                if (refreshed) {
+                    const retry = await fetch(apiUrl("/auth/me/"), {
+                        headers: {
+                            Authorization: `Bearer ${refreshed.access}`,
+                            Accept: "application/json",
+                        },
+                        cache: "no-store",
+                    });
+                    if (!retry.ok) return;
+                    const data = await retry.json();
+                    const nextUser: User = {
+                        id: String(data.id),
+                        email: data.email,
+                        fullName: data.full_name,
+                        role: normalizeRole(data.role),
+                    };
+                    setUser(nextUser);
+                    persistSession({ user: nextUser, tokens: refreshed }, null);
+                }
+                return;
+            }
+            if (!res.ok) return;
+            const data = await res.json();
+            const nextUser: User = {
+                id: String(data.id),
+                email: data.email,
+                fullName: data.full_name,
+                role: normalizeRole(data.role),
+            };
+            setUser(nextUser);
+            persistSession({ user: nextUser, tokens }, null);
+        } catch {
+            /* ignore */
+        }
     };
 
     const authFetch = async <T = unknown>(path: string, init?: RequestInit, retry = true): Promise<T> => {
@@ -173,7 +314,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return (await response.json().catch(() => null)) as T;
     };
 
-    const value = useMemo(() => ({ user, tokens, loading, login, logout, refreshTokens, authFetch }), [user, tokens, loading]);
+    const value = useMemo(
+        () => ({ user, tokens, loading, login, logout, refreshTokens, refreshUser, authFetch }),
+        [user, tokens, loading],
+    );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
@@ -184,38 +328,37 @@ export const useAuth = () => {
     return ctx;
 };
 
-export const RoleGuard = ({ allowed, children }: { allowed: Role[]; children: React.ReactNode }) => {
+export const RoleGuard = ({ allowedRole, children }: { allowedRole: Role; children: React.ReactNode }) => {
     const { user, loading } = useAuth();
     const router = useRouter();
-    const pathname = usePathname();
-    const hasRedirected = useRef(false);
 
     useEffect(() => {
-        if (loading || hasRedirected.current) return;
+        if (loading) return;
+
         if (!user) {
-            hasRedirected.current = true;
             router.replace("/login/");
             return;
         }
-        if (!allowed.includes(user.role)) {
-            hasRedirected.current = true;
-            router.replace(`/dashboard/${user.role}`);
+
+        const actual = normalizeRole(user.role);
+        if (actual !== allowedRole) {
+            router.replace(`/dashboard/${actual}`);
         }
-    }, [allowed, loading, pathname, router, user]);
+    }, [allowedRole, loading, router, user]);
 
     if (loading) {
-        return (
-            <div className="flex min-h-[60vh] items-center justify-center text-gray-500">
-                Checking access...
-            </div>
-        );
+        return <AccessLoading />;
     }
 
-    if (!user || !allowed.includes(user.role)) {
-        return null;
+    if (!user) {
+        return <AccessLoading />;
+    }
+
+    if (normalizeRole(user.role) !== allowedRole) {
+        return <AccessLoading />;
     }
 
     return <>{children}</>;
 };
 
-export type { Role, User };
+export type { Role, User, LoginOptions };

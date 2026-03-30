@@ -5,12 +5,24 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders } from "@/lib/api-client";
-import { CalendarDays, Plus, Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, Plus, Pencil, Trash2, CheckCircle2, Clock, Image as ImageIcon, Video as VideoIcon, XCircle } from "lucide-react";
+import { mediaUrl } from "@/lib/api-client";
 
 type UpdateItem = {
     id: number;
     text: string;
     date: string;
+};
+
+type SocialMediaUpload = {
+    id: number;
+    media_type: "image" | "video";
+    title?: string;
+    caption?: string;
+    file: string;
+    status: "pending" | "approved" | "rejected" | string;
+    admin_notes?: string;
+    created_at: string;
 };
 
 const emptyUpdate = { text: "", date: "" };
@@ -25,8 +37,26 @@ export default function AdminUpdatesPage() {
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
+    const [socialUploads, setSocialUploads] = useState<SocialMediaUpload[]>([]);
+    const [socialLoading, setSocialLoading] = useState(true);
+    const [socialReviewLoadingId, setSocialReviewLoadingId] = useState<number | null>(null);
+
+    const fetchSocialUploads = async () => {
+        setSocialLoading(true);
+        try {
+            const data = await authFetch<any>("/updates/social-media/admin/");
+            const items = Array.isArray(data) ? data : data?.results || [];
+            setSocialUploads(items);
+        } catch (err) {
+            console.error("Failed to fetch social uploads", err);
+        } finally {
+            setSocialLoading(false);
+        }
+    };
+
     useEffect(() => {
         loadUpdates();
+        fetchSocialUploads();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -94,6 +124,35 @@ export default function AdminUpdatesPage() {
         } catch (err) {
             console.error(err);
             alert("Failed to delete update");
+        }
+    };
+
+    const statusText = (status: SocialMediaUpload["status"]) => {
+        if (status === "approved") return "Approved";
+        if (status === "rejected") return "Rejected";
+        return "Pending";
+    };
+
+    const statusIcon = (status: SocialMediaUpload["status"]) => {
+        if (status === "approved") return <CheckCircle2 className="w-4 h-4 text-green-600" />;
+        if (status === "rejected") return <XCircle className="w-4 h-4 text-red-600" />;
+        return <Clock className="w-4 h-4 text-[#FF922B]" />;
+    };
+
+    const reviewUpload = async (id: number, status: "approved" | "rejected") => {
+        setSocialReviewLoadingId(id);
+        try {
+            await authFetch(`/updates/social-media/admin/${id}/`, {
+                method: "PATCH",
+                headers: jsonHeaders(),
+                body: JSON.stringify({ status }),
+            });
+            await fetchSocialUploads();
+        } catch (err) {
+            console.error("Failed to update status", err);
+            alert("Could not update status");
+        } finally {
+            setSocialReviewLoadingId(null);
         }
     };
 
@@ -189,6 +248,85 @@ export default function AdminUpdatesPage() {
                     </div>
                 </form>
             </Modal>
+
+            {/* Social Media Upload Approvals */}
+            <div className="space-y-3 pt-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-xl font-semibold text-slate-900">Social Media Upload Approvals</h2>
+                        <p className="text-sm text-slate-600">Approve or reject franchise uploads.</p>
+                    </div>
+                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-orange-50 text-orange-600 border border-orange-100">
+                        {socialUploads.length} items
+                    </span>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
+                    {socialLoading ? (
+                        <div className="flex items-center justify-center py-10">
+                            <Clock className="w-8 h-8 animate-spin text-orange-500" />
+                        </div>
+                    ) : socialUploads.length === 0 ? (
+                        <p className="text-sm text-slate-600">No social uploads found.</p>
+                    ) : (
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {socialUploads.map((u) => (
+                                <div key={u.id} className="border border-slate-200 rounded-xl p-4 space-y-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
+                                                {u.media_type === "video" ? (
+                                                    <VideoIcon className="w-5 h-5 text-orange-600" />
+                                                ) : (
+                                                    <ImageIcon className="w-5 h-5 text-orange-600" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-slate-900 text-sm">{u.title || (u.media_type === "video" ? "Video Upload" : "Image Upload")}</p>
+                                                <p className="text-xs text-slate-600 truncate">{u.caption || "—"}</p>
+                                            </div>
+                                        </div>
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200">
+                                            {statusIcon(u.status)}
+                                            <span className="text-xs font-semibold text-slate-800">{statusText(u.status)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-3">
+                                        <a
+                                            href={mediaUrl(u.file)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs font-semibold text-orange-600 hover:underline"
+                                        >
+                                            Open
+                                        </a>
+
+                                        <div className="flex gap-2">
+                                            <button
+                                                disabled={u.status !== "pending" || socialReviewLoadingId === u.id}
+                                                onClick={() => reviewUpload(u.id, "approved")}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-md border border-green-200 text-green-700 hover:bg-green-50 disabled:opacity-50"
+                                            >
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                Approve
+                                            </button>
+                                            <button
+                                                disabled={u.status !== "pending" || socialReviewLoadingId === u.id}
+                                                onClick={() => reviewUpload(u.id, "rejected")}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-md border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                                            >
+                                                <XCircle className="w-4 h-4" />
+                                                Reject
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

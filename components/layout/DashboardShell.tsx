@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import Image from "next/image";
 import { LogOut, Menu, Star, X } from "lucide-react";
 import { Role, RoleGuard, useAuth } from "@/components/auth/AuthProvider";
 import Button from "@/components/ui/Button";
@@ -56,6 +55,10 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
     const router = useRouter();
     const pathname = usePathname();
     const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const isAdmin = role === "admin";
     const appliedTheme = isAdmin
@@ -73,8 +76,8 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
     const handleCancelLogout = () => setShowLogoutConfirm(false);
 
     return (
-        <RoleGuard allowed={[role]}>
-            <div className="min-h-screen flex bg-white">
+        <RoleGuard allowedRole={role}>
+            <div className="min-h-screen flex bg-white isolate">
 
                 {/* Render role-specific sidebar */}
                 {isAdmin && (
@@ -103,7 +106,7 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                 )}
                 {open && <button className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setOpen(false)} aria-label="Close menu" />}
 
-                <div className="flex-1 flex flex-col min-w-0 relative">
+                <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-[1]">
                     <header className="bg-white border-b border-[#E5E7EB] relative z-10">
                         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -157,9 +160,10 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                         </div>
                     </header>
 
-                    <main className="container mx-auto px-4 py-8 flex-1 min-w-0 relative z-10">
+                    {/* Avoid nested <main> (root layout already wraps app in main). */}
+                    <div className="container mx-auto px-4 py-8 flex-1 min-w-0 min-h-[50vh] w-full relative z-10 bg-slate-50/90">
                         {children}
-                    </main>
+                    </div>
 
                     <Modal isOpen={showLogoutConfirm} onClose={handleCancelLogout} title="Confirm Logout" size="sm">
                         <div className="space-y-4">

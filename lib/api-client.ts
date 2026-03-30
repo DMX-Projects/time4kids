@@ -61,8 +61,10 @@ export const mediaUrl = (path?: string | null) => {
     if (!path) return "";
     if (/^https?:\/\//i.test(path)) return path; // If it's already a full URL, return as is
     if (path.startsWith(MEDIA_BASE_URL)) return path; // If the path already includes MEDIA_BASE_URL, return as is
-    if (path.startsWith('/media')) return `${MEDIA_BASE_URL}${path.replace(/^\/media/, "")}`; // Avoid appending /media again
-    return `${MEDIA_BASE_URL}/${path.replace(/^\/+/g, "")}`; // Append MEDIA_BASE_URL for other cases
+    if (path.startsWith("/media")) return `${MEDIA_BASE_URL}${path.replace(/^\/media/, "")}`; // Django /media/... paths
+    // Absolute paths from the Next.js public/ folder (e.g. /images/..., /foo.png) — do not prefix with API media URL
+    if (path.startsWith("/")) return path;
+    return `${MEDIA_BASE_URL}/${path.replace(/^\/+/g, "")}`;
 };
 
 export type ApiError = Error & { status?: number; details?: unknown };
