@@ -82,7 +82,7 @@ const ParentDataContext = createContext<ParentDataContextValue | undefined>(unde
 
 export function ParentDataProvider({ children }: { children: React.ReactNode }) {
     const { user, authFetch, refreshUser } = useAuth();
-    const { getStudentsForParent, parentSchoolLoading, students } = useSchoolData();
+    const { parentSchoolLoading, students } = useSchoolData();
 
     const [studentProfile, setStudentProfile] = useState<StudentProfile>({
         name: "",
@@ -112,7 +112,7 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
     const [parentProfileLoading, setParentProfileLoading] = useState(true);
 
     const parentId = user?.id ?? "";
-    const linkedStudents = user?.role === "parent" ? getStudentsForParent(parentId) : [];
+    const linkedStudents = user?.role === "parent" ? students : [];
 
     useEffect(() => {
         if (user?.role !== "parent" || parentSchoolLoading) return;

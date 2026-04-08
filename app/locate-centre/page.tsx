@@ -6,6 +6,7 @@ import { MapPin, Phone, Search, Navigation, Star, Sun, Facebook, Instagram, Yout
 import { useRouter, useSearchParams } from 'next/navigation';
 import { slugify, cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api-client';
+import { CentreMap } from '@/components/shared/CentreMap';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,6 +87,7 @@ function LocateCentreContent() {
     const [allCentres, setAllCentres] = useState<Centre[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSearching, setIsSearching] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
     // Debounce search term (500ms delay)
     useEffect(() => {
@@ -177,6 +179,8 @@ function LocateCentreContent() {
                         postal_code: postal_code,
                         phone: item.contact_phone || item.phone,
                         googleMapLink: item.google_map_link,
+                        latitude: item.latitude ? parseFloat(item.latitude) : null,
+                        longitude: item.longitude ? parseFloat(item.longitude) : null,
                         socials: {
                             facebook: item.facebook_url,
                             instagram: item.instagram_url,
@@ -367,7 +371,7 @@ function LocateCentreContent() {
                                 <div className="absolute right-5 top-1/2 transform -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
                             </div>
                         </div>
-                        <div className="mt-8 text-center">
+                        <div className="mt-8 text-center flex flex-col md:flex-row justify-center items-center gap-4">
                             <span className={cn(
                                 "inline-block px-4 py-1 rounded-full text-sm font-bold border transition-all",
                                 isSearching
@@ -376,6 +380,31 @@ function LocateCentreContent() {
                             )}>
                                 {isSearching ? '🔍 Searching...' : `Found ${centres.length} centre${centres.length !== 1 ? 's' : ''}`}
                             </span>
+                            
+                            <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200">
+                                <button 
+                                    onClick={() => setViewMode('list')}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-full text-sm font-bold transition-all",
+                                        viewMode === 'list' 
+                                            ? "bg-white text-orange-600 shadow-sm" 
+                                            : "text-slate-500 hover:text-slate-700"
+                                    )}
+                                >
+                                    List View
+                                </button>
+                                <button 
+                                    onClick={() => setViewMode('map')}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-full text-sm font-bold transition-all",
+                                        viewMode === 'map' 
+                                            ? "bg-white text-orange-600 shadow-sm" 
+                                            : "text-slate-500 hover:text-slate-700"
+                                    )}
+                                >
+                                    Map View
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -390,6 +419,9 @@ function LocateCentreContent() {
                                 <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-pink-400"></div>
                             </div>
                         ) : displayedCentres.length > 0 ? (
+                            viewMode === 'map' ? (
+                                <CentreMap centres={displayedCentres as any} />
+                            ) : (
                             <div className="grid md:grid-cols-2 gap-10 lg:gap-14">
                                 {displayedCentres.map((centre) => (
                                     <div
@@ -453,6 +485,7 @@ function LocateCentreContent() {
                                     </div>
                                 ))}
                             </div>
+                            )
                         ) : (
                             <div className="text-center py-20 bg-white rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] border-4 border-slate-100 border-dashed max-w-2xl mx-auto">
                                 <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">

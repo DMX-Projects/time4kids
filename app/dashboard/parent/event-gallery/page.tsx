@@ -7,8 +7,8 @@ import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider"
 
 export default function EventGalleryPage() {
     const { user } = useAuth();
-    const { getEventMediaForParent, events } = useSchoolData();
-    const media = getEventMediaForParent(user?.id || "parent-1");
+    const { eventMedia, events } = useSchoolData();
+    const media = eventMedia;
     const eventTitleById = useMemo(() => {
         const m = new Map<string, string>();
         for (const ev of events) {
