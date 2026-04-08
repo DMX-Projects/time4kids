@@ -7,10 +7,10 @@ import { formatStudentClassCaption } from "@/lib/parent-dashboard-utils";
 
 export default function MarksGradesPage() {
     const { user } = useAuth();
-    const { getStudentsForParent, getGradesForParent, students } = useSchoolData();
-    const parentId = user?.id || "parent-1";
-    const myStudents = getStudentsForParent(parentId);
-    const myGrades = getGradesForParent(parentId);
+    const { students, grades } = useSchoolData();
+
+    const myStudents = students;
+    const myGrades = grades;
 
     const gradesByStudent = myStudents.map((stu) => ({
         student: stu,

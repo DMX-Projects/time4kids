@@ -59,6 +59,22 @@ export default function FranchiseProfilePage() {
                             onChange={(e) => setForm({ ...form, youtubeUrl: e.target.value })}
                             placeholder="https://youtube.com/@yourchannel"
                         />
+                        <Input
+                            label="Map Latitude"
+                            type="number"
+                            step="any"
+                            value={form.latitude ?? ''}
+                            onChange={(e) => setForm({ ...form, latitude: e.target.value ? parseFloat(e.target.value) : null })}
+                            placeholder="e.g. 17.3850"
+                        />
+                        <Input
+                            label="Map Longitude"
+                            type="number"
+                            step="any"
+                            value={form.longitude ?? ''}
+                            onChange={(e) => setForm({ ...form, longitude: e.target.value ? parseFloat(e.target.value) : null })}
+                            placeholder="e.g. 78.4867"
+                        />
                     </div>
                     <Textarea label="Bio" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
                     <div className="flex gap-2">

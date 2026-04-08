@@ -28,6 +28,7 @@ export function normalizeStudentList(data: unknown): unknown[] {
 export function mapApiStudent(raw: unknown, parentId: string): SchoolStudent {
     const r = raw as Record<string, unknown>;
     const id = String(r.id ?? r.pk ?? "");
+    const finalParentId = parentId || String(r.parent ?? r.parentId ?? r.parent_id ?? "");
     const fromParts =
         r.first_name != null || r.last_name != null
             ? `${String(r.first_name ?? "").trim()} ${String(r.last_name ?? "").trim()}`.trim()
@@ -55,7 +56,7 @@ export function mapApiStudent(raw: unknown, parentId: string): SchoolStudent {
               ? String(r.emergency)
               : undefined;
     const dateOfBirth = r.date_of_birth != null ? String(r.date_of_birth) : undefined;
-    return { id, name, rollNumber, grade, section, parentId, blood, emergency, dateOfBirth };
+    return { id, name, rollNumber, grade, section, parentId: finalParentId, blood, emergency, dateOfBirth };
 }
 
 export function mapApiGrade(raw: unknown, fallbackStudentId: string): GradeRecord {

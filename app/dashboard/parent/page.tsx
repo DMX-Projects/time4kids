@@ -12,11 +12,11 @@ import { countUpcomingEvents, formatStudentClassCaption } from "@/lib/parent-das
 export default function ParentDashboardPage() {
     const { user } = useAuth();
     const { achievements, linkedStudents, selectedStudentId, setSelectedStudentId } = useParentData();
-    const { getGradesForParent, events, parentSchoolLoading } = useSchoolData();
+    const { grades, events, parentSchoolLoading } = useSchoolData();
 
     const parentId = user?.id ?? "";
     const myStudents = linkedStudents;
-    const myGrades = getGradesForParent(parentId);
+    const myGrades = grades;
     const upcomingEventsCount = countUpcomingEvents(events);
 
     const focusStudent = myStudents.find((s) => s.id === selectedStudentId) ?? myStudents[0];

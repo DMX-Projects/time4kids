@@ -39,7 +39,6 @@ const navItems: DashboardNavItem[] = [
     { label: "Events", href: "/dashboard/parent/events", icon: <CalendarDays className="w-4 h-4" /> },
     { label: "Achievements", href: "/dashboard/parent/achievements", icon: <Star className="w-4 h-4" /> },
     { label: "Event gallery", href: "/dashboard/parent/event-gallery", icon: <Images className="w-4 h-4" /> },
-    { label: "Settings", href: "/dashboard/parent/settings", icon: <Settings className="w-4 h-4" /> },
 ];
 
 export default function ParentLayout({ children }: { children: React.ReactNode }) {

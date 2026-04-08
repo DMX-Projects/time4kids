@@ -11,10 +11,10 @@ export default function AddGradesPage() {
     const [bulkText, setBulkText] = useState("");
     const [bulkResult, setBulkResult] = useState<string | null>(null);
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!form.rollNumber.trim() || !form.subject.trim()) return;
-        addGradesBulk([
+        await addGradesBulk([
             {
                 rollNumber: form.rollNumber,
                 studentName: form.studentName,
@@ -26,6 +26,7 @@ export default function AddGradesPage() {
                 score: form.score ? Number(form.score) : undefined,
             },
         ]);
+        setForm({ rollNumber: "", studentName: "", gradeLevel: "", section: "", subject: "", term: "Term 1", grade: "", score: "" });
     };
 
     const parsedRows: BulkGradeRow[] = bulkText
@@ -37,8 +38,9 @@ export default function AddGradesPage() {
             return { rollNumber, subject, term: term || "Term 1", grade, score: score ? Number(score) : undefined, gradeLevel, section };
         });
 
-    const submitBulk = () => {
-        const result = addGradesBulk(parsedRows);
+    const submitBulk = async () => {
+        setBulkResult("Uploading...");
+        const result = await addGradesBulk(parsedRows);
         setBulkResult(`Inserted ${result.inserted}, skipped ${result.skipped}`);
     };
 

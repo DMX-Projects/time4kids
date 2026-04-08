@@ -18,6 +18,8 @@ export type FranchiseProfile = {
     instagramUrl?: string;
     twitterUrl?: string;
     youtubeUrl?: string;
+    latitude?: number | null;
+    longitude?: number | null;
 };
 
 export type FranchiseDataContextValue = {
@@ -65,6 +67,8 @@ type ApiProfile = {
     instagram_url?: string;
     twitter_url?: string;
     youtube_url?: string;
+    latitude?: number | null;
+    longitude?: number | null;
 };
 
 const mapParent = (parent: ApiParent): FranchiseParent => ({
@@ -95,6 +99,8 @@ const mapProfile = (profile: ApiProfile): FranchiseProfile => ({
     instagramUrl: profile.instagram_url || "",
     twitterUrl: profile.twitter_url || "",
     youtubeUrl: profile.youtube_url || "",
+    latitude: profile.latitude ?? null,
+    longitude: profile.longitude ?? null,
 });
 
 export function FranchiseDataProvider({ children }: { children: React.ReactNode }) {
@@ -114,6 +120,8 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
         instagramUrl: "",
         twitterUrl: "",
         youtubeUrl: "",
+        latitude: null,
+        longitude: null,
     });
 
     useEffect(() => {
@@ -233,6 +241,8 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
             instagram_url: payload.instagramUrl,
             twitter_url: payload.twitterUrl,
             youtube_url: payload.youtubeUrl,
+            latitude: payload.latitude,
+            longitude: payload.longitude,
         };
         const updated = await authFetch<ApiProfile>("/franchises/franchise/profile/", {
             method: "PATCH",
