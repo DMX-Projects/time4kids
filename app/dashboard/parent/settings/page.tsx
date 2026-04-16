@@ -38,8 +38,11 @@ export default function ParentSettingsPage() {
             <div className="rounded-2xl border border-orange-100 bg-white p-4 space-y-4 shadow-sm">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <p className="font-medium text-orange-900 text-sm">Mute announcement highlights</p>
-                        <p className="text-xs text-orange-700">Stops emphasis on notification-style alerts in the app (content still available).</p>
+                        <p className="font-medium text-orange-900 text-sm">Mute announcement emails and highlights</p>
+                        <p className="text-xs text-orange-700">
+                            When on, you will not receive email when your centre posts announcements, and in-portal highlights are reduced. You can
+                            still read messages under Notifications.
+                        </p>
                     </div>
                     <button
                         type="button"

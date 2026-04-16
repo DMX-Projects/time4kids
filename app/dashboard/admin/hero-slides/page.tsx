@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { Images, Plus, Pencil, Trash2, Eye, EyeOff, Upload, X } from "lucide-react";
 import Image from "next/image";
-import { mediaUrl, apiUrl } from "@/lib/api-client";
+import { mediaUrl } from "@/lib/api-client";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface HeroSlide {
     id: number;
@@ -19,6 +20,7 @@ interface HeroSlide {
 const emptySlide = { alt_text: "", link: "", order: 0, is_active: true };
 
 export default function HeroSlidesPage() {
+    const { authFetch } = useAuth();
     const [slides, setSlides] = useState<HeroSlide[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -35,13 +37,11 @@ export default function HeroSlidesPage() {
     const fetchSlides = async () => {
         try {
             setLoading(true);
-            const response = await fetch(apiUrl('/common/hero-slides/'));
-            if (response.ok) {
-                const data = await response.json();
-                setSlides(data);
-            }
+            const data = await authFetch<HeroSlide[]>("/common/hero-slides/");
+            setSlides(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error("Failed to fetch slides", err);
+            setSlides([]);
         } finally {
             setLoading(false);
         }
@@ -99,16 +99,10 @@ export default function HeroSlidesPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Are you sure you want to delete this slide?")) return;
         try {
-            const response = await fetch(apiUrl(`/common/hero-slides/${id}/`), {
-                method: 'DELETE',
-            });
-            if (response.ok) {
-                setSlides(slides.filter(s => s.id !== id));
-            } else {
-                alert("Failed to delete slide");
-            }
-        } catch (err) {
-            alert("Error deleting slide");
+            await authFetch(`/common/hero-slides/${id}/`, { method: "DELETE" });
+            setSlides((prev) => prev.filter((s) => s.id !== id));
+        } catch {
+            alert("Failed to delete slide");
         }
     };
 
@@ -130,12 +124,10 @@ export default function HeroSlidesPage() {
                     formData.append("image", imageFiles[0]); // Only take first file for edit
                 }
 
-                const response = await fetch(apiUrl(`/common/hero-slides/${editingId}/`), {
-                    method: 'PATCH',
+                await authFetch(`/common/hero-slides/${editingId}/`, {
+                    method: "PATCH",
                     body: formData,
                 });
-
-                if (!response.ok) throw new Error("Failed to update slide");
 
             } else {
                 // Create mode (Potential Bulk)
@@ -155,16 +147,13 @@ export default function HeroSlidesPage() {
                     formData.append("order", (form.order + index).toString());
                     formData.append("is_active", form.is_active ? "true" : "false");
 
-                    return fetch(apiUrl('/common/hero-slides/'), {
-                        method: 'POST',
+                    return authFetch("/common/hero-slides/", {
+                        method: "POST",
                         body: formData,
                     });
                 });
 
-                const responses = await Promise.all(uploadPromises);
-                const failed = responses.some(r => !r.ok);
-
-                if (failed) throw new Error("Some images failed to upload.");
+                await Promise.all(uploadPromises);
             }
 
             setModalOpen(false);

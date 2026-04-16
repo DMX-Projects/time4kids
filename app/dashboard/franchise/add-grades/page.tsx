@@ -75,7 +75,9 @@ export default function AddGradesPage() {
                         <Button type="button" size="sm" variant="outline" onClick={() => setForm({ rollNumber: "", studentName: "", gradeLevel: "", section: "", subject: "", term: "Term 1", grade: "", score: "" })}>Reset</Button>
                     </div>
                 </form>
-                <p className="text-xs text-orange-700 mt-2">Use roll number to target the student. If the student does not exist, they will be created and linked.</p>
+                <p className="text-xs text-orange-700 mt-2">
+                    Use roll number to match an existing student at your centre. Rows without a matching roll number are skipped—add the student first under Students.
+                </p>
             </Section>
 
             <Section

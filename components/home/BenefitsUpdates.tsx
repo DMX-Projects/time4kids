@@ -4,8 +4,19 @@ import React from 'react';
 import Image from 'next/image';
 import Slider from 'react-slick';
 import { apiUrl } from '@/lib/api-client';
+import { mainPageSectionProps } from '@/config/main-page-sections';
 
+function formatSlideDate(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+}
 
+type Slide = { date: string; text: string };
 
 export default function BenefitsUpdates() {
     const updatesSettings = {
@@ -29,42 +40,42 @@ export default function BenefitsUpdates() {
         { number: 5, text: 'Operational Support', class: 'benefit5' },
     ];
 
-    const [updates, setUpdates] = React.useState([
+    const defaultSlides: Slide[] = [
         {
             date: '28-12-2015',
             text: "T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+ pre-schools is now poised for major expansion across the country.",
         },
-        {
-            date: '01-02-2000',
-            text: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-        },
-        {
-            date: '15-11-2020',
-            text: 'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
-        },
-    ]);
+    ];
 
-    // React.useEffect(() => {
-    //     const fetchUpdates = async () => {
-    //         try {
-    //             const response = await fetch(apiUrl('/updates/'));
-    //             if (response.ok) {
-    //                 const data = await response.json();
-    //                 const items = Array.isArray(data) ? data : data.results || [];
-    //                 if (items.length > 0) {
-    //                     setUpdates(items);
-    //                 }
-    //             }
-    //         } catch (err) {
-    //             console.error('Failed to fetch updates:', err);
-    //         }
-    //     };
+    const [updates, setUpdates] = React.useState<Slide[]>(defaultSlides);
 
-    //     fetchUpdates();
-    // }, []);
+    React.useEffect(() => {
+        const fetchUpdates = async () => {
+            try {
+                const response = await fetch(apiUrl('/updates/'));
+                if (!response.ok) return;
+                const data = await response.json();
+                const items = Array.isArray(data) ? data : data.results || [];
+                const mapped: Slide[] = items
+                    .filter((u: { text?: string; is_active?: boolean }) => (u.text || '').trim() && u.is_active !== false)
+                    .map((u: { start_date?: string | null; text: string }) => ({
+                        date: formatSlideDate(u.start_date),
+                        text: (u.text || '').trim(),
+                    }))
+                    .filter((u: Slide) => u.text);
+                if (mapped.length > 0) {
+                    setUpdates(mapped);
+                }
+            } catch (err) {
+                console.error('Failed to fetch updates:', err);
+            }
+        };
+
+        void fetchUpdates();
+    }, []);
 
     return (
-        <div className="benefits-updates">
+        <section className="benefits-updates scroll-mt-24" {...mainPageSectionProps('benefitsUpdates')}>
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Benefits Column */}
@@ -349,6 +360,6 @@ export default function BenefitsUpdates() {
                     }
                 }
             `}</style>
-        </div>
+        </section>
     );
 }

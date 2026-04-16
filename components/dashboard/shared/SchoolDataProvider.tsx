@@ -61,6 +61,17 @@ export type EventMedia = {
 };
 
 type AddEventMediaPayload = Omit<EventMedia, "id" | "url"> & { url?: string; file?: File };
+type AddOrUpdateStudentPayload = Omit<SchoolStudent, "id"> & { id?: string };
+type AddEnquiryPayload = {
+    type: EnquiryType;
+    name: string;
+    email: string;
+    phone?: string;
+    city?: string;
+    childAge?: string;
+    message: string;
+    franchiseSlug?: string;
+};
 
 export type EnquiryType = "admission" | "franchise" | "contact";
 
@@ -114,10 +125,15 @@ export type SchoolDataContextValue = {
     addGradesBulk: (rows: BulkGradeRow[]) => Promise<{ inserted: number; skipped: number }>;
     addEvent: (e: Omit<EventRecord, "id">) => Promise<void>;
     addMedia: (m: AddEventMediaPayload) => Promise<void>;
+    addEventMedia: (m: AddEventMediaPayload) => Promise<void>;
+    updateEvent: (id: string, payload: Partial<EventRecord>) => Promise<void>;
+    deleteEvent: (id: string) => Promise<void>;
     resolveEnquiry: (id: string) => Promise<void>;
+    addEnquiry: (payload: AddEnquiryPayload) => Promise<void>;
 
     // Franchise Specific CRUD
     franchiseLoadParents: () => Promise<void>;
+    addOrUpdateStudent: (studentData: AddOrUpdateStudentPayload) => Promise<void>;
     franchiseAddStudent: (studentData: any) => Promise<void>;
     franchiseUpdateStudent: (id: string, studentData: any) => Promise<void>;
     franchiseDeleteStudent: (id: string) => Promise<void>;
@@ -264,14 +280,24 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         if (!user || user.role !== "parent") return;
         setParentSchoolLoading(true);
         try {
-            const [sData, gData] = await Promise.all([
-                authFetch<any>("/students/parent/students/"),
-                authFetch<any>("/students/parent/grades/"),
-            ]);
-            setStudents(normalizeApiList(sData).map((s) => mapApiStudent(s, user.id)));
-            setGrades(normalizeApiList(gData).map((g) => mapApiGrade(g, "")));
+            const sData = await authFetch<any>("/students/parent/students/");
+            const studentList = normalizeApiList(sData).map((s) => mapApiStudent(s, user.id));
+            setStudents(studentList);
+            const gradeLists = await Promise.all(
+                studentList.map(async (stu) => {
+                    try {
+                        const gData = await authFetch<any>(`/students/parent/students/${stu.id}/grades/`);
+                        return normalizeApiList(gData).map((g) => mapApiGrade(g, stu.id));
+                    } catch {
+                        return [];
+                    }
+                }),
+            );
+            setGrades(gradeLists.flat());
         } catch (err) {
             console.error("Failed to load parent data", err);
+            setStudents([]);
+            setGrades([]);
         } finally {
             setParentSchoolLoading(false);
         }
@@ -294,7 +320,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         try {
             const data = await authFetch<ApiEvent[]>("/events/franchise/");
             ingestEvents(data);
-        } catch {
+        } catch (err) {
+            console.error("Failed to load franchise events", err);
             setEvents([]);
         }
     };
@@ -317,8 +344,25 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     const addParent = async (payload: Omit<SchoolParent, "id">) => {
-        // Implementation for adding parents if needed
-        return { id: "temp", ...payload };
+        const body = {
+            email: payload.email,
+            full_name: payload.name,
+            child_name: "",
+            notes: payload.phone || "",
+        };
+        const created = await authFetch<any>("/franchises/franchise/parents/", {
+            method: "POST",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        const mapped: SchoolParent = {
+            id: String(created.id),
+            name: created.user?.full_name || created.user?.email || payload.name,
+            email: created.user?.email || payload.email,
+            phone: created.notes || payload.phone || "",
+        };
+        setParents((prev) => [mapped, ...prev]);
+        return mapped;
     };
 
     const addStudent = async (payload: Omit<SchoolStudent, "id">) => {
@@ -389,8 +433,11 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     const addMedia = async (payload: AddEventMediaPayload) => {
+        if (!payload.file) {
+            throw new Error("Please choose a file to upload");
+        }
         const formData = new FormData();
-        if (payload.file) formData.append("file", payload.file);
+        formData.append("file", payload.file);
         formData.append("media_type", payload.type.toUpperCase());
         if (payload.description) formData.append("caption", payload.description);
 
@@ -401,8 +448,50 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         setEventMedia((prev) => [mapMedia(saved, payload.eventId), ...prev]);
     };
 
+    const addEventMedia = async (payload: AddEventMediaPayload) => addMedia(payload);
+
+    const updateEvent = async (id: string, payload: Partial<EventRecord>) => {
+        const body = {
+            title: payload.title,
+            description: payload.notes || "",
+            start_date: payload.date,
+            end_date: payload.date,
+            location: payload.venue,
+        };
+        const updated = await authFetch<ApiEvent>(`/events/franchise/${id}/`, {
+            method: "PATCH",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        setEvents((prev) => prev.map((ev) => (ev.id === id ? mapEvent(updated) : ev)));
+    };
+
+    const deleteEvent = async (id: string) => {
+        await authFetch(`/events/franchise/${id}/`, { method: "DELETE" });
+        setEvents((prev) => prev.filter((ev) => ev.id !== id));
+        setEventMedia((prev) => prev.filter((m) => m.eventId !== id));
+    };
+
+    const addEnquiry = async (payload: AddEnquiryPayload) => {
+        const body = {
+            enquiry_type: payload.type.toUpperCase(),
+            name: payload.name,
+            email: payload.email,
+            phone: payload.phone || "",
+            city: payload.city || "",
+            child_age: payload.childAge || "",
+            message: payload.message,
+            franchise_slug: payload.franchiseSlug || "",
+        };
+        await authFetch("/enquiries/submit/", {
+            method: "POST",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+    };
+
     const resolveEnquiry = async (id: string) => {
-        await authFetch(`/enquiries/admin/${id}/`, {
+        await authFetch(`/enquiries/franchise/${id}/`, {
             method: "PATCH",
             headers: jsonHeaders(),
             body: JSON.stringify({ status: "closed" }),
@@ -423,7 +512,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         try {
             const data = await authFetch<any>(url);
             setAttendance(normalizeApiList(data).map(mapAttendance));
-        } catch {
+        } catch (err) {
+            console.error("Failed to load attendance data", err);
             setAttendance([]);
         }
     };
@@ -452,16 +542,42 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     // Franchise Specific CRUD Implementations
     const franchiseLoadParents = async () => {
         try {
-            const data = await authFetch<any>("/accounts/franchise/parents/");
+            const data = await authFetch<any>("/franchises/franchise/parents/");
             setParents(normalizeApiList(data).map((p: any) => ({
                 id: String(p.id),
-                name: p.user.full_name,
-                email: p.user.email,
-                phone: p.phone,
+                name: p.user?.full_name || p.user?.email || "",
+                email: p.user?.email || "",
+                phone: p.notes || "",
             })));
         } catch (err) {
             console.error("Failed to load parents", err);
         }
+    };
+
+    const addOrUpdateStudent = async (data: AddOrUpdateStudentPayload) => {
+        const [firstName, ...rest] = data.name.trim().split(" ");
+        const body = {
+            parent: Number(data.parentId),
+            first_name: firstName || data.name,
+            last_name: rest.join(" "),
+            class_name: data.grade,
+            roll_number: data.rollNumber,
+            is_active: true,
+        };
+        if (data.id) {
+            await authFetch(`/students/franchise/students/${data.id}/`, {
+                method: "PATCH",
+                headers: jsonHeaders(),
+                body: JSON.stringify(body),
+            });
+        } else {
+            await authFetch("/students/franchise/students/", {
+                method: "POST",
+                headers: jsonHeaders(),
+                body: JSON.stringify(body),
+            });
+        }
+        await loadFranchiseStudentsAndGrades();
     };
 
     const franchiseAddStudent = async (data: any) => {
@@ -512,7 +628,12 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     const updateEnquiryStatus = async (id: string, status: string) => {
-        await resolveEnquiry(id);
+        await authFetch(`/enquiries/franchise/${id}/`, {
+            method: "PATCH",
+            headers: jsonHeaders(),
+            body: JSON.stringify({ status }),
+        });
+        setEnquiries((prev) => prev.map((e) => (e.id === id ? { ...e, status: status as Enquiry["status"] } : e)));
     };
 
     const value = useMemo<SchoolDataContextValue>(
@@ -530,8 +651,13 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             addGradesBulk,
             addEvent,
             addMedia,
+            addEventMedia,
+            updateEvent,
+            deleteEvent,
             resolveEnquiry,
+            addEnquiry,
             franchiseLoadParents,
+            addOrUpdateStudent,
             franchiseAddStudent,
             franchiseUpdateStudent,
             franchiseDeleteStudent,

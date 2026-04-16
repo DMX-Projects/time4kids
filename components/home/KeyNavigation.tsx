@@ -1,8 +1,10 @@
 'use client';
 
+import { mainPageSectionProps } from '@/config/main-page-sections';
+
 export default function KeyNavigation() {
     return (
-        <section className="key-nav-section">
+        <section className="key-nav-section" {...mainPageSectionProps('keyNavigation')}>
             <div className="container mx-auto px-4">
                 <ul className="key-nav">
                     <li className="nav-link1">
@@ -67,12 +69,9 @@ export default function KeyNavigation() {
                 .key-nav-section {
                     background: #fff;
                     width: 100%;
-                    float: left;
                     position: relative;
                     z-index: 10;
                 }
-
-
             `}</style>
         </section>
     );

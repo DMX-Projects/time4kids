@@ -3,19 +3,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { apiUrl } from '@/lib/api-client';
+import { mainPageSectionProps } from '@/config/main-page-sections';
 
 const CounterSection = () => {
     const sectionRef = useRef<HTMLElement>(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
 
     const [dynamicStats, setDynamicStats] = useState({
-        total_schools: 350,
-        total_cities: 83,
-        total_students: 50000
+        total_schools: 250,
+        total_cities: 50,
+        total_students: 100000
     });
 
     const stats = [
-        { label: 'Schools', value: dynamicStats.total_schools, color: 'text-[#003366]' },
+        { label: 'Pre Schools', value: dynamicStats.total_schools, color: 'text-[#003366]' },
         { label: 'Cities', value: dynamicStats.total_cities, color: 'text-[#4DA6FF]' },
         { label: 'Smart Students Trained', value: dynamicStats.total_students, color: 'text-[#FF9933]' },
     ];
@@ -37,7 +38,11 @@ const CounterSection = () => {
 
 
     return (
-        <section ref={sectionRef} className="relative py-16 bg-[#E0F2FE] overflow-hidden">
+        <section
+            ref={sectionRef}
+            className="relative py-16 bg-[#E0F2FE] overflow-hidden scroll-mt-24"
+            {...mainPageSectionProps('counters')}
+        >
             {/* Top Border - Scallop Pattern */}
             <div className="absolute top-0 left-0 w-full h-8 z-30 pointer-events-none overflow-hidden">
                 <motion.div
@@ -80,7 +85,7 @@ const CounterSection = () => {
             </div>
 
             <div className="container mx-auto px-4 relative z-10">
-                <div className="flex flex-wrap justify-center gap-6 md:gap-14 max-w-6xl mx-auto">
+                <div className="grid w-full max-w-6xl mx-auto grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-6 md:gap-10 justify-items-center">
                     {stats.map((stat, index) => (
                         <CounterCard
                             key={index}

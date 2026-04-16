@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Image from 'next/image';
+import { mainPageSectionProps } from '@/config/main-page-sections';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -103,7 +104,11 @@ const WhyChooseUs = () => {
     ];
 
     return (
-        <section ref={sectionRef} className="py-20 md:py-24 bg-[#FDFCFB] relative overflow-hidden select-none">
+        <section
+            ref={sectionRef}
+            className="py-20 md:py-24 bg-[#FDFCFB] relative overflow-hidden select-none scroll-mt-24"
+            {...mainPageSectionProps('whyChooseUs')}
+        >
 
             {/* Animated Wave BG */}
             <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">

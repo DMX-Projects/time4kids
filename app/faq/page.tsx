@@ -482,6 +482,7 @@ export default function FAQPage() {
                                 <span className="letter-m">M</span>
                                 <span className="dot dot-blue">.</span>
                                 <span className="letter-e">E</span>
+                                <span className="dot dot-purple">.</span>
                                 <span className="kids-text ml-3">Kids</span>
                             </motion.h1>
                             <motion.p
@@ -694,6 +695,7 @@ export default function FAQPage() {
                 }
                 .dot { font-size: 5rem; vertical-align: middle; line-height: 0.1; }
                 .dot-red { color: #ff6b6b; } .dot-yellow { color: #feca57; } .dot-blue { color: #48dbfb; }
+                .dot-purple { color: #c77dff; }
                 
                 .kids-text {
                     font-family: var(--font-fredoka), 'Fredoka', sans-serif;

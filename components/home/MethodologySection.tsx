@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { mainPageSectionProps } from '@/config/main-page-sections';
 
 export default function MethodologySection() {
     const methodologyItems = [
@@ -15,7 +16,7 @@ export default function MethodologySection() {
     ];
 
     return (
-        <section className="methodology-block">
+        <section className="methodology-block scroll-mt-24" {...mainPageSectionProps('methodology')}>
             <div className="container mx-auto px-4">
                 <h3>Value based methodology</h3>
                 <ul className="methodology-nav">

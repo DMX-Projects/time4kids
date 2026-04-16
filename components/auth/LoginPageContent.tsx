@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Eye, EyeOff } from "lucide-react";
 
-export type LoginPageVariant = "default" | "parent" | "franchise";
+export type LoginPageVariant = "default" | "parent" | "franchise" | "approver";
 
 const copy: Record<
     LoginPageVariant,
@@ -31,6 +31,12 @@ const copy: Record<
         subtitle: "Centre dashboard access",
         leftTitle: "Centre operations",
         leftBody: "Manage parents, events, grades, and resources for your preschool.",
+    },
+    approver: {
+        title: "Approver sign in",
+        subtitle: "Head office — review uploads & indents",
+        leftTitle: "Approvals",
+        leftBody: "Sign in to approve social media uploads and indent requests from centres.",
     },
 };
 
@@ -222,6 +228,11 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                     {variant !== "franchise" && (
                                         <Link href="/login/franchise/" className="text-orange-600 hover:underline font-medium">
                                             Franchise login
+                                        </Link>
+                                    )}
+                                    {variant !== "approver" && (
+                                        <Link href="/login/approver/" className="text-orange-600 hover:underline font-medium">
+                                            Approver login
                                         </Link>
                                     )}
                                 </div>

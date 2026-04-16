@@ -89,8 +89,8 @@ const TwinklingStars = ({ count = 15 }) => (
 export default function AboutPage() {
     const [stats, setStats] = useState({
         total_schools: 250,
-        total_cities: 80,
-        total_students: 50000
+        total_cities: 50,
+        total_students: 100000
     });
 
     useEffect(() => {

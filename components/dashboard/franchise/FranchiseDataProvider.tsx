@@ -71,12 +71,19 @@ type ApiProfile = {
     longitude?: number | null;
 };
 
+const generateId = () => {
+    if (typeof globalThis !== "undefined" && globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
+        return globalThis.crypto.randomUUID();
+    }
+    return `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
 const mapParent = (parent: ApiParent): FranchiseParent => ({
     id: String(parent.id),
     name: parent.user?.full_name || parent.user?.email || "",
     student: parent.child_name || "",
     email: parent.user?.email || "",
-    phone: "",
+    phone: (parent.notes || "").trim(),
 });
 
 const mapEvent = (event: ApiEvent): FranchiseEvent => ({
@@ -136,7 +143,8 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
         try {
             const data = await authFetch<ApiParent[]>("/franchises/franchise/parents/");
             setParents(data.map(mapParent));
-        } catch {
+        } catch (err) {
+            console.error("Failed to load franchise parents", err);
             setParents([]);
         }
     };
@@ -145,7 +153,8 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
         try {
             const data = await authFetch<ApiEvent[]>("/events/franchise/");
             setEvents(data.map(mapEvent));
-        } catch {
+        } catch (err) {
+            console.error("Failed to load franchise events", err);
             setEvents([]);
         }
     };
@@ -154,15 +163,15 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
         try {
             const data = await authFetch<ApiProfile>("/franchises/franchise/profile/");
             setProfile(mapProfile(data));
-        } catch {
-            // ignore
+        } catch (err) {
+            console.error("Failed to load franchise profile", err);
         }
     };
 
     const addParent = async (payload: Omit<FranchiseParent, "id">) => {
         const body = {
             email: payload.email,
-            password: crypto.randomUUID().slice(0, 12),
+            password: generateId().slice(0, 12),
             full_name: payload.name,
             child_name: payload.student,
             notes: payload.phone,

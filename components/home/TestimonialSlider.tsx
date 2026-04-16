@@ -4,6 +4,8 @@ import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { Star, Quote } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { mainPageSectionProps } from '@/config/main-page-sections';
+import { apiUrl } from '@/lib/api-client';
 
 // Use Isomorphic Layout Effect to avoid SSR mismatches with GSAP
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -12,7 +14,16 @@ if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
 }
 
-const testimonials = [
+type TestimonialItem = {
+    id: number;
+    text: string;
+    author: string;
+    relation: string;
+    location: string;
+    rating: number;
+};
+
+const FALLBACK_TESTIMONIALS: TestimonialItem[] = [
     {
         id: 1,
         text: "A good school plays an important role in the development of a child. It's the light that helps us choose the right path. I am glad that I found T.I.M.E. Kids for my daughter. In just three months there has been a lot of development in Nandika.",
@@ -44,7 +55,7 @@ const testimonials = [
         relation: "Mother of Aarav",
         location: "HYDERABAD",
         rating: 5
-    }
+       }
 ];
 
 // 3D Tilt Card Component (Preserved)
@@ -90,12 +101,46 @@ const TestimonialSlider = () => {
     const bgRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const [isMounted, setIsMounted] = useState(false);
+    const [items, setItems] = useState<TestimonialItem[]>(FALLBACK_TESTIMONIALS);
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(apiUrl('/common/home-testimonials/'));
+                if (!res.ok || cancelled) return;
+                const data = await res.json();
+                const list = Array.isArray(data) ? data : [];
+                if (list.length === 0 || cancelled) return;
+                setItems(
+                    list.map((row: Record<string, unknown>) => ({
+                        id: Number(row.id),
+                        text: String(row.text || ''),
+                        author: String(row.author || ''),
+                        relation: String(row.relation || ''),
+                        location: String(row.location || ''),
+                        rating: Math.min(5, Math.max(1, Number(row.rating) || 5)),
+                    })),
+                );
+            } catch {
+                /* keep fallback */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
     const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+
+    useEffect(() => {
+        if (!isMounted) return;
+        ScrollTrigger.refresh();
+    }, [isMounted, items]);
 
     // GSAP Horizontal Scroll Logic with Curve
     useIsomorphicLayoutEffect(() => {
@@ -186,7 +231,7 @@ const TestimonialSlider = () => {
             ctx.revert();
             gsap.ticker.remove(() => { }); // Cleanup ticker (Note: this naive remove might not work if reference is lost, but ctx.revert handles most)
         };
-    }, [isMounted]);
+    }, [isMounted, items]);
 
 
     // Cursor Parallax Logic (Optimized)
@@ -203,8 +248,9 @@ const TestimonialSlider = () => {
     return (
         <section
             ref={sectionRef}
-            className="w-full relative bg-gradient-to-br from-[#6032a8] via-[#7c4dff] to-[#6032a8] overflow-hidden"
+            className="w-full relative bg-gradient-to-br from-[#6032a8] via-[#7c4dff] to-[#6032a8] overflow-hidden scroll-mt-24"
             onMouseMove={handleMouseMove}
+            {...mainPageSectionProps('testimonialsSlider')}
         >
 
             {/* Background Decorations */}
@@ -254,7 +300,7 @@ const TestimonialSlider = () => {
                         ref={wrapperRef}
                         className="flex flex-nowrap items-center px-4 md:px-20 gap-8 md:gap-16 w-max pt-2 pb-8 will-change-transform" /* Added will-change-transform for perf and padding-bottom for curve dip */
                     >
-                        {testimonials.map((item, index) => (
+                        {items.map((item, index) => (
                             <div
                                 key={`${item.id}-${index}`}
                                 ref={el => { cardsRef.current[index] = el }}
@@ -269,7 +315,15 @@ const TestimonialSlider = () => {
 
                                         <div className="relative z-10">
                                             <div className="flex gap-1 mb-6 text-[#FFD700]">
-                                                {[...Array(5)].map((_, i) => <Star key={i} size={18} fill="currentColor" strokeWidth={0} />)}
+                                                {[...Array(5)].map((_, i) => (
+                                                    <Star
+                                                        key={i}
+                                                        size={18}
+                                                        fill="currentColor"
+                                                        strokeWidth={0}
+                                                        className={i < item.rating ? "opacity-100" : "opacity-25"}
+                                                    />
+                                                ))}
                                             </div>
                                             <p className="text-white text-lg md:text-xl italic leading-relaxed mb-6 font-medium drop-shadow-sm opacity-95">
                                                 &ldquo;{item.text}&rdquo;
