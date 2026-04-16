@@ -173,7 +173,7 @@ const CounterCard = ({ stat, isInView, delay }: { stat: any, isInView: boolean, 
                     animate={isInView ? { scale: [1, 1.1, 1] } : {}}
                     transition={{ duration: 0.3, delay: delay + 2 }}
                 >
-                    {count.toLocaleString()}+
+                    {count.toLocaleString('en-IN')}+
                 </motion.span>
                 <span className="block text-sm md:text-base text-[#003366] font-bold font-baloo uppercase tracking-widest mt-1">
                     {stat.label}
