@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
+import { mainPageSectionProps } from '@/config/main-page-sections';
 
 export default function IntroSection() {
     return (
         <>
-            <div id="about" className="intro-block scroll-mt-40">
+            <section {...mainPageSectionProps('intro')} className="intro-block scroll-mt-40">
                 <div className="container mx-auto px-4">
                     <div className="intro-content">
                         <h1>Welcome to T.I.M.E. Kids</h1>
@@ -33,7 +34,7 @@ export default function IntroSection() {
                         </p>
                     </div>
                 </div>
-            </div>
+            </section>
 
 
             <style jsx>{`

@@ -2,6 +2,6 @@
 
 import { AdminUpdatesManagement } from "@/components/dashboard/admin/AdminUpdatesManagement";
 
-export default function AdminUpdatesPage() {
-    return <AdminUpdatesManagement />;
+export default function ApproverUpdatesPage() {
+    return <AdminUpdatesManagement approverMode />;
 }

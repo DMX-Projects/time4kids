@@ -1,0 +1,2 @@
+# Backup / non-source files that break the parser
+app/about/page_old.tsx

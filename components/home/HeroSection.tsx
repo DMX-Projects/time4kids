@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { mediaUrl, apiUrl } from '@/lib/api-client';
+import { mainPageSectionProps } from '@/config/main-page-sections';
 import Modal from '@/components/ui/Modal';
 import AdmissionForm from '@/components/admission/AdmissionForm';
 
@@ -222,7 +223,7 @@ export default function HeroSection() {
     return (
         <>
             {/* Banner Slider Section */}
-            <section className="banner-section">
+            <section className="banner-section" {...mainPageSectionProps('hero')}>
                 <div className="banner-slider">
                     {heroSlides.length > 0 ? (
                         <Slider {...settings}>

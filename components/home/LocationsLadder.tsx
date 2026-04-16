@@ -6,6 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCityLandmarks, CityData, LandmarkIcon } from './CityLandmarks';
+import { mainPageSectionProps } from '@/config/main-page-sections';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -84,7 +85,7 @@ const LocationsLadder = () => {
     };
 
     return (
-        <section className="locations-ladder-section">
+        <section className="locations-ladder-section scroll-mt-24" {...mainPageSectionProps('locations')}>
             <style jsx>{`
                 .locations-ladder-section {
                     position: relative;

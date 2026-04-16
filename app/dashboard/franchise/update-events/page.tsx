@@ -2,14 +2,17 @@
 
 import type React from "react";
 import { useState } from "react";
-import { CalendarRange, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
+import { useToast } from "@/components/ui/Toast";
 
 export default function UpdateEventsPage() {
     const { events, updateEvent, deleteEvent } = useFranchiseData();
+    const { showToast } = useToast();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [form, setForm] = useState({ title: "", date: "", venue: "", notes: "" });
+    const [busy, setBusy] = useState(false);
 
     const startEdit = (eventItem: (typeof events)[number]) => {
         setEditingId(eventItem.id);
@@ -18,12 +21,39 @@ export default function UpdateEventsPage() {
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    const handleUpdate = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!editingId) return;
-        updateEvent(editingId, form);
-        setEditingId(null);
-        setForm({ title: "", date: "", venue: "", notes: "" });
+        setBusy(true);
+        try {
+            await updateEvent(editingId, form);
+            showToast("Event updated");
+            setEditingId(null);
+            setForm({ title: "", date: "", venue: "", notes: "" });
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Could not update event";
+            showToast(msg, "error");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Delete this event?")) return;
+        setBusy(true);
+        try {
+            await deleteEvent(id);
+            showToast("Event deleted");
+            if (editingId === id) {
+                setEditingId(null);
+                setForm({ title: "", date: "", venue: "", notes: "" });
+            }
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Could not delete event";
+            showToast(msg, "error");
+        } finally {
+            setBusy(false);
+        }
     };
 
     return (
@@ -37,8 +67,8 @@ export default function UpdateEventsPage() {
                         <Input label="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
                     </div>
                     <div className="flex gap-2">
-                        <Button type="submit" size="sm" disabled={!editingId}>Save Changes</Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => { setEditingId(null); setForm({ title: "", date: "", venue: "", notes: "" }); }}>Reset</Button>
+                        <Button type="submit" size="sm" disabled={!editingId || busy}>{busy ? "Saving…" : "Save Changes"}</Button>
+                        <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => { setEditingId(null); setForm({ title: "", date: "", venue: "", notes: "" }); }}>Reset</Button>
                     </div>
                 </form>
             </Section>
@@ -54,7 +84,7 @@ export default function UpdateEventsPage() {
                         <p className="text-sm text-orange-700">Notes: {eventItem.notes || "—"}</p>
                         <div className="mt-3 flex gap-2">
                             <Button size="sm" variant="outline" onClick={() => startEdit(eventItem)}>Edit</Button>
-                            <Button size="sm" variant="outline" className="!text-red-600 !border-red-200 hover:!bg-red-50" onClick={() => deleteEvent(eventItem.id)}>Delete</Button>
+                            <Button size="sm" variant="outline" className="!text-red-600 !border-red-200 hover:!bg-red-50" disabled={busy} onClick={() => void handleDelete(eventItem.id)}>Delete</Button>
                         </div>
                     </div>
                 ))}

@@ -6,9 +6,9 @@ import { apiUrl } from '@/lib/api-client';
 
 const AdmissionBar = () => {
     const [stats, setStats] = useState({
-        total_schools: 350,
-        total_cities: 80,
-        total_students: 72000
+        total_schools: 250,
+        total_cities: 50,
+        total_students: 100000
     });
 
     useEffect(() => {

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { mainPageSectionProps } from '@/config/main-page-sections';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -20,7 +21,7 @@ const ProgramsPreview = () => {
             ageGroup: '2 - 3 years',
             description: 'Introduction to social interaction and basic motor skills.',
             color: '#ef5f5f',
-            yOffset: '-20px'
+            yOffset: '0px',
         },
         {
             image: '/images/nursery_girl.png',
@@ -28,16 +29,26 @@ const ProgramsPreview = () => {
             ageGroup: '3 - 4 years',
             description: 'Building foundation for language, numbers, and expression.',
             color: '#fbd267',
-            yOffset: '40px',
-            imageStyle: { objectPosition: 'center 20%' }
+            yOffset: '0px',
+            imageStyle: { objectPosition: 'center 20%' },
         },
         {
             image: '/1.png',
-            programName: 'PP-1 & PP-2',
-            ageGroup: '4 - 6 years',
-            description: 'Preparing for formal schooling with comprehensive education.',
+            programName: 'PP-1',
+            ageGroup: '4 - 5 years',
+            description:
+                'Pre-Primary I: children explore beyond the classroom, ask questions, and learn with peers in a structured, playful way.',
             color: '#6cc3d5',
-            yOffset: '-30px'
+            yOffset: '0px',
+        },
+        {
+            image: '/2.png',
+            programName: 'PP-2',
+            ageGroup: '5 - 6 years',
+            description:
+                'Pre-Primary II: building confidence and skills for formal school—communication, routines, and stronger academics.',
+            color: '#2980b9',
+            yOffset: '0px',
         },
         {
             image: '/images/landing-banner.jpg',
@@ -45,8 +56,8 @@ const ProgramsPreview = () => {
             ageGroup: '2 - 10 years',
             description: 'Extended care with engaging activities throughout the day.',
             color: '#ff9f43',
-            yOffset: '30px'
-        }
+            yOffset: '0px',
+        },
     ];
 
     useEffect(() => {
@@ -101,7 +112,11 @@ const ProgramsPreview = () => {
     }, []);
 
     return (
-        <section ref={sectionRef} className="relative py-12 bg-[#FFFAF5] overflow-hidden">
+        <section
+            ref={sectionRef}
+            className="relative py-12 bg-[#FFFAF5] overflow-hidden scroll-mt-24"
+            {...mainPageSectionProps('programsPreview')}
+        >
 
 
 
@@ -183,33 +198,37 @@ const ProgramsPreview = () => {
                         </image>
                     </svg>
 
-                    {/* Program Cards (Static) */}
-                    <div className="flex flex-nowrap overflow-x-auto pb-32 pt-10 gap-12 no-scrollbar md:justify-between">
-                        {programs.map((program: any, index) => (
+                    {/* Program cards: grid on large screens (no horizontal slider) */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-x-3 gap-y-10 sm:gap-x-4 md:gap-x-5 xl:gap-x-4 2xl:gap-x-5 pb-24 pt-8 md:pt-10 w-full max-w-[1500px] mx-auto justify-items-center">
+                        {programs.map((program: any) => (
                             <div
-                                key={index}
-                                className="flex-shrink-0 w-72 flex flex-col items-center text-center"
+                                key={program.programName}
+                                className="flex w-full max-w-[240px] flex-col items-center text-center"
                                 style={{ transform: `translateY(${program.yOffset})` }}
                             >
-                                <div className="relative group mb-6">
+                                <div className="relative group mb-4 md:mb-5">
                                     <div className="absolute inset-0 rounded-full blur-2xl opacity-10" style={{ backgroundColor: program.color }} />
-                                    <div className="relative w-48 h-48 rounded-full border-[10px] border-white shadow-xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                                    <div className="relative mx-auto w-36 h-36 sm:w-40 sm:h-40 md:w-44 md:h-44 lg:w-40 lg:h-40 xl:w-44 xl:h-44 rounded-full border-[8px] md:border-[10px] border-white shadow-xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
                                         <Image
                                             src={program.image}
                                             alt={program.programName}
                                             fill
-                                            sizes="(max-width: 768px) 100vw, 300px"
+                                            sizes="(max-width: 768px) 45vw, 180px"
                                             className="object-cover"
                                             style={program.imageStyle}
                                         />
                                     </div>
-                                    <div className="absolute -bottom-2 right-2 px-4 py-1.5 rounded-full text-white font-black text-[10px] shadow-lg rotate-12" style={{ backgroundColor: program.color }}>
+                                    <div className="absolute -bottom-1 right-1 sm:-bottom-2 sm:right-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-white font-black text-[9px] sm:text-[10px] shadow-lg rotate-12 whitespace-nowrap" style={{ backgroundColor: program.color }}>
                                         {program.ageGroup}
                                     </div>
                                 </div>
-                                <h3 className="font-bubblegum text-3xl text-[#003366] mb-2 leading-tight">{program.programName}</h3>
-                                <p className="text-gray-500 text-sm font-medium leading-relaxed mb-4 px-4 line-clamp-2">{program.description}</p>
-                                <Link href="/programs" className="inline-flex items-center gap-2 font-black text-[10px] uppercase tracking-widest" style={{ color: program.color }}>
+                                <h3 className="font-bubblegum text-xl sm:text-2xl lg:text-[1.65rem] text-[#003366] mb-2 leading-tight px-1">
+                                    {program.programName}
+                                </h3>
+                                <p className="text-gray-500 text-xs sm:text-sm font-medium leading-relaxed mb-3 px-1 min-h-[3.5rem] sm:min-h-[3.75rem] line-clamp-4">
+                                    {program.description}
+                                </p>
+                                <Link href="/programs" className="inline-flex items-center gap-2 font-black text-[10px] uppercase tracking-widest mt-auto" style={{ color: program.color }}>
                                     JOIN THE FUN <span className="text-lg">→</span>
                                 </Link>
                             </div>
