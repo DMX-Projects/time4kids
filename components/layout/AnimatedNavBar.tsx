@@ -27,8 +27,14 @@ export default function AnimatedNavBar({ mobile = false }: { mobile?: boolean })
     }, [pathname]);
 
     return (
-        <div className={`relative ${mobile ? 'w-full bg-transparent' : 'bg-white/5 backdrop-blur-md rounded-full px-8 py-3 border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.1)]'}`}>
-            <ul className={`flex ${mobile ? 'flex-col gap-6 w-full' : 'items-center gap-8'} m-0 p-0 list-none relative z-10`}>
+        <div
+            className={`relative ${
+                mobile
+                    ? 'w-full bg-transparent'
+                    : 'bg-white rounded-full px-6 py-2 sm:px-8 sm:py-2.5 border border-gray-200 shadow-[0_4px_20px_rgba(0,0,0,0.08)]'
+            }`}
+        >
+            <ul className={`flex ${mobile ? 'flex-col gap-6 w-full' : 'flex-nowrap items-center gap-6 lg:gap-8'} m-0 p-0 list-none relative z-10`}>
                 {navItems.map((item) => {
                     const isActive = activeTab === item.path;
                     const isLogin = item.name === 'Login';
@@ -37,37 +43,39 @@ export default function AnimatedNavBar({ mobile = false }: { mobile?: boolean })
                     if (mobile && isLogin) return null;
 
                     return (
-                        <li key={item.path} className={`relative z-10 ${mobile ? 'w-full' : ''}`}>
+                        <li key={item.path} className={`relative z-10 ${mobile ? 'w-full' : 'shrink-0'}`}>
                             <Link
                                 href={item.path}
                                 onClick={() => setActiveTab(item.path)}
-                                className={`relative block ${isLogin
-                                    ? 'p-0 ml-4'
+                                className={`relative ${isLogin
+                                    ? 'inline-flex items-center p-0 ml-2 shrink-0 sm:ml-3'
                                     : mobile
-                                        ? 'py-3 text-lg w-full text-center'
-                                        : 'text-sm tracking-wide uppercase'
+                                        ? 'block py-3 text-lg w-full text-center font-bold'
+                                        : 'block text-sm tracking-wide uppercase font-bold'
                                     } transition-all duration-300 ${!isLogin && isActive
-                                        ? 'text-gray-800 font-extrabold scale-105'
+                                        ? 'text-gray-900 font-extrabold scale-105'
                                         : !isLogin
-                                            ? 'text-gray-700/90 font-medium hover:text-gray-900'
+                                            ? 'text-gray-800 hover:text-gray-900'
                                             : ''
                                     }`}
                                 style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
                                 {isLogin ? (
-                                    <div className={`${mobile ? 'flex justify-center' : ''}`}>
+                                    <span className={`${mobile ? 'flex justify-center' : 'flex items-center'}`}>
                                         <Image
                                             src="/login-btn-new.png"
                                             alt="Login"
-                                            width={120}
-                                            height={40}
-                                            className="h-10 w-auto object-contain hover:scale-105 transition-transform"
+                                            width={100}
+                                            height={32}
+                                            className="h-8 w-auto max-h-8 object-contain object-center hover:opacity-95 sm:h-9 sm:max-h-9"
                                         />
-                                    </div>
+                                    </span>
                                 ) : (
-                                    <div className="flex items-center gap-2 relative">
-                                        <item.icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5px] text-gray-800' : 'stroke-2'}`} />
-                                        <span>{item.name}</span>
+                                    <div className="relative flex flex-nowrap items-center gap-2">
+                                        <item.icon
+                                            className={`w-5 h-5 shrink-0 ${isActive ? 'stroke-[2.5px] text-gray-900' : 'stroke-2 text-gray-600'}`}
+                                        />
+                                        <span className="whitespace-nowrap">{item.name}</span>
                                         {/* Active Soft Light Indicator */}
                                         {isActive && !mobile && (
                                             <motion.div

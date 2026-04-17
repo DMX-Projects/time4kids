@@ -16,7 +16,8 @@ const SchoolProgramsPreview = () => {
     const programs = [
         { image: '/day care.png', programName: 'Play Group', ageGroup: '2 - 3 years', description: 'Introduction to social interaction and basic motor skills.', color: '#ef5f5f', yOffset: '-20px' },
         { image: '/faq2.jpeg', programName: 'Nursery', ageGroup: '3 - 4 years', description: 'Building foundation for language, numbers, and expression.', color: '#fbd267', yOffset: '40px' },
-        { image: '/1.png', programName: 'PP-1 & PP-2', ageGroup: '4 - 6 years', description: 'Preparing for formal schooling with comprehensive education.', color: '#6cc3d5', yOffset: '-30px' },
+        { image: '/1.png', programName: 'PP-1', ageGroup: '4 - 5 years', description: 'Expanding from school to the world around — curious, interactive, and building strong foundations.', color: '#e74c3c', yOffset: '-30px' },
+        { image: '/11.png', programName: 'PP-2', ageGroup: '5 - 6 years', description: 'Confident learners ready for formal schooling — communication, independence, and core skills.', color: '#2980b9', yOffset: '20px' },
         { image: '/images/landing-banner.jpg', programName: 'Day Care', ageGroup: '2 - 10 years', description: 'Extended care with engaging activities throughout the day.', color: '#ff9f43', yOffset: '30px' }
     ];
 
@@ -50,18 +51,40 @@ const SchoolProgramsPreview = () => {
                 </div>
 
                 <div className="relative">
-                    <div className="flex flex-nowrap overflow-x-auto pb-32 pt-10 gap-12 no-scrollbar md:justify-between">
+                    <div className="mx-auto grid max-w-[1600px] grid-cols-2 gap-x-3 gap-y-10 pb-32 pt-10 sm:gap-x-4 sm:gap-y-12 md:grid-cols-3 md:gap-x-6 lg:grid-cols-5 lg:gap-x-3 lg:gap-y-10 xl:gap-x-4">
                         {programs.map((program, index) => (
-                            <div key={index} className="flex-shrink-0 w-72 flex flex-col items-center text-center" style={{ transform: `translateY(${program.yOffset})` }}>
-                                <div className="relative group mb-6">
-                                    <div className="absolute inset-0 rounded-full blur-2xl opacity-10" style={{ backgroundColor: program.color }} />
-                                    <div className="relative w-48 h-48 rounded-full border-[10px] border-white shadow-xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                                        <Image src={program.image} alt={program.programName} fill sizes="(max-width: 768px) 100vw, 300px" className="object-cover" />
+                            <div
+                                key={index}
+                                className="flex min-w-0 flex-col items-center px-1 text-center sm:px-2"
+                                style={{ transform: `translateY(${program.yOffset})` }}
+                            >
+                                <div className="group relative mb-4 mx-auto w-full max-w-[12rem] sm:mb-6 sm:max-w-[13rem] lg:max-w-[11rem]">
+                                    <div
+                                        className="pointer-events-none absolute inset-0 rounded-full blur-2xl opacity-10"
+                                        style={{ backgroundColor: program.color }}
+                                    />
+                                    <div className="relative mx-auto h-36 w-36 shrink-0 overflow-hidden rounded-full border-[6px] border-white shadow-xl sm:h-44 sm:w-44 sm:border-[8px] lg:h-[10.5rem] lg:w-[10.5rem] lg:border-[10px] group-hover:scale-105 transition-transform duration-500">
+                                        <Image
+                                            src={program.image}
+                                            alt={program.programName.replace(/\n/g, ' ')}
+                                            fill
+                                            sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 168px"
+                                            className="object-cover"
+                                        />
                                     </div>
-                                    <div className="absolute -bottom-2 right-2 px-4 py-1.5 rounded-full text-white font-black text-[10px] shadow-lg rotate-12" style={{ backgroundColor: program.color }}>{program.ageGroup}</div>
+                                    <div
+                                        className="absolute -bottom-1 right-0 max-w-[min(100%,8.5rem)] rounded-full px-2 py-1 text-center text-[9px] font-black leading-tight text-white shadow-lg sm:-bottom-2 sm:right-1 sm:max-w-none sm:px-3 sm:py-1.5 sm:text-[10px]"
+                                        style={{ backgroundColor: program.color }}
+                                    >
+                                        {program.ageGroup}
+                                    </div>
                                 </div>
-                                <h3 className="font-bubblegum text-3xl text-[#003366] mb-2 leading-tight">{program.programName}</h3>
-                                <p className="text-gray-500 text-sm font-medium leading-relaxed mb-4 px-4 line-clamp-2">{program.description}</p>
+                                <h3 className="font-bubblegum text-xl leading-tight text-[#003366] sm:text-2xl lg:text-3xl mb-1 sm:mb-2 whitespace-pre-line">
+                                    {program.programName}
+                                </h3>
+                                <p className="mb-3 px-0 text-xs font-medium leading-relaxed text-gray-500 sm:mb-4 sm:px-1 sm:text-sm">
+                                    {program.description}
+                                </p>
                                 <Link href="/programs" className="inline-flex items-center gap-2 font-black text-[10px] uppercase tracking-widest" style={{ color: program.color }}>JOIN THE FUN <span className="text-lg">→</span></Link>
                             </div>
                         ))}

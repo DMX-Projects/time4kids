@@ -804,9 +804,14 @@ body {
 /* Key Navigation Section - 6 Circular Icon Buttons */
 .key-nav {
   display: flex;
-  margin: 0 0 40px 0;
+  margin: 0 auto 40px;
   padding: 60px 0 0 0;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: clamp(6px, 1.2vw, 18px);
+  flex-wrap: nowrap;
+  width: 100%;
+  max-width: 100%;
   list-style: none;
   position: relative;
   z-index: 10;
@@ -814,20 +819,25 @@ body {
 
 .key-nav li {
   text-align: center;
-  flex-basis: 14%;
+  flex: 1 1 0;
+  min-width: 0;
   font-weight: 700;
-  font-size: 18px;
-  line-height: 24px;
+  font-size: clamp(14px, 1.1vw, 18px);
+  line-height: 1.25;
   color: #222;
 }
 
 .key-nav li figure {
-  width: 100%;
+  width: clamp(108px, 14vw, 200px);
   height: 120px;
-  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-color: #dd6705;
   border-radius: 67% 33% 39% 61% / 37% 57% 43% 63%;
-  margin-bottom: 15px;
   text-align: center;
   box-shadow: 0px 0px 32px -3px rgba(0, 0, 0, 0.44);
   transition: all 0.4s ease-in-out;
@@ -840,22 +850,27 @@ body {
   border-radius: 16px;
 }
 
-.key-nav li span {
+/* Only the icon wrapper inside figure — not label <span>s inside <a> */
+.key-nav li figure span {
   height: 120px;
-  vertical-align: middle;
-  text-align: center;
-  display: table-cell;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.key-nav li span img {
-  max-width: 70px;
+.key-nav li figure span img {
+  max-width: min(70px, 55%);
+  width: auto;
+  height: auto;
   display: block;
   position: relative;
-  left: 35px;
+  left: 0;
   transition: all 0.8s ease-in-out;
 }
 
 .key-nav li a {
+  display: block;
   color: #222;
   text-decoration: none;
 }
@@ -880,22 +895,37 @@ body {
 @media (max-width: 998px) {
   .key-nav {
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: space-between;
+    row-gap: 24px;
+    column-gap: 12px;
   }
 
   .key-nav li {
-    flex-basis: 22%;
-    margin: 15px;
+    flex: 1 1 calc(33.333% - 12px);
+    min-width: min(140px, 100%);
+  }
+
+  .key-nav li figure {
+    max-width: 130px;
   }
 }
 
 @media (max-width: 768px) {
-  .key-nav li {
-    flex-basis: 40%;
+  .key-nav {
+    justify-content: space-between;
   }
 
-  .key-nav li span img {
-    max-width: 90%;
+  .key-nav li {
+    flex: 1 1 calc(50% - 10px);
+    min-width: 0;
+  }
+
+  .key-nav li figure {
+    max-width: 120px;
+  }
+
+  .key-nav li figure span img {
+    max-width: min(70px, 50%);
   }
 }
 
