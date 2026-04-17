@@ -1,24 +1,21 @@
 'use client';
 
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { mainPageSectionProps } from '@/config/main-page-sections';
+import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 
 export default function MethodologySection() {
-    const methodologyItems = [
-        { icon: '/methodology-icon1.png', label: 'Modular Furniture', class: 'nav-item1', href: '/programs' },
-        { icon: '/methodology-icon2.png', label: 'Play-Learn methods', class: 'nav-item2', href: '/programs' },
-        { icon: '/methodology-icon3.png', label: 'After School fun', class: 'nav-item3', href: '/admission' },
-        { icon: '/methodology-icon4.png', label: 'Prioritizing Hygiene', class: 'nav-item4', href: '/programs' },
-        { icon: '/methodology-icon5.png', label: 'Teaching Aids', class: 'nav-item5', href: '/programs' },
-        { icon: '/methodology-icon6.png', label: 'Health Check-up', class: 'nav-item6', href: '/programs' },
-    ];
+    const home = useHomePageContent();
+    const methodologyItems = home.methodology.items;
+    const methodologyTitle = home.methodology.title;
 
     return (
-        <section className="methodology-block scroll-mt-24" {...mainPageSectionProps('methodology')}>
+        <section className="methodology-block">
             <div className="container mx-auto px-4">
-                <h3>Value based methodology</h3>
+                <h3>{methodologyTitle}</h3>
                 <ul className="methodology-nav">
                     {methodologyItems.map((item, index) => (
                         <li key={index} className={item.class}>

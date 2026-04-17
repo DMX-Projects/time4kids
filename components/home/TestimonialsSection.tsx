@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import FluidBackground from '@/components/ui/FluidBackground';
 
 import { apiUrl, mediaUrl } from '@/lib/api-client';
-import { mainPageSectionProps } from '@/config/main-page-sections';
 
 const TestimonialsSection = () => {
     const [playingIndex, setPlayingIndex] = useState<number | null>(null);
@@ -209,7 +208,7 @@ const TestimonialsSection = () => {
     }, [activeGroupIndex, activeItemIndex]);
 
     return (
-        <section className="relative py-24 bg-white overflow-hidden scroll-mt-24" {...mainPageSectionProps('testimonialsMedia')}>
+        <section className="relative py-24 bg-white overflow-hidden">
             <style jsx global>{`
                 body.lightbox-open {
                     overflow: hidden !important;

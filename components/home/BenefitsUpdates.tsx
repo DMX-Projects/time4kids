@@ -4,7 +4,8 @@ import React from 'react';
 import Image from 'next/image';
 import Slider from 'react-slick';
 import { apiUrl } from '@/lib/api-client';
-import { mainPageSectionProps } from '@/config/main-page-sections';
+
+type Slide = { id?: number; date: string; text: string };
 
 function formatSlideDate(iso: string | null | undefined): string {
     if (!iso) return '';
@@ -16,7 +17,13 @@ function formatSlideDate(iso: string | null | undefined): string {
     return `${dd}-${mm}-${yyyy}`;
 }
 
-type Slide = { date: string; text: string };
+/** Shown only if the API fails (offline); main content comes from Admin → Updates (HQ rows with no centre). */
+const FALLBACK_UPDATES: Slide[] = [
+    {
+        date: '28-12-2015',
+        text: "T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+ pre-schools is now poised for major expansion across the country.",
+    },
+];
 
 export default function BenefitsUpdates() {
     const updatesSettings = {
@@ -40,42 +47,37 @@ export default function BenefitsUpdates() {
         { number: 5, text: 'Operational Support', class: 'benefit5' },
     ];
 
-    const defaultSlides: Slide[] = [
-        {
-            date: '28-12-2015',
-            text: "T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+ pre-schools is now poised for major expansion across the country.",
-        },
-    ];
-
-    const [updates, setUpdates] = React.useState<Slide[]>(defaultSlides);
+    const [slides, setSlides] = React.useState<Slide[]>([]);
+    const [updatesReady, setUpdatesReady] = React.useState(false);
 
     React.useEffect(() => {
         const fetchUpdates = async () => {
             try {
                 const response = await fetch(apiUrl('/updates/'));
-                if (!response.ok) return;
+                if (!response.ok) throw new Error('bad status');
                 const data = await response.json();
                 const items = Array.isArray(data) ? data : data.results || [];
-                const mapped: Slide[] = items
-                    .filter((u: { text?: string; is_active?: boolean }) => (u.text || '').trim() && u.is_active !== false)
-                    .map((u: { start_date?: string | null; text: string }) => ({
-                        date: formatSlideDate(u.start_date),
-                        text: (u.text || '').trim(),
-                    }))
-                    .filter((u: Slide) => u.text);
-                if (mapped.length > 0) {
-                    setUpdates(mapped);
-                }
-            } catch (err) {
-                console.error('Failed to fetch updates:', err);
+                const mapped: Slide[] = items.map((u: { id?: number; text?: string; start_date?: string | null }) => ({
+                    id: u.id,
+                    date: formatSlideDate(u.start_date),
+                    text: (u.text || '').trim(),
+                })).filter((u: Slide) => u.text.length > 0);
+                setSlides(
+                    mapped.length > 0
+                        ? mapped
+                        : [{ date: '', text: 'New updates will appear here once they are added under Admin → Updates.' }],
+                );
+            } catch {
+                setSlides(FALLBACK_UPDATES);
+            } finally {
+                setUpdatesReady(true);
             }
         };
-
-        void fetchUpdates();
+        fetchUpdates();
     }, []);
 
     return (
-        <section className="benefits-updates scroll-mt-24" {...mainPageSectionProps('benefitsUpdates')}>
+        <div className="benefits-updates">
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Benefits Column */}
@@ -112,14 +114,18 @@ export default function BenefitsUpdates() {
                         <h3>T.I.M.E. Kids Updates</h3>
                         <div className="time-updates">
                             <div className="updates-inner">
-                                <Slider {...updatesSettings}>
-                                    {updates.map((update, index) => (
-                                        <div key={index}>
-                                            <h5>{update.date}</h5>
-                                            <p>{update.text}</p>
-                                        </div>
-                                    ))}
-                                </Slider>
+                                {!updatesReady ? (
+                                    <p className="text-center text-sm text-white/90 py-8">Loading updates…</p>
+                                ) : (
+                                    <Slider {...updatesSettings}>
+                                        {slides.map((update, index) => (
+                                            <div key={update.id ?? `slide-${index}`}>
+                                                {update.date ? <h5>{update.date}</h5> : null}
+                                                <p>{update.text}</p>
+                                            </div>
+                                        ))}
+                                    </Slider>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -360,6 +366,6 @@ export default function BenefitsUpdates() {
                     }
                 }
             `}</style>
-        </section>
+        </div>
     );
 }

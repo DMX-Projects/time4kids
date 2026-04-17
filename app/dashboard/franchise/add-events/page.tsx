@@ -8,12 +8,12 @@ import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider"
 export default function AddEventsPage() {
     const { addEvent, addEventMedia, events } = useSchoolData();
     const [form, setForm] = useState({ title: "", date: "", venue: "", notes: "" });
-    const [mediaForm, setMediaForm] = useState<{ title: string; type: "image" | "video"; eventId: string; description: string; file: File | null }>({
+    const [mediaForm, setMediaForm] = useState<{ title: string; url: string; type: "image" | "video"; eventId: string; description: string }>({
         title: "",
+        url: "",
         type: "image",
         eventId: "",
         description: "",
-        file: null,
     });
     const [eventError, setEventError] = useState<string | null>(null);
     const [mediaError, setMediaError] = useState<string | null>(null);
@@ -38,10 +38,7 @@ export default function AddEventsPage() {
 
     const handleMediaSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!mediaForm.file) {
-            setMediaError("Choose a file before uploading media");
-            return;
-        }
+        if (!mediaForm.url.trim()) return;
         if (!mediaForm.eventId) {
             setMediaError("Select an event before adding media");
             return;
@@ -49,14 +46,8 @@ export default function AddEventsPage() {
         setMediaError(null);
         setMediaSubmitting(true);
         try {
-            await addEventMedia({
-                title: mediaForm.title,
-                type: mediaForm.type,
-                eventId: mediaForm.eventId,
-                description: mediaForm.description,
-                file: mediaForm.file,
-            });
-            setMediaForm({ title: "", type: "image", eventId: "", description: "", file: null });
+            await addEventMedia(mediaForm);
+            setMediaForm({ title: "", url: "", type: "image", eventId: "", description: "" });
         } catch (err: any) {
             setMediaError(err?.message || "Unable to upload media");
         } finally {
@@ -103,16 +94,7 @@ export default function AddEventsPage() {
                                 <option value="video">Video</option>
                             </select>
                         </label>
-                        <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
-                            Media File
-                            <input
-                                type="file"
-                                accept="image/*,video/*"
-                                onChange={(e) => setMediaForm({ ...mediaForm, file: e.target.files?.[0] || null })}
-                                className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
-                                required
-                            />
-                        </label>
+                        <Input label="Media URL" value={mediaForm.url} onChange={(e) => setMediaForm({ ...mediaForm, url: e.target.value })} required />
                         <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
                             Event (optional)
                             <select
@@ -120,7 +102,7 @@ export default function AddEventsPage() {
                                 value={mediaForm.eventId}
                                 onChange={(e) => setMediaForm({ ...mediaForm, eventId: e.target.value })}
                             >
-                                <option value="">Select event</option>
+                                <option value="">Unlinked</option>
                                 {events.map((ev) => (
                                     <option key={ev.id} value={ev.id}>{ev.title}</option>
                                 ))}
@@ -130,7 +112,7 @@ export default function AddEventsPage() {
                     </div>
                     <div className="flex gap-2">
                         <Button type="submit" size="sm" disabled={mediaSubmitting}>{mediaSubmitting ? "Uploading..." : "Add Media"}</Button>
-                        <Button type="button" size="sm" variant="outline" disabled={mediaSubmitting} onClick={() => setMediaForm({ title: "", type: "image", eventId: "", description: "", file: null })}>Reset</Button>
+                        <Button type="button" size="sm" variant="outline" disabled={mediaSubmitting} onClick={() => setMediaForm({ title: "", url: "", type: "image", eventId: "", description: "" })}>Reset</Button>
                     </div>
                 </form>
             </Section>

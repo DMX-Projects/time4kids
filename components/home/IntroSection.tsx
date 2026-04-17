@@ -1,45 +1,27 @@
 'use client';
 
 import React from 'react';
-import { mainPageSectionProps } from '@/config/main-page-sections';
+import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 
 export default function IntroSection() {
+    const home = useHomePageContent();
+    const intro = home.intro;
+
     return (
         <>
-            <section {...mainPageSectionProps('intro')} className="intro-block scroll-mt-40">
+            <div id="about" className="intro-block scroll-mt-40">
                 <div className="container mx-auto px-4">
                     <div className="intro-content">
-                        <h1>Welcome to T.I.M.E. Kids</h1>
-                        <h2>
-                            A chain of pre-schools launched by T.I.M.E., the national leader in
-                            entrance exam training.
-                        </h2>
-                        <p>
-                            T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in
-                            entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+
-                            pre-schools is now poised for major expansion across the country.
-                        </p>
-                        <p>
-                            The programme at T.I.M.E. Kids pre-schools aims at making the transition
-                            from home to school easy, by providing the warm, safe and caring and
-                            learning environment that young children have at home. Our play schools
-                            offer wholesome, fun-filled and memorable childhood education to our
-                            children.
-                        </p>
-                        <p>
-                            We are backed by our educational expertise of over
-                            27 years, well trained care providers and a balanced educational
-                            programme. The programme at T.I.M.E. Kids pre-schools is based on the
-                            principles of age-appropriate child development.
-                        </p>
+                        <h1>{intro.title}</h1>
+                        <h2>{intro.subtitle}</h2>
+                        {intro.paragraphs.map((p, i) => (
+                            <p key={i}>{p}</p>
+                        ))}
                     </div>
                 </div>
-            </section>
-
+            </div>
 
             <style jsx>{`
-
-
                 .intro-block {
                     text-align: center;
                     background: #f5f1dd url(/images/bg2.gif) repeat-x center bottom;

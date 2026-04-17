@@ -1,11 +1,9 @@
-
-
 import React from 'react';
 import dynamic from 'next/dynamic';
 import HeroSection from '@/components/home/HeroSection';
-import { MAIN_PAGE_SECTIONS } from '@/config/main-page-sections';
 import KeyNavigation from '@/components/home/KeyNavigation';
 import IntroSection from '@/components/home/IntroSection';
+import { HomePageContentProvider } from '@/components/home/HomePageContentProvider';
 
 // Lazy load below-the-fold components for faster initial page load
 const BenefitsUpdates = dynamic(() => import('@/components/home/BenefitsUpdates'), {
@@ -36,14 +34,8 @@ const LocationsLadder = dynamic(() => import('@/components/home/LocationsLadder'
 
 export default function Home() {
     return (
-        <>
-            <a
-                href={`#${MAIN_PAGE_SECTIONS.intro.id}`}
-                className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:px-4 focus:py-3 focus:bg-white focus:text-[#111827] focus:text-sm focus:font-semibold focus:shadow-lg focus:rounded-md focus:ring-2 focus:ring-[#F97316] focus:outline-none"
-            >
-                Skip to welcome section
-            </a>
-            <div className="overflow-hidden">
+        <HomePageContentProvider>
+        <div className="overflow-hidden">
             {/* Hero Section - Banner Slider */}
             <HeroSection />
 
@@ -74,7 +66,7 @@ export default function Home() {
 
             {/* Locations Ladder Section */}
             <LocationsLadder />
-            </div>
-        </>
+        </div>
+        </HomePageContentProvider>
     );
 }

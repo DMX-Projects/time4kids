@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders } from "@/lib/api-client";
 import { MessageSquareQuote, Plus, Pencil, Trash2 } from "lucide-react";
 
-type Row = {
+type TestimonialRow = {
     id: number;
     text: string;
     author: string;
@@ -18,7 +18,7 @@ type Row = {
     is_active: boolean;
 };
 
-const empty: Omit<Row, "id"> = {
+const emptyForm: Omit<TestimonialRow, "id"> = {
     text: "",
     author: "",
     relation: "",
@@ -30,48 +30,48 @@ const empty: Omit<Row, "id"> = {
 
 export default function AdminHomeTestimonialsPage() {
     const { authFetch } = useAuth();
-    const [rows, setRows] = useState<Row[]>([]);
+    const [rows, setRows] = useState<TestimonialRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [form, setForm] = useState(empty);
+    const [form, setForm] = useState(emptyForm);
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     const load = async () => {
         setLoading(true);
         try {
-            const data = await authFetch<Row[]>("/common/home-testimonials/");
-            const list = Array.isArray(data) ? data : [];
-            setRows(list);
-        } catch {
-            setRows([]);
+            const data = await authFetch<TestimonialRow[]>("/common/home-testimonials/");
+            const items = Array.isArray(data) ? data : (data as any)?.results || [];
+            setRows(items);
+        } catch (e) {
+            console.error(e);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        void load();
+        load();
     }, []);
 
     const startCreate = () => {
         setEditingId(null);
-        setForm(empty);
+        setForm({ ...emptyForm, order: rows.length });
         setModalOpen(true);
         setError(null);
     };
 
-    const startEdit = (r: Row) => {
-        setEditingId(r.id);
+    const startEdit = (row: TestimonialRow) => {
+        setEditingId(row.id);
         setForm({
-            text: r.text,
-            author: r.author,
-            relation: r.relation || "",
-            location: r.location || "",
-            rating: r.rating,
-            order: r.order,
-            is_active: r.is_active,
+            text: row.text,
+            author: row.author,
+            relation: row.relation,
+            location: row.location,
+            rating: row.rating,
+            order: row.order,
+            is_active: row.is_active,
         });
         setModalOpen(true);
         setError(null);
@@ -79,62 +79,60 @@ export default function AdminHomeTestimonialsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.text.trim() || !form.author.trim()) return;
         setError(null);
         setSubmitting(true);
+        const payload = {
+            text: form.text.trim(),
+            author: form.author.trim(),
+            relation: form.relation.trim(),
+            location: form.location.trim(),
+            rating: Math.min(5, Math.max(1, Number(form.rating) || 5)),
+            order: Number(form.order) || 0,
+            is_active: form.is_active,
+        };
         try {
-            const body = {
-                text: form.text.trim(),
-                author: form.author.trim(),
-                relation: form.relation.trim(),
-                location: form.location.trim(),
-                rating: Math.min(5, Math.max(1, Number(form.rating) || 5)),
-                order: Number(form.order) || 0,
-                is_active: form.is_active,
-            };
-            if (editingId != null) {
+            if (editingId) {
                 await authFetch(`/common/home-testimonials/${editingId}/`, {
                     method: "PATCH",
                     headers: jsonHeaders(),
-                    body: JSON.stringify(body),
+                    body: JSON.stringify(payload),
                 });
             } else {
                 await authFetch("/common/home-testimonials/", {
                     method: "POST",
                     headers: jsonHeaders(),
-                    body: JSON.stringify(body),
+                    body: JSON.stringify(payload),
                 });
             }
-            setModalOpen(false);
             await load();
-        } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Save failed");
+            setModalOpen(false);
+        } catch (err: any) {
+            setError(err?.message || "Save failed");
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("Delete this testimonial?")) return;
+        if (!confirm("Delete this testimonial from the home page?")) return;
         try {
             await authFetch(`/common/home-testimonials/${id}/`, { method: "DELETE" });
-            setRows((prev) => prev.filter((r) => r.id !== id));
+            setRows((r) => r.filter((x) => x.id !== id));
         } catch {
-            alert("Delete failed");
+            alert("Could not delete");
         }
     };
 
     return (
-        <div className="space-y-6 max-w-5xl">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
                 <div>
-                    <p className="text-xs uppercase tracking-wide font-semibold text-slate-500">Public home page</p>
                     <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-                        <MessageSquareQuote className="w-7 h-7 text-orange-500" aria-hidden />
-                        Quote testimonials
+                        <MessageSquareQuote className="w-7 h-7 text-orange-500" />
+                        Parent testimonials (home page)
                     </h1>
                     <p className="text-sm text-slate-600 mt-1">
-                        Text quotes in the purple curved slider on <strong>/</strong>. Inactive rows are hidden on the site.
+                        Edit or remove quotes in the &quot;Parent Testimonials&quot; section on the main site. Inactive items are hidden from the public page.
                     </p>
                 </div>
                 <Button size="sm" onClick={startCreate} className="inline-flex items-center gap-2 shrink-0">
@@ -144,131 +142,137 @@ export default function AdminHomeTestimonialsPage() {
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                {loading ? (
-                    <p className="p-6 text-sm text-slate-500">Loading…</p>
-                ) : rows.length === 0 ? (
-                    <p className="p-6 text-sm text-slate-500">No testimonials yet. Add one or the site will use built-in fallback text.</p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm text-left">
-                            <thead className="bg-slate-50 text-slate-900 text-xs uppercase tracking-wide">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-900 text-xs uppercase tracking-wide">
+                            <tr>
+                                <th className="px-4 py-3 font-semibold">Order</th>
+                                <th className="px-4 py-3 font-semibold">Author</th>
+                                <th className="px-4 py-3 font-semibold">Relation</th>
+                                <th className="px-4 py-3 font-semibold">Quote</th>
+                                <th className="px-4 py-3 font-semibold">Active</th>
+                                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-slate-700">
+                            {loading ? (
                                 <tr>
-                                    <th className="px-4 py-3 font-semibold">Order</th>
-                                    <th className="px-4 py-3 font-semibold">Author</th>
-                                    <th className="px-4 py-3 font-semibold">Quote</th>
-                                    <th className="px-4 py-3 font-semibold">Active</th>
-                                    <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                                    <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
+                                        Loading…
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="text-slate-700">
-                                {rows.map((r, idx) => (
-                                    <tr key={r.id} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/60"}>
-                                        <td className="px-4 py-3">{r.order}</td>
-                                        <td className="px-4 py-3 font-medium text-slate-900">{r.author}</td>
-                                        <td className="px-4 py-3 max-w-md">
-                                            <span className="line-clamp-2">{r.text}</span>
-                                        </td>
-                                        <td className="px-4 py-3">{r.is_active ? "Yes" : "No"}</td>
+                            ) : rows.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
+                                        No testimonials yet. Add one to show on the home page.
+                                    </td>
+                                </tr>
+                            ) : (
+                                rows.map((row, idx) => (
+                                    <tr key={row.id} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/60"}>
+                                        <td className="px-4 py-3 whitespace-nowrap">{row.order}</td>
+                                        <td className="px-4 py-3 font-medium">{row.author}</td>
+                                        <td className="px-4 py-3 text-slate-600">{row.relation || "—"}</td>
+                                        <td className="px-4 py-3 max-w-md truncate">{row.text}</td>
+                                        <td className="px-4 py-3">{row.is_active ? "Yes" : "No"}</td>
                                         <td className="px-4 py-3 text-right space-x-2">
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center gap-1 text-orange-600 font-semibold text-xs"
-                                                onClick={() => startEdit(r)}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50"
+                                                onClick={() => startEdit(row)}
                                             >
-                                                <Pencil className="w-3.5 h-3.5" />
-                                                Edit
+                                                <Pencil className="w-3.5 h-3.5" /> Edit
                                             </button>
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center gap-1 text-red-600 font-semibold text-xs"
-                                                onClick={() => void handleDelete(r.id)}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-md border border-red-200 text-red-600 hover:bg-red-50"
+                                                onClick={() => handleDelete(row.id)}
                                             >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                                Delete
+                                                <Trash2 className="w-3.5 h-3.5" /> Delete
                                             </button>
                                         </td>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingId != null ? "Edit testimonial" : "New testimonial"}>
-                <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-                    {error && <p className="text-sm text-red-600">{error}</p>}
-                    <div>
-                        <label className="block text-xs font-semibold text-slate-600 mb-1">Quote</label>
-                        <textarea
-                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm min-h-[100px]"
-                            value={form.text}
-                            onChange={(e) => setForm((f) => ({ ...f, text: e.target.value }))}
-                            required
-                        />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? "Edit testimonial" : "New testimonial"} size="lg">
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                    <div className="grid md:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs font-semibold text-slate-600 mb-1">Author name</label>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Author name</label>
                             <input
-                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                                 value={form.author}
-                                onChange={(e) => setForm((f) => ({ ...f, author: e.target.value }))}
+                                onChange={(e) => setForm({ ...form, author: e.target.value })}
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-600 mb-1">Relation (e.g. Parent)</label>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Relation (e.g. Mother of Aarav)</label>
                             <input
-                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                                 value={form.relation}
-                                onChange={(e) => setForm((f) => ({ ...f, relation: e.target.value }))}
+                                onChange={(e) => setForm({ ...form, relation: e.target.value })}
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-600 mb-1">Location</label>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Location</label>
                             <input
-                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                                 value={form.location}
-                                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                                onChange={(e) => setForm({ ...form, location: e.target.value })}
                             />
                         </div>
-                        <div className="flex gap-3">
-                            <div className="flex-1">
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Stars (1–5)</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 mb-1">Rating (1–5)</label>
                                 <input
                                     type="number"
                                     min={1}
                                     max={5}
-                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                                     value={form.rating}
-                                    onChange={(e) => setForm((f) => ({ ...f, rating: Number(e.target.value) }))}
+                                    onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })}
                                 />
                             </div>
-                            <div className="flex-1">
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Sort order</label>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 mb-1">Sort order</label>
                                 <input
                                     type="number"
-                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                                     value={form.order}
-                                    onChange={(e) => setForm((f) => ({ ...f, order: Number(e.target.value) }))}
+                                    onChange={(e) => setForm({ ...form, order: Number(e.target.value) })}
                                 />
                             </div>
                         </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Quote</label>
+                        <textarea
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[120px]"
+                            value={form.text}
+                            onChange={(e) => setForm({ ...form, text: e.target.value })}
+                            required
+                        />
                     </div>
                     <label className="flex items-center gap-2 text-sm text-slate-700">
                         <input
                             type="checkbox"
                             checked={form.is_active}
-                            onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                            onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                         />
-                        Show on website
+                        Show on public home page
                     </label>
-                    <div className="flex justify-end gap-2 pt-2">
-                        <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    <div className="flex gap-2 justify-end">
+                        <Button type="button" variant="outline" size="sm" onClick={() => setModalOpen(false)}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={submitting}>
+                        <Button type="submit" size="sm" disabled={submitting}>
                             {submitting ? "Saving…" : "Save"}
                         </Button>
                     </div>

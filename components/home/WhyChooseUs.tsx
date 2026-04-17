@@ -4,13 +4,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Image from 'next/image';
-import { mainPageSectionProps } from '@/config/main-page-sections';
+import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
 }
 
 const WhyChooseUs = () => {
+    const home = useHomePageContent();
+    const features = home.why_choose_us.features;
+
     const sectionRef = useRef<HTMLDivElement>(null);
     const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
     const pupilRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -47,7 +50,7 @@ const WhyChooseUs = () => {
             ctx.revert();
             window.removeEventListener('mousemove', handleGlobalMouseMove);
         };
-    }, []);
+    }, [features.length]);
 
     // Eye Tracking Logic
     useEffect(() => {
@@ -94,21 +97,8 @@ const WhyChooseUs = () => {
         }
     };
 
-    const features = [
-        { image: '/infra.jpg', title: 'Safe Infrastructure', desc: 'Secure premises for complete peace of mind.', color: '#FEE2E2', accent: '#EF4444' },
-        { image: '/11.png', title: 'Trained Teachers', desc: 'Experienced educators nurturing your child.', color: '#E0F2FE', accent: '#0EA5E9' },
-        { image: '/4.png', title: 'NEP 2020 Curriculum', desc: 'Modern curriculum for holistic growth.', color: '#FFEDD5', accent: '#F97316' },
-        { image: '/17.png', title: '17 Years Legacy', desc: 'Educational expertise since 2005.', color: '#DCFCE7', accent: '#22C55E' },
-        { image: '/18.png', title: 'Caring Environment', desc: 'A second home for your little one.', color: '#FDF2F8', accent: '#EC4899' },
-        { image: '/12.png', title: 'Fun Learning', desc: 'Hands-on activities and play.', color: '#F5F3FF', accent: '#8B5CF6' },
-    ];
-
     return (
-        <section
-            ref={sectionRef}
-            className="py-20 md:py-24 bg-[#FDFCFB] relative overflow-hidden select-none scroll-mt-24"
-            {...mainPageSectionProps('whyChooseUs')}
-        >
+        <section ref={sectionRef} className="py-20 md:py-24 bg-[#FDFCFB] relative overflow-hidden select-none">
 
             {/* Animated Wave BG */}
             <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
@@ -120,7 +110,8 @@ const WhyChooseUs = () => {
             <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-16 md:mb-20">
                     <h2 className="font-fredoka font-bold text-4xl md:text-7xl text-[#003366]">
-                        Why Choose <span className="text-[#E67E22]">T.I.M.E. Kids?</span>
+                        {home.why_choose_us.heading_prefix}
+                        <span className="text-[#E67E22]">{home.why_choose_us.heading_accent}</span>
                     </h2>
                 </div>
 

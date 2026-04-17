@@ -178,7 +178,7 @@ export default function FranchiseDashboardPage() {
                 </div>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+            <div className="grid gap-4 lg:grid-cols-2">
                 {filteredSections.map((section) => (
                     <AccordionCard
                         key={section.id}
@@ -208,10 +208,7 @@ function AccordionCard({
 }) {
     const accent = section.accent === "yellow" ? "bg-[#FFF4CC]" : section.accent === "blue" ? "bg-[#E7F5FF]" : "bg-[#FFE8D6]";
     return (
-        <section
-            id={section.id}
-            className="bg-white border border-[#E5E7EB] rounded-2xl shadow-sm transition-shadow duration-150 hover:shadow-md w-full self-start"
-        >
+        <section id={section.id} className="bg-white border border-[#E5E7EB] rounded-2xl shadow-sm transition-shadow duration-150 hover:shadow-md">
             <button
                 onClick={onToggle}
                 className="w-full flex items-center justify-between px-5 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#74C0FC] focus-visible:ring-offset-2 rounded-t-2xl"

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { apiUrl, jsonHeaders, toApiError } from "@/lib/api-client";
 import { AccessLoading } from "@/components/auth/AccessLoading";
 
-type Role = "admin" | "approver" | "franchise" | "parent";
+type Role = "admin" | "franchise" | "parent";
 
 type User = {
     id: string;
@@ -46,7 +46,6 @@ export const normalizeRole = (role?: string | null): Role => {
         .trim()
         .toLowerCase();
     if (mapped === "admin") return "admin";
-    if (mapped === "approver") return "approver";
     if (mapped === "franchise") return "franchise";
     return "parent";
 };
@@ -57,7 +56,7 @@ function pathnameDashboardRole(): Role | null {
     const parts = window.location.pathname.split("/").filter(Boolean);
     if (parts[0] !== "dashboard") return null;
     const r = parts[1];
-    if (r === "parent" || r === "franchise" || r === "admin" || r === "approver") return r;
+    if (r === "parent" || r === "franchise" || r === "admin") return r;
     return null;
 }
 

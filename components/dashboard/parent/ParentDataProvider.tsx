@@ -80,13 +80,6 @@ export type ParentDataContextValue = {
 
 const ParentDataContext = createContext<ParentDataContextValue | undefined>(undefined);
 
-const generateId = () => {
-    if (typeof globalThis !== "undefined" && globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
-        return globalThis.crypto.randomUUID();
-    }
-    return `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-};
-
 export function ParentDataProvider({ children }: { children: React.ReactNode }) {
     const { user, authFetch, refreshUser } = useAuth();
     const { parentSchoolLoading, students } = useSchoolData();
@@ -227,15 +220,15 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
 
     const updateStudentProfile = (payload: Partial<StudentProfile>) => setStudentProfile((prev) => ({ ...prev, ...payload }));
 
-    const addGrade = (payload: Omit<GradeRow, "id">) => setGrades((prev) => [...prev, { id: generateId(), ...payload }]);
+    const addGrade = (payload: Omit<GradeRow, "id">) => setGrades((prev) => [...prev, { id: crypto.randomUUID(), ...payload }]);
     const updateGrade = (id: string, payload: Partial<GradeRow>) => setGrades((prev) => prev.map((g) => (g.id === id ? { ...g, ...payload } : g)));
     const deleteGrade = (id: string) => setGrades((prev) => prev.filter((g) => g.id !== id));
 
-    const addEvent = (payload: Omit<EventRow, "id">) => setEvents((prev) => [...prev, { id: generateId(), ...payload }]);
+    const addEvent = (payload: Omit<EventRow, "id">) => setEvents((prev) => [...prev, { id: crypto.randomUUID(), ...payload }]);
     const updateEvent = (id: string, payload: Partial<EventRow>) => setEvents((prev) => prev.map((ev) => (ev.id === id ? { ...ev, ...payload } : ev)));
     const deleteEvent = (id: string) => setEvents((prev) => prev.filter((ev) => ev.id !== id));
 
-    const addPhoto = (payload: Omit<PhotoRow, "id">) => setPhotos((prev) => [...prev, { id: generateId(), ...payload }]);
+    const addPhoto = (payload: Omit<PhotoRow, "id">) => setPhotos((prev) => [...prev, { id: crypto.randomUUID(), ...payload }]);
     const deletePhoto = (id: string) => setPhotos((prev) => prev.filter((p) => p.id !== id));
 
     const updateParentProfile = useCallback(

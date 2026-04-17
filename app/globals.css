@@ -804,36 +804,30 @@ body {
 /* Key Navigation Section - 6 Circular Icon Buttons */
 .key-nav {
   display: flex;
-  margin: 0 auto 40px auto;
-  padding: 56px 0 0 0;
-  justify-content: center;
-  align-items: flex-start;
-  gap: clamp(1rem, 2.8vw, 2.75rem);
-  flex-wrap: wrap;
+  margin: 0 0 40px 0;
+  padding: 60px 0 0 0;
+  justify-content: space-between;
   list-style: none;
   position: relative;
   z-index: 10;
-  max-width: 100%;
 }
 
 .key-nav li {
   text-align: center;
-  flex: 1 1 175px;
-  min-width: 165px;
-  max-width: 248px;
+  flex-basis: 14%;
   font-weight: 700;
-  font-size: clamp(17px, 1.35vw, 21px);
-  line-height: 1.35;
+  font-size: 18px;
+  line-height: 24px;
   color: #222;
 }
 
 .key-nav li figure {
   width: 100%;
-  height: clamp(142px, 13vw, 178px);
+  height: 120px;
   display: block;
   background-color: #dd6705;
   border-radius: 67% 33% 39% 61% / 37% 57% 43% 63%;
-  margin-bottom: 18px;
+  margin-bottom: 15px;
   text-align: center;
   box-shadow: 0px 0px 32px -3px rgba(0, 0, 0, 0.44);
   transition: all 0.4s ease-in-out;
@@ -847,19 +841,17 @@ body {
 }
 
 .key-nav li span {
-  height: clamp(142px, 13vw, 178px);
+  height: 120px;
+  vertical-align: middle;
   text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: table-cell;
 }
 
 .key-nav li span img {
-  max-width: clamp(78px, 7.5vw, 102px);
-  width: auto;
-  height: auto;
+  max-width: 70px;
   display: block;
-  margin: 0 auto;
+  position: relative;
+  left: 35px;
   transition: all 0.8s ease-in-out;
 }
 
@@ -887,25 +879,23 @@ body {
 /* Responsive for Key Navigation */
 @media (max-width: 998px) {
   .key-nav {
-    gap: 1.1rem 1.35rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .key-nav li {
-    flex: 1 1 150px;
-    min-width: 140px;
-    max-width: 200px;
+    flex-basis: 22%;
+    margin: 15px;
   }
 }
 
 @media (max-width: 768px) {
   .key-nav li {
-    flex: 1 1 140px;
-    min-width: 130px;
-    max-width: calc(50% - 0.75rem);
+    flex-basis: 40%;
   }
 
   .key-nav li span img {
-    max-width: min(92px, 42vw);
+    max-width: 90%;
   }
 }
 

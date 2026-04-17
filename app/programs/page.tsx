@@ -214,13 +214,12 @@ export default function ProgramsPage() {
             {/* Content Section - The Program Cards */}
             <section className="relative bg-white pt-10 pb-32 z-10">
                 <div className="container mx-auto px-4">
-                    <div className="flex flex-col gap-12 md:gap-16">
+                    <div className="flex flex-col gap-20 md:gap-32">
                         {programs.map((program, index) => {
                             const isDayCare = program.name === 'Day Care';
 
                             return (
-                                <React.Fragment key={program.name}>
-                                <div className={`flex flex-col md:flex-row items-center gap-16 lg:gap-32 ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} ${isDayCare ? 'py-16 md:py-24' : ''}`}>
+                                <div key={index} className={`flex flex-col md:flex-row items-center gap-16 lg:gap-32 ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} ${isDayCare ? 'py-16 md:py-24' : ''}`}>
 
                                     {/* Special Background for Day Care */}
                                     {isDayCare && (
@@ -294,13 +293,6 @@ export default function ProgramsPage() {
                                         </div>
                                     </div>
                                 </div>
-                                {index < programs.length - 1 ? (
-                                    <hr
-                                        className="w-full max-w-5xl mx-auto border-0 h-px bg-gradient-to-r from-transparent via-orange-300/70 to-transparent"
-                                        aria-hidden="true"
-                                    />
-                                ) : null}
-                                </React.Fragment>
                             );
                         })}
                     </div>

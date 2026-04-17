@@ -60,8 +60,8 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
         window.scrollTo(0, 0);
     }, [pathname]);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-    const isAdminShell = role === "admin" || role === "approver";
-    const appliedTheme = isAdminShell
+    const isAdmin = role === "admin";
+    const appliedTheme = isAdmin
         ? { active: "bg-[#FFF4CC] text-[#111827] font-semibold", idle: "text-[#374151] hover:bg-[#F3F4F6]" }
         : navThemes[themeKey];
 
@@ -80,7 +80,7 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
             <div className="min-h-screen flex bg-white isolate">
 
                 {/* Render role-specific sidebar */}
-                {isAdminShell && (
+                {isAdmin && (
                     <AdminSidebar
                         brand={brand}
                         navItems={navItems}
@@ -118,16 +118,14 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                                     {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                                 </button>
                                 <div className="hidden md:flex items-center gap-3">
-                                    {isAdminShell ? (
+                                    {isAdmin ? (
                                         <>
                                             <div className="flex flex-col">
                                                 <span className="text-base font-semibold text-[#111827]">{brand.title}</span>
-                                                <span className="text-sm text-[#374151]">
-                                                    {role === "approver" ? "Head office approvals" : "System command center"}
-                                                </span>
+                                                <span className="text-sm text-[#374151]">System command center</span>
                                             </div>
                                             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF4CC] text-[#111827] text-xs font-semibold">
-                                                {role === "approver" ? "Approver" : "System Control"}
+                                                System Control
                                             </span>
                                         </>
                                     ) : (
@@ -147,12 +145,12 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={handleLogoutClick}
-                                    className={`group relative overflow-hidden text-white font-semibold transition-all duration-150 rounded-full px-4 py-2 text-sm shadow-sm ${isAdminShell
+                                    className={`group relative overflow-hidden text-white font-semibold transition-all duration-150 rounded-full px-4 py-2 text-sm shadow-sm ${isAdmin
                                         ? "bg-[#FF922B] hover:brightness-110 active:brightness-90"
                                         : "bg-[#FF922B] hover:shadow-md active:brightness-90"
                                         }`}
                                 >
-                                    {!isAdminShell && <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />}
+                                    {!isAdmin && <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />}
                                     <span className="relative flex items-center gap-2">
                                         <LogOut className="w-4 h-4" />
                                         Logout

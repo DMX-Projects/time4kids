@@ -4,7 +4,6 @@ import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { Star, Quote } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { mainPageSectionProps } from '@/config/main-page-sections';
 import { apiUrl } from '@/lib/api-client';
 
 // Use Isomorphic Layout Effect to avoid SSR mismatches with GSAP
@@ -14,7 +13,7 @@ if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
 }
 
-type TestimonialItem = {
+export type TestimonialItem = {
     id: number;
     text: string;
     author: string;
@@ -23,6 +22,7 @@ type TestimonialItem = {
     rating: number;
 };
 
+/** Used only if the API is unreachable */
 const FALLBACK_TESTIMONIALS: TestimonialItem[] = [
     {
         id: 1,
@@ -55,7 +55,7 @@ const FALLBACK_TESTIMONIALS: TestimonialItem[] = [
         relation: "Mother of Aarav",
         location: "HYDERABAD",
         rating: 5
-       }
+    }
 ];
 
 // 3D Tilt Card Component (Preserved)
@@ -101,50 +101,43 @@ const TestimonialSlider = () => {
     const bgRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const [isMounted, setIsMounted] = useState(false);
-    const [items, setItems] = useState<TestimonialItem[]>(FALLBACK_TESTIMONIALS);
+    const [testimonials, setTestimonials] = useState<TestimonialItem[] | null>(null);
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
     useEffect(() => {
-        let cancelled = false;
-        (async () => {
+        const load = async () => {
             try {
                 const res = await fetch(apiUrl('/common/home-testimonials/'));
-                if (!res.ok || cancelled) return;
+                if (!res.ok) throw new Error('bad status');
                 const data = await res.json();
-                const list = Array.isArray(data) ? data : [];
-                if (list.length === 0 || cancelled) return;
-                setItems(
-                    list.map((row: Record<string, unknown>) => ({
-                        id: Number(row.id),
-                        text: String(row.text || ''),
-                        author: String(row.author || ''),
-                        relation: String(row.relation || ''),
-                        location: String(row.location || ''),
-                        rating: Math.min(5, Math.max(1, Number(row.rating) || 5)),
-                    })),
-                );
+                const items = Array.isArray(data) ? data : data.results || [];
+                const mapped: TestimonialItem[] = items
+                    .map((r: { id: number; text: string; author: string; relation?: string; location?: string; rating?: number }) => ({
+                        id: r.id,
+                        text: r.text || '',
+                        author: r.author || '',
+                        relation: r.relation || '',
+                        location: r.location || '',
+                        rating: Math.min(5, Math.max(1, Number(r.rating) || 5)),
+                    }))
+                    .filter((r: TestimonialItem) => r.text.trim().length > 0);
+                setTestimonials(mapped.length > 0 ? mapped : []);
             } catch {
-                /* keep fallback */
+                setTestimonials(FALLBACK_TESTIMONIALS);
             }
-        })();
-        return () => {
-            cancelled = true;
         };
+        load();
     }, []);
 
     const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-    useEffect(() => {
-        if (!isMounted) return;
-        ScrollTrigger.refresh();
-    }, [isMounted, items]);
-
     // GSAP Horizontal Scroll Logic with Curve
     useIsomorphicLayoutEffect(() => {
         if (!isMounted || !pinContainerRef.current || !wrapperRef.current) return;
+        if (testimonials === null || testimonials.length === 0) return;
 
         const ctx = gsap.context(() => {
             const totalWidth = wrapperRef.current!.scrollWidth;
@@ -231,7 +224,7 @@ const TestimonialSlider = () => {
             ctx.revert();
             gsap.ticker.remove(() => { }); // Cleanup ticker (Note: this naive remove might not work if reference is lost, but ctx.revert handles most)
         };
-    }, [isMounted, items]);
+    }, [isMounted, testimonials]);
 
 
     // Cursor Parallax Logic (Optimized)
@@ -248,9 +241,8 @@ const TestimonialSlider = () => {
     return (
         <section
             ref={sectionRef}
-            className="w-full relative bg-gradient-to-br from-[#6032a8] via-[#7c4dff] to-[#6032a8] overflow-hidden scroll-mt-24"
+            className="w-full relative bg-gradient-to-br from-[#6032a8] via-[#7c4dff] to-[#6032a8] overflow-hidden"
             onMouseMove={handleMouseMove}
-            {...mainPageSectionProps('testimonialsSlider')}
         >
 
             {/* Background Decorations */}
@@ -300,7 +292,16 @@ const TestimonialSlider = () => {
                         ref={wrapperRef}
                         className="flex flex-nowrap items-center px-4 md:px-20 gap-8 md:gap-16 w-max pt-2 pb-8 will-change-transform" /* Added will-change-transform for perf and padding-bottom for curve dip */
                     >
-                        {items.map((item, index) => (
+                        {testimonials === null ? (
+                            <div className="flex-shrink-0 w-full max-w-xl mx-auto text-center text-white/90 py-12 px-4">
+                                Loading testimonials…
+                            </div>
+                        ) : testimonials.length === 0 ? (
+                            <div className="flex-shrink-0 w-full max-w-xl mx-auto text-center text-white/90 py-8 px-4">
+                                Testimonials will appear here once added in Admin → Testimonials.
+                            </div>
+                        ) : (
+                        testimonials.map((item, index) => (
                             <div
                                 key={`${item.id}-${index}`}
                                 ref={el => { cardsRef.current[index] = el }}
@@ -315,14 +316,8 @@ const TestimonialSlider = () => {
 
                                         <div className="relative z-10">
                                             <div className="flex gap-1 mb-6 text-[#FFD700]">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        size={18}
-                                                        fill="currentColor"
-                                                        strokeWidth={0}
-                                                        className={i < item.rating ? "opacity-100" : "opacity-25"}
-                                                    />
+                                                {[...Array(Math.min(5, Math.max(1, item.rating || 5)))].map((_, i) => (
+                                                    <Star key={i} size={18} fill="currentColor" strokeWidth={0} />
                                                 ))}
                                             </div>
                                             <p className="text-white text-lg md:text-xl italic leading-relaxed mb-6 font-medium drop-shadow-sm opacity-95">
@@ -342,7 +337,8 @@ const TestimonialSlider = () => {
                                     </div>
                                 </TiltCard>
                             </div>
-                        ))}
+                        ))
+                        )}
                     </div>
                 </div>
             </div>
