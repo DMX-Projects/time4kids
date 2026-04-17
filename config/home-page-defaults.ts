@@ -108,11 +108,21 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             },
             {
                 image: "/1.png",
-                programName: "PP-1 & PP-2",
-                ageGroup: "4 - 6 years",
-                description: "Preparing for formal schooling with comprehensive education.",
-                color: "#6cc3d5",
+                programName: "PP-1",
+                ageGroup: "4 - 5 years",
+                description:
+                    "Expanding from school to the world around — curious, interactive, and building strong foundations.",
+                color: "#e74c3c",
                 yOffset: "-30px",
+            },
+            {
+                image: "/11.png",
+                programName: "PP-2",
+                ageGroup: "5 - 6 years",
+                description:
+                    "Confident learners ready for formal schooling — communication, independence, and core skills.",
+                color: "#2980b9",
+                yOffset: "20px",
             },
             {
                 image: "/images/landing-banner.jpg",
@@ -152,8 +162,48 @@ function deepMerge<T extends Record<string, unknown>>(base: T, patch: Partial<T>
     return out;
 }
 
+/** True when CMS still stores PP-1 and PP-2 as one program (any common variant). */
+function isLegacyCombinedPpProgramName(programName: string): boolean {
+    const t = programName.trim();
+    if (!t) return false;
+    const oneLine = t.replace(/\s+/g, " ").toLowerCase();
+    if (oneLine === "pp-1 & pp-2" || oneLine === "pp1 & pp2") return true;
+    if (/pp[-\u2013]?\s*1\s*([&+]|\band\b)\s*pp[-\u2013]?\s*2/i.test(oneLine)) return true;
+    const lines = t.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 2 && /^pp[-\u2013]?1$/i.test(lines[0]) && /^pp[-\u2013]?2$/i.test(lines[1])) return true;
+    return false;
+}
+
+/**
+ * DB/API often still has one row "PP-1 & PP-2". The API replaces the whole `programs` array on merge,
+ * so defaults never fix it — split that entry into PP-1 + PP-2 here.
+ */
+export function normalizeProgramsPreviewPrograms(
+    programs: HomePageData["programs_preview"]["programs"],
+): HomePageData["programs_preview"]["programs"] {
+    const defaults = DEFAULT_HOME_PAGE_DATA.programs_preview.programs;
+    const pp1 = defaults.find((p) => p.programName === "PP-1");
+    const pp2 = defaults.find((p) => p.programName === "PP-2");
+    if (!pp1 || !pp2) return programs;
+
+    const out: HomePageData["programs_preview"]["programs"] = [];
+    for (const p of programs) {
+        if (isLegacyCombinedPpProgramName(p.programName)) {
+            out.push({ ...pp1 }, { ...pp2 });
+        } else {
+            out.push(p);
+        }
+    }
+    return out;
+}
+
 /** Merge API payload over defaults so missing keys still work. */
 export function mergeHomePageData(raw: Partial<HomePageData> | null | undefined): HomePageData {
     if (!raw || typeof raw !== "object") return DEFAULT_HOME_PAGE_DATA;
-    return deepMerge(DEFAULT_HOME_PAGE_DATA, raw as Partial<HomePageData>);
+    const merged = deepMerge(DEFAULT_HOME_PAGE_DATA, raw as Partial<HomePageData>);
+    merged.programs_preview = {
+        ...merged.programs_preview,
+        programs: normalizeProgramsPreviewPrograms(merged.programs_preview.programs),
+    };
+    return merged;
 }

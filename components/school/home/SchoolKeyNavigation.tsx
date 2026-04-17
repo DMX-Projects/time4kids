@@ -69,7 +69,6 @@ export default function SchoolKeyNavigation() {
                 .key-nav-section {
                     background: #fff;
                     width: 100%;
-                    float: left;
                     position: relative;
                     z-index: 10;
                 }

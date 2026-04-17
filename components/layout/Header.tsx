@@ -3,13 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Home, Building2, BookOpen, Handshake, MapPin, Backpack, Camera, HelpCircle, Briefcase, Phone } from 'lucide-react';
+import { Home, Briefcase, Phone } from 'lucide-react';
 import AnimatedNavBar from './AnimatedNavBar';
 
 export default function Header() {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSticky, setIsSticky] = useState(false);
-    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
     useEffect(() => {
         // Use Lenis scroll event if available for better performance
@@ -83,32 +81,12 @@ export default function Header() {
                             </Link>
                         </div>
 
-                        {/* Right Side - Navigation & Mobile Menu */}
-                        <div className="flex items-center justify-end gap-4">
-                            {/* Desktop Navigation */}
-                            <div className="hidden xl:flex">
+                        {/* Navigation — always visible; scroll horizontally on narrow screens */}
+                        <div className="flex min-w-0 flex-1 items-center justify-end pl-2 sm:pl-4">
+                            <div className="max-w-full min-w-0 overflow-x-auto overflow-y-visible [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
                                 <AnimatedNavBar />
                             </div>
-
-                            {/* Mobile Menu Toggle */}
-                            <button
-                                className="nav-button xl:hidden"
-                                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                aria-label="Toggle menu"
-                            >
-                                <i className="fas fa-bars"></i>
-                            </button>
                         </div>
-
-                        {/* Mobile Navigation Drawer */}
-                        {isMenuOpen && (
-                            <div className="xl:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md shadow-xl z-[2000] p-6 border-t border-gray-100 flex flex-col items-center gap-6 animate-in slide-in-from-top duration-300">
-                                <AnimatedNavBar mobile={true} />
-                                <Link href="/login" className="btn-login w-full text-center py-3">
-                                    LOGIN
-                                </Link>
-                            </div>
-                        )}
                     </div>
                 </div>
             </header>
@@ -229,30 +207,6 @@ export default function Header() {
 
                 .logo :global(a) {
                     display: block;
-                }
-
-                /* Mobile Menu Button */
-                .nav-button {
-                    background: rgba(228, 110, 26, 0.9);
-                    backdrop-filter: blur(10px);
-                    -webkit-backdrop-filter: blur(10px);
-                    width: 45px;
-                    height: 45px;
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #fff;
-                    font-size: 20px;
-                    border: 1px solid rgba(255, 255, 255, 0.3);
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                }
-
-                .nav-button:hover {
-                    background: rgba(209, 95, 20, 0.95);
-                    transform: scale(1.05);
-                    box-shadow: 0 4px 15px rgba(228, 110, 26, 0.4);
                 }
 
                 /* Standard Navigation Fallback (if needed) */
