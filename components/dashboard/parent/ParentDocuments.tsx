@@ -64,8 +64,9 @@ export function ParentDocuments() {
                         📚
                     </div>
                     <div>
-                        <p className="text-xs uppercase tracking-[0.08em] text-[#4B5563] font-semibold">Parent Dashboard</p>
-                        <h2 className="text-2xl font-bold text-[#1F2937] leading-tight">Parent Important Documents</h2>
+                        <p className="text-xs uppercase tracking-[0.08em] text-[#4B5563] font-semibold">All in one place</p>
+                        <h2 className="text-2xl font-bold text-[#1F2937] leading-tight">Centre resources &amp; files</h2>
+                        <p className="text-sm text-[#6B7280] mt-1">Same files as the separate Timetable, Holiday, and Policies pages — shown here by category.</p>
                     </div>
                 </div>
 

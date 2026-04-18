@@ -93,6 +93,10 @@ export type AdminDataContextValue = {
 
     savedLocations: { city_name: string, state: string }[];
     refreshLocations: () => Promise<void>;
+
+    /** Set when GET /franchises/admin/franchises/ fails (list empty + stats mismatch). */
+    franchisesLoadError: string | null;
+    reloadFranchises: () => Promise<void>;
 };
 
 const AdminDataContext = createContext<AdminDataContextValue | undefined>(undefined);
@@ -216,6 +220,21 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     });
 
     const [stats, setStats] = useState<AdminStats>({ activeUsers: 0, franchises: 0, enquiries: 0, parents: 0 });
+    const [franchisesLoadError, setFranchisesLoadError] = useState<string | null>(null);
+
+    const loadFranchises = async () => {
+        setFranchisesLoadError(null);
+        try {
+            const data = await authFetch<ApiFranchise[] | { results: ApiFranchise[] }>("/franchises/admin/franchises/");
+            const items = unwrapList<ApiFranchise>(data);
+            setFranchises(items.map(mapFranchise));
+        } catch (e: unknown) {
+            setFranchises([]);
+            const msg = e instanceof Error ? e.message : "Failed to load franchises.";
+            setFranchisesLoadError(msg);
+            console.error("loadFranchises", e);
+        }
+    };
 
     useEffect(() => {
         const role = user?.role?.toLowerCase();
@@ -232,17 +251,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             }));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.role]);
-
-    const loadFranchises = async () => {
-        try {
-            const data = await authFetch<ApiFranchise[] | { results: ApiFranchise[] }>("/franchises/admin/franchises/");
-            const items = unwrapList<ApiFranchise>(data);
-            setFranchises(items.map(mapFranchise));
-        } catch {
-            setFranchises([]);
-        }
-    };
+    }, [user?.id, user?.role]);
 
     const loadCareers = async () => {
         try {
@@ -325,6 +334,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             body: JSON.stringify(body),
         });
         setFranchises((prev) => [mapFranchise(created), ...prev]);
+        void loadStats();
     };
 
     const updateFranchise = async (id: string, payload: Partial<AdminFranchise>) => {
@@ -351,11 +361,13 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             body: JSON.stringify(body),
         });
         setFranchises((prev) => prev.map((f) => (f.id === id ? mapFranchise(updated) : f)));
+        void loadStats();
     };
 
     const deleteFranchise = async (id: string) => {
         await authFetch(`/franchises/admin/franchises/${id}/`, { method: "DELETE" });
         setFranchises((prev) => prev.filter((f) => f.id !== id));
+        void loadStats();
     };
 
     const addCareer = async (payload: Omit<AdminCareer, "id">) => {
@@ -466,8 +478,10 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             refreshStats: loadStats,
             savedLocations,
             refreshLocations: loadSavedLocations,
+            franchisesLoadError,
+            reloadFranchises: loadFranchises,
         }),
-        [franchises, careers, events, profile, stats, savedLocations],
+        [franchises, careers, events, profile, stats, savedLocations, franchisesLoadError],
     );
 
     return <AdminDataContext.Provider value={value}>{children}</AdminDataContext.Provider>;

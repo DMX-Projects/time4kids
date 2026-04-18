@@ -1,15 +1,15 @@
 "use client";
 
-import { LayoutDashboard, CalendarDays, CalendarRange, ClipboardList, UserCircle, Image as ImageIcon, MessageSquare, Images, Star, LayoutGrid } from "lucide-react";
+import { LayoutDashboard, CalendarDays, CalendarRange, ClipboardList, UserCircle, Image as ImageIcon, MessageSquare, Images, Star, LayoutGrid, LifeBuoy } from "lucide-react";
 import { DashboardShell, DashboardNavItem } from "@/components/layout/DashboardShell";
 import { FranchiseDataProvider, useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
-import { ToastProvider } from "@/components/ui/Toast";
 
 const navItems: DashboardNavItem[] = [
     { label: "Dashboard", href: "/dashboard/franchise", icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: "Parent Records", href: "/dashboard/franchise/parents", icon: <ClipboardList className="w-4 h-4" /> },
     { label: "Students", href: "/dashboard/franchise/students", icon: <UserCircle className="w-4 h-4" /> },
     { label: "Parent portal", href: "/dashboard/franchise/parent-portal", icon: <LayoutGrid className="w-4 h-4" /> },
+    { label: "Parent support tickets", href: "/dashboard/franchise/parent-tickets", icon: <LifeBuoy className="w-4 h-4" /> },
     { label: "Enquiries", href: "/dashboard/franchise/enquiries", icon: <MessageSquare className="w-4 h-4" /> },
     { label: "Events", href: "/dashboard/franchise/events", icon: <CalendarRange className="w-4 h-4" /> },
     { label: "Event Schedule", href: "/dashboard/franchise/event-schedule", icon: <CalendarDays className="w-4 h-4" /> },
@@ -45,9 +45,7 @@ function FranchiseDashboardShell({ children }: { children: React.ReactNode }) {
 export default function FranchiseLayout({ children }: { children: React.ReactNode }) {
     return (
         <FranchiseDataProvider>
-            <ToastProvider>
-                <FranchiseDashboardShell>{children}</FranchiseDashboardShell>
-            </ToastProvider>
+            <FranchiseDashboardShell>{children}</FranchiseDashboardShell>
         </FranchiseDataProvider>
     );
 }

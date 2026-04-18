@@ -13,7 +13,27 @@ type ShowToastFn = (message: string, variant?: "success" | "error") => void;
 
 type MiniStudent = { id: number; full_name: string; class_name: string };
 
-type Tab = "homework" | "announcements" | "attendance" | "fees" | "transport" | "tickets";
+/** Same sections as the parent web app sidebar (franchise staff publish content here). */
+type Tab =
+    | "homework"
+    | "notifications"
+    | "timetable"
+    | "transport"
+    | "calendar"
+    | "showcase"
+    | "fees"
+    | "holidays";
+
+const TAB_CONFIG: { id: Tab; label: string }[] = [
+    { id: "homework", label: "Homework" },
+    { id: "notifications", label: "Notifications" },
+    { id: "timetable", label: "Timetable" },
+    { id: "transport", label: "Transport" },
+    { id: "calendar", label: "Calendar" },
+    { id: "showcase", label: "Showcase" },
+    { id: "fees", label: "Fees" },
+    { id: "holidays", label: "Holiday list" },
+];
 
 export default function ParentPortalAdminPage() {
     const { authFetch } = useAuth();
@@ -42,7 +62,12 @@ export default function ParentPortalAdminPage() {
                     Parent portal (content)
                 </h1>
                 <p className="text-sm text-[#374151] mt-1">
-                    Publish homework, announcements, attendance, fees, transport, and reply to support tickets. Upload policy / timetable / holiday PDFs from{" "}
+                    Publish content for the parent app (homework through holidays). <strong className="text-[#111827]">Support</strong> and{" "}
+                    <strong className="text-[#111827]">Settings</strong> are for parents after they use the parent login — reply to tickets under{" "}
+                    <Link href="/dashboard/franchise/parent-tickets" className="text-blue-600 underline font-medium">
+                        Parent support tickets
+                    </Link>
+                    . Upload PDFs under{" "}
                     <Link href="/dashboard/franchise/parent-documents" className="text-blue-600 underline font-medium">
                         Parent documents
                     </Link>
@@ -51,21 +76,12 @@ export default function ParentPortalAdminPage() {
             </div>
 
             <div className="flex flex-wrap gap-2 border-b border-[#E5E7EB] pb-2">
-                {(
-                    [
-                        ["homework", "Homework"],
-                        ["announcements", "Notifications"],
-                        ["attendance", "Attendance"],
-                        ["fees", "Fees"],
-                        ["transport", "Transport"],
-                        ["tickets", "Support tickets"],
-                    ] as const
-                ).map(([id, label]) => (
+                {TAB_CONFIG.map(({ id, label }) => (
                     <button
                         key={id}
                         type="button"
                         onClick={() => setTab(id)}
-                        className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${tab === id ? "bg-[#FFF4CC] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
+                        className={`rounded-full px-3 py-2 text-xs sm:text-sm font-semibold transition-colors ${tab === id ? "bg-[#FFF4CC] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
                     >
                         {label}
                     </button>
@@ -73,11 +89,99 @@ export default function ParentPortalAdminPage() {
             </div>
 
             {tab === "homework" && <HomeworkTab authFetch={authFetch} showToast={showToast} students={students} onRefresh={loadStudents} />}
-            {tab === "announcements" && <AnnouncementsTab authFetch={authFetch} showToast={showToast} />}
-            {tab === "attendance" && <AttendanceTab authFetch={authFetch} showToast={showToast} students={students} />}
-            {tab === "fees" && <FeesTab authFetch={authFetch} showToast={showToast} students={students} />}
+            {tab === "notifications" && <AnnouncementsTab authFetch={authFetch} showToast={showToast} />}
+            {tab === "timetable" && <DocsHintPanel variant="timetable" />}
             {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} />}
-            {tab === "tickets" && <TicketsTab authFetch={authFetch} showToast={showToast} />}
+            {tab === "calendar" && <FranchiseCalendarTab authFetch={authFetch} />}
+            {tab === "showcase" && <ShowcaseHintPanel />}
+            {tab === "fees" && <FeesTab authFetch={authFetch} showToast={showToast} students={students} />}
+            {tab === "holidays" && <DocsHintPanel variant="holidays" />}
+        </div>
+    );
+}
+
+function DocsHintPanel({ variant }: { variant: "timetable" | "holidays" }) {
+    const copy =
+        variant === "timetable"
+            ? {
+                  title: "Timetable",
+                  body: "Upload weekly timetable PDFs so parents see them under Timetable and in Parent documents.",
+              }
+            : {
+                  title: "Holiday list",
+                  body: "Upload term breaks and public holiday PDFs so parents see them under Holiday list.",
+              };
+    return (
+        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 space-y-3 max-w-2xl">
+            <h3 className="font-semibold text-[#111827]">{copy.title}</h3>
+            <p className="text-sm text-[#374151]">{copy.body}</p>
+            <Link href="/dashboard/franchise/parent-documents" className="inline-flex text-[#2563EB] font-medium underline">
+                Parent documents
+            </Link>
+        </div>
+    );
+}
+
+function ShowcaseHintPanel() {
+    return (
+        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 space-y-3 max-w-2xl">
+            <h3 className="font-semibold text-[#111827]">Showcase</h3>
+            <p className="text-sm text-[#374151]">
+                Photos and highlights appear in the parent app Showcase page. Manage centre gallery and home page photos.
+            </p>
+            <div className="flex flex-wrap gap-4 text-sm">
+                <Link href="/dashboard/franchise/gallery" className="text-[#2563EB] font-medium underline">
+                    Centre gallery
+                </Link>
+                <Link href="/dashboard/franchise/hero-slider" className="text-[#2563EB] font-medium underline">
+                    Home page photos
+                </Link>
+            </div>
+        </div>
+    );
+}
+
+function FranchiseCalendarTab({ authFetch }: { authFetch: AuthFetchFn }) {
+    const [rows, setRows] = useState<{ id: number; title: string; start_date?: string; location?: string }[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const raw = await authFetch<unknown>("/events/franchise/");
+                const list = Array.isArray(raw) ? raw : (raw as { results?: unknown[] }).results ?? [];
+                if (!cancelled) setRows(list as typeof rows);
+            } catch {
+                if (!cancelled) setRows([]);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [authFetch]);
+
+    if (loading) return <p className="text-sm text-[#6B7280]">Loading events…</p>;
+
+    return (
+        <div className="space-y-2 max-w-2xl">
+            <ul className="space-y-2">
+                {rows.map((ev) => (
+                    <li key={ev.id} className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm">
+                        <span className="font-medium">{ev.title}</span>
+                        <span className="text-[#6B7280] ml-2">{ev.start_date || "—"}</span>
+                        {ev.location ? <p className="text-xs text-[#6B7280] mt-1">{ev.location}</p> : null}
+                    </li>
+                ))}
+            </ul>
+            {rows.length === 0 && <p className="text-sm text-[#6B7280]">No events yet. Add them under Events.</p>}
+            <p className="text-xs text-[#6B7280] pt-2">
+                <Link href="/dashboard/franchise/events" className="text-[#2563EB] underline font-medium">
+                    Manage events
+                </Link>
+            </p>
         </div>
     );
 }
@@ -259,63 +363,6 @@ function AnnouncementsTab({ authFetch, showToast }: { authFetch: AuthFetchFn; sh
     );
 }
 
-function AttendanceTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; showToast: ShowToastFn; students: MiniStudent[] }) {
-    const [form, setForm] = useState({ student: "", date: "", status: "PRESENT", note: "" });
-
-    const submit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!form.student) return;
-        try {
-            await authFetch("/students/franchise/attendance/", {
-                method: "POST",
-                headers: jsonHeaders(),
-                body: JSON.stringify({ student: Number(form.student), date: form.date, status: form.status, note: form.note }),
-            });
-            showToast("Attendance saved", "success");
-            setForm((p) => ({ ...p, note: "" }));
-        } catch {
-            showToast("Save failed (duplicate date / invalid student?)", "error");
-        }
-    };
-
-    return (
-        <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 grid md:grid-cols-2 gap-3 max-w-2xl">
-            <label className="text-xs font-semibold">
-                Student
-                <select required value={form.student} onChange={(e) => setForm((p) => ({ ...p, student: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
-                    <option value="">—</option>
-                    {students.map((s) => (
-                        <option key={s.id} value={s.id}>
-                            {s.full_name}
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <label className="text-xs font-semibold">
-                Date
-                <input type="date" required value={form.date} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-            </label>
-            <label className="text-xs font-semibold">
-                Status
-                <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
-                    {["PRESENT", "ABSENT", "LATE", "EXCUSED", "HOLIDAY"].map((s) => (
-                        <option key={s} value={s}>
-                            {s}
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <label className="text-xs font-semibold md:col-span-2">
-                Note
-                <input value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-            </label>
-            <Button type="submit" className="bg-[#FF922B] text-white w-fit">
-                Save
-            </Button>
-        </form>
-    );
-}
-
 function FeesTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; showToast: ShowToastFn; students: MiniStudent[] }) {
     const [form, setForm] = useState({ student: "", title: "", amount: "", due_date: "", status: "PENDING", paid_on: "", notes: "" });
 
@@ -427,84 +474,5 @@ function TransportTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showTo
                 Add route
             </Button>
         </form>
-    );
-}
-
-function TicketsTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
-    const [rows, setRows] = useState<{ id: number; subject: string; body: string; status: string; parent_name?: string; franchise_reply?: string }[]>([]);
-    const [editing, setEditing] = useState<Record<number, { reply: string; status: string }>>({});
-
-    const load = useCallback(async () => {
-        try {
-            const data = await authFetch<typeof rows>("/students/franchise/tickets/");
-            setRows(Array.isArray(data) ? data : []);
-        } catch {
-            setRows([]);
-        }
-    }, [authFetch]);
-
-    useEffect(() => {
-        void load();
-    }, [load]);
-
-    const save = async (id: number) => {
-        const e = editing[id];
-        if (!e) return;
-        try {
-            await authFetch(`/students/franchise/tickets/${id}/`, {
-                method: "PATCH",
-                headers: jsonHeaders(),
-                body: JSON.stringify({ franchise_reply: e.reply, status: e.status }),
-            });
-            showToast("Reply saved", "success");
-            setEditing((prev) => {
-                const n = { ...prev };
-                delete n[id];
-                return n;
-            });
-            await load();
-        } catch {
-            showToast("Update failed", "error");
-        }
-    };
-
-    return (
-        <ul className="space-y-4">
-            {rows.map((t) => (
-                <li key={t.id} className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-2">
-                    <div className="flex justify-between gap-2 text-sm">
-                        <span className="font-semibold">{t.subject}</span>
-                        <span className="text-[#6B7280]">{t.parent_name}</span>
-                    </div>
-                    <p className="text-sm text-[#374151] whitespace-pre-wrap">{t.body}</p>
-                    <p className="text-xs text-[#6B7280]">Status: {t.status}</p>
-                    {t.franchise_reply && <p className="text-sm bg-orange-50 rounded-lg p-2">Reply: {t.franchise_reply}</p>}
-                    <div className="flex flex-col gap-2 pt-2 border-t">
-                        <select
-                            value={editing[t.id]?.status ?? t.status}
-                            onChange={(e) => setEditing((p) => ({ ...p, [t.id]: { reply: p[t.id]?.reply ?? t.franchise_reply ?? "", status: e.target.value } }))}
-                            className="rounded-lg border px-2 py-1 text-sm w-fit"
-                        >
-                            {["OPEN", "IN_PROGRESS", "CLOSED"].map((s) => (
-                                <option key={s} value={s}>
-                                    {s}
-                                </option>
-                            ))}
-                        </select>
-                        <textarea
-                            placeholder="Reply to parent"
-                            value={editing[t.id]?.reply ?? ""}
-                            onChange={(e) => setEditing((p) => ({ ...p, [t.id]: { status: p[t.id]?.status ?? t.status, reply: e.target.value } }))}
-                            className="w-full rounded-lg border px-3 py-2 text-sm"
-                            rows={2}
-                        />
-                        <Button type="button" size="sm" className="w-fit bg-[#FF922B] text-white" onClick={() => void save(t.id)}>
-                            Save reply / status
-                        </Button>
-                    </div>
-                </li>
-            ))}
-            {rows.length === 0 && <p className="text-sm text-[#6B7280]">No open tickets.</p>}
-        </ul>
     );
 }

@@ -55,6 +55,9 @@
 html {
   /* Smooth scrolling for anchor links (Req #3) */
   scroll-behavior: smooth;
+  /* Prevent page-level horizontal scrollbar when a child is 1px too wide */
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {

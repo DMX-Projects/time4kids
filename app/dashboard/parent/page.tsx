@@ -4,7 +4,6 @@ import { CalendarDays, ClipboardList, Sparkles, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ParentDocuments } from "@/components/dashboard/parent/ParentDocuments";
 import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 import { countUpcomingEvents, formatStudentClassCaption } from "@/lib/parent-dashboard-utils";
@@ -14,7 +13,6 @@ export default function ParentDashboardPage() {
     const { achievements, linkedStudents, selectedStudentId, setSelectedStudentId } = useParentData();
     const { grades, events, parentSchoolLoading } = useSchoolData();
 
-    const parentId = user?.id ?? "";
     const myStudents = linkedStudents;
     const myGrades = grades;
     const upcomingEventsCount = countUpcomingEvents(events);
@@ -151,8 +149,6 @@ export default function ParentDashboardPage() {
                     delay={160}
                 />
             </div>
-
-            <ParentDocuments />
 
             {achievements.length > 0 && (
                 <p className="text-xs text-[#6B7280] text-center">
