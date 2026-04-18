@@ -3,6 +3,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders, mediaUrl } from "@/lib/api-client";
+import { normalizeApiList } from "@/lib/parent-school-api";
+import { randomTempPassword } from "@/lib/utils";
 
 export type FranchiseParent = { id: string; name: string; student: string; email: string; phone: string };
 export type FranchiseEvent = { id: string; title: string; date: string; venue: string; notes: string };
@@ -130,12 +132,13 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
         loadParents();
         loadEvents();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.role]);
+    }, [user?.role, user?.id]);
 
     const loadParents = async () => {
         try {
-            const data = await authFetch<ApiParent[]>("/franchises/franchise/parents/");
-            setParents(data.map(mapParent));
+            const data = await authFetch<unknown>("/franchises/franchise/parents/");
+            const list = normalizeApiList(data) as ApiParent[];
+            setParents(list.map(mapParent));
         } catch {
             setParents([]);
         }
@@ -143,8 +146,9 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
 
     const loadEvents = async () => {
         try {
-            const data = await authFetch<ApiEvent[]>("/events/franchise/");
-            setEvents(data.map(mapEvent));
+            const data = await authFetch<unknown>("/events/franchise/");
+            const list = normalizeApiList(data) as ApiEvent[];
+            setEvents(list.map(mapEvent));
         } catch {
             setEvents([]);
         }
@@ -162,7 +166,7 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
     const addParent = async (payload: Omit<FranchiseParent, "id">) => {
         const body = {
             email: payload.email,
-            password: crypto.randomUUID().slice(0, 12),
+            password: randomTempPassword(12),
             full_name: payload.name,
             child_name: payload.student,
             notes: payload.phone,

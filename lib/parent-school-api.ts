@@ -1,7 +1,7 @@
 import type { GradeRecord, SchoolStudent } from "@/components/dashboard/shared/SchoolDataProvider";
+import { safeRandomId } from "@/lib/utils";
 
-const safeId = () =>
-    typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `g-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const safeId = () => safeRandomId();
 
 /** DRF list or array */
 export function normalizeApiList(data: unknown): unknown[] {

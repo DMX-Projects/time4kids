@@ -22,7 +22,7 @@ const toneMap: Record<SummaryCard["tone"], { bg: string; text: string }> = {
 };
 
 export default function AdminDashboardPage() {
-    const { franchises, stats, refreshStats, getFranchiseDetail } = useAdminData();
+    const { franchises, stats, refreshStats, getFranchiseDetail, franchisesLoadError, reloadFranchises } = useAdminData();
     const { enquiries } = useSchoolData();
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export default function AdminDashboardPage() {
     }, []);
 
     const summary: SummaryCard[] = [
-        { title: "Users", value: stats.activeUsers.toLocaleString(), caption: "Active accounts", icon: <Users className="w-5 h-5" />, tone: "blue" },
+        { title: "Users", value: stats.activeUsers.toLocaleString(), caption: "Active accounts (site-wide)", icon: <Users className="w-5 h-5" />, tone: "blue" },
         { title: "Franchises", value: stats.franchises.toLocaleString(), caption: "Operating", icon: <Briefcase className="w-5 h-5" />, tone: "yellow" },
         { title: "Enquiries", value: stats.enquiries.toLocaleString(), caption: "Total received", icon: <ClipboardList className="w-5 h-5" />, tone: "orange" },
         { title: "Parents", value: stats.parents.toLocaleString(), caption: "Linked profiles", icon: <FileText className="w-5 h-5" />, tone: "blue" },
@@ -86,6 +86,22 @@ export default function AdminDashboardPage() {
                         </div>
                         <span className="text-xs text-[#6B7280]">{franchises.length} total</span>
                     </div>
+
+                    {franchisesLoadError && (
+                        <div
+                            className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+                            role="alert"
+                        >
+                            <span>{franchisesLoadError}</span>
+                            <button
+                                type="button"
+                                onClick={() => reloadFranchises()}
+                                className="shrink-0 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
 
                     <div className="overflow-hidden rounded-xl border border-[#E5E7EB]">
                         {franchises.length === 0 ? (

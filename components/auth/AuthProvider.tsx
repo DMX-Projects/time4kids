@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiUrl, jsonHeaders, toApiError } from "@/lib/api-client";
 import { AccessLoading } from "@/components/auth/AccessLoading";
@@ -128,6 +128,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [tokens, setTokens] = useState<Tokens | null>(null);
     const [loading, setLoading] = useState(true);
+    /** Always-current tokens for `authFetch` (avoids stale closure vs. memoized context). */
+    const tokensRef = useRef<Tokens | null>(null);
+    tokensRef.current = tokens;
+    /** Serialize refresh so parallel 401s do not race and invalidate the session. */
+    const refreshInFlightRef = useRef<Promise<Tokens | false> | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -223,21 +228,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const refreshTokensInner = async (current: Tokens | null, userForPersist: User | null): Promise<Tokens | false> => {
-        if (!current?.refresh) return false;
-        const res = await fetch(apiUrl("/auth/refresh/"), {
-            method: "POST",
-            headers: jsonHeaders(),
-            body: JSON.stringify({ refresh: current.refresh }),
-        });
-        if (!res.ok) {
-            logout();
-            return false;
+        if (refreshInFlightRef.current) {
+            return refreshInFlightRef.current;
         }
-        const data = await res.json();
-        const next: Tokens = { access: data.access, refresh: current.refresh };
-        setTokens(next);
-        if (userForPersist) persistSession({ user: userForPersist, tokens: next }, null);
-        return next;
+        const run = (async (): Promise<Tokens | false> => {
+            try {
+                if (!current?.refresh) return false;
+                const res = await fetch(apiUrl("/auth/refresh/"), {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({ refresh: current.refresh }),
+                });
+                if (!res.ok) {
+                    // Only logout when the refresh token is invalid — not on 5xx / network quirks.
+                    if (res.status === 401 || res.status === 403) {
+                        logout();
+                    }
+                    return false;
+                }
+                const data = await res.json();
+                const next: Tokens = { access: data.access, refresh: current.refresh };
+                setTokens(next);
+                if (userForPersist) persistSession({ user: userForPersist, tokens: next }, null);
+                return next;
+            } finally {
+                refreshInFlightRef.current = null;
+            }
+        })();
+        refreshInFlightRef.current = run;
+        return run;
     };
 
     const refreshTokens = async (current: Tokens | null = tokens): Promise<Tokens | false> => {
@@ -292,9 +311,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    /** All protected API calls must go through this — blocked until `access` JWT exists (login or restored session). */
     const authFetch = async <T = unknown>(path: string, init?: RequestInit, retry = true): Promise<T> => {
+        const access = tokensRef.current?.access;
+        if (!access) {
+            const err = new Error("Authentication required. Please sign in.");
+            (err as Error & { code?: string }).code = "AUTH_REQUIRED";
+            throw err;
+        }
         const headers = new Headers(init?.headers || {});
-        if (tokens?.access) headers.set("Authorization", `Bearer ${tokens.access}`);
+        headers.set("Authorization", `Bearer ${access}`);
         const response = await fetch(apiUrl(path), { ...init, headers });
         if (response.status === 401 && retry) {
             const refreshed = await refreshTokens();

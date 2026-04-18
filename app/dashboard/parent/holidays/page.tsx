@@ -8,7 +8,7 @@ export default function HolidayListPage() {
             category="HOLIDAY_LISTS"
             title="Holiday list"
             description="Academic year holiday calendars (PDF) for your state / centre."
-            emptyMessage="No holiday list yet. Your centre can upload one under Parent documents → Holiday lists."
+            emptyMessage="No holiday list uploaded yet. Your centre can add an academic-year holiday PDF when it is ready."
         />
     );
 }

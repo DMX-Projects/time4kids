@@ -83,7 +83,7 @@ export default function Header() {
 
                         {/* Navigation — always visible; scroll horizontally on narrow screens */}
                         <div className="flex min-w-0 flex-1 items-center justify-end pl-2 sm:pl-4">
-                            <div className="max-w-full min-w-0 overflow-x-auto overflow-y-visible [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+                            <div className="max-w-full min-w-0 overflow-x-auto overflow-y-visible [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                                 <AnimatedNavBar />
                             </div>
                         </div>

@@ -119,7 +119,7 @@ export function FranchiseSidebar({ brand, navItems, open, onClose }: SidebarProp
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                prefetch
+                                prefetch={false}
                                 onClick={onClose}
                                 className={`group flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${active
                                     ? "bg-[#FFF4CC] text-[#111827] font-semibold"
@@ -161,7 +161,7 @@ export function ParentSidebar({ brand, navItems, open, onClose }: SidebarProps) 
                 </div>
 
                 {/* Navigation */}
-                <nav className="px-3 py-3 space-y-1 flex-1 min-h-0 overflow-y-auto">
+                <nav className="px-2 py-2 space-y-0.5 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                     {navItems.map((item, idx) => {
                         const active = isDashboardNavActive(pathname, item.href, "/dashboard/parent");
                         return (
@@ -170,14 +170,18 @@ export function ParentSidebar({ brand, navItems, open, onClose }: SidebarProps) 
                                 href={item.href}
                                 prefetch
                                 onClick={onClose}
-                                className={`group flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${active
+                                className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium leading-snug transition-all duration-200 ${active
                                     ? "bg-[#FFF4CC] text-[#111827] font-semibold"
                                     : "text-[#374151] hover:bg-[#F3F4F6]"
                                     }`}
                                 style={{ animationDelay: `${idx * 30}ms` }}
                             >
-                                {item.icon && <span className="w-6 h-6 flex-shrink-0">{item.icon}</span>}
-                                <span>{item.label}</span>
+                                {item.icon && (
+                                    <span className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-[#374151] group-hover:text-[#111827]">
+                                        {item.icon}
+                                    </span>
+                                )}
+                                <span className="min-w-0 flex-1">{item.label}</span>
                             </Link>
                         );
                     })}

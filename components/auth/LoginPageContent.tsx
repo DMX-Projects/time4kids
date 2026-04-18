@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LifeBuoy, Settings } from "lucide-react";
 
 export type LoginPageVariant = "default" | "parent" | "franchise";
 
@@ -225,6 +225,25 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                         </Link>
                                     )}
                                 </div>
+                                {variant === "parent" && (
+                                    <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-3 text-sm text-gray-600">
+                                        <Link
+                                            href="/contact"
+                                            className="inline-flex items-center gap-1.5 font-medium text-gray-700 hover:text-orange-600 transition-colors"
+                                        >
+                                            <LifeBuoy className="w-4 h-4 shrink-0" aria-hidden />
+                                            Support
+                                        </Link>
+                                        <Link
+                                            href="/faq"
+                                            className="inline-flex items-center gap-1.5 font-medium text-gray-700 hover:text-orange-600 transition-colors"
+                                            title="Help and account information"
+                                        >
+                                            <Settings className="w-4 h-4 shrink-0" aria-hidden />
+                                            Settings
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
                         </form>
 

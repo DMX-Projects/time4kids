@@ -76,8 +76,8 @@ export function ParentDocList({
                 <section className="rounded-2xl border border-dashed border-orange-200 bg-orange-50/50 p-6 space-y-3">
                     <p className="text-sm text-orange-900 font-medium">{emptyMessage}</p>
                     <p className="text-xs text-orange-800 leading-relaxed">
-                        This area is working — there are no files from your centre yet. When your preschool uploads a document in the
-                        franchise portal, it will appear here with a download link.
+                        Nothing is wrong with this page — your centre has not uploaded files for this section yet. When they do, they will
+                        show up here only (this screen does not list homework, fees, or other tools).
                     </p>
                 </section>
             )}

@@ -8,7 +8,7 @@ export default function TimetablePage() {
             category="CLASS_TIMETABLE"
             title="Class timetable"
             description="Uploaded class timetables (usually PDF). Your centre publishes these for your batch."
-            emptyMessage="No timetable uploaded yet. Ask your centre to add a PDF under Parent resources → Class timetable."
+            emptyMessage="No timetable uploaded for your centre yet. Ask your school to add a class timetable PDF."
         />
     );
 }

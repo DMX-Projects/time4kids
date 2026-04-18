@@ -8,7 +8,7 @@ export default function PreschoolPoliciesPage() {
             category="PRESCHOOL_POLICIES"
             title="Preschool policies"
             description="Guidelines, rules, and standard operating procedures from your centre (PDFs)."
-            emptyMessage="No policy documents yet. Your centre can upload PDFs under Parent resources → Preschool policies."
+            emptyMessage="No policy PDFs uploaded yet. Your centre will add guidelines here when available."
         />
     );
 }

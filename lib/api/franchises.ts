@@ -1,5 +1,4 @@
-
-import { SERVER_URL } from '../api-client';
+import { apiUrl } from "../api-client";
 
 export interface Franchise {
     id: number;
@@ -57,7 +56,8 @@ export interface Franchise {
 
 export async function getFranchiseBySlug(slug: string): Promise<Franchise | null> {
     try {
-        const url = `${SERVER_URL}/api/franchises/public/${slug}/`;
+        // Use apiUrl() so the same NEXT_PUBLIC_* / INTERNAL_API_URL rules apply as for client fetches.
+        const url = apiUrl(`/franchises/public/${slug}/`);
         console.log(`[SSR] Fetching franchise from: ${url}`);
 
         const res = await fetch(url, {

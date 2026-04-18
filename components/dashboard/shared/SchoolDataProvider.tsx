@@ -122,6 +122,13 @@ export type AddEnquiryInput = {
     franchiseSlug?: string;
 };
 
+/** Django `Enquiry.enquiry_type` uses uppercase enum values (not lowercase). */
+const API_ENQUIRY_TYPE: Record<EnquiryType, string> = {
+    admission: "ADMISSION",
+    franchise: "FRANCHISE",
+    contact: "CONTACT",
+};
+
 export type SchoolDataContextValue = {
     parents: SchoolParent[];
     students: SchoolStudent[];
@@ -283,8 +290,16 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
                 loadFranchiseStudentsAndGrades(),
                 loadAttendance(),
             ]);
+        } else if (user.role === "admin") {
+            await loadAdminEnquiries();
         }
     };
+
+    useEffect(() => {
+        if (!user || user.role !== "franchise") return;
+        void refreshAll();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id, user?.role]);
 
     const loadParentEvents = async () => {
         try {
@@ -341,6 +356,17 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             setEnquiries(items.map(mapEnquiry));
         } catch (err) {
             console.error("Failed to load franchise enquiries", err);
+        }
+    };
+
+    const loadAdminEnquiries = async () => {
+        try {
+            const data = await authFetch<any>("/enquiries/admin/all/");
+            const items = Array.isArray(data) ? data : data.results || [];
+            setEnquiries(items.map(mapEnquiry));
+        } catch (err) {
+            console.error("Failed to load admin enquiries", err);
+            setEnquiries([]);
         }
     };
 
@@ -488,7 +514,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
 
     const addEnquiry = async (payload: AddEnquiryInput) => {
         const body: Record<string, string> = {
-            enquiry_type: payload.type,
+            enquiry_type: API_ENQUIRY_TYPE[payload.type],
             name: payload.name,
             email: payload.email,
             phone: payload.phone ?? "",
@@ -506,13 +532,21 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         if (!res.ok) throw await toApiError(res);
     };
 
-    const resolveEnquiry = async (id: string) => {
-        await authFetch(`/enquiries/admin/${id}/`, {
+    const patchEnquiryStatusRemote = async (id: string, status: string) => {
+        const path =
+            user?.role === "franchise" ? `/enquiries/franchise/${id}/` : `/enquiries/admin/${id}/`;
+        await authFetch(path, {
             method: "PATCH",
             headers: jsonHeaders(),
-            body: JSON.stringify({ status: "closed" }),
+            body: JSON.stringify({ status }),
         });
-        setEnquiries((prev) => prev.map((e) => (e.id === id ? { ...e, status: "closed" } : e)));
+        setEnquiries((prev) =>
+            prev.map((e) => (e.id === id ? { ...e, status: status as Enquiry["status"] } : e)),
+        );
+    };
+
+    const resolveEnquiry = async (id: string) => {
+        await patchEnquiryStatusRemote(id, "closed");
     };
 
     // Attendance
@@ -646,8 +680,15 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     const updateEnquiryStatus = async (id: string, status: string) => {
-        await resolveEnquiry(id);
+        await patchEnquiryStatusRemote(id, status);
     };
+
+    useEffect(() => {
+        if (user?.role === "admin") {
+            void loadAdminEnquiries();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id, user?.role]);
 
     const value = useMemo<SchoolDataContextValue>(
         () => ({
