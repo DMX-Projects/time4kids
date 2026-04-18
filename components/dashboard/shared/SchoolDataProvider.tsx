@@ -62,6 +62,17 @@ export type EventMedia = {
 
 type AddEventMediaPayload = Omit<EventMedia, "id" | "url"> & { url?: string; file?: File };
 
+/** Used by franchise UIs; file upload and optional external URL (local gallery row). */
+export type AddEventMediaInput =
+    | AddEventMediaPayload
+    | {
+          title: string;
+          url: string;
+          type: "image" | "video";
+          eventId: string;
+          description?: string;
+      };
+
 export type EnquiryType = "admission" | "franchise" | "contact";
 
 export type Enquiry = {
@@ -99,6 +110,18 @@ export type AttendanceRecord = {
     note?: string;
 };
 
+/** Public enquiry form submission (no auth); maps to POST /api/enquiries/submit/ */
+export type AddEnquiryInput = {
+    type: EnquiryType;
+    name: string;
+    email: string;
+    phone?: string;
+    city?: string;
+    childAge?: string;
+    message: string;
+    franchiseSlug?: string;
+};
+
 export type SchoolDataContextValue = {
     parents: SchoolParent[];
     students: SchoolStudent[];
@@ -113,7 +136,19 @@ export type SchoolDataContextValue = {
     addStudent: (s: Omit<SchoolStudent, "id">) => Promise<SchoolStudent>;
     addGradesBulk: (rows: BulkGradeRow[]) => Promise<{ inserted: number; skipped: number }>;
     addEvent: (e: Omit<EventRecord, "id">) => Promise<void>;
+    updateEvent: (id: string, e: Omit<EventRecord, "id">) => Promise<void>;
+    deleteEvent: (id: string) => Promise<void>;
     addMedia: (m: AddEventMediaPayload) => Promise<void>;
+    addEventMedia: (m: AddEventMediaInput) => Promise<void>;
+    addEnquiry: (payload: AddEnquiryInput) => Promise<void>;
+    addOrUpdateStudent: (data: {
+        id?: string;
+        name: string;
+        rollNumber: string;
+        grade: string;
+        section: string;
+        parentId: string;
+    }) => Promise<void>;
     resolveEnquiry: (id: string) => Promise<void>;
 
     // Franchise Specific CRUD
@@ -388,6 +423,28 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         setEvents((prev) => [mapEvent(created), ...prev]);
     };
 
+    const updateEvent = async (id: string, payload: Omit<EventRecord, "id">) => {
+        const body = {
+            title: payload.title,
+            description: payload.notes || "",
+            start_date: payload.date,
+            end_date: payload.date,
+            location: payload.venue,
+        };
+        const updated = await authFetch<ApiEvent>(`/events/franchise/${id}/`, {
+            method: "PATCH",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        setEvents((prev) => prev.map((e) => (e.id === id ? mapEvent(updated) : e)));
+    };
+
+    const deleteEvent = async (id: string) => {
+        await authFetch(`/events/franchise/${id}/`, { method: "DELETE" });
+        setEvents((prev) => prev.filter((e) => e.id !== id));
+        setEventMedia((prev) => prev.filter((m) => m.eventId !== id));
+    };
+
     const addMedia = async (payload: AddEventMediaPayload) => {
         const formData = new FormData();
         if (payload.file) formData.append("file", payload.file);
@@ -399,6 +456,54 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             body: formData,
         });
         setEventMedia((prev) => [mapMedia(saved, payload.eventId), ...prev]);
+    };
+
+    const addEventMedia = async (payload: AddEventMediaInput) => {
+        if ("file" in payload && payload.file) {
+            return addMedia(payload);
+        }
+        const p = payload as {
+            title: string;
+            url: string;
+            type: "image" | "video";
+            eventId: string;
+            description?: string;
+        };
+        if (p.url?.trim()) {
+            setEventMedia((prev) => [
+                {
+                    id: `ext-${Date.now()}`,
+                    type: p.type,
+                    title: p.title || "Link",
+                    url: p.url,
+                    description: p.description,
+                    eventId: p.eventId,
+                },
+                ...prev,
+            ]);
+            return;
+        }
+        throw new Error("Upload a file or provide a media URL");
+    };
+
+    const addEnquiry = async (payload: AddEnquiryInput) => {
+        const body: Record<string, string> = {
+            enquiry_type: payload.type,
+            name: payload.name,
+            email: payload.email,
+            phone: payload.phone ?? "",
+            message: payload.message,
+        };
+        if (payload.city) body.city = payload.city;
+        if (payload.childAge) body.child_age = payload.childAge;
+        if (payload.franchiseSlug) body.franchise_slug = payload.franchiseSlug;
+
+        const res = await fetch(apiUrl("/enquiries/submit/"), {
+            method: "POST",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        if (!res.ok) throw await toApiError(res);
     };
 
     const resolveEnquiry = async (id: string) => {
@@ -511,6 +616,35 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         await loadFranchiseStudentsAndGrades();
     };
 
+    const addOrUpdateStudent = async (data: {
+        id?: string;
+        name: string;
+        rollNumber: string;
+        grade: string;
+        section: string;
+        parentId: string;
+    }) => {
+        const [firstName, ...rest] = data.name.trim().split(/\s+/);
+        const lastName = rest.join(" ") || "-";
+        if (data.id) {
+            await franchiseUpdateStudent(data.id, {
+                first_name: firstName,
+                last_name: lastName,
+                roll_number: data.rollNumber,
+                class_name: data.grade,
+                parent: Number(data.parentId),
+            });
+        } else {
+            await franchiseAddStudent({
+                parent: data.parentId,
+                first_name: firstName,
+                last_name: lastName,
+                roll_number: data.rollNumber,
+                class_name: data.grade,
+            });
+        }
+    };
+
     const updateEnquiryStatus = async (id: string, status: string) => {
         await resolveEnquiry(id);
     };
@@ -529,7 +663,12 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             addStudent,
             addGradesBulk,
             addEvent,
+            updateEvent,
+            deleteEvent,
             addMedia,
+            addEventMedia,
+            addEnquiry,
+            addOrUpdateStudent,
             resolveEnquiry,
             franchiseLoadParents,
             franchiseAddStudent,

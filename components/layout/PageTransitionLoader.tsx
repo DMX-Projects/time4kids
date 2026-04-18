@@ -12,10 +12,6 @@ import MiniLoader from '@/components/ui/MiniLoader';
 const LOADER_ENABLED = true; // Enabled with fixed timeout
 
 export default function PageTransitionLoader() {
-    if (!LOADER_ENABLED) {
-        return null;
-    }
-
     const [isLoading, setIsLoading] = useState(false);
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -85,7 +81,7 @@ export default function PageTransitionLoader() {
         };
     }, []);
 
-    if (!isLoading) return null;
+    if (!LOADER_ENABLED || !isLoading) return null;
 
     return <MiniLoader />;
 }
