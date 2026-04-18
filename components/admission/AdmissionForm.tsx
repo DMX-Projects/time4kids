@@ -49,8 +49,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
                 city: data.city,
                 childAge: data.childAge,
                 message: `Child: ${data.childName}, Age: ${data.childAge}, Program: ${data.program}, City: ${data.city}${data.message ? ' | Note: ' + data.message : ''}`,
-                // @ts-ignore
-                franchiseSlug: franchiseSlug
+                franchiseSlug: franchiseSlug,
             });
             setIsSubmitted(true);
             reset();

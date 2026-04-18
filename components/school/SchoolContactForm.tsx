@@ -36,8 +36,7 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
                 phone: data.phone,
                 city: city || "",
                 message: data.message,
-                // @ts-ignore - passing extra field that is handled by the provider
-                franchiseSlug: franchiseSlug
+                franchiseSlug: franchiseSlug,
             });
             setIsSubmitted(true);
             reset();
