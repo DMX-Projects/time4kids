@@ -199,11 +199,23 @@ export function normalizeProgramsPreviewPrograms(
 
 /** Merge API payload over defaults so missing keys still work. */
 export function mergeHomePageData(raw: Partial<HomePageData> | null | undefined): HomePageData {
-    if (!raw || typeof raw !== "object") return DEFAULT_HOME_PAGE_DATA;
-    const merged = deepMerge(DEFAULT_HOME_PAGE_DATA, raw as Partial<HomePageData>);
-    merged.programs_preview = {
-        ...merged.programs_preview,
-        programs: normalizeProgramsPreviewPrograms(merged.programs_preview.programs),
-    };
-    return merged;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        return DEFAULT_HOME_PAGE_DATA;
+    }
+    try {
+        const merged = deepMerge(DEFAULT_HOME_PAGE_DATA, raw as Partial<HomePageData>);
+        const basePp = DEFAULT_HOME_PAGE_DATA.programs_preview;
+        const rawPp = merged.programs_preview;
+        const pp =
+            rawPp && typeof rawPp === "object" && !Array.isArray(rawPp) ? rawPp : basePp;
+        const programs = Array.isArray(pp.programs) ? pp.programs : basePp.programs;
+        merged.programs_preview = {
+            ...basePp,
+            ...pp,
+            programs: normalizeProgramsPreviewPrograms(programs),
+        };
+        return merged;
+    } catch {
+        return DEFAULT_HOME_PAGE_DATA;
+    }
 }
