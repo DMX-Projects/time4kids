@@ -10,7 +10,8 @@ const getBaseUrl = () => {
         return process.env.NEXT_PUBLIC_API_URL;
     }
 
-    const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
+    const configuredPort = process.env.NEXT_PUBLIC_BACKEND_PORT?.trim();
+    const port = configuredPort || '8000';
 
     // For server-side rendering
     if (typeof window === 'undefined') {
@@ -36,7 +37,14 @@ const getBaseUrl = () => {
         return process.env.NEXT_PUBLIC_BACKEND_DEV_TUNNEL;
     }
 
-    // Fallback: use the same host with backend port
+    // Production-safe fallback:
+    // if no explicit backend port is configured, use same-origin so domain-based deployments
+    // (often behind reverse proxy) do not break by forcing :8000.
+    if (!configuredPort) {
+        return `${protocol}//${window.location.host}`;
+    }
+
+    // Explicitly configured backend port (useful in custom self-hosted setups)
     return `${protocol}//${hostname}:${port}`;
 };
 
