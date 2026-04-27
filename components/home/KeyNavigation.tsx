@@ -1,6 +1,7 @@
 'use client';
 
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
+import Image from 'next/image';
 
 export default function KeyNavigation() {
     const home = useHomePageContent();
@@ -14,7 +15,9 @@ export default function KeyNavigation() {
                         <li key={`${item.href}-${index}`} className={item.nav_class || 'nav-link1'}>
                             <figure>
                                 <span>
-                                    <img src={item.icon} alt={item.alt} />
+                                    <span className="relative block w-full h-full">
+                                        <Image src={item.icon} alt={item.alt} fill className="object-contain" unoptimized />
+                                    </span>
                                 </span>
                             </figure>
                             <a

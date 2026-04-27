@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { SchoolStudent } from "@/components/dashboard/shared/SchoolDataProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
@@ -113,7 +113,10 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
     const [parentProfileLoading, setParentProfileLoading] = useState(true);
 
     const parentId = user?.id ?? "";
-    const linkedStudents = user?.role === "parent" ? students : [];
+    const linkedStudents = useMemo(
+        () => (user?.role === "parent" ? students : []),
+        [user?.role, students],
+    );
 
     useEffect(() => {
         if (user?.role !== "parent" || parentSchoolLoading) return;

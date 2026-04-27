@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiUrl, jsonHeaders, toApiError } from "@/lib/api-client";
 import { AccessLoading } from "@/components/auth/AccessLoading";
@@ -40,6 +40,7 @@ const LEGACY_STORAGE_KEY = "tk-auth-session";
 const LAST_ROLE_KEY = "tk-auth-last-role";
 
 const storageKeyForRole = (role: Role) => `tk-auth-${role}`;
+const ALL_ROLE_KEYS: string[] = ["admin", "franchise", "parent"].map((r) => storageKeyForRole(r as Role));
 
 export const normalizeRole = (role?: string | null): Role => {
     const mapped = String(role ?? "")
@@ -161,6 +162,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         };
         load();
+        // Session hydration intentionally runs once on mount.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const hydrateUser = async (existingTokens: Tokens | null, existingUser?: User | null) => {
@@ -224,6 +227,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         persistSession(null, prev);
         if (typeof window !== "undefined") {
             localStorage.removeItem(LAST_ROLE_KEY);
+            localStorage.removeItem(LEGACY_STORAGE_KEY);
+            // Ensure full sign-out on shared devices and avoid role re-hydration loops.
+            for (const key of ALL_ROLE_KEYS) localStorage.removeItem(key);
         }
     };
 
@@ -340,10 +346,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return (await response.json().catch(() => null)) as T;
     };
 
-    const value = useMemo(
-        () => ({ user, tokens, loading, login, logout, refreshTokens, refreshUser, authFetch }),
-        [user, tokens, loading],
-    );
+    const value: AuthContextValue = { user, tokens, loading, login, logout, refreshTokens, refreshUser, authFetch };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

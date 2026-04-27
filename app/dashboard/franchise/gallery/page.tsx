@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { Plus, Calendar, MapPin, Edit, Trash2, Image as ImageIcon, Loader } from 'lucide-react';
+import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { useForm } from 'react-hook-form';
@@ -35,7 +36,7 @@ export default function ManageGallery() {
 
     const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
 
-    const fetchEvents = async () => {
+    const fetchEvents = useCallback(async () => {
         if (!token) return;
         try {
             setLoading(true);
@@ -54,11 +55,11 @@ export default function ManageGallery() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast, token]);
 
     useEffect(() => {
         fetchEvents();
-    }, [token]);
+    }, [fetchEvents]);
 
     const handleOpenModal = (event?: Event) => {
         if (event) {
@@ -201,10 +202,12 @@ export default function ManageGallery() {
                                 onClick={() => setSelectedEventForMedia(event)}
                             >
                                 {event.media && event.media.length > 0 ? (
-                                    <img
+                                    <Image
                                         src={mediaUrl(event.media[0].file)}
                                         alt={event.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        fill
+                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                        unoptimized
                                     />
                                 ) : (
                                     <div className="flex items-center justify-center h-full">

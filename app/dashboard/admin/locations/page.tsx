@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, X, Building2, MapPin } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
@@ -74,7 +74,7 @@ export default function FranchiseLocationsPage() {
 
     const router = useRouter();
 
-    const fetchLocations = async () => {
+    const fetchLocations = useCallback(async () => {
         try {
             setLoading(true);
             const data = await authFetch<any>('/franchises/admin/franchise-locations/');
@@ -87,11 +87,11 @@ export default function FranchiseLocationsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [authFetch]);
 
     useEffect(() => {
         fetchLocations();
-    }, []);
+    }, [fetchLocations]);
 
 
 
@@ -193,7 +193,7 @@ export default function FranchiseLocationsPage() {
                         <div>
                             <h3 className="text-sm font-semibold text-blue-800 mb-1">💡 How It Works</h3>
                             <p className="text-sm text-blue-700">
-                                Cities listed here are shown on the website. Adding a location here makes it visible in "Our Presence" and "Locations" pages.
+                                Cities listed here are shown on the website. Adding a location here makes it visible in &quot;Our Presence&quot; and &quot;Locations&quot; pages.
                             </p>
                         </div>
                     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Image from "next/image";
 import { Images } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
@@ -34,7 +35,9 @@ export default function EventGalleryPage() {
                                 <video className="w-full h-40 object-contain" src={ph.url} controls playsInline preload="metadata" aria-label={ph.title || "Event video"} />
                             </div>
                         ) : ph.url ? (
-                            <img src={ph.url} alt={ph.title} className="h-40 w-full object-cover" />
+                            <div className="relative h-40 w-full">
+                                <Image src={ph.url} alt={ph.title} fill className="object-cover" unoptimized />
+                            </div>
                         ) : (
                             <div className="h-40 w-full bg-orange-50" />
                         )}

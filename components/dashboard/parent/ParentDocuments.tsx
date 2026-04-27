@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Download, Eye, FileText, Music, Play, Sparkles } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { mediaUrl } from "@/lib/api-client";
@@ -11,6 +11,17 @@ type ParentDoc = {
     title: string;
     display_title?: string;
     file: string;
+};
+
+const normalizeDocs = (data: unknown): ParentDoc[] => {
+    if (Array.isArray(data)) return data as ParentDoc[];
+    if (data && typeof data === "object") {
+        const obj = data as { results?: unknown; data?: unknown; documents?: unknown };
+        if (Array.isArray(obj.results)) return obj.results as ParentDoc[];
+        if (Array.isArray(obj.data)) return obj.data as ParentDoc[];
+        if (Array.isArray(obj.documents)) return obj.documents as ParentDoc[];
+    }
+    return [];
 };
 
 const categoryMeta: Record<string, { title: string; icon: JSX.Element; accent: { strip: string; text: string } }> = {
@@ -30,19 +41,20 @@ export function ParentDocuments() {
     const [docs, setDocs] = useState<ParentDoc[]>([]);
     const { authFetch } = useAuth();
 
+    const load = useCallback(async () => {
+        try {
+            const data = await authFetch<unknown>("/documents/parent/documents/");
+            setDocs(normalizeDocs(data));
+        } catch {
+            setDocs([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [authFetch]);
+
     useEffect(() => {
-        const load = async () => {
-            try {
-                const data = await authFetch<ParentDoc[]>("/documents/parent/documents/");
-                setDocs(Array.isArray(data) ? data : []);
-            } catch {
-                setDocs([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        load();
-    }, []);
+        void load();
+    }, [load]);
 
     const categories = useMemo(() => {
         return Object.entries(categoryMeta).map(([key, meta]) => ({

@@ -48,7 +48,7 @@ export default function AnimatedNavBar({ mobile = false }: { mobile?: boolean })
                                 href={item.path}
                                 onClick={() => setActiveTab(item.path)}
                                 className={`relative ${isLogin
-                                    ? 'inline-flex items-center p-0 ml-2 shrink-0 sm:ml-3'
+                                    ? 'inline-flex items-center p-0 shrink-0'
                                     : mobile
                                         ? 'block py-3 text-lg w-full text-center font-bold'
                                         : 'block text-sm tracking-wide uppercase font-bold'

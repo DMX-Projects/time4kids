@@ -205,7 +205,7 @@ function LocateCentreContent() {
         };
 
         fetchCentres();
-    }, [selectedState, selectedCity, debouncedSearchTerm]);
+    }, [selectedState, selectedCity, debouncedSearchTerm, searchTerm]);
 
     // Handle URL parameters  
     useEffect(() => {

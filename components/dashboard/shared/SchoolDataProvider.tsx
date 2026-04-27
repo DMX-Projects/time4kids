@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { apiUrl, jsonHeaders, mediaUrl, toApiError } from "@/lib/api-client";
 import {
@@ -8,7 +8,6 @@ import {
     mapApiStudent,
     normalizeApiList,
     normalizeStudentList,
-    parseParentDashboard,
 } from "@/lib/parent-school-api";
 
 export type SchoolParent = {
@@ -296,15 +295,16 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     useEffect(() => {
-        if (!user || user.role !== "franchise") return;
+        if (!user) return;
         void refreshAll();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.id, user?.role]);
 
     const loadParentEvents = async () => {
         try {
-            const data = await authFetch<ApiEvent[]>("/events/parent/");
-            ingestEvents(data);
+            const data = await authFetch<unknown>("/events/parent/");
+            const list = normalizeApiList(data) as ApiEvent[];
+            ingestEvents(list);
         } catch {
             setEvents([]);
         }
@@ -342,8 +342,9 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
 
     const loadFranchiseEvents = async () => {
         try {
-            const data = await authFetch<ApiEvent[]>("/events/franchise/");
-            ingestEvents(data);
+            const data = await authFetch<unknown>("/events/franchise/");
+            const list = normalizeApiList(data) as ApiEvent[];
+            ingestEvents(list);
         } catch {
             setEvents([]);
         }
@@ -683,49 +684,39 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         await patchEnquiryStatusRemote(id, status);
     };
 
-    useEffect(() => {
-        if (user?.role === "admin") {
-            void loadAdminEnquiries();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id, user?.role]);
-
-    const value = useMemo<SchoolDataContextValue>(
-        () => ({
-            parents,
-            students,
-            grades,
-            events,
-            eventMedia,
-            enquiries,
-            attendance,
-            refreshAll,
-            addParent,
-            addStudent,
-            addGradesBulk,
-            addEvent,
-            updateEvent,
-            deleteEvent,
-            addMedia,
-            addEventMedia,
-            addEnquiry,
-            addOrUpdateStudent,
-            resolveEnquiry,
-            franchiseLoadParents,
-            franchiseAddStudent,
-            franchiseUpdateStudent,
-            franchiseDeleteStudent,
-            franchiseAddGrade,
-            franchiseUpdateGrade,
-            franchiseDeleteGrade,
-            loadAttendance,
-            markAttendance,
-            locations,
-            updateEnquiryStatus,
-            parentSchoolLoading,
-        }),
-        [parents, students, grades, events, eventMedia, enquiries, attendance, locations, parentSchoolLoading],
-    );
+    const value: SchoolDataContextValue = {
+        parents,
+        students,
+        grades,
+        events,
+        eventMedia,
+        enquiries,
+        attendance,
+        refreshAll,
+        addParent,
+        addStudent,
+        addGradesBulk,
+        addEvent,
+        updateEvent,
+        deleteEvent,
+        addMedia,
+        addEventMedia,
+        addEnquiry,
+        addOrUpdateStudent,
+        resolveEnquiry,
+        franchiseLoadParents,
+        franchiseAddStudent,
+        franchiseUpdateStudent,
+        franchiseDeleteStudent,
+        franchiseAddGrade,
+        franchiseUpdateGrade,
+        franchiseDeleteGrade,
+        loadAttendance,
+        markAttendance,
+        locations,
+        updateEnquiryStatus,
+        parentSchoolLoading,
+    };
 
     return <SchoolDataContext.Provider value={value}>{children}</SchoolDataContext.Provider>;
 }

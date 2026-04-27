@@ -9,6 +9,7 @@ import { CheckCircle, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 import { useToast } from '@/components/ui/Toast';
+import { trackLeadSubmission } from '@/lib/tracking';
 
 interface AdmissionFormData {
     parentName: string;
@@ -53,6 +54,11 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
             });
             setIsSubmitted(true);
             reset();
+            trackLeadSubmission({
+                formType: "admission",
+                location: window.location.href,
+                franchiseSlug,
+            });
             showToast("Admission enquiry submitted successfully!");
             setTimeout(() => setIsSubmitted(false), 5000);
         } catch (err: any) {
@@ -104,7 +110,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
 
                             <div className="space-y-2">
                                 <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1">
-                                    Child's Age <span className="text-red-500">*</span>
+                                    Child&apos;s Age <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     {...register('childAge', { required: true })}
@@ -217,7 +223,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
                         className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white border-4 border-green-400 rounded-full px-10 py-5 shadow-2xl z-[100] flex items-center gap-4"
                     >
                         <CheckCircle className="text-green-500 w-8 h-8" />
-                        <span className="font-fredoka font-bold text-xl text-[#2D2D52]">Thank you! We'll contact you soon. ✨</span>
+                        <span className="font-fredoka font-bold text-xl text-[#2D2D52]">Thank you! We&apos;ll contact you soon. ✨</span>
                     </motion.div>
                 )}
             </AnimatePresence>

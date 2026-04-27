@@ -35,7 +35,7 @@ export default function SopPage() {
         };
 
         load();
-    }, []);
+    }, [authFetch, showToast]);
 
     return (
         <div className="space-y-5">

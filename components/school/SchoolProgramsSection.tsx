@@ -133,7 +133,7 @@ const SchoolProgramsSection = () => {
                     <motion.p
                         className="text-[#6B7280] font-medium max-w-2xl mx-auto text-lg"
                     >
-                        Curated programs for every stage of your child's early years.
+                        Curated programs for every stage of your child&apos;s early years.
                     </motion.p>
 
                     <div className="mt-5">

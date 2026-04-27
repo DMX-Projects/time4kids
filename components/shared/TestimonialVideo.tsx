@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
+import Image from 'next/image';
 
 interface TestimonialVideoProps {
     videoUrl?: string;
@@ -45,10 +46,12 @@ const TestimonialVideo: React.FC<TestimonialVideoProps> = ({
                 ) : (
                     <>
                         {thumbnailUrl ? (
-                            <img
+                            <Image
                                 src={thumbnailUrl}
                                 alt={title}
-                                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                                fill
+                                className="object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                                unoptimized
                             />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">

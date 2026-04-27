@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { apiUrl } from "@/lib/api-client";
 
 interface Update {
     id: number;
@@ -24,7 +26,7 @@ export default function SchoolUpdatesSection({ franchiseSlug }: SchoolUpdatesSec
     useEffect(() => {
         const fetchUpdates = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/updates/?franchise_slug=${franchiseSlug}`);
+                const res = await fetch(apiUrl(`/updates/?franchise_slug=${encodeURIComponent(franchiseSlug)}`));
                 if (res.ok) {
                     const data = await res.json();
                     const updatesList = Array.isArray(data) ? data : data?.results || [];
@@ -100,14 +102,16 @@ export default function SchoolUpdatesSection({ franchiseSlug }: SchoolUpdatesSec
                     {/* Left Side: Pencil with Today's Update(s) Text */}
                     <div className="w-full lg:w-[30%] relative flex justify-center lg:justify-start">
                         <div className="relative w-full max-w-[380px] aspect-[3/1]">
-                            <img
+                            <Image
                                 src="/pencil.png"
                                 alt="Pencil Icon"
+                                width={760}
+                                height={250}
                                 className="w-full h-full object-contain"
                             />
                             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
                                 <h4 className="text-[#0F3B67] text-xl md:text-2xl font-bold font-handwriting pr-50 md:pr-50">
-                                    Today's Update(s)
+                                    Today&apos;s Update(s)
                                 </h4>
                             </div>
                         </div>
@@ -121,9 +125,11 @@ export default function SchoolUpdatesSection({ franchiseSlug }: SchoolUpdatesSec
                             onMouseEnter={() => setIsPaused(true)}
                             onMouseLeave={() => setIsPaused(false)}
                         >
-                            <img
+                            <Image
                                 src="/notice board.png"
                                 alt="Notice Board"
+                                width={1400}
+                                height={900}
                                 className="w-full h-auto"
                             />
 
@@ -160,7 +166,7 @@ export default function SchoolUpdatesSection({ franchiseSlug }: SchoolUpdatesSec
                                                     className="w-full group-hover:opacity-0 transition-opacity duration-300"
                                                 >
                                                     <h3 className="text-base md:text-xl lg:text-2xl font-handwriting leading-relaxed font-bold text-[#4A3728] tracking-wide line-clamp-4 cursor-help whitespace-pre-wrap">
-                                                        "{updates[currentIndex].text}"
+                                                        &quot;{updates[currentIndex].text}&quot;
                                                     </h3>
                                                 </motion.div>
 
@@ -175,7 +181,7 @@ export default function SchoolUpdatesSection({ franchiseSlug }: SchoolUpdatesSec
 
                                                         <div className="w-full flex-1 overflow-y-auto custom-scrollbar pr-2">
                                                             <p className="text-[#4A3728] text-base md:text-xl font-handwriting font-bold leading-relaxed whitespace-pre-wrap">
-                                                                "{updates[currentIndex].text}"
+                                                                &quot;{updates[currentIndex].text}&quot;
                                                             </p>
                                                         </div>
                                                     </div>

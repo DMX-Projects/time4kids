@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
@@ -39,7 +39,7 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
     const [mediaType, setMediaType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
     const [caption, setCaption] = useState('');
 
-    const fetchMedia = async () => {
+    const fetchMedia = useCallback(async () => {
         if (!token) return;
         try {
             setLoading(true);
@@ -58,11 +58,11 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
         } finally {
             setLoading(false);
         }
-    };
+    }, [event.id, showToast, token]);
 
     useEffect(() => {
         fetchMedia();
-    }, [event.id, token]);
+    }, [fetchMedia]);
 
     const handleUpload = async () => {
         if (!token || !selectedFiles || selectedFiles.length === 0) return;

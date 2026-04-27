@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Image, Video } from "lucide-react";
+import { Plus, Image as ImageIcon, Video } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 
@@ -77,7 +77,7 @@ export default function AddEventsPage() {
                 id="add-media"
                 title="Add Event Media"
                 description="Upload image or video links for events. Parents will view these in their gallery."
-                icon={mediaForm.type === "video" ? <Video className="w-5 h-5 text-orange-500" /> : <Image className="w-5 h-5 text-orange-500" />}
+                icon={mediaForm.type === "video" ? <Video className="w-5 h-5 text-orange-500" /> : <ImageIcon className="w-5 h-5 text-orange-500" />}
             >
                 {mediaError && <p className="text-sm text-red-600">{mediaError}</p>}
                 <form className="space-y-3" onSubmit={handleMediaSubmit}>

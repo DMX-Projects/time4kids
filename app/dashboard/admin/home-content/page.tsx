@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders } from "@/lib/api-client";
@@ -55,7 +55,7 @@ export default function AdminHomeContentPage() {
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -67,11 +67,11 @@ export default function AdminHomeContentPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [authFetch]);
 
     useEffect(() => {
         load();
-    }, []);
+    }, [load]);
 
     const save = async () => {
         setMessage(null);

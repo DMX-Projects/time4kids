@@ -70,7 +70,12 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
     const handleConfirmLogout = () => {
         setShowLogoutConfirm(false);
         logout();
-        router.replace("/login");
+        // Hard redirect prevents client-side transition stalls in production.
+        if (typeof window !== "undefined") {
+            window.location.replace("/login/");
+            return;
+        }
+        router.replace("/login/");
     };
 
     const handleCancelLogout = () => setShowLogoutConfirm(false);

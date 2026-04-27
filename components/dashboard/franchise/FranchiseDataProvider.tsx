@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders, mediaUrl } from "@/lib/api-client";
 import { normalizeApiList } from "@/lib/parent-school-api";
@@ -256,21 +256,18 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
         setProfile(mapProfile(updated));
     };
 
-    const value = useMemo(
-        () => ({
-            parents,
-            addParent,
-            updateParent,
-            deleteParent,
-            events,
-            addEvent,
-            updateEvent,
-            deleteEvent,
-            profile,
-            updateProfile,
-        }),
-        [parents, events, profile],
-    );
+    const value: FranchiseDataContextValue = {
+        parents,
+        addParent,
+        updateParent,
+        deleteParent,
+        events,
+        addEvent,
+        updateEvent,
+        deleteEvent,
+        profile,
+        updateProfile,
+    };
 
     return <FranchiseDataContext.Provider value={value}>{children}</FranchiseDataContext.Provider>;
 }

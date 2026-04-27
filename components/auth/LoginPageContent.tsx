@@ -57,15 +57,16 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
         setSuccess(null);
         setSubmitting(true);
         try {
-            const user = await login(identifier, password, { authPath });
+            const user = await login(identifier.trim(), password, { authPath });
             setSubmitting(false);
             setSuccess("✅ Login successful!");
             setTimeout(() => {
                 const destination = next || `/dashboard/${user.role}`;
                 router.replace(destination);
             }, 1500);
-        } catch {
-            setError("❌ Invalid credentials");
+        } catch (err: any) {
+            const message = String(err?.message || "").trim();
+            setError(message ? `❌ ${message}` : "❌ Invalid credentials");
             setSubmitting(false);
         }
     };
@@ -146,18 +147,22 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                         </svg>
                                     </div>
                                     <input
+                                        key={showPassword ? "password-text" : "password-mask"}
                                         type={showPassword ? "text" : "password"}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="w-full pl-12 pr-12 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 bg-gray-50 focus:bg-white"
                                         placeholder="Enter your password"
+                                        autoComplete="current-password"
                                         required
                                     />
                                     <button
                                         type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => setShowPassword((prev) => !prev)}
                                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors duration-200"
                                         aria-label={showPassword ? "Hide password" : "Show password"}
+                                        aria-pressed={showPassword}
                                     >
                                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                     </button>
@@ -208,23 +213,15 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                 >
                                     Forgot your password?
                                 </Link>
-                                <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-gray-500 pt-2 border-t border-gray-100">
-                                    {variant !== "default" && (
-                                        <Link href="/login/" className="text-orange-600 hover:underline font-medium">
-                                            Universal login
-                                        </Link>
-                                    )}
-                                    {variant !== "parent" && (
-                                        <Link href="/login/parents/" className="text-orange-600 hover:underline font-medium">
-                                            Parent login
-                                        </Link>
-                                    )}
-                                    {variant !== "franchise" && (
-                                        <Link href="/login/franchise/" className="text-orange-600 hover:underline font-medium">
-                                            Franchise login
-                                        </Link>
-                                    )}
+                                <div>
+                                    <Link
+                                        href="/login/register"
+                                        className="text-sm text-orange-600 hover:text-orange-700 font-medium hover:underline transition-colors duration-200"
+                                    >
+                                        New user? Register here
+                                    </Link>
                                 </div>
+                                <div className="pt-2 border-t border-gray-100" />
                                 {variant === "parent" && (
                                     <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-3 text-sm text-gray-600">
                                         <Link

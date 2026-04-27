@@ -103,7 +103,7 @@ const SchoolFooter = ({ homeUrl, facebookUrl, instagramUrl, twitterUrl, contactP
                                 </div>
                             </Link>
                             <p className="text-gray-700 text-lg leading-relaxed font-bold">
-                                Empowering young minds with broadly based, age-appropriate, and wholesome education. We care for your child's future.
+                                Empowering young minds with broadly based, age-appropriate, and wholesome education. We care for your child&apos;s future.
                             </p>
                             {hasSocialMedia && (
                                 <div className="flex gap-4 pt-4">

@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { UserCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
@@ -93,7 +94,13 @@ export default function ParentProfilePage() {
                         <label className="text-xs font-medium text-orange-700">Upload Photo (preview only — set a public URL above to keep it after refresh)</label>
                         <div className="flex items-center gap-3">
                             <div className="w-14 h-14 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center overflow-hidden text-orange-600">
-                                {form.photo ? <img src={form.photo} alt="Profile" className="w-full h-full object-cover" /> : <UserCircle className="w-7 h-7" />}
+                                {form.photo ? (
+                                    <div className="relative w-full h-full">
+                                        <Image src={form.photo} alt="Profile" fill className="object-cover" unoptimized />
+                                    </div>
+                                ) : (
+                                    <UserCircle className="w-7 h-7" />
+                                )}
                             </div>
                             <input type="file" accept="image/*" onChange={(e) => handlePhoto(e.target.files?.[0])} className="text-sm" disabled={parentProfileLoading} />
                         </div>

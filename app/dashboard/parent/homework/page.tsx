@@ -13,6 +13,17 @@ type HwRow = {
     class_name?: string;
 };
 
+const normalizeHomework = (data: unknown): HwRow[] => {
+    if (Array.isArray(data)) return data as HwRow[];
+    if (data && typeof data === "object") {
+        const obj = data as { results?: unknown; homework?: unknown; data?: unknown };
+        if (Array.isArray(obj.results)) return obj.results as HwRow[];
+        if (Array.isArray(obj.homework)) return obj.homework as HwRow[];
+        if (Array.isArray(obj.data)) return obj.data as HwRow[];
+    }
+    return [];
+};
+
 export default function HomeworkPage() {
     const { authFetch } = useAuth();
     const [rows, setRows] = useState<HwRow[]>([]);
@@ -22,8 +33,8 @@ export default function HomeworkPage() {
         let c = false;
         (async () => {
             try {
-                const data = await authFetch<HwRow[]>("/students/parent/homework/");
-                if (!c) setRows(Array.isArray(data) ? data : []);
+                const data = await authFetch<unknown>("/students/parent/homework/");
+                if (!c) setRows(normalizeHomework(data));
             } catch {
                 if (!c) setRows([]);
             } finally {

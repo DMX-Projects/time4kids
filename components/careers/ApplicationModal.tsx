@@ -156,7 +156,7 @@ export default function ApplicationModal({ isOpen, onClose, career }: Applicatio
                     </div>
                     <h3 className="text-xl font-bold text-slate-900 mb-2">Application Submitted!</h3>
                     <p className="text-slate-600">
-                        Thank you for your interest. We'll review your application and get back to you soon.
+                        Thank you for your interest. We&apos;ll review your application and get back to you soon.
                     </p>
                 </div>
             ) : (

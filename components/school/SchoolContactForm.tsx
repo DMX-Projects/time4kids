@@ -6,6 +6,7 @@ import { Send, CheckCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 import { useToast } from '@/components/ui/Toast';
+import { trackLeadSubmission } from '@/lib/tracking';
 
 interface ContactFormData {
     name: string;
@@ -40,6 +41,11 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
             });
             setIsSubmitted(true);
             reset();
+            trackLeadSubmission({
+                formType: "contact",
+                location: window.location.href,
+                franchiseSlug,
+            });
             showToast("Your message has been sent to the school!");
             setTimeout(() => setIsSubmitted(false), 5000);
         } catch (err: any) {
@@ -64,7 +70,7 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
             {isSubmitted && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl flex items-center space-x-3 animate-slide-down">
                     <CheckCircle className="w-6 h-6 text-green-600" />
-                    <p className="text-green-800 font-medium font-fredoka">Thank you! We'll get back to you soon.</p>
+                    <p className="text-green-800 font-medium font-fredoka">Thank you! We&apos;ll get back to you soon.</p>
                 </div>
             )}
 

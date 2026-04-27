@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -38,7 +38,7 @@ export default function AdminHomeTestimonialsPage() {
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         try {
             const data = await authFetch<TestimonialRow[]>("/common/home-testimonials/");
@@ -49,11 +49,11 @@ export default function AdminHomeTestimonialsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [authFetch]);
 
     useEffect(() => {
         load();
-    }, []);
+    }, [load]);
 
     const startCreate = () => {
         setEditingId(null);
