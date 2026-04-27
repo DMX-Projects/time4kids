@@ -31,10 +31,10 @@ export default function AnimatedNavBar({ mobile = false }: { mobile?: boolean })
             className={`relative ${
                 mobile
                     ? 'w-full bg-transparent'
-                    : 'bg-white rounded-full px-6 py-2 sm:px-8 sm:py-2.5 border border-gray-200 shadow-[0_4px_20px_rgba(0,0,0,0.08)]'
+                    : 'bg-white rounded-full px-4 py-2 sm:px-5 sm:py-2.5 lg:px-6 border border-gray-200 shadow-[0_4px_20px_rgba(0,0,0,0.08)]'
             }`}
         >
-            <ul className={`flex ${mobile ? 'flex-col gap-6 w-full' : 'flex-nowrap items-center gap-6 lg:gap-8'} m-0 p-0 list-none relative z-10`}>
+            <ul className={`flex ${mobile ? 'flex-col gap-6 w-full' : 'flex-nowrap items-center gap-4 lg:gap-6'} m-0 p-0 list-none relative z-10`}>
                 {navItems.map((item) => {
                     const isActive = activeTab === item.path;
                     const isLogin = item.name === 'Login';
@@ -65,9 +65,9 @@ export default function AnimatedNavBar({ mobile = false }: { mobile?: boolean })
                                         <Image
                                             src="/login-btn-new.png"
                                             alt="Login"
-                                            width={100}
+                                            width={88}
                                             height={32}
-                                            className="h-8 w-auto max-h-8 object-contain object-center hover:opacity-95 sm:h-9 sm:max-h-9"
+                                            className="h-8 w-auto max-h-8 object-contain object-center hover:opacity-95"
                                         />
                                     </span>
                                 ) : (
