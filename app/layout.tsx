@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Inter, Poppins, Fredoka, Baloo_2, Comic_Neue, Chewy, Bubblegum_Sans, Luckiest_Guy, Quicksand, ABeeZee, Andika } from "next/font/google";
 // Rebuild trigger
 import "./globals.css";
 import Header from "@/components/layout/Header";
@@ -15,82 +14,6 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
 import { GTM_ID } from "@/lib/tracking";
-
-const inter = Inter({
-    subsets: ["latin"],
-    variable: '--font-inter',
-    display: 'swap',
-});
-
-const poppins = Poppins({
-    weight: ['400', '500', '600', '700', '800'],
-    subsets: ["latin"],
-    variable: '--font-poppins',
-    display: 'swap',
-});
-
-// Kid-friendly fonts
-const fredoka = Fredoka({
-    weight: ['400', '500', '600', '700'],
-    subsets: ["latin"],
-    variable: '--font-fredoka',
-    display: 'swap',
-});
-
-const baloo2 = Baloo_2({
-    weight: ['400', '500', '600', '700', '800'],
-    subsets: ["latin"],
-    variable: '--font-baloo',
-    display: 'swap',
-});
-
-const comicNeue = Comic_Neue({
-    weight: ['400', '700'],
-    subsets: ["latin"],
-    variable: '--font-comic',
-    display: 'swap',
-});
-
-const bubblegumSans = Bubblegum_Sans({
-    weight: ['400'],
-    subsets: ["latin"],
-    variable: '--font-bubblegum',
-    display: 'swap',
-});
-
-const luckiestGuy = Luckiest_Guy({
-    weight: ['400'],
-    subsets: ["latin"],
-    variable: '--font-luckiest',
-    display: 'swap',
-});
-
-const quicksand = Quicksand({
-    subsets: ["latin"],
-    variable: '--font-quicksand',
-    display: 'swap',
-});
-
-const abeezee = ABeeZee({
-    weight: ['400'],
-    subsets: ["latin"],
-    variable: '--font-abeezee',
-    display: 'swap',
-});
-
-const andika = Andika({
-    weight: ['400', '700'],
-    subsets: ["latin"],
-    variable: '--font-andika',
-    display: 'swap',
-});
-
-const chewy = Chewy({
-    weight: ['400'],
-    subsets: ["latin"],
-    variable: '--font-chewy',
-    display: 'swap',
-});
 
 export const metadata: Metadata = {
     title: "T.I.M.E. Kids - The Preschool That Cares | 17 Years of Legacy",
@@ -110,7 +33,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={`${inter.variable} ${poppins.variable} ${fredoka.variable} ${baloo2.variable} ${comicNeue.variable} ${chewy.variable} ${bubblegumSans.variable} ${luckiestGuy.variable} ${quicksand.variable} ${abeezee.variable} ${andika.variable}`}>
+        <html lang="en">
             <head>
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
                 {GTM_ID ? (

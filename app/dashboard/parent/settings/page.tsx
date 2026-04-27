@@ -18,6 +18,10 @@ export default function ParentSettingsPage() {
 
     const onLogout = () => {
         logout();
+        if (typeof window !== "undefined") {
+            window.location.replace("/login/");
+            return;
+        }
         router.replace("/login/");
     };
 
