@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { LifeBuoy } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders } from "@/lib/api-client";
@@ -16,7 +16,7 @@ export default function SupportPage() {
     const [body, setBody] = useState("");
     const [sending, setSending] = useState(false);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         try {
             const data = await authFetch<Ticket[]>("/students/parent/tickets/");
@@ -26,11 +26,11 @@ export default function SupportPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [authFetch]);
 
     useEffect(() => {
         void load();
-    }, [authFetch]);
+    }, [load]);
 
     const onSubmit = async (e: FormEvent) => {
         e.preventDefault();

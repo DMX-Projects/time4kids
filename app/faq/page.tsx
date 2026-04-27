@@ -413,7 +413,7 @@ export default function FAQPage() {
             setActiveSlide((prev) => (prev + 1) % bannerImages.length);
         }, 4000);
         return () => clearInterval(timer);
-    }, []);
+    }, [bannerImages.length]);
 
     return (
         <div className="faq-page">

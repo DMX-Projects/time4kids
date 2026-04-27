@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders } from "@/lib/api-client";
 
@@ -290,7 +290,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     // New: Load saved locations for dropdown
     const [savedLocations, setSavedLocations] = useState<{ city_name: string, state: string }[]>([]);
 
-    const loadSavedLocations = async () => {
+    const loadSavedLocations = useCallback(async () => {
         try {
             const data = await authFetch<any>('/franchises/admin/franchise-locations/');
             // Handle both paginated and list responses
@@ -299,13 +299,13 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
             console.error("Failed to load saved locations", err);
         }
-    };
+    }, [authFetch]);
 
     useEffect(() => {
         if (user?.role?.toLowerCase() === "admin") {
             loadSavedLocations();
         }
-    }, [user?.role]);
+    }, [user?.role, loadSavedLocations]);
 
     const addFranchise = async (payload: Omit<AdminFranchise, "id">) => {
         const body = {
@@ -457,32 +457,29 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         return mapFranchise(data);
     };
 
-    const value = useMemo(
-        () => ({
-            franchises,
-            addFranchise,
-            updateFranchise,
-            deleteFranchise,
-            getFranchiseDetail,
-            careers,
-            addCareer,
-            updateCareer,
-            deleteCareer,
-            events,
-            addEvent,
-            updateEvent,
-            deleteEvent,
-            profile,
-            updateProfile,
-            stats,
-            refreshStats: loadStats,
-            savedLocations,
-            refreshLocations: loadSavedLocations,
-            franchisesLoadError,
-            reloadFranchises: loadFranchises,
-        }),
-        [franchises, careers, events, profile, stats, savedLocations, franchisesLoadError],
-    );
+    const value: AdminDataContextValue = {
+        franchises,
+        addFranchise,
+        updateFranchise,
+        deleteFranchise,
+        getFranchiseDetail,
+        careers,
+        addCareer,
+        updateCareer,
+        deleteCareer,
+        events,
+        addEvent,
+        updateEvent,
+        deleteEvent,
+        profile,
+        updateProfile,
+        stats,
+        refreshStats: loadStats,
+        savedLocations,
+        refreshLocations: loadSavedLocations,
+        franchisesLoadError,
+        reloadFranchises: loadFranchises,
+    };
 
     return <AdminDataContext.Provider value={value}>{children}</AdminDataContext.Provider>;
 }

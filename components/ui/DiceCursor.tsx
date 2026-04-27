@@ -76,6 +76,10 @@ export default function DiceCursor() {
         };
         const animId = requestAnimationFrame(moveCursor);
         return () => cancelAnimationFrame(animId);
+    // Click handler uses latest rollDice closure; listener setup only depends on enablement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Event listeners are rebound only when custom cursor enablement changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isEnabled]);
 
     // Event listeners
@@ -151,6 +155,8 @@ export default function DiceCursor() {
             document.removeEventListener('mouseenter', showCursor);
             document.removeEventListener('mouseleave', () => setIsVisible(false));
         };
+        // `rollDice` is referenced only inside event callbacks and is intentionally not a setup dependency.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isEnabled]);
 
     // Scroll handling

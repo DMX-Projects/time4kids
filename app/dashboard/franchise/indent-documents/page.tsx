@@ -36,7 +36,7 @@ export default function IndentDocumentsPage() {
         };
 
         load();
-    }, []);
+    }, [authFetch, showToast]);
 
     return (
         <div className="space-y-5">

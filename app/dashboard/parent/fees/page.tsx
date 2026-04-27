@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { CreditCard } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
 
 type Row = {
     id: number;
@@ -15,8 +16,20 @@ type Row = {
     student_name?: string;
 };
 
+const normalizeFees = (data: unknown): Row[] => {
+    if (Array.isArray(data)) return data as Row[];
+    if (data && typeof data === "object") {
+        const obj = data as { results?: unknown; data?: unknown; fees?: unknown };
+        if (Array.isArray(obj.results)) return obj.results as Row[];
+        if (Array.isArray(obj.data)) return obj.data as Row[];
+        if (Array.isArray(obj.fees)) return obj.fees as Row[];
+    }
+    return [];
+};
+
 export default function FeesPage() {
     const { authFetch } = useAuth();
+    const { parentProfile, linkedStudents, selectedStudentId } = useParentData();
     const [rows, setRows] = useState<Row[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -24,8 +37,8 @@ export default function FeesPage() {
         let c = false;
         (async () => {
             try {
-                const data = await authFetch<Row[]>("/students/parent/fees/");
-                if (!c) setRows(Array.isArray(data) ? data : []);
+                const data = await authFetch<unknown>("/students/parent/fees/");
+                if (!c) setRows(normalizeFees(data));
             } catch {
                 if (!c) setRows([]);
             } finally {
@@ -36,6 +49,22 @@ export default function FeesPage() {
             c = true;
         };
     }, [authFetch]);
+
+    const selectedStudent = useMemo(() => {
+        if (selectedStudentId) {
+            return linkedStudents.find((s) => s.id === selectedStudentId) || null;
+        }
+        return linkedStudents[0] || null;
+    }, [linkedStudents, selectedStudentId]);
+
+    const totals = useMemo(() => {
+        const totalFee = rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+        const discount = 0;
+        const netPayable = totalFee - discount;
+        const amountPaid = rows.reduce((sum, r) => (String(r.status).toUpperCase() === "PAID" ? sum + Number(r.amount || 0) : sum), 0);
+        const balance = Math.max(netPayable - amountPaid, 0);
+        return { totalFee, discount, netPayable, amountPaid, balance };
+    }, [rows]);
 
     return (
         <div className="space-y-6">
@@ -54,25 +83,96 @@ export default function FeesPage() {
             {loading && <p className="text-sm text-orange-700">Loading…</p>}
             {!loading && rows.length === 0 && <p className="text-sm text-orange-700">No fee entries yet.</p>}
 
-            <ul className="space-y-3">
-                {rows.map((r) => (
-                    <li key={r.id} className="rounded-xl border border-orange-100 bg-white p-4 shadow-sm flex flex-wrap justify-between gap-3">
-                        <div>
-                            <p className="font-semibold text-orange-900">{r.title}</p>
-                            <p className="text-xs text-orange-600">{r.student_name}</p>
-                            <p className="text-xs text-orange-700 mt-1">Due: {r.due_date}</p>
-                            {r.paid_on && <p className="text-xs text-green-700 mt-1">Paid on: {r.paid_on}</p>}
-                            {r.notes && <p className="text-sm text-orange-800 mt-2">{r.notes}</p>}
+            {!loading && rows.length > 0 && (
+                <div className="space-y-4">
+                    <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4">
+                        <h2 className="text-lg font-semibold text-orange-900 mb-3">Student Fee Details</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm border border-orange-100">
+                                <thead className="bg-orange-50 text-orange-900">
+                                    <tr>
+                                        <th className="text-left p-2 border border-orange-100">Kid&apos;s Name</th>
+                                        <th className="text-left p-2 border border-orange-100">Center</th>
+                                        <th className="text-left p-2 border border-orange-100">Enrollment Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td className="p-2 border border-orange-100">{selectedStudent?.name || rows[0]?.student_name || "—"}</td>
+                                        <td className="p-2 border border-orange-100">{parentProfile.franchiseName || "—"}</td>
+                                        <td className="p-2 border border-orange-100">{selectedStudent?.dateOfBirth || "—"}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div className="text-right">
-                            <span className="inline-flex rounded-full px-3 py-1 text-xs font-bold border border-orange-100 bg-orange-50 text-orange-900">
-                                ₹{typeof r.amount === "number" ? r.amount.toFixed(2) : r.amount}
-                            </span>
-                            <p className="text-xs font-semibold text-orange-700 mt-2">{r.status}</p>
+                    </section>
+
+                    <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4">
+                        <h2 className="text-lg font-semibold text-orange-900 mb-3">Fee Structure &amp; Payment Status</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm border border-orange-100">
+                                <thead className="bg-orange-50 text-orange-900">
+                                    <tr>
+                                        <th className="text-left p-2 border border-orange-100">S. No.</th>
+                                        <th className="text-left p-2 border border-orange-100">Fee Type</th>
+                                        <th className="text-right p-2 border border-orange-100">Total Fee</th>
+                                        <th className="text-right p-2 border border-orange-100">Discount</th>
+                                        <th className="text-right p-2 border border-orange-100">Net Payable</th>
+                                        <th className="text-right p-2 border border-orange-100">Amount Paid</th>
+                                        <th className="text-right p-2 border border-orange-100">Balance</th>
+                                        <th className="text-left p-2 border border-orange-100">Due Date</th>
+                                        <th className="text-left p-2 border border-orange-100">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows.map((r, idx) => {
+                                        const amount = Number(r.amount || 0);
+                                        const isPaid = String(r.status).toUpperCase() === "PAID";
+                                        const discount = 0;
+                                        const netPayable = amount - discount;
+                                        const paidAmount = isPaid ? amount : 0;
+                                        const balance = isPaid ? 0 : netPayable;
+                                        return (
+                                            <tr key={r.id}>
+                                                <td className="p-2 border border-orange-100">{idx + 1}</td>
+                                                <td className="p-2 border border-orange-100">{r.title}</td>
+                                                <td className="p-2 border border-orange-100 text-right">{amount.toFixed(2)}</td>
+                                                <td className="p-2 border border-orange-100 text-right">{discount.toFixed(2)}</td>
+                                                <td className="p-2 border border-orange-100 text-right">{netPayable.toFixed(2)}</td>
+                                                <td className="p-2 border border-orange-100 text-right">{paidAmount.toFixed(2)}</td>
+                                                <td className="p-2 border border-orange-100 text-right">{balance.toFixed(2)}</td>
+                                                <td className="p-2 border border-orange-100">{r.due_date || "—"}</td>
+                                                <td className="p-2 border border-orange-100">
+                                                    <span
+                                                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                                            isPaid
+                                                                ? "bg-green-100 text-green-800 border border-green-200"
+                                                                : "bg-orange-100 text-orange-800 border border-orange-200"
+                                                        }`}
+                                                    >
+                                                        {r.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    <tr className="bg-orange-50 font-semibold text-orange-900">
+                                        <td className="p-2 border border-orange-100" />
+                                        <td className="p-2 border border-orange-100 text-right">Total</td>
+                                        <td className="p-2 border border-orange-100 text-right">{totals.totalFee.toFixed(2)}</td>
+                                        <td className="p-2 border border-orange-100 text-right">{totals.discount.toFixed(2)}</td>
+                                        <td className="p-2 border border-orange-100 text-right">{totals.netPayable.toFixed(2)}</td>
+                                        <td className="p-2 border border-orange-100 text-right">{totals.amountPaid.toFixed(2)}</td>
+                                        <td className="p-2 border border-orange-100 text-right">{totals.balance.toFixed(2)}</td>
+                                        <td className="p-2 border border-orange-100" />
+                                        <td className="p-2 border border-orange-100" />
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                    </li>
-                ))}
-            </ul>
+                    </section>
+                </div>
+            )}
         </div>
     );
 }

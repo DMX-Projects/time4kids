@@ -36,7 +36,7 @@ export default function FranchiseReferralIncentivesPage() {
         };
 
         load();
-    }, []);
+    }, [authFetch, showToast]);
 
     return (
         <div className="space-y-5">

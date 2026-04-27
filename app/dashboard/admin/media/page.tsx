@@ -125,7 +125,7 @@ export default function AdminMediaPage() {
             )}
             {!loading && mediaItems.length === 0 && (
                 <div className="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                    <p className="text-gray-500">No media files found. Click "Add Media" to upload.</p>
+                    <p className="text-gray-500">No media files found. Click &quot;Add Media&quot; to upload.</p>
                 </div>
             )}
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import FluidBackground from '@/components/ui/FluidBackground';
 
@@ -142,22 +143,24 @@ const TestimonialsSection = () => {
         };
 
         fetchMedia();
+    // Fetch once on mount; static fallback data is intentionally in-component content.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
 
-    const nextMedia = () => {
+    const nextMedia = useCallback(() => {
         if (activeGroupIndex !== null) {
             const group = groups[activeGroupIndex];
             setActiveItemIndex((activeItemIndex + 1) % group.items.length);
         }
-    };
+    }, [activeGroupIndex, activeItemIndex, groups]);
 
-    const prevMedia = () => {
+    const prevMedia = useCallback(() => {
         if (activeGroupIndex !== null) {
             const group = groups[activeGroupIndex];
             setActiveItemIndex((activeItemIndex - 1 + group.items.length) % group.items.length);
         }
-    };
+    }, [activeGroupIndex, activeItemIndex, groups]);
 
     // Organic line paths for the fluid animation (Hollow/Stroked effect)
     const organicLinePaths = [
@@ -205,7 +208,7 @@ const TestimonialsSection = () => {
             window.removeEventListener('keydown', handleKeyDown);
             document.body.classList.remove('lightbox-open');
         };
-    }, [activeGroupIndex, activeItemIndex]);
+    }, [activeGroupIndex, activeItemIndex, nextMedia, prevMedia]);
 
     return (
         <section className="relative py-24 bg-white overflow-hidden">
@@ -241,10 +244,12 @@ const TestimonialsSection = () => {
                                     setActiveItemIndex(0);
                                 }}
                             >
-                                <img
+                                <Image
                                     src={group.items[0].thumbnailUrl}
                                     alt={group.title}
-                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                    fill
+                                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                                    unoptimized
                                 />
 
                                 {/* Album Badge */}
@@ -351,11 +356,15 @@ const TestimonialsSection = () => {
                                         className="max-w-full max-h-[60vh] w-auto h-auto"
                                     />
                                 ) : (
-                                    <img
-                                        src={groups[activeGroupIndex].items[activeItemIndex].thumbnailUrl}
-                                        alt={groups[activeGroupIndex].items[activeItemIndex].title}
-                                        className="max-w-full max-h-[60vh] w-auto h-auto object-contain"
-                                    />
+                                    <div className="relative w-[80vw] h-[60vh]">
+                                        <Image
+                                            src={groups[activeGroupIndex].items[activeItemIndex].thumbnailUrl}
+                                            alt={groups[activeGroupIndex].items[activeItemIndex].title}
+                                            fill
+                                            className="object-contain"
+                                            unoptimized
+                                        />
+                                    </div>
                                 )}
                             </div>
 

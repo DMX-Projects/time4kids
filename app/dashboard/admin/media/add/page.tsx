@@ -133,7 +133,7 @@ export default function AddMediaPage() {
                             placeholder="e.g., Annual Sports Day 2024"
                             className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
                         />
-                        <p className="text-xs text-gray-500 mt-1">If uploading multiple files, numbers will be appended automatically (e.g., "Annual Sports Day 2024 - 1").</p>
+                        <p className="text-xs text-gray-500 mt-1">If uploading multiple files, numbers will be appended automatically (e.g., &quot;Annual Sports Day 2024 - 1&quot;).</p>
                     </div>
 
                     {/* Media Type Selection */}

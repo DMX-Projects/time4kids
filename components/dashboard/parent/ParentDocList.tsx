@@ -6,6 +6,18 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { mediaUrl } from "@/lib/api-client";
 
 type DocRow = { id: number; title: string; file: string };
+type ParentDocRow = DocRow & { category?: string };
+
+const normalizeDocs = (data: unknown): DocRow[] => {
+    if (Array.isArray(data)) return data as DocRow[];
+    if (data && typeof data === "object") {
+        const obj = data as { results?: unknown; data?: unknown; documents?: unknown };
+        if (Array.isArray(obj.results)) return obj.results as DocRow[];
+        if (Array.isArray(obj.data)) return obj.data as DocRow[];
+        if (Array.isArray(obj.documents)) return obj.documents as DocRow[];
+    }
+    return [];
+};
 
 export function ParentDocList({
     category,
@@ -26,10 +38,18 @@ export function ParentDocList({
         let cancelled = false;
         (async () => {
             try {
-                const data = await authFetch<DocRow[]>(`/documents/parent/documents/category/${category}/`);
-                if (!cancelled) setDocs(Array.isArray(data) ? data : []);
+                const data = await authFetch<unknown>(`/documents/parent/documents/category/${category}/`);
+                if (!cancelled) setDocs(normalizeDocs(data));
             } catch {
-                if (!cancelled) setDocs([]);
+                // Fallback for environments where category endpoint is stricter/misconfigured.
+                try {
+                    const all = await authFetch<unknown>("/documents/parent/documents/");
+                    const list = normalizeDocs(all) as ParentDocRow[];
+                    const filtered = list.filter((d) => String(d.category || "").toUpperCase() === category.toUpperCase());
+                    if (!cancelled) setDocs(filtered);
+                } catch {
+                    if (!cancelled) setDocs([]);
+                }
             } finally {
                 if (!cancelled) setLoading(false);
             }

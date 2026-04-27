@@ -1,6 +1,7 @@
 "use client";
 
 import Button from "@/components/ui/Button";
+import Image from "next/image";
 import { UserCircle } from "lucide-react";
 import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
 
@@ -39,7 +40,13 @@ export default function AdminProfilePage() {
                         <label className="text-xs font-medium text-slate-600">Profile Picture</label>
                         <div className="flex items-center gap-3">
                             <div className="w-14 h-14 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 overflow-hidden">
-                                {profile.photo ? <img src={profile.photo} alt="Profile" className="w-full h-full object-cover" /> : <UserCircle className="w-7 h-7" />}
+                                {profile.photo ? (
+                                    <div className="relative w-full h-full">
+                                        <Image src={profile.photo} alt="Profile" fill className="object-cover" unoptimized />
+                                    </div>
+                                ) : (
+                                    <UserCircle className="w-7 h-7" />
+                                )}
                             </div>
                             <input
                                 type="file"

@@ -13,6 +13,14 @@ type ShowToastFn = (message: string, variant?: "success" | "error") => void;
 
 type MiniStudent = { id: number; full_name: string; class_name: string };
 
+const normalizeList = <T,>(data: unknown): T[] => {
+    if (Array.isArray(data)) return data as T[];
+    if (data && typeof data === "object" && Array.isArray((data as { results?: unknown[] }).results)) {
+        return (data as { results: T[] }).results;
+    }
+    return [];
+};
+
 /** Same sections as the parent web app sidebar (franchise staff publish content here). */
 type Tab =
     | "homework"
@@ -43,8 +51,8 @@ export default function ParentPortalAdminPage() {
 
     const loadStudents = useCallback(async () => {
         try {
-            const data = await authFetch<MiniStudent[]>("/students/franchise/students/");
-            setStudents(Array.isArray(data) ? data : []);
+            const data = await authFetch<unknown>("/students/franchise/students/");
+            setStudents(normalizeList<MiniStudent>(data));
         } catch {
             setStudents([]);
         }
@@ -105,18 +113,20 @@ function DocsHintPanel({ variant }: { variant: "timetable" | "holidays" }) {
         variant === "timetable"
             ? {
                   title: "Timetable",
-                  body: "Upload weekly timetable PDFs so parents see them under Timetable and in Parent documents.",
+                  body: "Upload weekly timetable PDFs from Parent documents. They will appear for parents under Timetable.",
+                  href: "/dashboard/franchise/parent-documents?category=CLASS_TIMETABLE",
               }
             : {
                   title: "Holiday list",
-                  body: "Upload term breaks and public holiday PDFs so parents see them under Holiday list.",
+                  body: "Upload term breaks and public holiday PDFs from Parent documents. They will appear for parents under Holiday list.",
+                  href: "/dashboard/franchise/parent-documents?category=HOLIDAY_LISTS",
               };
     return (
         <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 space-y-3 max-w-2xl">
             <h3 className="font-semibold text-[#111827]">{copy.title}</h3>
             <p className="text-sm text-[#374151]">{copy.body}</p>
-            <Link href="/dashboard/franchise/parent-documents" className="inline-flex text-[#2563EB] font-medium underline">
-                Parent documents
+            <Link href={copy.href} className="inline-flex text-[#2563EB] font-medium underline">
+                Open uploader
             </Link>
         </div>
     );
@@ -204,8 +214,8 @@ function HomeworkTab({
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await authFetch<{ id: number; title: string; assigned_date: string }[]>("/students/franchise/homework/");
-            setRows(Array.isArray(data) ? data : []);
+            const data = await authFetch<unknown>("/students/franchise/homework/");
+            setRows(normalizeList<{ id: number; title: string; assigned_date: string }>(data));
         } catch {
             setRows([]);
         } finally {
@@ -220,14 +230,16 @@ function HomeworkTab({
     const submit = async (e: FormEvent) => {
         e.preventDefault();
         try {
+            const selectedStudent = students.find((s) => String(s.id) === form.studentId);
+            const normalizedClassName = form.class_name.trim() || selectedStudent?.class_name?.trim() || "";
+
             const body: Record<string, unknown> = {
                 title: form.title.trim(),
                 description: form.description.trim(),
                 assigned_date: form.assigned_date,
-                class_name: form.class_name.trim(),
+                class_name: normalizedClassName,
             };
-            if (form.studentId) body.student = Number(form.studentId);
-            else body.student = null;
+            body.student = form.studentId ? Number(form.studentId) : null;
             await authFetch("/students/franchise/homework/", { method: "POST", headers: jsonHeaders(), body: JSON.stringify(body) });
             setForm({ studentId: "", class_name: "", assigned_date: "", title: "", description: "" });
             showToast("Homework published", "success");
@@ -263,7 +275,7 @@ function HomeworkTab({
                 <label className="text-xs font-semibold text-[#4B5563]">
                     Student (optional)
                     <select value={form.studentId} onChange={(e) => setForm((p) => ({ ...p, studentId: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
-                        <option value="">— Whole class / use class name —</option>
+                        <option value="">— All students (centre-wide) —</option>
                         {students.map((s) => (
                             <option key={s.id} value={s.id}>
                                 {s.full_name}
@@ -273,7 +285,7 @@ function HomeworkTab({
                 </label>
                 <label className="text-xs font-semibold text-[#4B5563] md:col-span-2">
                     Class name (optional, exact match e.g. KG-2 Section A)
-                    <input value={form.class_name} onChange={(e) => setForm((p) => ({ ...p, class_name: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" placeholder="Leave empty for whole centre if no student selected" />
+                    <input value={form.class_name} onChange={(e) => setForm((p) => ({ ...p, class_name: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" placeholder="Leave empty to send for all students in this centre" />
                 </label>
                 <label className="text-xs font-semibold text-[#4B5563] md:col-span-2">
                     Description
@@ -307,8 +319,8 @@ function AnnouncementsTab({ authFetch, showToast }: { authFetch: AuthFetchFn; sh
 
     const load = useCallback(async () => {
         try {
-            const data = await authFetch<{ id: number; title: string; published_at?: string }[]>("/students/franchise/announcements/");
-            setRows(Array.isArray(data) ? data : []);
+            const data = await authFetch<unknown>("/students/franchise/announcements/");
+            setRows(normalizeList<{ id: number; title: string; published_at?: string }>(data));
         } catch {
             setRows([]);
         }
@@ -365,6 +377,35 @@ function AnnouncementsTab({ authFetch, showToast }: { authFetch: AuthFetchFn; sh
 
 function FeesTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; showToast: ShowToastFn; students: MiniStudent[] }) {
     const [form, setForm] = useState({ student: "", title: "", amount: "", due_date: "", status: "PENDING", paid_on: "", notes: "" });
+    const [rows, setRows] = useState<
+        { id: number; student_name?: string; title: string; amount: string | number; due_date: string; status: string; paid_on?: string | null }[]
+    >([]);
+    const [loading, setLoading] = useState(true);
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        try {
+            const raw = await authFetch<unknown>("/students/franchise/fees/");
+            const list = normalizeList<{
+                id: number;
+                student_name?: string;
+                title: string;
+                amount: string | number;
+                due_date: string;
+                status: string;
+                paid_on?: string | null;
+            }>(raw);
+            setRows(list);
+        } catch {
+            setRows([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [authFetch]);
+
+    useEffect(() => {
+        void load();
+    }, [load]);
 
     const submit = async (e: FormEvent) => {
         e.preventDefault();
@@ -384,58 +425,78 @@ function FeesTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; s
                 }),
             });
             showToast("Fee entry saved", "success");
+            setForm({ student: "", title: "", amount: "", due_date: "", status: "PENDING", paid_on: "", notes: "" });
+            await load();
         } catch {
             showToast("Save failed", "error");
         }
     };
 
     return (
-        <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 grid md:grid-cols-2 gap-3 max-w-2xl">
-            <label className="text-xs font-semibold md:col-span-2">
-                Student
-                <select required value={form.student} onChange={(e) => setForm((p) => ({ ...p, student: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
-                    <option value="">—</option>
-                    {students.map((s) => (
-                        <option key={s.id} value={s.id}>
-                            {s.full_name}
-                        </option>
+        <div className="space-y-4 max-w-3xl">
+            <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 grid md:grid-cols-2 gap-3">
+                <label className="text-xs font-semibold md:col-span-2">
+                    Student
+                    <select required value={form.student} onChange={(e) => setForm((p) => ({ ...p, student: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
+                        <option value="">—</option>
+                        {students.map((s) => (
+                            <option key={s.id} value={s.id}>
+                                {s.full_name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label className="text-xs font-semibold">
+                    Title
+                    <input required value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold">
+                    Amount
+                    <input required type="number" step="0.01" value={form.amount} onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold">
+                    Due date
+                    <input type="date" required value={form.due_date} onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold">
+                    Status
+                    <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
+                        {["PENDING", "PAID", "OVERDUE"].map((s) => (
+                            <option key={s} value={s}>
+                                {s}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label className="text-xs font-semibold">
+                    Paid on (optional)
+                    <input type="date" value={form.paid_on} onChange={(e) => setForm((p) => ({ ...p, paid_on: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold md:col-span-2">
+                    Notes
+                    <input value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <Button type="submit" className="bg-[#FF922B] text-white w-fit">
+                    Save fee
+                </Button>
+            </form>
+
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4">
+                <p className="text-sm font-semibold text-[#111827] mb-3">Saved fee entries</p>
+                {loading && <p className="text-sm text-[#6B7280]">Loading…</p>}
+                {!loading && rows.length === 0 && <p className="text-sm text-[#6B7280]">No fee entries yet.</p>}
+                <ul className="space-y-2">
+                    {rows.map((r) => (
+                        <li key={r.id} className="rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm">
+                            <p className="font-medium text-[#111827]">{r.title}</p>
+                            <p className="text-[#4B5563] text-xs">
+                                {r.student_name || "Student"} • ₹{r.amount} • Due {r.due_date} • {r.status}
+                            </p>
+                        </li>
                     ))}
-                </select>
-            </label>
-            <label className="text-xs font-semibold">
-                Title
-                <input required value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-            </label>
-            <label className="text-xs font-semibold">
-                Amount
-                <input required type="number" step="0.01" value={form.amount} onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-            </label>
-            <label className="text-xs font-semibold">
-                Due date
-                <input type="date" required value={form.due_date} onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-            </label>
-            <label className="text-xs font-semibold">
-                Status
-                <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
-                    {["PENDING", "PAID", "OVERDUE"].map((s) => (
-                        <option key={s} value={s}>
-                            {s}
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <label className="text-xs font-semibold">
-                Paid on (optional)
-                <input type="date" value={form.paid_on} onChange={(e) => setForm((p) => ({ ...p, paid_on: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-            </label>
-            <label className="text-xs font-semibold md:col-span-2">
-                Notes
-                <input value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-            </label>
-            <Button type="submit" className="bg-[#FF922B] text-white w-fit">
-                Save fee
-            </Button>
-        </form>
+                </ul>
+            </div>
+        </div>
     );
 }
 

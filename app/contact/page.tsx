@@ -12,6 +12,7 @@ import { Mail, Phone, MapPin, Facebook, Instagram, Youtube, Send, Briefcase } fr
 import { useForm } from 'react-hook-form';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 import { useToast } from '@/components/ui/Toast';
+import { trackLeadSubmission } from '@/lib/tracking';
 
 interface ContactFormData {
     name: string;
@@ -42,6 +43,10 @@ export default function ContactPage() {
             });
             setIsSubmitted(true);
             reset();
+            trackLeadSubmission({
+                formType: "contact",
+                location: window.location.href,
+            });
             showToast("Your message has been sent successfully!");
             setTimeout(() => setIsSubmitted(false), 5000);
         } catch (err: any) {

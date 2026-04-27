@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Trash2, Upload } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
@@ -38,19 +39,23 @@ const states = [
 export default function FranchiseParentDocumentsPage() {
     const { authFetch } = useAuth();
     const { showToast } = useToast();
+    const searchParams = useSearchParams();
+    const requestedCategory = searchParams.get("category") || "";
+    const validCategories = new Set(categories.map((c) => c.value));
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [docs, setDocs] = useState<ParentDoc[]>([]);
     const [form, setForm] = useState({
-        category: "NEWSLETTERS",
+        category: validCategories.has(requestedCategory) ? requestedCategory : "",
         title: "",
         description: "",
         academic_year: "",
         state: "",
     });
     const [file, setFile] = useState<File | null>(null);
+    const isTimetableCategory = form.category === "CLASS_TIMETABLE";
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         try {
             const data = await authFetch<ParentDoc[]>("/documents/franchise/parent-documents/");
@@ -61,11 +66,16 @@ export default function FranchiseParentDocumentsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [authFetch, showToast]);
 
     useEffect(() => {
         load();
-    }, []);
+    }, [load]);
+
+    useEffect(() => {
+        if (!validCategories.has(requestedCategory)) return;
+        setForm((prev) => ({ ...prev, category: requestedCategory }));
+    }, [requestedCategory]);
 
     const grouped = useMemo(() => {
         const map = new Map<string, ParentDoc[]>();
@@ -78,9 +88,22 @@ export default function FranchiseParentDocumentsPage() {
 
     const onSubmit = async (e: FormEvent) => {
         e.preventDefault();
+        if (!form.category) {
+            showToast("Select a category before uploading", "error");
+            return;
+        }
         if (!file) {
             showToast("Select a file to upload", "error");
             return;
+        }
+        if (isTimetableCategory) {
+            const name = file.name.toLowerCase();
+            const isPdfMime = file.type === "application/pdf";
+            const isPdfExt = name.endsWith(".pdf");
+            if (!isPdfMime && !isPdfExt) {
+                showToast("Timetable upload supports PDF files only", "error");
+                return;
+            }
         }
         setSubmitting(true);
         try {
@@ -92,7 +115,7 @@ export default function FranchiseParentDocumentsPage() {
             if (form.academic_year) fd.append("academic_year", form.academic_year);
             if (form.category === "HOLIDAY_LISTS" && form.state) fd.append("state", form.state);
             await authFetch("/documents/franchise/parent-documents/", { method: "POST", body: fd });
-            setForm({ category: "NEWSLETTERS", title: "", description: "", academic_year: "", state: "" });
+            setForm({ category: "", title: "", description: "", academic_year: "", state: "" });
             setFile(null);
             showToast("Document uploaded", "success");
             await load();
@@ -128,7 +151,9 @@ export default function FranchiseParentDocumentsPage() {
                             value={form.category}
                             onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
                             className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
+                            required
                         >
+                            <option value="">Select category</option>
                             {categories.map((c) => (
                                 <option key={c.value} value={c.value}>{c.label}</option>
                             ))}
@@ -177,10 +202,14 @@ export default function FranchiseParentDocumentsPage() {
                     File
                     <input
                         type="file"
+                        accept={isTimetableCategory ? ".pdf,application/pdf" : undefined}
                         onChange={(e) => setFile(e.target.files?.[0] || null)}
                         className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
                         required
                     />
+                    {isTimetableCategory && (
+                        <p className="mt-1 text-[11px] text-[#6B7280]">Only PDF files are allowed for Class Timetable.</p>
+                    )}
                 </label>
                 <Button type="submit" className="bg-[#FF922B] hover:brightness-105" disabled={submitting}>
                     <Upload className="w-4 h-4 mr-2" />

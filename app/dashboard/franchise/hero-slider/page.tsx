@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Plus, Trash2, Edit, ExternalLink, GripVertical, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -42,7 +42,7 @@ export default function ManageHeroSlider() {
     const [previewImages, setPreviewImages] = useState<string[]>([]);
     const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
 
-    const fetchSlides = async () => {
+    const fetchSlides = useCallback(async () => {
         try {
             const data = await authFetch<HeroSlide[] | { results: HeroSlide[] }>('/franchises/franchise/hero-slides/');
             setSlides(Array.isArray(data) ? data : data.results || []);
@@ -52,11 +52,11 @@ export default function ManageHeroSlider() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [authFetch, showToast]);
 
     useEffect(() => {
         fetchSlides();
-    }, []);
+    }, [fetchSlides]);
 
     const handleOpenModal = (slide?: HeroSlide) => {
         if (slide) {
@@ -251,7 +251,7 @@ export default function ManageHeroSlider() {
                             </div>
                         </div>
                         <div className="p-4">
-                            <h3 className="font-bold text-gray-800 truncate">{slide.alt_text || "No Title"}</h3>
+                            <h3 className="font-bold text-gray-800 truncate">{slide.alt_text || 'No Title'}</h3>
                             {slide.link && (
                                 <a href={slide.link} target="_blank" className="text-sm text-blue-600 flex items-center mt-1 hover:underline">
                                     <ExternalLink className="w-3 h-3 mr-1" /> {slide.link}
@@ -264,7 +264,7 @@ export default function ManageHeroSlider() {
                 {slides.length === 0 && !loading && (
                     <div className="col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
                         <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p>No slides added yet. Click "Add Slide" to get started.</p>
+                        <p>No slides added yet. Click &quot;Add Slide&quot; to get started.</p>
                     </div>
                 )}
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Play, Hand, Clock, ArrowLeft, Calendar, MapPin, AlertCircle, Image as ImageIcon, X, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,20 +85,20 @@ export default function GallerySection({ schoolName, city, galleryItems = [], ev
     };
 
     // Navigate to next media item
-    const goToNextMedia = () => {
+    const goToNextMedia = useCallback(() => {
         if (!selectedMedia || filteredMedia.length === 0) return;
         const currentIndex = filteredMedia.findIndex(m => m.id === selectedMedia.id);
         const nextIndex = (currentIndex + 1) % filteredMedia.length;
         setSelectedMedia(filteredMedia[nextIndex]);
-    };
+    }, [filteredMedia, selectedMedia]);
 
     // Navigate to previous media item
-    const goToPreviousMedia = () => {
+    const goToPreviousMedia = useCallback(() => {
         if (!selectedMedia || filteredMedia.length === 0) return;
         const currentIndex = filteredMedia.findIndex(m => m.id === selectedMedia.id);
         const previousIndex = (currentIndex - 1 + filteredMedia.length) % filteredMedia.length;
         setSelectedMedia(filteredMedia[previousIndex]);
-    };
+    }, [filteredMedia, selectedMedia]);
 
     // Keyboard navigation for lightbox
     useEffect(() => {
@@ -119,7 +119,7 @@ export default function GallerySection({ schoolName, city, galleryItems = [], ev
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedMedia, filteredMedia]); // Re-attach when selectedMedia or filteredMedia changes
+    }, [selectedMedia, filteredMedia, goToNextMedia, goToPreviousMedia]); // Re-attach when selectedMedia or filteredMedia changes
 
 
     return (
