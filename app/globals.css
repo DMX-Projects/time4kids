@@ -9,6 +9,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Schoolbell&display=swap');
 
 :root {
+  /* Local-safe font variables (replace next/font variables in production) */
+  --font-inter: "Dosis", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-poppins: "Dosis", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-fredoka: "Dosis", "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-baloo: "Dosis", "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-comic: "Comic Sans MS", "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-chewy: "Schoolbell", "Comic Sans MS", "Trebuchet MS", sans-serif;
+  --font-bubblegum: "Schoolbell", "Comic Sans MS", "Trebuchet MS", sans-serif;
+  --font-luckiest: "Schoolbell", "Comic Sans MS", "Trebuchet MS", sans-serif;
+  --font-quicksand: "Dosis", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-abeezee: "Dosis", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-andika: "Dosis", "Segoe UI", Roboto, Arial, sans-serif;
+
   /* T.I.M.E. Kids Color Palette - Extracted from Reference Files */
   --primary-orange: #e6952e;
   --primary-orange-dark: #dd6705;
