@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 
 export default function SchoolKeyNavigation() {
     return (
@@ -11,7 +10,7 @@ export default function SchoolKeyNavigation() {
                     <li className="nav-link1">
                         <figure>
                             <span>
-                                <Image src="/icon-tour.png" alt="Virtual Tour" fill className="object-contain" />
+                                <img src="/icon-tour.png" alt="Virtual Tour" width={38} height={38} className="key-nav-icon" style={{ width: 38, height: 38 }} />
                             </span>
                         </figure>
                         <a href="/media">
@@ -21,7 +20,7 @@ export default function SchoolKeyNavigation() {
                     <li className="nav-link2">
                         <figure>
                             <span>
-                                <Image src="/icon-gallery.png" alt="Photo / Video Gallery" fill className="object-contain" />
+                                <img src="/icon-gallery.png" alt="Photo / Video Gallery" width={38} height={38} className="key-nav-icon" style={{ width: 38, height: 38 }} />
                             </span>
                         </figure>
                         <a href="/media">Photo / Video Gallery</a>
@@ -29,7 +28,7 @@ export default function SchoolKeyNavigation() {
                     <li className="nav-link3">
                         <figure>
                             <span>
-                                <Image src="/icon-nearstcenter.png" alt="Find your Nearest Centre" fill className="object-contain" />
+                                <img src="/icon-nearstcenter.png" alt="Find your Nearest Centre" width={38} height={38} className="key-nav-icon" style={{ width: 38, height: 38 }} />
                             </span>
                         </figure>
                         <a href="/locate-centre">Find your Nearest  Centre</a>
@@ -37,7 +36,7 @@ export default function SchoolKeyNavigation() {
                     <li className="nav-link1">
                         <figure>
                             <span>
-                                <Image src="/icon-franchise.png" alt="Become a Franchise" fill className="object-contain" />
+                                <img src="/icon-franchise.png" alt="Become a Franchise" width={38} height={38} className="key-nav-icon" style={{ width: 38, height: 38 }} />
                             </span>
                         </figure>
                         <a href="/franchise">Become a Franchise</a>
@@ -45,7 +44,7 @@ export default function SchoolKeyNavigation() {
                     <li className="nav-link2">
                         <figure>
                             <span>
-                                <Image src="/icon-brochure.png" alt="Download Brochure" fill className="object-contain" />
+                                <img src="/icon-brochure.png" alt="Download Brochure" width={38} height={38} className="key-nav-icon" style={{ width: 38, height: 38 }} />
                             </span>
                         </figure>
                         <a href="https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf" target="_blank" rel="noopener noreferrer">Download Brochure</a>
@@ -53,7 +52,7 @@ export default function SchoolKeyNavigation() {
                     <li className="nav-link3">
                         <figure>
                             <span>
-                                <Image src="/icon-television.png" alt="TV Commercial" fill className="object-contain" />
+                                <img src="/icon-television.png" alt="TV Commercial" width={38} height={38} className="key-nav-icon" style={{ width: 38, height: 38 }} />
                             </span>
                         </figure>
                         <a href="/tv-commercial">
