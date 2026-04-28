@@ -158,9 +158,8 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                     />
                                     <button
                                         type="button"
-                                        onMouseDown={(e) => e.preventDefault()}
                                         onClick={() => setShowPassword((prev) => !prev)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors duration-200"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors duration-200 cursor-pointer"
                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                         aria-pressed={showPassword}
                                     >
