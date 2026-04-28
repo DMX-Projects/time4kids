@@ -281,7 +281,12 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     const refreshAll = async () => {
         if (!user) return;
         if (user.role === "parent") {
-            await Promise.all([loadParentEvents(), loadParentStudentsAndGrades()]);
+            setParentSchoolLoading(true);
+            try {
+                await Promise.all([loadParentEvents(), loadParentStudentsAndGrades()]);
+            } finally {
+                setParentSchoolLoading(false);
+            }
         } else if (user.role === "franchise") {
             await Promise.all([
                 loadFranchiseEvents(),
@@ -302,17 +307,20 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
 
     const loadParentEvents = async () => {
         try {
+            console.log("Loading parent events from /events/parent/");
             const data = await authFetch<unknown>("/events/parent/");
+            console.log("Events API response:", data);
             const list = normalizeApiList(data) as ApiEvent[];
+            console.log("Normalized events list:", list);
             ingestEvents(list);
-        } catch {
+        } catch (error) {
+            console.error("Failed to load parent events:", error);
             setEvents([]);
         }
     };
 
     const loadParentStudentsAndGrades = async () => {
         if (!user || user.role !== "parent") return;
-        setParentSchoolLoading(true);
         try {
             const [sData, gData] = await Promise.all([
                 authFetch<any>("/students/parent/students/"),
@@ -322,8 +330,6 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             setGrades(normalizeApiList(gData).map((g) => mapApiGrade(g, "")));
         } catch (err) {
             console.error("Failed to load parent data", err);
-        } finally {
-            setParentSchoolLoading(false);
         }
     };
 
