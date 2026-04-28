@@ -12,7 +12,6 @@ import {
     Bus,
     LifeBuoy,
     Settings,
-    Calendar,
     CalendarCheck,
 } from "lucide-react";
 import { DashboardShell, DashboardNavItem } from "@/components/layout/DashboardShell";
@@ -24,10 +23,9 @@ const navItems: DashboardNavItem[] = [
     { label: "My details", href: "/dashboard/parent/student-profile", icon: <User className="w-[18px] h-[18px]" /> },
     { label: "Homework", href: "/dashboard/parent/homework", icon: <BookOpen className="w-[18px] h-[18px]" /> },
     { label: "Notifications", href: "/dashboard/parent/notifications", icon: <Bell className="w-[18px] h-[18px]" /> },
-    { label: "Attendance", href: "/dashboard/parent/attendance", icon: <CalendarCheck className="w-[18px] h-[18px]" /> },
+    { label: "Calendar/Attendance", href: "/dashboard/parent/attendance", icon: <CalendarCheck className="w-[18px] h-[18px]" /> },
     { label: "Timetable", href: "/dashboard/parent/timetable", icon: <Table2 className="w-[18px] h-[18px]" /> },
     { label: "Transport", href: "/dashboard/parent/transport", icon: <Bus className="w-[18px] h-[18px]" /> },
-    { label: "Calendar", href: "/dashboard/parent/calendar", icon: <Calendar className="w-[18px] h-[18px]" /> },
     { label: "Showcase", href: "/dashboard/parent/showcase", icon: <Sparkles className="w-[18px] h-[18px]" /> },
     { label: "Fees", href: "/dashboard/parent/fees", icon: <CreditCard className="w-[18px] h-[18px]" /> },
     { label: "Holiday list", href: "/dashboard/parent/holidays", icon: <Palmtree className="w-[18px] h-[18px]" /> },

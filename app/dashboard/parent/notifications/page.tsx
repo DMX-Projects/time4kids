@@ -18,6 +18,29 @@ type NotificationRow = {
     body?: string;
     publishedAt?: string;
     source: "announcement" | "homework" | "fees" | "transport" | "event" | "achievement" | "attendance";
+    read?: boolean;
+};
+
+type ApiNotificationRow = {
+    id: string;
+    source: NotificationRow["source"];
+    title?: string;
+    body?: string;
+    published_at?: string;
+    read?: boolean;
+    read_at?: string;
+};
+
+type ParentNotificationsPayload = {
+    announcements?: unknown;
+    homework?: unknown;
+    fees?: unknown;
+    transport?: unknown;
+    events?: unknown;
+    achievements?: unknown;
+    attendance?: unknown;
+    notifications?: unknown;
+    unread_count?: number;
 };
 
 const normalizeList = <T,>(data: unknown): T[] => {
@@ -47,29 +70,39 @@ const sourceLabel: Record<NotificationRow["source"], string> = {
 export default function NotificationsPage() {
     const { authFetch } = useAuth();
     const [rows, setRows] = useState<NotificationRow[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         let c = false;
         (async () => {
             try {
-                const [annRes, hwRes, feeRes, transportRes, eventRes, achievementRes, attendanceRes] = await Promise.allSettled([
-                    authFetch<unknown>("/students/parent/announcements/"),
-                    authFetch<unknown>("/students/parent/homework/"),
-                    authFetch<unknown>("/students/parent/fees/"),
-                    authFetch<unknown>("/students/parent/transport/"),
-                    authFetch<unknown>("/events/parent/"),
-                    authFetch<unknown>("/students/parent/achievements/"),
-                    authFetch<unknown>("/students/parent/attendance/"),
-                ]);
+                const payload = await authFetch<ParentNotificationsPayload>("/students/parent/notifications/");
+                const annRaw = payload?.announcements ?? [];
+                const hwRaw = payload?.homework ?? [];
+                const feeRaw = payload?.fees ?? [];
+                const transportRaw = payload?.transport ?? [];
+                const eventRaw = payload?.events ?? [];
+                const achievementRaw = payload?.achievements ?? [];
+                const attendanceRaw = payload?.attendance ?? [];
+                const aggregatedRaw = payload?.notifications ?? [];
 
-                const annRaw = annRes.status === "fulfilled" ? annRes.value : [];
-                const hwRaw = hwRes.status === "fulfilled" ? hwRes.value : [];
-                const feeRaw = feeRes.status === "fulfilled" ? feeRes.value : [];
-                const transportRaw = transportRes.status === "fulfilled" ? transportRes.value : [];
-                const eventRaw = eventRes.status === "fulfilled" ? eventRes.value : [];
-                const achievementRaw = achievementRes.status === "fulfilled" ? achievementRes.value : [];
-                const attendanceRaw = attendanceRes.status === "fulfilled" ? attendanceRes.value : [];
+                const aggregatedRows: NotificationRow[] = normalizeList<ApiNotificationRow>(aggregatedRaw).map((r) => ({
+                    id: r.id,
+                    title: r.title || "Notification",
+                    body: r.body,
+                    publishedAt: r.published_at,
+                    source: r.source,
+                    read: Boolean(r.read),
+                }));
+
+                if (aggregatedRows.length > 0) {
+                    if (!c) {
+                        setRows(aggregatedRows);
+                        setUnreadCount(typeof payload?.unread_count === "number" ? payload.unread_count : aggregatedRows.filter((r) => !r.read).length);
+                    }
+                    return;
+                }
 
                 const announcementRows: NotificationRow[] = normalizeList<AnnouncementRow>(annRaw).map((r) => ({
                     id: `announcement-${r.id}`,
@@ -147,9 +180,15 @@ export default function NotificationsPage() {
                     return tb - ta;
                 });
 
-                if (!c) setRows(merged);
+                if (!c) {
+                    setRows(merged);
+                    setUnreadCount(merged.length);
+                }
             } catch {
-                if (!c) setRows([]);
+                if (!c) {
+                    setRows([]);
+                    setUnreadCount(0);
+                }
             } finally {
                 if (!c) setLoading(false);
             }
@@ -158,6 +197,27 @@ export default function NotificationsPage() {
             c = true;
         };
     }, [authFetch]);
+
+    const markAsRead = async (row: NotificationRow) => {
+        try {
+            const res = await authFetch<{ unread_count?: number }>("/students/parent/notifications/read/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: JSON.stringify({ notification_id: row.id }),
+            });
+            setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, read: true } : r)));
+            if (typeof res?.unread_count === "number") {
+                setUnreadCount(res.unread_count);
+            } else if (!row.read) {
+                setUnreadCount((prev) => Math.max(0, prev - 1));
+            }
+        } catch {
+            // keep item if request fails
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -169,6 +229,7 @@ export default function NotificationsPage() {
                     <div>
                         <h1 className="text-lg font-semibold text-orange-900">Notifications</h1>
                         <p className="text-sm text-orange-700">All updates from your centre (announcements, homework, events, fees, transport, achievements, attendance), newest first.</p>
+                        <p className="text-xs text-orange-600 mt-1">Unread: {unreadCount}</p>
                     </div>
                 </div>
             </section>
@@ -178,12 +239,19 @@ export default function NotificationsPage() {
 
             <ul className="space-y-3">
                 {rows.map((r) => (
-                    <li key={r.id} className="rounded-xl border border-orange-100 bg-white p-4 shadow-sm">
+                    <li
+                        key={r.id}
+                        onClick={() => void markAsRead(r)}
+                        className={`rounded-xl border bg-white p-4 shadow-sm cursor-pointer hover:border-orange-200 ${r.read ? "border-slate-200 opacity-70" : "border-orange-100"}`}
+                    >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2 flex-wrap">
                                 <h2 className="font-semibold text-orange-900">{r.title}</h2>
                                 <span className="text-[11px] uppercase tracking-wide rounded-full bg-orange-50 border border-orange-100 px-2 py-0.5 text-orange-700">
                                     {sourceLabel[r.source]}
+                                </span>
+                                <span className={`text-[11px] uppercase tracking-wide rounded-full px-2 py-0.5 border ${r.read ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
+                                    {r.read ? "Read" : "Unread"}
                                 </span>
                             </div>
                             <span className="text-xs text-orange-600 font-medium">

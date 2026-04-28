@@ -15,8 +15,8 @@ export default function KeyNavigation() {
                         <li key={`${item.href}-${index}`} className={item.nav_class || 'nav-link1'}>
                             <figure>
                                 <span>
-                                    <span className="relative block w-full h-full">
-                                        <Image src={item.icon} alt={item.alt} fill className="object-contain" unoptimized />
+                                    <span className="relative block key-nav-icon-box">
+                                        <Image src={item.icon} alt={item.alt} fill className="object-contain key-nav-icon" unoptimized />
                                     </span>
                                 </span>
                             </figure>

@@ -845,7 +845,7 @@ body {
 
 .key-nav li figure {
   width: clamp(108px, 14vw, 200px);
-  height: 120px;
+  height: 130px;
   margin-left: auto;
   margin-right: auto;
   margin-bottom: 15px;
@@ -856,33 +856,46 @@ body {
   border-radius: 67% 33% 39% 61% / 37% 57% 43% 63%;
   text-align: center;
   box-shadow: 0px 0px 32px -3px rgba(0, 0, 0, 0.44);
-  transition: all 0.4s ease-in-out;
+  transition: transform 0.08s linear, border-radius 0.08s linear;
+  overflow: hidden;
   /* Orange gradient for nav-link1 */
   background: linear-gradient(135deg, rgb(236, 178, 72) 0%, rgb(221, 103, 5) 100%);
 }
 
 .key-nav li:hover figure {
-  transform: rotate(20deg);
-  border-radius: 16px;
+  transform: rotate(8deg) translateY(-1px) !important;
+  border-radius: 24px !important;
 }
 
 /* Only the icon wrapper inside figure — not label <span>s inside <a> */
 .key-nav li figure span {
-  height: 120px;
-  width: 100%;
+  height: auto;
+  width: auto;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.key-nav li figure span img {
-  max-width: min(70px, 55%);
-  width: auto;
-  height: auto;
+.key-nav .key-nav-icon-box {
+  width: 60px;
+  height: 60px;
+}
+
+.key-nav .key-nav-icon {
+  width: 46px;
+  height: 46px;
+  max-width: 46px;
+  max-height: 46px;
+  object-fit: contain;
+  object-position: center;
   display: block;
-  position: relative;
-  left: 0;
-  transition: all 0.8s ease-in-out;
+  margin: 0 auto;
+  position: static;
+  transition: transform 0.1s linear;
+}
+
+.key-nav li:hover .key-nav-icon {
+  transform: scale(1.02);
 }
 
 .key-nav li a {
@@ -901,10 +914,18 @@ body {
   border-radius: 42% 58% 37% 63% / 63% 44% 56% 37%;
 }
 
+.key-nav .nav-link2:hover figure {
+  border-radius: 24px !important;
+}
+
 /* Red gradient for nav-link3 */
 .key-nav .nav-link3 figure {
   background: linear-gradient(135deg, rgb(211, 102, 85) 0%, rgb(188, 85, 69) 40%, rgb(189, 43, 19) 100%);
   border-radius: 69% 31% 53% 47% / 41% 69% 31% 59%;
+}
+
+.key-nav .nav-link3:hover figure {
+  border-radius: 24px !important;
 }
 
 /* Responsive for Key Navigation */
@@ -940,8 +961,16 @@ body {
     max-width: 120px;
   }
 
-  .key-nav li figure span img {
-    max-width: min(70px, 50%);
+  .key-nav .key-nav-icon {
+    width: 42px;
+    height: 42px;
+    max-width: 42px;
+    max-height: 42px;
+  }
+
+  .key-nav .key-nav-icon-box {
+    width: 44px;
+    height: 44px;
   }
 }
 

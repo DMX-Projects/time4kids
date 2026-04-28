@@ -3,24 +3,56 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 
 type Row = { id: number; date: string; status: string; note?: string; student_name?: string };
+type EventRow = { id: string; title: string; date: string; venue: string };
+type CombinedPayload = {
+    calendar_events?: unknown;
+    attendance?: unknown;
+};
 
 export default function AttendancePage() {
     const { authFetch } = useAuth();
-    const { events } = useSchoolData();
     const [rows, setRows] = useState<Row[]>([]);
+    const [calendarEvents, setCalendarEvents] = useState<EventRow[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         let c = false;
         (async () => {
             try {
-                const data = await authFetch<Row[]>("/students/parent/attendance/");
-                if (!c) setRows(Array.isArray(data) ? data : []);
+                const payload = await authFetch<CombinedPayload>("/students/parent/calendar-attendance/");
+                const attendanceRaw = payload?.attendance;
+                const eventsRaw = payload?.calendar_events;
+
+                const attendanceList = Array.isArray(attendanceRaw)
+                    ? attendanceRaw
+                    : attendanceRaw && typeof attendanceRaw === "object" && Array.isArray((attendanceRaw as { results?: unknown[] }).results)
+                      ? (attendanceRaw as { results: unknown[] }).results
+                      : [];
+
+                const eventList = Array.isArray(eventsRaw)
+                    ? eventsRaw
+                    : eventsRaw && typeof eventsRaw === "object" && Array.isArray((eventsRaw as { results?: unknown[] }).results)
+                      ? (eventsRaw as { results: unknown[] }).results
+                      : [];
+
+                const mappedEvents = (eventList as Array<{ id: number | string; title?: string; start_date?: string; end_date?: string; location?: string }>).map((e) => ({
+                    id: String(e.id),
+                    title: e.title || "Event",
+                    date: e.start_date || e.end_date || "",
+                    venue: e.location || "",
+                }));
+
+                if (!c) {
+                    setRows(attendanceList as Row[]);
+                    setCalendarEvents(mappedEvents);
+                }
             } catch {
-                if (!c) setRows([]);
+                if (!c) {
+                    setRows([]);
+                    setCalendarEvents([]);
+                }
             } finally {
                 if (!c) setLoading(false);
             }
@@ -55,9 +87,9 @@ export default function AttendancePage() {
 
             <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4 space-y-3">
                 <h2 className="text-sm font-semibold text-orange-900">School calendar</h2>
-                {events.length === 0 && <p className="text-sm text-orange-700">No events shared yet.</p>}
+                {calendarEvents.length === 0 && <p className="text-sm text-orange-700">No events shared yet.</p>}
                 <div className="space-y-2">
-                    {events.map((ev) => (
+                    {calendarEvents.map((ev) => (
                         <div key={ev.id} className="rounded-lg border border-orange-100 px-3 py-2 text-sm flex items-center justify-between gap-2">
                             <div>
                                 <p className="font-semibold text-orange-900">{ev.title}</p>

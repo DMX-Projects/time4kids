@@ -376,7 +376,20 @@ function AnnouncementsTab({ authFetch, showToast }: { authFetch: AuthFetchFn; sh
 }
 
 function FeesTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; showToast: ShowToastFn; students: MiniStudent[] }) {
-    const [form, setForm] = useState({ student: "", title: "", amount: "", due_date: "", status: "PENDING", paid_on: "", notes: "" });
+    const [form, setForm] = useState({
+        student: "",
+        fee_structure_name: "",
+        id_card_no: "",
+        course: "",
+        title: "",
+        amount: "",
+        discount: "0",
+        amount_paid: "0",
+        due_date: "",
+        status: "PENDING",
+        paid_on: "",
+        notes: "",
+    });
     const [rows, setRows] = useState<
         { id: number; student_name?: string; title: string; amount: string | number; due_date: string; status: string; paid_on?: string | null }[]
     >([]);
@@ -416,8 +429,13 @@ function FeesTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; s
                 headers: jsonHeaders(),
                 body: JSON.stringify({
                     student: Number(form.student),
+                    fee_structure_name: form.fee_structure_name.trim(),
+                    id_card_no: form.id_card_no.trim(),
+                    course: form.course.trim(),
                     title: form.title.trim(),
                     amount: form.amount,
+                    discount: form.discount || "0",
+                    amount_paid: form.amount_paid || "0",
                     due_date: form.due_date,
                     status: form.status,
                     paid_on: form.paid_on || null,
@@ -425,7 +443,20 @@ function FeesTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; s
                 }),
             });
             showToast("Fee entry saved", "success");
-            setForm({ student: "", title: "", amount: "", due_date: "", status: "PENDING", paid_on: "", notes: "" });
+            setForm({
+                student: "",
+                fee_structure_name: "",
+                id_card_no: "",
+                course: "",
+                title: "",
+                amount: "",
+                discount: "0",
+                amount_paid: "0",
+                due_date: "",
+                status: "PENDING",
+                paid_on: "",
+                notes: "",
+            });
             await load();
         } catch {
             showToast("Save failed", "error");
@@ -447,12 +478,32 @@ function FeesTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; s
                     </select>
                 </label>
                 <label className="text-xs font-semibold">
+                    Fee structure name
+                    <input value={form.fee_structure_name} onChange={(e) => setForm((p) => ({ ...p, fee_structure_name: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold">
+                    ID card no
+                    <input value={form.id_card_no} onChange={(e) => setForm((p) => ({ ...p, id_card_no: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold md:col-span-2">
+                    Course
+                    <input value={form.course} onChange={(e) => setForm((p) => ({ ...p, course: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold">
                     Title
                     <input required value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
                 </label>
                 <label className="text-xs font-semibold">
                     Amount
                     <input required type="number" step="0.01" value={form.amount} onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold">
+                    Discount
+                    <input type="number" step="0.01" value={form.discount} onChange={(e) => setForm((p) => ({ ...p, discount: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold">
+                    Amount paid till date
+                    <input type="number" step="0.01" value={form.amount_paid} onChange={(e) => setForm((p) => ({ ...p, amount_paid: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
                 </label>
                 <label className="text-xs font-semibold">
                     Due date

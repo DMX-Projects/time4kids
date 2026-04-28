@@ -7,8 +7,13 @@ import { useParentData } from "@/components/dashboard/parent/ParentDataProvider"
 
 type Row = {
     id: number;
+    fee_structure_name?: string;
+    id_card_no?: string;
+    course?: string;
     title: string;
     amount: string | number;
+    discount?: string | number;
+    amount_paid?: string | number;
     due_date: string;
     paid_on?: string | null;
     status: string;
@@ -108,6 +113,27 @@ export default function FeesPage() {
                     </section>
 
                     <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm border border-orange-100">
+                                <thead className="bg-orange-50 text-orange-900">
+                                    <tr>
+                                        <th className="text-left p-2 border border-orange-100">Fee Structure Name</th>
+                                        <th className="text-left p-2 border border-orange-100">ID Card No</th>
+                                        <th className="text-left p-2 border border-orange-100">Course</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td className="p-2 border border-orange-100">{rows[0]?.fee_structure_name || "—"}</td>
+                                        <td className="p-2 border border-orange-100">{rows[0]?.id_card_no || "—"}</td>
+                                        <td className="p-2 border border-orange-100">{rows[0]?.course || "—"}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4">
                         <h2 className="text-lg font-semibold text-orange-900 mb-3">Fee Structure &amp; Payment Status</h2>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm border border-orange-100">
@@ -128,10 +154,10 @@ export default function FeesPage() {
                                     {rows.map((r, idx) => {
                                         const amount = Number(r.amount || 0);
                                         const isPaid = String(r.status).toUpperCase() === "PAID";
-                                        const discount = 0;
+                                        const discount = Number(r.discount || 0);
                                         const netPayable = amount - discount;
-                                        const paidAmount = isPaid ? amount : 0;
-                                        const balance = isPaid ? 0 : netPayable;
+                                        const paidAmount = Number(r.amount_paid ?? (isPaid ? amount : 0));
+                                        const balance = Math.max(netPayable - paidAmount, 0);
                                         return (
                                             <tr key={r.id}>
                                                 <td className="p-2 border border-orange-100">{idx + 1}</td>
