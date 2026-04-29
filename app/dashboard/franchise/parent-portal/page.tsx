@@ -101,7 +101,7 @@ export default function ParentPortalAdminPage() {
             {tab === "homework" && <HomeworkTab authFetch={authFetch} showToast={showToast} students={students} onRefresh={loadStudents} />}
             {tab === "notifications" && <AnnouncementsTab authFetch={authFetch} showToast={showToast} />}
             {tab === "timetable" && <DocsHintPanel variant="timetable" />}
-            {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} />}
+            {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} students={students} />}
             {tab === "calendar" && <FranchiseCalendarTab authFetch={authFetch} />}
             {tab === "showcase" && <ShowcaseTab authFetch={authFetch} showToast={showToast} />}
             {tab === "fees" && <FeesTab authFetch={authFetch} showToast={showToast} students={students} />}
@@ -726,8 +726,78 @@ function FeesTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; s
     );
 }
 
-function TransportTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
-    const [form, setForm] = useState({ route_name: "", description: "", map_url: "", tracking_note: "", sort_order: "0" });
+function TransportTab({
+    authFetch,
+    showToast,
+    students,
+}: {
+    authFetch: AuthFetchFn;
+    showToast: ShowToastFn;
+    students: MiniStudent[];
+}) {
+    const [form, setForm] = useState({
+        route_name: "",
+        description: "",
+        map_url: "",
+        vehicle_number: "",
+        driver_name: "",
+        driver_phone: "",
+        tracking_note: "",
+        sort_order: "0",
+    });
+    const [rows, setRows] = useState<
+        Array<{
+            id: number;
+            route_name: string;
+            vehicle_number?: string;
+            driver_name?: string;
+            driver_token?: string;
+        }>
+    >([]);
+    const [assignments, setAssignments] = useState<
+        Array<{
+            id: number;
+            student: number;
+            student_name: string;
+            route: number;
+            route_name: string;
+            pickup_stop?: string;
+            drop_stop?: string;
+            pickup_time?: string | null;
+            drop_time?: string | null;
+        }>
+    >([]);
+    const [assignmentForm, setAssignmentForm] = useState({
+        student: "",
+        route: "",
+        pickup_stop: "",
+        drop_stop: "",
+        pickup_time: "",
+        drop_time: "",
+    });
+    const [assignSearch, setAssignSearch] = useState("");
+    const [assignClass, setAssignClass] = useState("");
+    const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(true);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [bulkLoading, setBulkLoading] = useState(false);
+
+    const load = useCallback(async () => {
+        try {
+            const [routeData, assignmentData] = await Promise.all([
+                authFetch<unknown>("/students/franchise/transport/"),
+                authFetch<unknown>("/students/franchise/transport-assignments/"),
+            ]);
+            setRows(normalizeList<any>(routeData));
+            setAssignments(normalizeList<any>(assignmentData));
+        } catch {
+            setRows([]);
+            setAssignments([]);
+        }
+    }, [authFetch]);
+
+    useEffect(() => {
+        void load();
+    }, [load]);
 
     const submit = async (e: FormEvent) => {
         e.preventDefault();
@@ -739,27 +809,279 @@ function TransportTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showTo
                     route_name: form.route_name.trim(),
                     description: form.description,
                     map_url: form.map_url,
+                    vehicle_number: form.vehicle_number,
+                    driver_name: form.driver_name,
+                    driver_phone: form.driver_phone,
                     tracking_note: form.tracking_note,
                     sort_order: Number(form.sort_order) || 0,
                 }),
             });
             showToast("Route saved", "success");
-            setForm({ route_name: "", description: "", map_url: "", tracking_note: "", sort_order: "0" });
+            setForm({
+                route_name: "",
+                description: "",
+                map_url: "",
+                vehicle_number: "",
+                driver_name: "",
+                driver_phone: "",
+                tracking_note: "",
+                sort_order: "0",
+            });
+            await load();
         } catch {
             showToast("Save failed", "error");
         }
     };
 
+
+    const submitBulkAssignment = async () => {
+        if (selectedIds.length === 0 || !assignmentForm.route) {
+            showToast("Select students and a route", "error");
+            return;
+        }
+        setBulkLoading(true);
+        let successCount = 0;
+        try {
+            for (const studentId of selectedIds) {
+                try {
+                    await authFetch("/students/franchise/transport-assignments/", {
+                        method: "POST",
+                        headers: jsonHeaders(),
+                        body: JSON.stringify({
+                            student: studentId,
+                            route: Number(assignmentForm.route),
+                            pickup_stop: assignmentForm.pickup_stop,
+                            drop_stop: assignmentForm.drop_stop,
+                            pickup_time: assignmentForm.pickup_time || null,
+                            drop_time: assignmentForm.drop_time || null,
+                            is_active: true,
+                        }),
+                    });
+                    successCount++;
+                } catch (e) {
+                    console.error(`Failed to assign student ${studentId}`, e);
+                }
+            }
+            showToast(`Assigned ${successCount} students successfully`, "success");
+            setSelectedIds([]);
+            setAssignmentForm(p => ({ ...p, student: "" }));
+            await load();
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const removeAssignment = async (id: number) => {
+        if (!confirm("Remove this student route assignment?")) return;
+        try {
+            await authFetch(`/students/franchise/transport-assignments/${id}/`, { method: "DELETE" });
+            showToast("Assignment removed", "success");
+            await load();
+        } catch {
+            showToast("Could not remove assignment", "error");
+        }
+    };
+
+    const assignedIds = new Set(assignments.map((a: any) => a.student));
+    const classes = Array.from(new Set(students.map(s => s.class_name).filter(Boolean))).sort();
+    
+    const filteredForAssign = students.filter(s => {
+        const matchesSearch = s.full_name.toLowerCase().includes(assignSearch.toLowerCase());
+        const matchesClass = !assignClass || s.class_name === assignClass;
+        const matchesUnassigned = !showOnlyUnassigned || !assignedIds.has(s.id);
+        return matchesSearch && matchesClass && matchesUnassigned;
+    });
+
     return (
-        <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3 max-w-xl">
-            <input required placeholder="Route name" value={form.route_name} onChange={(e) => setForm((p) => ({ ...p, route_name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
-            <textarea placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={3} className="w-full rounded-xl border px-3 py-2 text-sm" />
-            <input placeholder="Map URL (Google Maps)" value={form.map_url} onChange={(e) => setForm((p) => ({ ...p, map_url: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
-            <input placeholder="Tracking note (e.g. call transport desk)" value={form.tracking_note} onChange={(e) => setForm((p) => ({ ...p, tracking_note: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
-            <input type="number" placeholder="Sort order" value={form.sort_order} onChange={(e) => setForm((p) => ({ ...p, sort_order: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
-            <Button type="submit" className="bg-[#FF922B] text-white">
-                Add route
-            </Button>
-        </form>
+        <div className="space-y-4 max-w-3xl">
+            <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 grid md:grid-cols-2 gap-3">
+                <input required placeholder="Route name" value={form.route_name} onChange={(e) => setForm((p) => ({ ...p, route_name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
+                <input placeholder="Vehicle number" value={form.vehicle_number} onChange={(e) => setForm((p) => ({ ...p, vehicle_number: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
+                <input placeholder="Driver name" value={form.driver_name} onChange={(e) => setForm((p) => ({ ...p, driver_name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
+                <input placeholder="Driver phone" value={form.driver_phone} onChange={(e) => setForm((p) => ({ ...p, driver_phone: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
+                <input type="number" placeholder="Sort order" value={form.sort_order} onChange={(e) => setForm((p) => ({ ...p, sort_order: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
+                <textarea placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={3} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
+                <input placeholder="Map URL (Google Maps)" value={form.map_url} onChange={(e) => setForm((p) => ({ ...p, map_url: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
+                <input placeholder="Tracking note (e.g. call transport desk)" value={form.tracking_note} onChange={(e) => setForm((p) => ({ ...p, tracking_note: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
+                <Button type="submit" className="bg-[#FF922B] text-white w-fit">
+                    Add route
+                </Button>
+            </form>
+
+            <section className="bg-white border border-orange-100 rounded-2xl p-4 space-y-4">
+                <div className="space-y-1">
+                    <p className="text-sm font-semibold text-[#111827]">Bulk assign students</p>
+                    <p className="text-xs text-[#6B7280]">Select multiple students and assign them to a route at once.</p>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                        <input 
+                            placeholder="Search student name..."
+                            value={assignSearch}
+                            onChange={(e) => setAssignSearch(e.target.value)}
+                            className="flex-1 min-w-[200px] rounded-xl border border-orange-100 px-3 py-2 text-sm outline-none focus:border-orange-400"
+                        />
+                        <select
+                            value={assignClass}
+                            onChange={(e) => setAssignClass(e.target.value)}
+                            className="rounded-xl border border-orange-100 px-3 py-2 text-sm outline-none focus:border-orange-400"
+                        >
+                            <option value="">All Classes</option>
+                            {classes.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 text-xs font-medium text-orange-800 cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={showOnlyUnassigned} 
+                                onChange={(e) => setShowOnlyUnassigned(e.target.checked)}
+                            />
+                            Show unassigned only
+                        </label>
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                if (selectedIds.length === filteredForAssign.length) setSelectedIds([]);
+                                else setSelectedIds(filteredForAssign.map(s => s.id));
+                            }}
+                            className="text-xs font-bold text-blue-600 hover:underline"
+                        >
+                            {selectedIds.length === filteredForAssign.length ? "Deselect All" : "Select All Visible"}
+                        </button>
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto rounded-xl border border-orange-100 bg-orange-50/30 p-2 space-y-1">
+                        {filteredForAssign.map((s) => (
+                            <label key={s.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-orange-100/50 cursor-pointer transition-colors">
+                                <input 
+                                    type="checkbox"
+                                    checked={selectedIds.includes(s.id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) setSelectedIds(p => [...p, s.id]);
+                                        else setSelectedIds(p => p.filter(id => id !== s.id));
+                                    }}
+                                />
+                                <span className="text-sm text-orange-950">
+                                    {s.full_name} <span className="text-[10px] text-orange-700 uppercase font-bold ml-1">{s.class_name}</span>
+                                </span>
+                            </label>
+                        ))}
+                        {filteredForAssign.length === 0 && (
+                            <p className="p-4 text-center text-sm text-orange-700">No students found matching filters.</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-3 pt-2">
+                    <div className="md:col-span-2">
+                        <label className="text-xs font-bold text-orange-800 uppercase block mb-1">Target Route</label>
+                        <select
+                            required
+                            value={assignmentForm.route}
+                            onChange={(e) => setAssignmentForm((p) => ({ ...p, route: e.target.value }))}
+                            className="w-full rounded-xl border border-orange-200 px-3 py-2 text-sm"
+                        >
+                            <option value="">Select route</option>
+                            {rows.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                    {r.route_name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    <input placeholder="Optional Pickup stop" value={assignmentForm.pickup_stop} onChange={(e) => setAssignmentForm((p) => ({ ...p, pickup_stop: e.target.value }))} className="w-full rounded-xl border border-orange-100 px-3 py-2 text-sm" />
+                    <input placeholder="Optional Drop stop" value={assignmentForm.drop_stop} onChange={(e) => setAssignmentForm((p) => ({ ...p, drop_stop: e.target.value }))} className="w-full rounded-xl border border-orange-100 px-3 py-2 text-sm" />
+                    
+                    <Button 
+                        onClick={submitBulkAssignment} 
+                        className="md:col-span-2 bg-[#FF922B] text-white disabled:opacity-50"
+                        disabled={bulkLoading || selectedIds.length === 0 || !assignmentForm.route}
+                    >
+                        {bulkLoading ? "Assigning..." : `Assign ${selectedIds.length} Selected Students`}
+                    </Button>
+                </div>
+            </section>
+
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-[#111827]">Driver links</p>
+                    <button type="button" onClick={() => void load()} className="text-xs text-[#2563EB] underline">
+                        Refresh
+                    </button>
+                </div>
+                {rows.length === 0 && <p className="text-sm text-[#6B7280]">No routes added yet.</p>}
+                <ul className="space-y-2">
+                    {rows.map((r) => {
+                        const href = typeof window !== "undefined" && r.driver_token ? `${window.location.origin}/driver/trip` : "/driver/trip";
+                        return (
+                            <li key={r.id} className="rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm">
+                                <p className="font-medium text-[#111827]">{r.route_name}</p>
+                                <p className="text-xs text-[#4B5563]">
+                                    {r.vehicle_number || "Vehicle not added"} {r.driver_name ? `- ${r.driver_name}` : ""}
+                                </p>
+                                {r.driver_token ? (
+                                    <div className="mt-2 space-y-2">
+                                        <div className="rounded-lg bg-[#F9FAFB] p-2 text-xs text-[#374151] break-all border border-[#E5E7EB]">
+                                            <p className="font-semibold text-[10px] uppercase text-[#6B7280] mb-1">Driver Login Token</p>
+                                            <p className="font-mono">{r.driver_token}</p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const link = `${window.location.origin}/driver/trip?token=${r.driver_token}`;
+                                                    navigator.clipboard.writeText(link);
+                                                    showToast("Link copied to clipboard", "success");
+                                                }}
+                                                className="inline-flex items-center gap-1 rounded-lg bg-[#F3F4F6] px-3 py-1.5 text-xs font-semibold text-[#374151] hover:bg-[#E5E7EB]"
+                                            >
+                                                Copy Link
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const link = `${window.location.origin}/driver/trip?token=${r.driver_token}`;
+                                                    const text = `Hi, here is your driver tracking link for ${r.route_name}: ${link}`;
+                                                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+                                                }}
+                                                className="inline-flex items-center gap-1 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+                                            >
+                                                Share via WhatsApp
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </li>
+                        );
+                    })}
+                </ul>
+            </div>
+
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-[#111827]">Student route assignments</p>
+                {assignments.length === 0 && <p className="text-sm text-[#6B7280]">No students assigned yet.</p>}
+                <ul className="space-y-2">
+                    {assignments.map((a) => (
+                        <li key={a.id} className="flex flex-col gap-2 rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="font-medium text-[#111827]">{a.student_name}</p>
+                                <p className="text-xs text-[#4B5563]">
+                                    {a.route_name}
+                                    {a.pickup_stop ? ` - Pickup: ${a.pickup_stop}` : ""}
+                                    {a.drop_stop ? ` - Drop: ${a.drop_stop}` : ""}
+                                </p>
+                            </div>
+                            <button type="button" onClick={() => void removeAssignment(a.id)} className="text-xs font-semibold text-red-600">
+                                Remove
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </div>
     );
 }
