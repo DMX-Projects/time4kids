@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { apiUrl, jsonHeaders, toApiError } from "@/lib/api-client";
 import { AccessLoading } from "@/components/auth/AccessLoading";
 
-type Role = "admin" | "franchise" | "parent";
+type Role = "admin" | "franchise" | "parent" | "driver";
 
 type User = {
     id: string;
@@ -40,7 +40,7 @@ const LEGACY_STORAGE_KEY = "tk-auth-session";
 const LAST_ROLE_KEY = "tk-auth-last-role";
 
 const storageKeyForRole = (role: Role) => `tk-auth-${role}`;
-const ALL_ROLE_KEYS: string[] = ["admin", "franchise", "parent"].map((r) => storageKeyForRole(r as Role));
+const ALL_ROLE_KEYS: string[] = ["admin", "franchise", "parent", "driver"].map((r) => storageKeyForRole(r as Role));
 
 export const normalizeRole = (role?: string | null): Role => {
     const mapped = String(role ?? "")
@@ -48,6 +48,7 @@ export const normalizeRole = (role?: string | null): Role => {
         .toLowerCase();
     if (mapped === "admin") return "admin";
     if (mapped === "franchise") return "franchise";
+    if (mapped === "driver") return "driver";
     return "parent";
 };
 
@@ -55,9 +56,11 @@ export const normalizeRole = (role?: string | null): Role => {
 function pathnameDashboardRole(): Role | null {
     if (typeof window === "undefined") return null;
     const parts = window.location.pathname.split("/").filter(Boolean);
-    if (parts[0] !== "dashboard") return null;
-    const r = parts[1];
-    if (r === "parent" || r === "franchise" || r === "admin") return r;
+    if (parts[0] === "dashboard") {
+        const r = parts[1];
+        if (r === "parent" || r === "franchise" || r === "admin" || r === "driver") return r as Role;
+    }
+    if (parts[0] === "driver") return "driver";
     return null;
 }
 
@@ -99,12 +102,12 @@ function readStoredSessionRaw(): string | null {
     }
 
     const last = localStorage.getItem(LAST_ROLE_KEY) as Role | null;
-    if (last === "parent" || last === "franchise" || last === "admin") {
+    if (last === "parent" || last === "franchise" || last === "admin" || last === "driver") {
         const fromLast = localStorage.getItem(storageKeyForRole(last));
         if (fromLast) return fromLast;
     }
 
-    for (const r of ["admin", "franchise", "parent"] as const) {
+    for (const r of ["admin", "franchise", "parent", "driver"] as const) {
         const raw = localStorage.getItem(storageKeyForRole(r));
         if (raw) return raw;
     }

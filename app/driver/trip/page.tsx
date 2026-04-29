@@ -1,9 +1,12 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState, Suspense } from "react";
-import { Bus, CheckCircle2, Crosshair, Loader2, MapPin, Play, Square, UserCheck, UserX } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { Bus, CheckCircle2, Crosshair, Loader2, LogOut, MapPin, Play, Square, UserCheck, UserX } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import Button from "@/components/ui/Button";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { apiUrl, jsonHeaders } from "@/lib/api-client";
 
 type RouteInfo = {
@@ -43,6 +46,8 @@ type AssignedStudent = {
 const TOKEN_KEY = "tk-driver-route-token";
 
 function DriverTripContent() {
+    const router = useRouter();
+    const { user, authFetch, logout: authLogout } = useAuth();
     const searchParams = useSearchParams();
     const [token, setToken] = useState("");
     const [route, setRoute] = useState<RouteInfo | null>(null);
@@ -59,20 +64,27 @@ function DriverTripContent() {
 
     const cleanToken = (value: string) => value.trim();
 
-    const loadRoute = useCallback(async (value: string) => {
-        const nextToken = cleanToken(value);
-        if (!nextToken) return;
+    const loadRoute = useCallback(async (value?: string) => {
+        const nextToken = value ? cleanToken(value) : "";
+        
         setLoading(true);
         setMessage("");
         try {
-            const res = await fetch(apiUrl(`/students/driver/transport/${nextToken}/`), { cache: "no-store" });
-            if (!res.ok) throw new Error("Invalid driver link");
-            const data = await res.json();
+            let data: any;
+            if (user?.role === "driver") {
+                data = await authFetch("/students/driver/me/trip/");
+            } else {
+                if (!nextToken) return;
+                const res = await fetch(apiUrl(`/students/driver/transport/${nextToken}/`), { cache: "no-store" });
+                if (!res.ok) throw new Error("Invalid driver link");
+                data = await res.json();
+                localStorage.setItem(TOKEN_KEY, nextToken);
+                setToken(nextToken);
+            }
+            
             setRoute(data.route);
             setActiveTrip(data.active_trip);
-            setStudents(Array.isArray(data.assigned_students) ? data.assigned_students : []);
-            localStorage.setItem(TOKEN_KEY, nextToken);
-            setToken(nextToken);
+            setStudents(Array.isArray(data.students) ? data.students : (Array.isArray(data.assigned_students) ? data.assigned_students : []));
         } catch (err) {
             setRoute(null);
             setActiveTrip(null);
@@ -81,22 +93,30 @@ function DriverTripContent() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user, authFetch]);
 
     useEffect(() => {
         const urlToken = searchParams.get("token");
         const saved = localStorage.getItem(TOKEN_KEY);
         let timer: ReturnType<typeof setInterval> | null = null;
 
-        const effectiveToken = urlToken || saved;
-
-        if (effectiveToken) {
-            setToken(effectiveToken);
-            void loadRoute(effectiveToken);
-            // Auto refresh student list every 30 seconds
+        if (user?.role === "driver") {
+            void loadRoute();
             timer = setInterval(() => {
-                void loadRoute(effectiveToken);
+                void loadRoute();
             }, 30000);
+        } else {
+            const effectiveToken = urlToken || saved;
+            if (effectiveToken) {
+                setToken(effectiveToken);
+                void loadRoute(effectiveToken);
+                timer = setInterval(() => {
+                    void loadRoute(effectiveToken);
+                }, 30000);
+            } else if (!loading) {
+                // No token and not logged in as driver -> redirect to dedicated driver login
+                router.push("/driver/login");
+            }
         }
 
         return () => {
@@ -140,17 +160,33 @@ function DriverTripContent() {
     };
 
     const startTrip = async () => {
-        if (!token) return;
+        if (!token && user?.role !== "driver") return;
+        
+        if (activeTrip && activeTrip.status === "LIVE") {
+            if (!confirm("A trip is already active. Starting a new one will complete the current trip. Continue?")) {
+                return;
+            }
+        }
+
         setLoading(true);
         setMessage("");
         try {
-            const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/start/`), {
-                method: "POST",
-                headers: jsonHeaders(),
-                body: JSON.stringify({ trip_type: tripType }),
-            });
-            if (!res.ok) throw new Error("Could not start trip");
-            const data = await res.json();
+            let data: any;
+            if (user?.role === "driver") {
+                data = await authFetch("/students/driver/me/trip/start/", {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({ trip_type: tripType }),
+                });
+            } else {
+                const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/start/`), {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({ trip_type: tripType }),
+                });
+                if (!res.ok) throw new Error("Could not start trip");
+                data = await res.json();
+            }
             setActiveTrip(data);
             setSummary(null);
             setMessage("Trip started. GPS sharing active.");
@@ -166,28 +202,51 @@ function DriverTripContent() {
 
     const postLocation = async (position: GeolocationPosition) => {
         const coords = position.coords;
-        const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/location/`), {
-            method: "POST",
-            headers: jsonHeaders(),
-            body: JSON.stringify({
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-                speed: coords.speed,
-                heading: coords.heading,
-                accuracy: coords.accuracy,
-            }),
-        });
-        if (!res.ok) throw new Error("Location upload failed");
-        const saved = await res.json();
-        setActiveTrip((prev) =>
-            prev
-                ? {
-                      ...prev,
-                      latest_location: saved,
-                  }
-                : prev,
-        );
-        setMessage(`Location sent at ${new Date(saved.recorded_at).toLocaleTimeString()}`);
+        let saved: any;
+        
+        const payload = {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            speed: coords.speed ?? 0,
+            heading: coords.heading ?? 0,
+            accuracy: coords.accuracy ?? 0,
+        };
+
+        try {
+            if (user?.role === "driver") {
+                saved = await authFetch("/students/driver/me/trip/location/", {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify(payload),
+                });
+            } else {
+                const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/location/`), {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify(payload),
+                });
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    console.error("Location upload failed:", errData);
+                    throw new Error("Location upload failed");
+                }
+                saved = await res.json();
+            }
+            
+            setActiveTrip((prev) =>
+                prev
+                    ? {
+                        ...prev,
+                        latest_location: saved,
+                    }
+                    : prev,
+            );
+            const timestamp = saved.recorded_at ? new Date(saved.recorded_at).toLocaleTimeString() : new Date().toLocaleTimeString();
+            setMessage(`Location sent at ${timestamp}`);
+        } catch (err) {
+            console.error("Location update error:", err);
+            // Don't show error message to user for every background location fail to avoid annoyance
+        }
     };
 
     const startWatching = () => {
@@ -224,17 +283,26 @@ function DriverTripContent() {
     };
 
     const completeTrip = async () => {
-        if (!token) return;
+        if (!token && user?.role !== "driver") return;
         setLoading(true);
         try {
             stopWatching();
             void releaseWakeLock();
-            const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/complete/`), {
-                method: "POST",
-                headers: jsonHeaders(),
-            });
-            if (!res.ok) throw new Error("Could not complete trip");
-            const data = await res.json();
+            
+            let data: any;
+            if (user?.role === "driver") {
+                data = await authFetch("/students/driver/me/trip/complete/", {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                });
+            } else {
+                const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/complete/`), {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                });
+                if (!res.ok) throw new Error("Could not complete trip");
+                data = await res.json();
+            }
             
             // Calculate summary
             const stats = {
@@ -255,20 +323,29 @@ function DriverTripContent() {
     };
 
     const updateStudentStatus = async (studentId: number, status: AssignedStudent["status"]) => {
-        if (!token) return;
+        if (!token && user?.role !== "driver") return;
         if (!activeTrip || activeTrip.status !== "LIVE") {
             setMessage("Start the trip before marking students.");
             return;
         }
         setMessage("");
         try {
-            const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/student-status/`), {
-                method: "POST",
-                headers: jsonHeaders(),
-                body: JSON.stringify({ student_id: studentId, status }),
-            });
-            if (!res.ok) throw new Error("Could not update student status");
-            const data = await res.json();
+            let data: any;
+            if (user?.role === "driver") {
+                data = await authFetch("/students/driver/me/trip/student-status/", {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({ student_id: studentId, status }),
+                });
+            } else {
+                const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/student-status/`), {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({ student_id: studentId, status }),
+                });
+                if (!res.ok) throw new Error("Could not update student status");
+                data = await res.json();
+            }
             
             // Haptic feedback
             if (typeof navigator !== "undefined" && navigator.vibrate) {
@@ -305,8 +382,21 @@ function DriverTripContent() {
     };
 
     return (
-        <main className="min-h-screen bg-[#FFF8ED] px-4 py-6">
-            <div className="mx-auto max-w-md space-y-5">
+        <main className="min-h-screen bg-[#FFF8ED] px-4 py-4">
+            <div className="mx-auto max-w-md space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <Link href="/">
+                        <Image
+                            src="/time-kids-logo-new.png"
+                            alt="T.I.M.E. Kids Logo"
+                            width={120}
+                            height={48}
+                            className="h-10 w-auto object-contain"
+                            priority
+                        />
+                    </Link>
+                </div>
+
                 <section className="rounded-2xl bg-white border border-orange-100 p-5 shadow-sm space-y-2">
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
@@ -318,15 +408,22 @@ function DriverTripContent() {
                                 <p className="text-sm text-orange-700">Start route & share GPS.</p>
                             </div>
                         </div>
-                        {route && (
-                            <button 
-                                onClick={() => void loadRoute(token)}
-                                className="p-2 rounded-full hover:bg-orange-50 text-orange-600 transition-colors"
-                                title="Refresh data"
-                            >
-                                <Loader2 className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
-                            </button>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {user && (
+                                <button
+                                    onClick={() => {
+                                        if (confirm("Are you sure you want to logout?")) {
+                                            authLogout();
+                                            router.push("/driver/login");
+                                        }
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-orange-100 text-[11px] font-bold text-red-600 shadow-sm hover:bg-red-50 transition-colors"
+                                >
+                                    <LogOut className="w-3.5 h-3.5" />
+                                    LOGOUT
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </section>
 
@@ -359,20 +456,27 @@ function DriverTripContent() {
                     </section>
                 )}
 
-                <form onSubmit={submitToken} className="rounded-2xl bg-white border border-orange-100 p-4 shadow-sm space-y-3">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-orange-800">
-                        Driver token
-                        <input
-                            value={token}
-                            onChange={(e) => setToken(e.target.value)}
-                            placeholder="Paste route driver token"
-                            className="mt-1 w-full rounded-xl border border-orange-100 px-3 py-3 text-sm text-orange-950 outline-none focus:border-orange-400"
-                        />
-                    </label>
-                    <Button type="submit" disabled={loading || !token.trim()} className="w-full bg-[#FF922B] text-white">
-                        {loading ? "Loading..." : "Load route"}
-                    </Button>
-                </form>
+                {user?.role !== "driver" && !route && (
+                    <form onSubmit={submitToken} className="rounded-2xl bg-white border border-orange-100 p-4 shadow-sm space-y-3">
+                        <label className="text-xs font-semibold uppercase tracking-wide text-orange-800">
+                            Driver token
+                            <input
+                                value={token}
+                                onChange={(e) => setToken(e.target.value)}
+                                placeholder="Paste route driver token"
+                                className="mt-1 w-full rounded-xl border border-orange-100 px-3 py-3 text-sm text-orange-950 outline-none focus:border-orange-400"
+                            />
+                        </label>
+                        <Button type="submit" disabled={loading || !token.trim()} className="w-full bg-[#FF922B] text-white">
+                            {loading ? "Loading..." : "Load route"}
+                        </Button>
+                        <div className="pt-2 text-center border-t border-orange-50">
+                            <Link href="/driver/login" className="text-xs font-bold text-orange-600 hover:underline">
+                                OR LOGIN WITH EMAIL/PASSWORD
+                            </Link>
+                        </div>
+                    </form>
+                )}
 
                 {route && (
                     <section className="rounded-2xl bg-white border border-orange-100 p-5 shadow-sm space-y-4">
@@ -524,7 +628,7 @@ function DriverTripContent() {
                     {activeTrip?.latest_location ? (
                         <p className="flex items-center gap-2 text-xs text-orange-700">
                             <MapPin className="w-3.5 h-3.5" />
-                            Last sent: {new Date(activeTrip.latest_location.recorded_at).toLocaleString()}
+                            Last sent: {activeTrip.latest_location.recorded_at ? new Date(activeTrip.latest_location.recorded_at).toLocaleString() : "Just now"}
                         </p>
                     ) : (
                         <p className="text-xs text-orange-700">No location sent yet.</p>

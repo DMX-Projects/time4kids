@@ -18,9 +18,10 @@ export default function ConditionalChrome({ children }: { children: React.ReactN
 
     const pathSegments = pathname.split('/').filter(Boolean);
     const isDashboard = pathname.startsWith("/dashboard");
+    const isDriverPage = pathname.startsWith("/driver");
     const isSchoolPage = pathSegments[0] === 'locations' && pathSegments.length > 2;
 
-    const hideChrome = isDashboard || isSchoolPage;
+    const hideChrome = isDashboard || isDriverPage || isSchoolPage;
 
     if (!isMounted) {
         // On server and first client render, use the logic to match SSR

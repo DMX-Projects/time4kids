@@ -740,11 +740,11 @@ function TransportTab({
         description: "",
         map_url: "",
         vehicle_number: "",
-        driver_name: "",
-        driver_phone: "",
+        driver_profile: "", // Link to DriverProfile ID
         tracking_note: "",
         sort_order: "0",
     });
+    const [drivers, setDrivers] = useState<any[]>([]);
     const [rows, setRows] = useState<
         Array<{
             id: number;
@@ -752,6 +752,10 @@ function TransportTab({
             vehicle_number?: string;
             driver_name?: string;
             driver_token?: string;
+            driver_info?: {
+                full_name: string;
+                email: string;
+            };
         }>
     >([]);
     const [assignments, setAssignments] = useState<
@@ -781,14 +785,18 @@ function TransportTab({
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
 
+    const [driverLoading, setDriverLoading] = useState(false);
+
     const load = useCallback(async () => {
         try {
-            const [routeData, assignmentData] = await Promise.all([
+            const [routeData, assignmentData, driverData] = await Promise.all([
                 authFetch<unknown>("/students/franchise/transport/"),
                 authFetch<unknown>("/students/franchise/transport-assignments/"),
+                authFetch<unknown>("/students/franchise/drivers/"),
             ]);
             setRows(normalizeList<any>(routeData));
             setAssignments(normalizeList<any>(assignmentData));
+            setDrivers(normalizeList<any>(driverData));
         } catch {
             setRows([]);
             setAssignments([]);
@@ -810,8 +818,7 @@ function TransportTab({
                     description: form.description,
                     map_url: form.map_url,
                     vehicle_number: form.vehicle_number,
-                    driver_name: form.driver_name,
-                    driver_phone: form.driver_phone,
+                    driver_profile: form.driver_profile ? Number(form.driver_profile) : null,
                     tracking_note: form.tracking_note,
                     sort_order: Number(form.sort_order) || 0,
                 }),
@@ -822,8 +829,7 @@ function TransportTab({
                 description: "",
                 map_url: "",
                 vehicle_number: "",
-                driver_name: "",
-                driver_phone: "",
+                driver_profile: "",
                 tracking_note: "",
                 sort_order: "0",
             });
@@ -832,7 +838,6 @@ function TransportTab({
             showToast("Save failed", "error");
         }
     };
-
 
     const submitBulkAssignment = async () => {
         if (selectedIds.length === 0 || !assignmentForm.route) {
@@ -897,8 +902,16 @@ function TransportTab({
             <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 grid md:grid-cols-2 gap-3">
                 <input required placeholder="Route name" value={form.route_name} onChange={(e) => setForm((p) => ({ ...p, route_name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <input placeholder="Vehicle number" value={form.vehicle_number} onChange={(e) => setForm((p) => ({ ...p, vehicle_number: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
-                <input placeholder="Driver name" value={form.driver_name} onChange={(e) => setForm((p) => ({ ...p, driver_name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
-                <input placeholder="Driver phone" value={form.driver_phone} onChange={(e) => setForm((p) => ({ ...p, driver_phone: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
+                <select 
+                    value={form.driver_profile} 
+                    onChange={(e) => setForm((p) => ({ ...p, driver_profile: e.target.value }))} 
+                    className="w-full rounded-xl border px-3 py-2 text-sm bg-white"
+                >
+                    <option value="">Assign Driver Account</option>
+                    {drivers.map(d => (
+                        <option key={d.id} value={d.id}>{d.user?.full_name || d.user?.email}</option>
+                    ))}
+                </select>
                 <input type="number" placeholder="Sort order" value={form.sort_order} onChange={(e) => setForm((p) => ({ ...p, sort_order: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
                 <textarea placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={3} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <input placeholder="Map URL (Google Maps)" value={form.map_url} onChange={(e) => setForm((p) => ({ ...p, map_url: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
@@ -1021,7 +1034,7 @@ function TransportTab({
                             <li key={r.id} className="rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm">
                                 <p className="font-medium text-[#111827]">{r.route_name}</p>
                                 <p className="text-xs text-[#4B5563]">
-                                    {r.vehicle_number || "Vehicle not added"} {r.driver_name ? `- ${r.driver_name}` : ""}
+                                    {r.vehicle_number || "Vehicle not added"} {r.driver_info ? `- ${r.driver_info.full_name} (${r.driver_info.email})` : (r.driver_name ? `- ${r.driver_name}` : "")}
                                 </p>
                                 {r.driver_token ? (
                                     <div className="mt-2 space-y-2">
