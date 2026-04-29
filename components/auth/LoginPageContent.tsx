@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Eye, EyeOff, LifeBuoy, Settings } from "lucide-react";
 
-export type LoginPageVariant = "default" | "parent" | "franchise";
+export type LoginPageVariant = "default" | "parent" | "franchise" | "driver";
 
 const copy: Record<
     LoginPageVariant,
@@ -31,6 +31,12 @@ const copy: Record<
         subtitle: "Centre dashboard access",
         leftTitle: "Centre operations",
         leftBody: "Manage parents, events, grades, and resources for your preschool.",
+    },
+    driver: {
+        title: "Driver sign in",
+        subtitle: "Transport tracking access",
+        leftTitle: "Safe transport",
+        leftBody: "Sign in to manage your route, track student attendance, and broadcast live location.",
     },
 };
 
@@ -58,10 +64,16 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
         setSubmitting(true);
         try {
             const user = await login(identifier.trim(), password, { authPath });
+            
+            // If main login, prevent drivers (force them to use /driver/login)
+            if (variant === "default" && user.role === "driver") {
+                throw new Error("Please use the dedicated Driver Login page.");
+            }
+
             setSubmitting(false);
             setSuccess("✅ Login successful!");
             setTimeout(() => {
-                const destination = next || `/dashboard/${user.role}`;
+                const destination = next || (user.role === "driver" ? "/driver/trip" : `/dashboard/${user.role}`);
                 router.replace(destination);
             }, 1500);
         } catch (err: any) {
@@ -73,27 +85,40 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 flex items-center justify-center px-4 py-12">
-            <div className="w-full max-w-5xl grid md:grid-cols-2 gap-12 items-center">
-                <div className="relative h-full min-h-[400px] md:min-h-[600px] rounded-3xl overflow-hidden shadow-2xl">
-                    <div className="absolute inset-0 bg-blue-50 flex flex-col justify-center p-12 space-y-6">
-                        <div className="relative w-56 h-24 mx-auto flex items-center justify-center">
-                            <Image
-                                src="/time-kids-logo-new.png"
-                                alt="T.I.M.E. Kids Logo"
-                                fill
-                                sizes="(max-width: 768px) 224px, 280px"
-                                className="object-contain"
-                                priority
-                            />
+            <div className={`w-full ${variant === "driver" ? "max-w-md" : "max-w-5xl"} grid ${variant === "driver" ? "grid-cols-1" : "md:grid-cols-2"} gap-12 items-center`}>
+                {variant !== "driver" && (
+                    <div className="relative h-full min-h-[400px] md:min-h-[600px] rounded-3xl overflow-hidden shadow-2xl">
+                        <div className="absolute inset-0 bg-blue-50 flex flex-col justify-center p-12 space-y-6">
+                            <div className="relative w-56 h-24 mx-auto flex items-center justify-center">
+                                <Image
+                                    src="/time-kids-logo-new.png"
+                                    alt="T.I.M.E. Kids Logo"
+                                    fill
+                                    sizes="(max-width: 768px) 224px, 280px"
+                                    className="object-contain"
+                                    priority
+                                />
+                            </div>
+                            <h1 className="font-display text-5xl font-bold text-[#003366] leading-tight">{c.leftTitle}</h1>
+                            <p className="text-lg text-gray-600 leading-relaxed max-w-md">{c.leftBody}</p>
                         </div>
-                        <h1 className="font-display text-5xl font-bold text-[#003366] leading-tight">{c.leftTitle}</h1>
-                        <p className="text-lg text-gray-600 leading-relaxed max-w-md">{c.leftBody}</p>
                     </div>
-                </div>
+                )}
 
                 <div className="bg-white rounded-3xl shadow-2xl p-10 border border-gray-100">
                     <div className="space-y-6">
                         <div className="text-center space-y-2">
+                            {variant === "driver" && (
+                                <div className="relative w-48 h-16 mx-auto mb-4">
+                                    <Image
+                                        src="/time-kids-logo-new.png"
+                                        alt="T.I.M.E. Kids Logo"
+                                        fill
+                                        className="object-contain"
+                                        priority
+                                    />
+                                </div>
+                            )}
                             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-400 to-blue-500 rounded-2xl shadow-lg mb-4">
                                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path
@@ -147,7 +172,6 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                         </svg>
                                     </div>
                                     <input
-                                        key={showPassword ? "password-text" : "password-mask"}
                                         type={showPassword ? "text" : "password"}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
@@ -156,15 +180,18 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                         autoComplete="current-password"
                                         required
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword((prev) => !prev)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors duration-200 cursor-pointer"
+                                    <div 
+                                        className="absolute right-0 top-0 bottom-0 px-4 flex items-center justify-center cursor-pointer z-50 text-gray-400 hover:text-gray-600"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setShowPassword(!showPassword);
+                                        }}
+                                        role="button"
                                         aria-label={showPassword ? "Hide password" : "Show password"}
-                                        aria-pressed={showPassword}
                                     >
                                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -212,14 +239,16 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                 >
                                     Forgot your password?
                                 </Link>
-                                <div>
-                                    <Link
-                                        href="/login/register"
-                                        className="text-sm text-orange-600 hover:text-orange-700 font-medium hover:underline transition-colors duration-200"
-                                    >
-                                        New user? Register here
-                                    </Link>
-                                </div>
+                                {variant !== "driver" && (
+                                    <div>
+                                        <Link
+                                            href="/login/register"
+                                            className="text-sm text-orange-600 hover:text-orange-700 font-medium hover:underline transition-colors duration-200"
+                                        >
+                                            New user? Register here
+                                        </Link>
+                                    </div>
+                                )}
                                 <div className="pt-2 border-t border-gray-100" />
                                 {variant === "parent" && (
                                     <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-3 text-sm text-gray-600">

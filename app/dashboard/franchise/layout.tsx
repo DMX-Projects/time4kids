@@ -11,6 +11,7 @@ const navItems: DashboardNavItem[] = [
     { label: "Parent portal", href: "/dashboard/franchise/parent-portal", icon: <LayoutGrid className="w-4 h-4" /> },
     { label: "Parent documents", href: "/dashboard/franchise/parent-documents", icon: <FileText className="w-4 h-4" /> },
     { label: "Parent support tickets", href: "/dashboard/franchise/parent-tickets", icon: <LifeBuoy className="w-4 h-4" /> },
+    { label: "Drivers", href: "/dashboard/franchise/drivers", icon: <UserCircle className="w-4 h-4" /> },
     { label: "Enquiries", href: "/dashboard/franchise/enquiries", icon: <MessageSquare className="w-4 h-4" /> },
     { label: "Events", href: "/dashboard/franchise/events", icon: <CalendarRange className="w-4 h-4" /> },
     { label: "Event Schedule", href: "/dashboard/franchise/event-schedule", icon: <CalendarDays className="w-4 h-4" /> },
