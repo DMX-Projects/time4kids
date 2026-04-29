@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { Bus, CheckCircle2, Crosshair, Loader2, MapPin, Play, Square, UserCheck, UserX } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
@@ -42,7 +42,7 @@ type AssignedStudent = {
 
 const TOKEN_KEY = "tk-driver-route-token";
 
-export default function DriverTripPage() {
+function DriverTripContent() {
     const searchParams = useSearchParams();
     const [token, setToken] = useState("");
     const [route, setRoute] = useState<RouteInfo | null>(null);
@@ -539,6 +539,18 @@ export default function DriverTripPage() {
                 </section>
             </div>
         </main>
+    );
+}
+
+export default function DriverTripPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#FFF8ED] flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+            </div>
+        }>
+            <DriverTripContent />
+        </Suspense>
     );
 }
 
