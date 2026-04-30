@@ -79,7 +79,16 @@ export default function ParentProfilePage() {
                     <div className="grid md:grid-cols-2 gap-3">
                         <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={parentProfileLoading} />
                         <Input label="Email" type="email" value={form.email} onChange={() => {}} disabled readOnly title="Email is managed by your centre login" />
-                        <Input label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} disabled={parentProfileLoading} />
+                        <Input 
+                            label="Phone" 
+                            type="tel"
+                            pattern="\d{10}" 
+                            maxLength={10} 
+                            title="Please enter exactly 10 digits" 
+                            value={form.phone} 
+                            onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })} 
+                            disabled={parentProfileLoading} 
+                        />
                         <Input label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} disabled={parentProfileLoading} />
                         <Input label="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} disabled={parentProfileLoading} className="md:col-span-2" />
                         <Input

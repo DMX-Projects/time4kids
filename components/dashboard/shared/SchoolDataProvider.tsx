@@ -24,10 +24,12 @@ export type SchoolStudent = {
     grade: string;
     section: string;
     parentId: string;
+    isActive: boolean;
+    dateOfBirth?: string;
+    admissionDate?: string;
     /** When loaded from parent API */
     blood?: string;
     emergency?: string;
-    dateOfBirth?: string;
 };
 
 export type GradeRecord = {
@@ -616,8 +618,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             name: `${data.first_name} ${data.last_name}`,
             rollNumber: data.roll_number,
             grade: data.class_name,
-            section: "",
-        });
+            isActive: data.is_active ?? true,
+        } as any);
     };
 
     const franchiseUpdateStudent = async (id: string, data: any) => {
@@ -667,21 +669,26 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     }) => {
         const [firstName, ...rest] = data.name.trim().split(/\s+/);
         const lastName = rest.join(" ") || "-";
+        
+        const baseBody = {
+            first_name: firstName,
+            last_name: lastName,
+            roll_number: data.rollNumber,
+            class_name: data.grade,
+            section: data.section,
+        };
+
         if (data.id) {
-            await franchiseUpdateStudent(data.id, {
-                first_name: firstName,
-                last_name: lastName,
-                roll_number: data.rollNumber,
-                class_name: data.grade,
-                parent: Number(data.parentId),
-            });
+            const patchBody: Record<string, unknown> = { ...baseBody };
+            // Only update parent if the user explicitly selected one
+            if (data.parentId) {
+                patchBody.parent = Number(data.parentId);
+            }
+            await franchiseUpdateStudent(data.id, patchBody);
         } else {
             await franchiseAddStudent({
+                ...baseBody,
                 parent: data.parentId,
-                first_name: firstName,
-                last_name: lastName,
-                roll_number: data.rollNumber,
-                class_name: data.grade,
             });
         }
     };

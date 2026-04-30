@@ -61,6 +61,8 @@ function DriverTripContent() {
     const [summary, setSummary] = useState<any | null>(null);
     const watchIdRef = useRef<number | null>(null);
     const wakeLockRef = useRef<any>(null);
+    // Guard: prevents stale GPS callbacks from posting after the trip ends
+    const tripActiveRef = useRef(false);
 
     const cleanToken = (value: string) => value.trim();
 
@@ -104,7 +106,7 @@ function DriverTripContent() {
             void loadRoute();
             timer = setInterval(() => {
                 void loadRoute();
-            }, 30000);
+            }, 5000);
         } else {
             const effectiveToken = urlToken || saved;
             if (effectiveToken) {
@@ -112,7 +114,7 @@ function DriverTripContent() {
                 void loadRoute(effectiveToken);
                 timer = setInterval(() => {
                     void loadRoute(effectiveToken);
-                }, 30000);
+                }, 5000);
             } else if (!loading) {
                 // No token and not logged in as driver -> redirect to dedicated driver login
                 router.push("/driver/login");
@@ -160,7 +162,11 @@ function DriverTripContent() {
     };
 
     const startTrip = async () => {
-        if (!token && user?.role !== "driver") return;
+        console.log("DEBUG: startTrip called", { token, role: user?.role });
+        if (!token && user?.role !== "driver") {
+            console.log("DEBUG: startTrip BLOCKED - no token and not driver");
+            return;
+        }
         
         if (activeTrip && activeTrip.status === "LIVE") {
             if (!confirm("A trip is already active. Starting a new one will complete the current trip. Continue?")) {
@@ -187,11 +193,12 @@ function DriverTripContent() {
                 if (!res.ok) throw new Error("Could not start trip");
                 data = await res.json();
             }
+            tripActiveRef.current = true;
             setActiveTrip(data);
             setSummary(null);
             setMessage("Trip started. GPS sharing active.");
             void requestWakeLock();
-            startWatching();
+            startWatching(data);
             await loadRoute(token);
         } catch (err) {
             setMessage(err instanceof Error ? err.message : "Could not start trip");
@@ -201,6 +208,11 @@ function DriverTripContent() {
     };
 
     const postLocation = async (position: GeolocationPosition) => {
+        // Guard: if trip has ended, discard any queued GPS callbacks
+        if (!tripActiveRef.current) {
+            console.log("DEBUG: postLocation skipped — trip no longer active");
+            return;
+        }
         const coords = position.coords;
         let saved: any;
         
@@ -233,6 +245,9 @@ function DriverTripContent() {
                 saved = await res.json();
             }
             
+            // Check again after await in case trip ended while request was in-flight
+            if (!tripActiveRef.current) return;
+
             setActiveTrip((prev) =>
                 prev
                     ? {
@@ -249,17 +264,29 @@ function DriverTripContent() {
         }
     };
 
-    const startWatching = () => {
+    const startWatching = (currentTripOverride?: any) => {
+        console.log("DEBUG: startWatching called");
         if (!navigator.geolocation) {
             setMessage("GPS is not available in this browser.");
             return;
         }
-        if (!activeTrip) {
+        const currentTrip = currentTripOverride || activeTrip;
+        if (!currentTrip) {
             setMessage("Start the trip before GPS sharing.");
             return;
         }
         stopWatching();
         setTracking(true);
+        console.log("DEBUG: tracking set to TRUE");
+
+        // Notify server that GPS is active
+        if (user?.role === "driver") {
+            void authFetch("/students/driver/me/trip/toggle-gps/", {
+                method: "POST",
+                headers: jsonHeaders(),
+                body: JSON.stringify({ active: true }),
+            }).catch(console.error);
+        }
         watchIdRef.current = navigator.geolocation.watchPosition(
             (position) => {
                 void postLocation(position).catch((err) => {
@@ -275,20 +302,41 @@ function DriverTripContent() {
     };
 
     const stopWatching = () => {
+        console.log("DEBUG: stopWatching called");
         if (watchIdRef.current !== null && typeof navigator !== "undefined" && navigator.geolocation) {
             navigator.geolocation.clearWatch(watchIdRef.current);
             watchIdRef.current = null;
         }
         setTracking(false);
+        console.log("DEBUG: tracking set to FALSE");
+
+        // Notify server that GPS is stopped
+        if (user?.role === "driver") {
+            void authFetch("/students/driver/me/trip/toggle-gps/", {
+                method: "POST",
+                headers: jsonHeaders(),
+                body: JSON.stringify({ active: false }),
+            }).catch(console.error);
+        }
+
+        setMessage("GPS sharing stopped.");
     };
 
     const completeTrip = async () => {
-        if (!token && user?.role !== "driver") return;
+        console.log("DEBUG: completeTrip called", { token, role: user?.role, activeTrip });
+        // Proceed if we have a token OR we are a logged-in driver
+        const canProceed = token.trim() !== "" || user?.role === "driver";
+        if (!canProceed) {
+            console.log("DEBUG: completeTrip BLOCKED - no token and not driver");
+            setMessage("Please login as a driver to complete the trip.");
+            return;
+        }
+        // Immediately mark trip as inactive so any in-flight GPS callbacks are discarded
+        tripActiveRef.current = false;
+        stopWatching();
+        void releaseWakeLock();
         setLoading(true);
         try {
-            stopWatching();
-            void releaseWakeLock();
-            
             let data: any;
             if (user?.role === "driver") {
                 data = await authFetch("/students/driver/me/trip/complete/", {
@@ -318,13 +366,20 @@ function DriverTripContent() {
         } catch (err) {
             setMessage(err instanceof Error ? err.message : "Could not complete trip");
         } finally {
+            // Safety net: ensure GPS is always stopped even if API call errored
+            stopWatching();
             setLoading(false);
         }
     };
 
     const updateStudentStatus = async (studentId: number, status: AssignedStudent["status"]) => {
-        if (!token && user?.role !== "driver") return;
+        console.log("DEBUG: updateStudentStatus called", { studentId, status, role: user?.role, activeTrip });
+        if (!token && user?.role !== "driver") {
+            console.log("DEBUG: updateStudentStatus BLOCKED - no token and not driver");
+            return;
+        }
         if (!activeTrip || activeTrip.status !== "LIVE") {
+            console.log("DEBUG: updateStudentStatus BLOCKED - no live trip", activeTrip);
             setMessage("Start the trip before marking students.");
             return;
         }
@@ -456,26 +511,22 @@ function DriverTripContent() {
                     </section>
                 )}
 
-                {user?.role !== "driver" && !route && (
-                    <form onSubmit={submitToken} className="rounded-2xl bg-white border border-orange-100 p-4 shadow-sm space-y-3">
-                        <label className="text-xs font-semibold uppercase tracking-wide text-orange-800">
-                            Driver token
-                            <input
-                                value={token}
-                                onChange={(e) => setToken(e.target.value)}
-                                placeholder="Paste route driver token"
-                                className="mt-1 w-full rounded-xl border border-orange-100 px-3 py-3 text-sm text-orange-950 outline-none focus:border-orange-400"
-                            />
-                        </label>
-                        <Button type="submit" disabled={loading || !token.trim()} className="w-full bg-[#FF922B] text-white">
-                            {loading ? "Loading..." : "Load route"}
-                        </Button>
-                        <div className="pt-2 text-center border-t border-orange-50">
-                            <Link href="/driver/login" className="text-xs font-bold text-orange-600 hover:underline">
-                                OR LOGIN WITH EMAIL/PASSWORD
-                            </Link>
+                {!route && !loading && (
+                    <section className="rounded-2xl bg-white border border-orange-100 p-8 shadow-sm text-center space-y-4">
+                        <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto">
+                            <Bus className="w-8 h-8 text-orange-400" />
                         </div>
-                    </form>
+                        <div>
+                            <h2 className="text-lg font-bold text-orange-950">No Active Route</h2>
+                            <p className="text-sm text-orange-700 mt-1">Please login to your driver account to start a trip.</p>
+                        </div>
+                        <Link 
+                            href="/driver/login" 
+                            className="block w-full py-3 px-4 bg-[#FF922B] text-white rounded-xl font-bold shadow-sm hover:bg-orange-600 transition-colors"
+                        >
+                            GO TO LOGIN
+                        </Link>
+                    </section>
                 )}
 
                 {route && (
