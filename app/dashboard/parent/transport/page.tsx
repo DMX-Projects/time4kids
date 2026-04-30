@@ -39,6 +39,7 @@ type LiveTripPayload = {
     trip?: { id: number; trip_type: string; status: string; started_at?: string | null } | null;
     latest_location?: LiveLocation | null;
     student_status?: { student_name: string; status: string; note?: string; updated_at: string } | null;
+    school_location?: { latitude: number; longitude: number } | null;
 };
 
 export default function TransportPage() {
@@ -87,6 +88,8 @@ export default function TransportPage() {
     const lng = liveTrip?.latest_location ? Number(liveTrip.latest_location.longitude) : null;
     const heading = liveTrip?.latest_location ? Number(liveTrip.latest_location.heading) : 0;
     const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+    const schoolLat = liveTrip?.school_location?.latitude;
+    const schoolLng = liveTrip?.school_location?.longitude;
     const lastUpdated = liveTrip?.latest_location?.recorded_at
         ? new Date(liveTrip.latest_location.recorded_at).toLocaleString()
         : "";
@@ -149,7 +152,14 @@ export default function TransportPage() {
                     hasCoords ? (
                         <div className="space-y-2">
                             <div className="overflow-hidden rounded-2xl border border-orange-100 h-80 bg-orange-50 relative">
-                                <LiveBusMap lat={lat!} lng={lng!} heading={heading} isLive={!!liveTrip?.live} />
+                                <LiveBusMap 
+                                    lat={lat!} 
+                                    lng={lng!} 
+                                    heading={heading} 
+                                    isLive={!!liveTrip?.live} 
+                                    schoolLat={schoolLat} 
+                                    schoolLng={schoolLng} 
+                                />
                             </div>
                             <p className="flex items-center gap-2 text-xs text-orange-700">
                                 <MapPin className="w-3.5 h-3.5" />
