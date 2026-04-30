@@ -165,10 +165,10 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
         }
     };
 
-    const addParent = async (payload: Omit<FranchiseParent, "id">) => {
+    const addParent = async (payload: Omit<FranchiseParent, "id"> & { password?: string }) => {
         const body = {
             email: payload.email,
-            password: randomTempPassword(12),
+            password: payload.password || randomTempPassword(12),
             full_name: payload.name,
             child_name: payload.student,
             notes: payload.phone,

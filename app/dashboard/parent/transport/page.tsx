@@ -35,7 +35,7 @@ type LiveLocation = {
 
 type LiveTripPayload = {
     live: boolean;
-    route?: (Row & { vehicle_number?: string; driver_name?: string; driver_phone?: string; driver_info?: { full_name: string; email: string } }) | null;
+    route?: (Row & { vehicle_number?: string; driver_name?: string; driver_phone?: string; driver_info?: { full_name: string; email: string; phone?: string } }) | null;
     trip?: { id: number; trip_type: string; status: string; started_at?: string | null } | null;
     latest_location?: LiveLocation | null;
     student_status?: { student_name: string; status: string; note?: string; updated_at: string } | null;
@@ -125,11 +125,17 @@ export default function TransportPage() {
                     </span>
                 </div>
 
-                {liveTrip?.route && (
+                {liveTrip?.live && liveTrip.route && (
                     <div className="grid gap-3 md:grid-cols-3 text-sm">
                         <Info label="Route" value={liveTrip.route.route_name} />
                         <Info label="Vehicle" value={liveTrip.route.vehicle_number || "Not added"} />
-                        <Info label="Driver" value={liveTrip.route.driver_info?.full_name || liveTrip.route.driver_name || "Not added"} />
+                        <Info 
+                            label="Driver" 
+                            value={
+                                (liveTrip.route.driver_info?.full_name || liveTrip.route.driver_name || "Not added") + 
+                                (liveTrip.route.driver_info?.phone ? ` (${liveTrip.route.driver_info.phone})` : "")
+                            } 
+                        />
                     </div>
                 )}
 
@@ -139,21 +145,23 @@ export default function TransportPage() {
                     </div>
                 )}
 
-                {hasCoords ? (
-                    <div className="space-y-2">
-                        <div className="overflow-hidden rounded-2xl border border-orange-100 h-80 bg-orange-50 relative">
-                            <LiveBusMap lat={lat!} lng={lng!} heading={heading} isLive={!!liveTrip?.live} />
+                {liveTrip?.live && (
+                    hasCoords ? (
+                        <div className="space-y-2">
+                            <div className="overflow-hidden rounded-2xl border border-orange-100 h-80 bg-orange-50 relative">
+                                <LiveBusMap lat={lat!} lng={lng!} heading={heading} isLive={!!liveTrip?.live} />
+                            </div>
+                            <p className="flex items-center gap-2 text-xs text-orange-700">
+                                <MapPin className="w-3.5 h-3.5" />
+                                Last updated: {lastUpdated || "just now"}
+                            </p>
                         </div>
-                        <p className="flex items-center gap-2 text-xs text-orange-700">
-                            <MapPin className="w-3.5 h-3.5" />
-                            Last updated: {lastUpdated || "just now"}
-                        </p>
-                    </div>
-                ) : (
-                    <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50 px-4 py-8 text-center text-sm text-orange-800">
-                        <Navigation className="w-8 h-8 mx-auto mb-2" />
-                        Waiting for the driver app to start sending GPS.
-                    </div>
+                    ) : (
+                        <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50 px-4 py-8 text-center text-sm text-orange-800">
+                            <Navigation className="w-8 h-8 mx-auto mb-2" />
+                            Waiting for the driver app to start sending GPS.
+                        </div>
+                    )
                 )}
             </section>
 
