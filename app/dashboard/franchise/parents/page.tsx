@@ -15,7 +15,7 @@ export default function FranchiseParentsPage() {
     const { parents, addParent, updateParent, deleteParent } = useFranchiseData();
 
     const [query, setQuery] = useState("");
-    const [form, setForm] = useState({ name: "", student: "", email: "", phone: "" });
+    const [form, setForm] = useState({ name: "", student: "", email: "", phone: "", password: "" });
     const [editingId, setEditingId] = useState<string | null>(null);
     const [viewId, setViewId] = useState<string | null>(null);
     const [showFormModal, setShowFormModal] = useState(false);
@@ -29,7 +29,7 @@ export default function FranchiseParentsPage() {
     }, [parents, query]);
 
     const resetForm = () => {
-        setForm({ name: "", student: "", email: "", phone: "" });
+        setForm({ name: "", student: "", email: "", phone: "", password: "" });
         setEditingId(null);
     };
 
@@ -48,6 +48,7 @@ export default function FranchiseParentsPage() {
             student: rest.student || "",
             email: rest.email || "",
             phone: rest.phone || "",
+            password: "",
         });
         setShowFormModal(true);
     };
@@ -58,6 +59,7 @@ export default function FranchiseParentsPage() {
         if (form.student && !/^[A-Za-z\s'.,-]+$/.test(form.student)) return "Student name must contain letters only.";
         if (form.phone && !/^\d{10}$/.test(form.phone)) return "Phone number must be exactly 10 digits.";
         if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return "Please enter a valid email address.";
+        if (!editingId && (!form.password || form.password.length < 8)) return "Password is required and must be at least 8 characters.";
         return null;
     };
 
@@ -218,6 +220,18 @@ export default function FranchiseParentsPage() {
                                 onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })}
                                 placeholder="9876543210"
                             />
+                            {!editingId && (
+                                <div className="md:col-span-2">
+                                    <Input
+                                        label="Login Password"
+                                        type="text"
+                                        value={form.password}
+                                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                                        placeholder="Min 8 characters (share this with parent)"
+                                    />
+                                    <p className="text-[10px] text-gray-500 mt-1">Note: Set this password and tell the parent so they can login.</p>
+                                </div>
+                            )}
                         </div>
                         <div className="flex gap-2">
                             <Button type="submit" size="sm" disabled={submitting}>
