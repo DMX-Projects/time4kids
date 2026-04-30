@@ -10,6 +10,8 @@ interface LiveBusMapProps {
     lng: number;
     heading?: number | null;
     isLive: boolean;
+    schoolLat?: number;
+    schoolLng?: number;
 }
 
 // Component to recenter map when marker moves significantly
@@ -26,19 +28,25 @@ function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
     return null;
 }
 
-export default function LiveBusMap({ lat, lng, heading, isLive }: LiveBusMapProps) {
+export default function LiveBusMap({ lat, lng, heading, isLive, schoolLat, schoolLng }: LiveBusMapProps) {
     const [displayedPos, setDisplayedPos] = useState<[number, number]>([lat, lng]);
     const [displayedHeading, setDisplayedHeading] = useState(heading || 0);
     const animationRef = useRef<number | null>(null);
     const lastPos = useRef({ lat, lng });
     const lastHeading = useRef(heading || 0);
 
-    // Custom icon with rotation using standard HTML and CSS
     const customIcon = L.divIcon({
         className: 'custom-bus-marker',
         html: `<div style="transform: rotate(${displayedHeading}deg); width: 40px; height: 40px; background-image: url('/images/bus-marker.png'); background-size: cover; background-position: center; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
         iconSize: [40, 40],
         iconAnchor: [20, 20],
+    });
+
+    const schoolIcon = L.divIcon({
+        className: 'custom-school-marker',
+        html: `<div style="width: 36px; height: 36px; background-color: #FFF; border: 2px solid #FF922B; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-size: 20px;">🏫</div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
     });
 
     useEffect(() => {
@@ -94,6 +102,9 @@ export default function LiveBusMap({ lat, lng, heading, isLive }: LiveBusMapProp
             />
             {isLive && (
                 <Marker position={displayedPos} icon={customIcon} />
+            )}
+            {schoolLat && schoolLng && (
+                <Marker position={[schoolLat, schoolLng]} icon={schoolIcon} />
             )}
             <RecenterMap lat={displayedPos[0]} lng={displayedPos[1]} />
         </MapContainer>
