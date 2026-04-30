@@ -35,7 +35,7 @@ type LiveLocation = {
 
 type LiveTripPayload = {
     live: boolean;
-    route?: (Row & { vehicle_number?: string; driver_name?: string; driver_phone?: string }) | null;
+    route?: (Row & { vehicle_number?: string; driver_name?: string; driver_phone?: string; driver_info?: { full_name: string; email: string } }) | null;
     trip?: { id: number; trip_type: string; status: string; started_at?: string | null } | null;
     latest_location?: LiveLocation | null;
     student_status?: { student_name: string; status: string; note?: string; updated_at: string } | null;
