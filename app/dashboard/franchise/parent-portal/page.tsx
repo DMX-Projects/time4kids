@@ -740,6 +740,8 @@ function TransportTab({
         description: "",
         map_url: "",
         vehicle_number: "",
+        driver_name: "",
+        driver_phone: "",
         driver_profile: "", // Link to DriverProfile ID
         tracking_note: "",
         sort_order: "0",
