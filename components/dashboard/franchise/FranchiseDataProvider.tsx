@@ -46,6 +46,7 @@ type ApiParent = {
     user?: { full_name?: string; email: string };
     child_name?: string;
     notes?: string;
+    phone?: string;
 };
 
 type ApiEvent = {
@@ -78,7 +79,8 @@ const mapParent = (parent: ApiParent): FranchiseParent => ({
     name: parent.user?.full_name || parent.user?.email || "",
     student: parent.child_name || "",
     email: parent.user?.email || "",
-    phone: "",
+    // phone is stored in the `notes` field on ParentProfile
+    phone: parent.notes || "",
 });
 
 const mapEvent = (event: ApiEvent): FranchiseEvent => ({
@@ -181,8 +183,11 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
 
     const updateParent = async (id: string, payload: Partial<FranchiseParent>) => {
         const body = {
+            full_name: payload.name,
+            email: payload.email,
             child_name: payload.student,
             notes: payload.phone,
+            phone: payload.phone,
         };
         const updated = await authFetch<ApiParent>(`/franchises/franchise/parents/${id}/`, {
             method: "PATCH",

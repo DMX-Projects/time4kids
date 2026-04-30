@@ -4,6 +4,18 @@ import { useEffect, useState } from "react";
 import { Bus, ExternalLink, MapPin, Navigation, Radio } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 
+import dynamic from "next/dynamic";
+import { Loader2 } from "lucide-react";
+
+const LiveBusMap = dynamic(() => import("@/components/dashboard/parent/LiveBusMap"), {
+    ssr: false,
+    loading: () => (
+        <div className="h-full w-full bg-orange-50 flex items-center justify-center">
+            <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
+        </div>
+    )
+});
+
 type Row = {
     id: number;
     route_name: string;
@@ -64,7 +76,7 @@ export default function TransportPage() {
             }
         };
         void loadLive();
-        timer = setInterval(loadLive, 10000);
+        timer = setInterval(loadLive, 5000); // Poll every 5 seconds for a smoother feel
         return () => {
             cancelled = true;
             if (timer) clearInterval(timer);
@@ -73,8 +85,8 @@ export default function TransportPage() {
 
     const lat = liveTrip?.latest_location ? Number(liveTrip.latest_location.latitude) : null;
     const lng = liveTrip?.latest_location ? Number(liveTrip.latest_location.longitude) : null;
+    const heading = liveTrip?.latest_location ? Number(liveTrip.latest_location.heading) : 0;
     const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
-    const mapSrc = hasCoords ? `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed` : "";
     const lastUpdated = liveTrip?.latest_location?.recorded_at
         ? new Date(liveTrip.latest_location.recorded_at).toLocaleString()
         : "";
@@ -117,7 +129,7 @@ export default function TransportPage() {
                     <div className="grid gap-3 md:grid-cols-3 text-sm">
                         <Info label="Route" value={liveTrip.route.route_name} />
                         <Info label="Vehicle" value={liveTrip.route.vehicle_number || "Not added"} />
-                        <Info label="Driver" value={liveTrip.route.driver_name || "Not added"} />
+                        <Info label="Driver" value={liveTrip.route.driver_info?.full_name || liveTrip.route.driver_name || "Not added"} />
                     </div>
                 )}
 
@@ -129,14 +141,8 @@ export default function TransportPage() {
 
                 {hasCoords ? (
                     <div className="space-y-2">
-                        <div className="overflow-hidden rounded-2xl border border-orange-100 h-72 bg-orange-50">
-                            <iframe
-                                title="Live bus location"
-                                src={mapSrc}
-                                className="h-full w-full"
-                                loading="lazy"
-                                referrerPolicy="no-referrer-when-downgrade"
-                            />
+                        <div className="overflow-hidden rounded-2xl border border-orange-100 h-80 bg-orange-50 relative">
+                            <LiveBusMap lat={lat!} lng={lng!} heading={heading} isLive={!!liveTrip?.live} />
                         </div>
                         <p className="flex items-center gap-2 text-xs text-orange-700">
                             <MapPin className="w-3.5 h-3.5" />

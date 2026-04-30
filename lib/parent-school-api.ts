@@ -56,7 +56,9 @@ export function mapApiStudent(raw: unknown, parentId: string): SchoolStudent {
               ? String(r.emergency)
               : undefined;
     const dateOfBirth = r.date_of_birth != null ? String(r.date_of_birth) : undefined;
-    return { id, name, rollNumber, grade, section, parentId: finalParentId, blood, emergency, dateOfBirth };
+    const admissionDate = r.admission_date != null ? String(r.admission_date) : undefined;
+    const isActive = r.is_active !== false; // Default to true if missing or true
+    return { id, name, rollNumber, grade, section, parentId: finalParentId, blood, emergency, dateOfBirth, admissionDate, isActive };
 }
 
 export function mapApiGrade(raw: unknown, fallbackStudentId: string): GradeRecord {

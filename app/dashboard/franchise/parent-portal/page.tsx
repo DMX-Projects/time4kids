@@ -779,6 +779,7 @@ function TransportTab({
         pickup_time: "",
         drop_time: "",
     });
+    const [editingRouteId, setEditingRouteId] = useState<number | null>(null);
     const [assignSearch, setAssignSearch] = useState("");
     const [assignClass, setAssignClass] = useState("");
     const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(true);
@@ -807,23 +808,35 @@ function TransportTab({
         void load();
     }, [load]);
 
-    const submit = async (e: FormEvent) => {
+    const submit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await authFetch("/students/franchise/transport/", {
-                method: "POST",
-                headers: jsonHeaders(),
-                body: JSON.stringify({
-                    route_name: form.route_name.trim(),
-                    description: form.description,
-                    map_url: form.map_url,
-                    vehicle_number: form.vehicle_number,
-                    driver_profile: form.driver_profile ? Number(form.driver_profile) : null,
-                    tracking_note: form.tracking_note,
-                    sort_order: Number(form.sort_order) || 0,
-                }),
-            });
-            showToast("Route saved", "success");
+            const payload = {
+                route_name: form.route_name.trim(),
+                description: form.description,
+                map_url: form.map_url,
+                vehicle_number: form.vehicle_number,
+                driver_profile: form.driver_profile ? Number(form.driver_profile) : null,
+                tracking_note: form.tracking_note,
+                sort_order: Number(form.sort_order) || 0,
+            };
+
+            if (editingRouteId) {
+                await authFetch(`/students/franchise/transport/${editingRouteId}/`, {
+                    method: "PATCH",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify(payload),
+                });
+                showToast("Route updated successfully", "success");
+            } else {
+                await authFetch("/students/franchise/transport/", {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify(payload),
+                });
+                showToast("Route added successfully", "success");
+            }
+
             setForm({
                 route_name: "",
                 description: "",
@@ -832,11 +845,41 @@ function TransportTab({
                 driver_profile: "",
                 tracking_note: "",
                 sort_order: "0",
+                driver_name: "", // from type
+                driver_phone: "", // from type
             });
+            setEditingRouteId(null);
             await load();
         } catch {
             showToast("Save failed", "error");
         }
+    };
+
+    const deleteRoute = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this route? This will also remove student assignments to this route.")) return;
+        try {
+            await authFetch(`/students/franchise/transport/${id}/`, { method: "DELETE" });
+            showToast("Route deleted", "success");
+            await load();
+        } catch {
+            showToast("Could not delete route", "error");
+        }
+    };
+
+    const startEditing = (route: any) => {
+        setEditingRouteId(route.id);
+        setForm({
+            route_name: route.route_name || "",
+            vehicle_number: route.vehicle_number || "",
+            driver_name: route.driver_name || "",
+            driver_phone: route.driver_phone || "",
+            description: route.description || "",
+            map_url: route.map_url || "",
+            driver_profile: route.driver_profile?.id?.toString() || route.driver_profile?.toString() || "",
+            sort_order: route.sort_order?.toString() || "0",
+            tracking_note: route.tracking_note || "",
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const submitBulkAssignment = async () => {
@@ -917,8 +960,20 @@ function TransportTab({
                 <input placeholder="Map URL (Google Maps)" value={form.map_url} onChange={(e) => setForm((p) => ({ ...p, map_url: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <input placeholder="Tracking note (e.g. call transport desk)" value={form.tracking_note} onChange={(e) => setForm((p) => ({ ...p, tracking_note: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <Button type="submit" className="bg-[#FF922B] text-white w-fit">
-                    Add route
+                    {editingRouteId ? "Update route" : "Add route"}
                 </Button>
+                {editingRouteId && (
+                    <Button 
+                        type="button" 
+                        onClick={() => {
+                            setEditingRouteId(null);
+                            setForm({ route_name: "", vehicle_number: "", driver_name: "", driver_phone: "", description: "", map_url: "", driver_profile: "", sort_order: "0", tracking_note: "" });
+                        }}
+                        className="bg-gray-100 text-gray-700 w-fit"
+                    >
+                        Cancel
+                    </Button>
+                )}
             </form>
 
             <section className="bg-white border border-orange-100 rounded-2xl p-4 space-y-4">
@@ -1031,43 +1086,38 @@ function TransportTab({
                     {rows.map((r) => {
                         const href = typeof window !== "undefined" && r.driver_token ? `${window.location.origin}/driver/trip` : "/driver/trip";
                         return (
-                            <li key={r.id} className="rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm">
-                                <p className="font-medium text-[#111827]">{r.route_name}</p>
-                                <p className="text-xs text-[#4B5563]">
-                                    {r.vehicle_number || "Vehicle not added"} {r.driver_info ? `- ${r.driver_info.full_name} (${r.driver_info.email})` : (r.driver_name ? `- ${r.driver_name}` : "")}
-                                </p>
-                                {r.driver_token ? (
-                                    <div className="mt-2 space-y-2">
-                                        <div className="rounded-lg bg-[#F9FAFB] p-2 text-xs text-[#374151] break-all border border-[#E5E7EB]">
-                                            <p className="font-semibold text-[10px] uppercase text-[#6B7280] mb-1">Driver Login Token</p>
-                                            <p className="font-mono">{r.driver_token}</p>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const link = `${window.location.origin}/driver/trip?token=${r.driver_token}`;
-                                                    navigator.clipboard.writeText(link);
-                                                    showToast("Link copied to clipboard", "success");
-                                                }}
-                                                className="inline-flex items-center gap-1 rounded-lg bg-[#F3F4F6] px-3 py-1.5 text-xs font-semibold text-[#374151] hover:bg-[#E5E7EB]"
-                                            >
-                                                Copy Link
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const link = `${window.location.origin}/driver/trip?token=${r.driver_token}`;
-                                                    const text = `Hi, here is your driver tracking link for ${r.route_name}: ${link}`;
-                                                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-                                                }}
-                                                className="inline-flex items-center gap-1 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
-                                            >
-                                                Share via WhatsApp
-                                            </button>
-                                        </div>
+                            <li key={r.id} className="rounded-xl border border-[#E5E7EB] p-3">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1">
+                                        <p className="font-medium text-[#111827]">{r.route_name}</p>
+                                        <p className="text-xs text-[#4B5563]">
+                                            {r.vehicle_number || "Vehicle not added"} {r.driver_info ? `- ${r.driver_info.full_name} (${r.driver_info.email})` : (r.driver_name ? `- ${r.driver_name}` : "")}
+                                        </p>
                                     </div>
-                                ) : null}
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => startEditing(r)}
+                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="Edit route"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => deleteRoute(r.id)}
+                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Delete route"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                {r.driver_token && (
+                                    <div className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                                        Route Authorized for Live Tracking
+                                    </div>
+                                )}
                             </li>
                         );
                     })}

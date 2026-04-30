@@ -52,9 +52,20 @@ export default function FranchiseParentsPage() {
         setShowFormModal(true);
     };
 
+    const validate = () => {
+        if (!form.name.trim()) return "Parent name is required.";
+        if (!/^[A-Za-z\s'.,-]+$/.test(form.name)) return "Parent name must contain letters only.";
+        if (form.student && !/^[A-Za-z\s'.,-]+$/.test(form.student)) return "Student name must contain letters only.";
+        if (form.phone && !/^\d{10}$/.test(form.phone)) return "Phone number must be exactly 10 digits.";
+        if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return "Please enter a valid email address.";
+        return null;
+    };
+
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError(null);
+        const validationError = validate();
+        if (validationError) { setError(validationError); return; }
         setSubmitting(true);
         try {
             if (editingId) {
@@ -175,12 +186,38 @@ export default function FranchiseParentsPage() {
             {showFormModal && (
                 <Modal isOpen onClose={() => { setShowFormModal(false); resetForm(); }} title={editingId ? "Edit parent" : "Add parent"}>
                     <form className="space-y-3" onSubmit={handleSubmit}>
-                        {error && <p className="text-sm text-red-600">{error}</p>}
+                        {error && <p className="text-sm text-red-600 font-medium bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
                         <div className="grid md:grid-cols-2 gap-3">
-                            <Input label="Parent Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-                            <Input label="Student Name" value={form.student} onChange={(e) => setForm({ ...form, student: e.target.value })} />
-                            <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                            <Input label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                            <Input
+                                label="Parent Name *"
+                                value={form.name}
+                                onChange={(e) => setForm({ ...form, name: e.target.value.replace(/[^A-Za-z\s'.,-]/g, "") })}
+                                placeholder="e.g. Ramesh Kumar"
+                                required
+                            />
+                            <Input
+                                label="Student Name"
+                                value={form.student}
+                                onChange={(e) => setForm({ ...form, student: e.target.value.replace(/[^A-Za-z\s'.,-]/g, "") })}
+                                placeholder="e.g. Priya Kumar"
+                            />
+                            <Input
+                                label="Email"
+                                type="email"
+                                value={form.email}
+                                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                                placeholder="parent@example.com"
+                            />
+                            <Input
+                                label="Phone (10 digits)"
+                                type="tel"
+                                value={form.phone}
+                                maxLength={10}
+                                pattern="\d{10}"
+                                title="Must be exactly 10 digits"
+                                onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+                                placeholder="9876543210"
+                            />
                         </div>
                         <div className="flex gap-2">
                             <Button type="submit" size="sm" disabled={submitting}>

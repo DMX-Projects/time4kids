@@ -51,6 +51,8 @@ type AchievementApi = {
 export type ParentDataContextValue = {
     studentProfile: StudentProfile;
     updateStudentProfile: (payload: Partial<StudentProfile>) => void;
+    updateChildInfo: (studentId: string, firstName: string, lastName: string) => Promise<void>;
+    refreshStudents: () => Promise<void>;
 
     linkedStudents: SchoolStudent[];
     selectedStudentId: string | null;
@@ -83,7 +85,7 @@ const ParentDataContext = createContext<ParentDataContextValue | undefined>(unde
 
 export function ParentDataProvider({ children }: { children: React.ReactNode }) {
     const { user, authFetch, refreshUser } = useAuth();
-    const { parentSchoolLoading, students } = useSchoolData();
+    const { parentSchoolLoading, students, refreshAll } = useSchoolData();
 
     const [studentProfile, setStudentProfile] = useState<StudentProfile>({
         name: "",
@@ -224,6 +226,34 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
 
     const updateStudentProfile = (payload: Partial<StudentProfile>) => setStudentProfile((prev) => ({ ...prev, ...payload }));
 
+    const refreshStudents = useCallback(async () => {
+        if (user?.role !== "parent") return;
+        try {
+            // Delegating to SchoolDataProvider.refreshAll re-fetches students from API
+            await refreshAll();
+        } catch {
+            // ignore
+        }
+    }, [refreshAll, user?.role]);
+
+    const updateChildInfo = useCallback(async (studentId: string, firstName: string, lastName: string, dob?: string) => {
+        try {
+            await authFetch(`/students/parent/students/${studentId}/`, {
+                method: "PATCH",
+                headers: jsonHeaders(),
+                body: JSON.stringify({
+                    first_name: firstName.trim(),
+                    last_name: lastName.trim(),
+                    date_of_birth: dob || null,
+                }),
+            });
+            await refreshAll(); // Refresh the global student list
+        } catch (err) {
+            console.error("Failed to update child info:", err);
+            throw err;
+        }
+    }, [authFetch, refreshAll]);
+
     const addGrade = (payload: Omit<GradeRow, "id">) =>
         setGrades((prev) => [...prev, { id: safeRandomId(), ...payload }]);
     const updateGrade = (id: string, payload: Partial<GradeRow>) => setGrades((prev) => prev.map((g) => (g.id === id ? { ...g, ...payload } : g)));
@@ -266,6 +296,8 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
     const value: ParentDataContextValue = {
         studentProfile,
         updateStudentProfile,
+        updateChildInfo,
+        refreshStudents,
         linkedStudents,
         selectedStudentId,
         setSelectedStudentId,
