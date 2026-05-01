@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
 import { jsonHeaders } from "@/lib/api-client";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 type DriverProfile = {
     id: number;
@@ -39,6 +40,7 @@ export default function DriverManagementPage() {
         full_name: "",
         phone: "",
     });
+    const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
 
     const loadDrivers = useCallback(async () => {
         setLoading(true);
@@ -76,7 +78,6 @@ export default function DriverManagementPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this driver account? This will also remove their user login.")) return;
         try {
             await authFetch(`/students/franchise/drivers/${id}/`, { method: "DELETE" });
             showToast("Driver account deleted", "success");
@@ -195,7 +196,7 @@ export default function DriverManagementPage() {
                         {drivers.map((d) => (
                             <div key={d.id} className="bg-white border border-[#E5E7EB] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow group relative">
                                 <button 
-                                    onClick={() => void handleDelete(d.id)}
+                                    onClick={() => setConfirmDelete({ isOpen: true, id: d.id })}
                                     className="absolute top-4 right-4 p-2 text-[#9CA3AF] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                                 >
                                     <Trash2 className="w-4 h-4" />
@@ -233,6 +234,15 @@ export default function DriverManagementPage() {
                     </div>
                 </section>
             </div>
+            <ConfirmModal
+                isOpen={confirmDelete.isOpen}
+                onClose={() => setConfirmDelete({ isOpen: false, id: null })}
+                onConfirm={() => confirmDelete.id && handleDelete(confirmDelete.id)}
+                title="Delete Driver Account"
+                description="Are you sure you want to delete this driver account? This will also remove their user login and access to the driver app."
+                confirmText="Yes, Delete"
+                variant="danger"
+            />
         </div>
     );
 }

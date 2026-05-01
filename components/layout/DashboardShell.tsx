@@ -82,7 +82,7 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
 
     return (
         <RoleGuard allowedRole={role}>
-            <div className="min-h-screen flex bg-white isolate">
+            <div className="h-screen flex bg-white isolate overflow-hidden">
 
                 {/* Render role-specific sidebar */}
                 {isAdmin && (
@@ -111,8 +111,8 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                 )}
                 {open && <button className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setOpen(false)} aria-label="Close menu" />}
 
-                <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-[1]">
-                    <header className="bg-white border-b border-[#E5E7EB] relative z-10">
+                <div className="flex-1 flex flex-col min-w-0 relative z-[1] h-full overflow-y-auto">
+                    <header className="sticky top-0 bg-white border-b border-[#E5E7EB] z-20">
                         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <button

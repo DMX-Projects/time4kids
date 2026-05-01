@@ -4,6 +4,8 @@ import { useMemo, useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { Images, Plus, Pencil, Trash2, Eye, EyeOff, Upload, X } from "lucide-react";
+import { useToast } from "@/components/ui/Toast";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import Image from "next/image";
 import { mediaUrl, apiUrl } from "@/lib/api-client";
 
@@ -31,6 +33,8 @@ export default function HeroSlidesPage() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { showToast } = useToast();
+    const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
 
     const fetchSlides = async () => {
         try {
@@ -97,18 +101,18 @@ export default function HeroSlidesPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this slide?")) return;
         try {
             const response = await fetch(apiUrl(`/common/hero-slides/${id}/`), {
                 method: 'DELETE',
             });
             if (response.ok) {
                 setSlides(slides.filter(s => s.id !== id));
+                showToast("Slide deleted successfully", "success");
             } else {
-                alert("Failed to delete slide");
+                showToast("Failed to delete slide", "error");
             }
         } catch (err) {
-            alert("Error deleting slide");
+            showToast("Error deleting slide", "error");
         }
     };
 
@@ -238,7 +242,7 @@ export default function HeroSlidesPage() {
                                         <Pencil className="w-4 h-4" />
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(slide.id)}
+                                        onClick={() => setConfirmDelete({ isOpen: true, id: slide.id })}
                                         className="p-1.5 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded transition"
                                         title="Delete"
                                         type="button"
@@ -368,6 +372,15 @@ export default function HeroSlidesPage() {
                     </div>
                 </form>
             </Modal>
+            <ConfirmModal
+                isOpen={confirmDelete.isOpen}
+                onClose={() => setConfirmDelete({ isOpen: false, id: null })}
+                onConfirm={() => confirmDelete.id && handleDelete(confirmDelete.id)}
+                title="Delete Slide"
+                description="Are you sure you want to delete this hero slide? This will remove it from the homepage banner."
+                confirmText="Yes, Delete"
+                variant="danger"
+            />
         </div>
     );
 }

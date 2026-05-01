@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
 import { jsonHeaders } from "@/lib/api-client";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 type ShowToastFn = (message: string, variant?: "success" | "error") => void;
@@ -180,6 +181,14 @@ function ShowcaseTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToa
             showToast("Select file", "error");
             return;
         }
+
+        // File size validation
+        const maxSize = form.mediaType === "VIDEO" ? 30 * 1024 * 1024 : 5 * 1024 * 1024;
+        if (form.file.size > maxSize) {
+            showToast(`File too large. Max ${form.mediaType === "VIDEO" ? "30MB for video" : "5MB for image"}.`, "error");
+            return;
+        }
+
         setUploading(true);
         try {
             let targetEventId = form.eventId;
@@ -276,6 +285,11 @@ function ShowcaseTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToa
                         onChange={(e) => setForm((p) => ({ ...p, file: e.target.files?.[0] || null }))}
                         className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
                     />
+                    {form.mediaType === "VIDEO" && (
+                        <p className="mt-1.5 text-[11px] text-orange-600 font-medium">
+                            Recommended: Under 30 seconds, MP4 format, Max 30MB.
+                        </p>
+                    )}
                 </label>
                 <label className="text-xs font-semibold text-[#4B5563] block">
                     Caption (optional)
@@ -385,6 +399,7 @@ function HomeworkTab({
     const [rows, setRows] = useState<{ id: number; title: string; assigned_date: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [form, setForm] = useState({ studentId: "", class_name: "", assigned_date: "", title: "", description: "" });
+    const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -426,7 +441,6 @@ function HomeworkTab({
     };
 
     const remove = async (id: number) => {
-        if (!confirm("Delete this homework?")) return;
         try {
             await authFetch(`/students/franchise/homework/${id}/`, { method: "DELETE" });
             showToast("Deleted", "success");
@@ -478,12 +492,22 @@ function HomeworkTab({
                             <span className="font-medium">{r.title}</span>{" "}
                             <span className="text-[#6B7280]">({r.assigned_date})</span>
                         </span>
-                        <button type="button" className="text-red-600 text-xs font-semibold" onClick={() => void remove(r.id)}>
+                        <button type="button" className="text-red-600 text-xs font-semibold" onClick={() => setConfirmDelete({ isOpen: true, id: r.id })}>
                             Delete
                         </button>
                     </li>
                 ))}
             </ul>
+
+            <ConfirmModal
+                isOpen={confirmDelete.isOpen}
+                onClose={() => setConfirmDelete({ isOpen: false, id: null })}
+                onConfirm={() => confirmDelete.id && remove(confirmDelete.id)}
+                title="Delete Homework"
+                description="Are you sure you want to delete this homework? This action cannot be undone."
+                confirmText="Yes, Delete"
+                variant="danger"
+            />
         </div>
     );
 }
@@ -491,6 +515,7 @@ function HomeworkTab({
 function AnnouncementsTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
     const [rows, setRows] = useState<{ id: number; title: string; published_at?: string }[]>([]);
     const [form, setForm] = useState({ title: "", body: "" });
+    const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
 
     const load = useCallback(async () => {
         try {
@@ -518,10 +543,10 @@ function AnnouncementsTab({ authFetch, showToast }: { authFetch: AuthFetchFn; sh
     };
 
     const remove = async (id: number) => {
-        if (!confirm("Delete announcement?")) return;
         try {
             await authFetch(`/students/franchise/announcements/${id}/`, { method: "DELETE" });
             await load();
+            showToast("Deleted successfully", "success");
         } catch {
             showToast("Delete failed", "error");
         }
@@ -540,12 +565,22 @@ function AnnouncementsTab({ authFetch, showToast }: { authFetch: AuthFetchFn; sh
                 {rows.map((r) => (
                     <li key={r.id} className="flex justify-between gap-2 px-4 py-3 text-sm">
                         <span className="font-medium">{r.title}</span>
-                        <button type="button" className="text-red-600 text-xs" onClick={() => void remove(r.id)}>
+                        <button type="button" className="text-red-600 text-xs" onClick={() => setConfirmDelete({ isOpen: true, id: r.id })}>
                             Delete
                         </button>
                     </li>
                 ))}
             </ul>
+
+            <ConfirmModal
+                isOpen={confirmDelete.isOpen}
+                onClose={() => setConfirmDelete({ isOpen: false, id: null })}
+                onConfirm={() => confirmDelete.id && remove(confirmDelete.id)}
+                title="Delete Announcement"
+                description="Are you sure you want to delete this announcement? It will be removed from all parent apps."
+                confirmText="Yes, Delete"
+                variant="danger"
+            />
         </div>
     );
 }
@@ -744,6 +779,7 @@ function TransportTab({
         driver_phone: "",
         driver_profile: "", // Link to DriverProfile ID
         tracking_note: "",
+        destination: "",
         sort_order: "0",
     });
     const [drivers, setDrivers] = useState<any[]>([]);
@@ -758,6 +794,8 @@ function TransportTab({
                 full_name: string;
                 email: string;
             };
+            destination?: string;
+            tracking_note?: string;
         }>
     >([]);
     const [assignments, setAssignments] = useState<
@@ -787,8 +825,20 @@ function TransportTab({
     const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(true);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [bulkLoading, setBulkLoading] = useState(false);
-
     const [driverLoading, setDriverLoading] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState<{ 
+        isOpen: boolean; 
+        id: number | null; 
+        type: "route" | "assignment" | null;
+        title: string;
+        description: string;
+    }>({ 
+        isOpen: false, 
+        id: null, 
+        type: null,
+        title: "",
+        description: ""
+    });
 
     const load = useCallback(async () => {
         try {
@@ -820,6 +870,7 @@ function TransportTab({
                 vehicle_number: form.vehicle_number,
                 driver_profile: form.driver_profile ? Number(form.driver_profile) : null,
                 tracking_note: form.tracking_note,
+                destination: form.destination,
                 sort_order: Number(form.sort_order) || 0,
             };
 
@@ -846,6 +897,7 @@ function TransportTab({
                 vehicle_number: "",
                 driver_profile: "",
                 tracking_note: "",
+                destination: "",
                 sort_order: "0",
                 driver_name: "", // from type
                 driver_phone: "", // from type
@@ -858,7 +910,6 @@ function TransportTab({
     };
 
     const deleteRoute = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this route? This will also remove student assignments to this route.")) return;
         try {
             await authFetch(`/students/franchise/transport/${id}/`, { method: "DELETE" });
             showToast("Route deleted", "success");
@@ -880,6 +931,7 @@ function TransportTab({
             driver_profile: route.driver_profile?.id?.toString() || route.driver_profile?.toString() || "",
             sort_order: route.sort_order?.toString() || "0",
             tracking_note: route.tracking_note || "",
+            destination: route.destination || "",
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -922,7 +974,6 @@ function TransportTab({
     };
 
     const removeAssignment = async (id: number) => {
-        if (!confirm("Remove this student route assignment?")) return;
         try {
             await authFetch(`/students/franchise/transport-assignments/${id}/`, { method: "DELETE" });
             showToast("Assignment removed", "success");
@@ -961,6 +1012,7 @@ function TransportTab({
                 <textarea placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={3} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <input placeholder="Map URL (Google Maps)" value={form.map_url} onChange={(e) => setForm((p) => ({ ...p, map_url: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <input placeholder="Tracking note (e.g. call transport desk)" value={form.tracking_note} onChange={(e) => setForm((p) => ({ ...p, tracking_note: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
+                <input placeholder="Route Destination (e.g. Centre name or specific stop)" value={form.destination} onChange={(e) => setForm((p) => ({ ...p, destination: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <Button type="submit" className="bg-[#FF922B] text-white w-fit">
                     {editingRouteId ? "Update route" : "Add route"}
                 </Button>
@@ -969,7 +1021,7 @@ function TransportTab({
                         type="button" 
                         onClick={() => {
                             setEditingRouteId(null);
-                            setForm({ route_name: "", vehicle_number: "", driver_name: "", driver_phone: "", description: "", map_url: "", driver_profile: "", sort_order: "0", tracking_note: "" });
+                            setForm({ route_name: "", vehicle_number: "", driver_name: "", driver_phone: "", description: "", map_url: "", driver_profile: "", sort_order: "0", tracking_note: "", destination: "" });
                         }}
                         className="bg-gray-100 text-gray-700 w-fit"
                     >
@@ -1095,6 +1147,11 @@ function TransportTab({
                                         <p className="text-xs text-[#4B5563]">
                                             {r.vehicle_number || "Vehicle not added"} {r.driver_info ? `- ${r.driver_info.full_name} (${r.driver_info.email})` : (r.driver_name ? `- ${r.driver_name}` : "")}
                                         </p>
+                                        {r.destination && (
+                                            <p className="text-[11px] font-semibold text-orange-600 uppercase mt-0.5">
+                                                Ends at: {r.destination}
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-1 shrink-0">
                                         <button
@@ -1107,7 +1164,13 @@ function TransportTab({
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => deleteRoute(r.id)}
+                                            onClick={() => setConfirmDelete({
+                                                isOpen: true,
+                                                id: r.id,
+                                                type: "route",
+                                                title: "Delete Route",
+                                                description: "Are you sure you want to delete this route? This will also remove all student assignments to this route."
+                                            })}
                                             className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                             title="Delete route"
                                         >
@@ -1140,13 +1203,37 @@ function TransportTab({
                                     {a.drop_stop ? ` - Drop: ${a.drop_stop}` : ""}
                                 </p>
                             </div>
-                            <button type="button" onClick={() => void removeAssignment(a.id)} className="text-xs font-semibold text-red-600">
+                            <button 
+                                type="button" 
+                                onClick={() => setConfirmDelete({
+                                    isOpen: true,
+                                    id: a.id,
+                                    type: "assignment",
+                                    title: "Remove Assignment",
+                                    description: "Are you sure you want to remove this student's route assignment?"
+                                })} 
+                                className="text-xs font-semibold text-red-600"
+                            >
                                 Remove
                             </button>
                         </li>
                     ))}
                 </ul>
             </div>
+
+            <ConfirmModal
+                isOpen={confirmDelete.isOpen}
+                onClose={() => setConfirmDelete(p => ({ ...p, isOpen: false }))}
+                onConfirm={() => {
+                    if (!confirmDelete.id) return;
+                    if (confirmDelete.type === "route") deleteRoute(confirmDelete.id);
+                    else if (confirmDelete.type === "assignment") removeAssignment(confirmDelete.id);
+                }}
+                title={confirmDelete.title}
+                description={confirmDelete.description}
+                confirmText="Yes, Delete"
+                variant="danger"
+            />
         </div>
     );
 }

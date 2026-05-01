@@ -33,13 +33,23 @@ type LiveLocation = {
     recorded_at: string;
 };
 
+type LiveTripEntry = {
+    live: boolean;
+    route: (Row & { vehicle_number?: string; driver_name?: string; driver_phone?: string; driver_info?: { full_name: string; email: string; phone?: string } });
+    trip: { id: number; trip_type: string; status: string; started_at?: string | null };
+    latest_location?: LiveLocation | null;
+    student_status?: { student_id: number; student_name: string; status: string; note?: string; updated_at: string } | null;
+};
+
 type LiveTripPayload = {
     live: boolean;
-    route?: (Row & { vehicle_number?: string; driver_name?: string; driver_phone?: string; driver_info?: { full_name: string; email: string; phone?: string } }) | null;
-    trip?: { id: number; trip_type: string; status: string; started_at?: string | null } | null;
-    latest_location?: LiveLocation | null;
-    student_status?: { student_name: string; status: string; note?: string; updated_at: string } | null;
+    trips: LiveTripEntry[];
     school_location?: { latitude: number; longitude: number } | null;
+    // Legacy fields for compatibility
+    route?: any;
+    trip?: any;
+    latest_location?: any;
+    student_status?: any;
 };
 
 export default function TransportPage() {
@@ -128,51 +138,62 @@ export default function TransportPage() {
                     </span>
                 </div>
 
-                {liveTrip?.live && liveTrip.route && (
-                    <div className="grid gap-3 md:grid-cols-3 text-sm">
-                        <Info label="Route" value={liveTrip.route.route_name} />
-                        <Info label="Vehicle" value={liveTrip.route.vehicle_number || "Not added"} />
-                        <Info 
-                            label="Driver" 
-                            value={
-                                (liveTrip.route.driver_info?.full_name || liveTrip.route.driver_name || "Not added") + 
-                                (liveTrip.route.driver_info?.phone ? ` (${liveTrip.route.driver_info.phone})` : "")
-                            } 
-                        />
-                    </div>
-                )}
+                {liveTrip?.live && liveTrip.trips?.map((entry, idx) => {
+                    const lat = entry.latest_location ? Number(entry.latest_location.latitude) : null;
+                    const lng = entry.latest_location ? Number(entry.latest_location.longitude) : null;
+                    const heading = entry.latest_location ? Number(entry.latest_location.heading) : 0;
+                    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+                    const lastUpdated = entry.latest_location?.recorded_at
+                        ? new Date(entry.latest_location.recorded_at).toLocaleTimeString()
+                        : "";
 
-                {liveTrip?.student_status && (
-                    <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-                        {liveTrip.student_status.student_name}: {formatStatus(liveTrip.student_status.status)}
-                    </div>
-                )}
-
-                {liveTrip?.live && (
-                    hasCoords ? (
-                        <div className="space-y-2">
-                            <div className="overflow-hidden rounded-2xl border border-orange-100 h-80 bg-orange-50 relative">
-                                <LiveBusMap 
-                                    lat={lat!} 
-                                    lng={lng!} 
-                                    heading={heading} 
-                                    isLive={!!liveTrip?.live} 
-                                    schoolLat={schoolLat} 
-                                    schoolLng={schoolLng} 
+                    return (
+                        <div key={entry.trip.id} className={`space-y-4 ${idx > 0 ? "pt-6 border-t border-orange-100 mt-6" : ""}`}>
+                            <div className="grid gap-3 md:grid-cols-3 text-sm">
+                                <Info label="Route" value={entry.route.route_name} />
+                                <Info label="Vehicle" value={entry.route.vehicle_number || "Not added"} />
+                                <Info 
+                                    label="Driver" 
+                                    value={
+                                        (entry.route.driver_info?.full_name || entry.route.driver_name || "Not added") + 
+                                        (entry.route.driver_info?.phone ? ` (${entry.route.driver_info.phone})` : "")
+                                    } 
                                 />
                             </div>
-                            <p className="flex items-center gap-2 text-xs text-orange-700">
-                                <MapPin className="w-3.5 h-3.5" />
-                                Last updated: {lastUpdated || "just now"}
-                            </p>
+
+                            {entry.student_status && (
+                                <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                                    <span className="font-bold">{entry.student_status.student_name}:</span> {formatStatus(entry.student_status.status)}
+                                    {entry.student_status.note && <span className="ml-2 italic opacity-75">({entry.student_status.note})</span>}
+                                </div>
+                            )}
+
+                            {hasCoords ? (
+                                <div className="space-y-2">
+                                    <div className="overflow-hidden rounded-2xl border border-orange-100 h-80 bg-orange-50 relative">
+                                        <LiveBusMap 
+                                            lat={lat!} 
+                                            lng={lng!} 
+                                            heading={heading} 
+                                            isLive={true} 
+                                            schoolLat={liveTrip.school_location?.latitude} 
+                                            schoolLng={liveTrip.school_location?.longitude} 
+                                        />
+                                    </div>
+                                    <p className="flex items-center gap-2 text-xs text-orange-700">
+                                        <MapPin className="w-3.5 h-3.5" />
+                                        Last updated: {lastUpdated}
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50 px-4 py-8 text-center text-sm text-orange-800">
+                                    <Navigation className="w-8 h-8 mx-auto mb-2" />
+                                    Waiting for GPS from {entry.route.route_name}...
+                                </div>
+                            )}
                         </div>
-                    ) : (
-                        <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50 px-4 py-8 text-center text-sm text-orange-800">
-                            <Navigation className="w-8 h-8 mx-auto mb-2" />
-                            Waiting for the driver app to start sending GPS.
-                        </div>
-                    )
-                )}
+                    );
+                })}
             </section>
 
             {loading && <p className="text-sm text-orange-700">Loading...</p>}

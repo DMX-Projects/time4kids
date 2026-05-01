@@ -1,12 +1,16 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState, Suspense } from "react";
-import { Bus, CheckCircle2, Crosshair, Loader2, LogOut, MapPin, Play, Square, UserCheck, UserX } from "lucide-react";
+import { Bus, CheckCircle2, ChevronDown, Crosshair, Loader2, LogOut, MapPin, Play, Square, UserCheck, UserX } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
+import Modal from "@/components/ui/Modal";
+import Drawer from "@/components/ui/Drawer";
 import { apiUrl, jsonHeaders } from "@/lib/api-client";
 
 type RouteInfo = {
@@ -16,6 +20,7 @@ type RouteInfo = {
     vehicle_number?: string;
     driver_name?: string;
     driver_phone?: string;
+    destination?: string;
 };
 
 type ActiveTrip = {
@@ -56,9 +61,15 @@ function DriverTripContent() {
     const [tripType, setTripType] = useState<"PICKUP" | "DROP">("PICKUP");
     const [loading, setLoading] = useState(false);
     const [tracking, setTracking] = useState(false);
-    const [message, setMessage] = useState("");
+    const { showToast } = useToast();
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+    const [isCompleteTripModalOpen, setIsCompleteTripModalOpen] = useState(false);
+    const [allRoutes, setAllRoutes] = useState<any[]>([]);
+    const [selectedRouteId, setSelectedRouteId] = useState<string>("");
+    const [isRouteDrawerOpen, setIsRouteDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [summary, setSummary] = useState<any | null>(null);
+    const [message, setMessage] = useState("");
     const watchIdRef = useRef<number | null>(null);
     const wakeLockRef = useRef<any>(null);
     // Guard: prevents stale GPS callbacks from posting after the trip ends
@@ -70,11 +81,10 @@ function DriverTripContent() {
         const nextToken = value ? cleanToken(value) : "";
         
         setLoading(true);
-        setMessage("");
         try {
             let data: any;
             if (user?.role === "driver") {
-                data = await authFetch("/students/driver/me/trip/");
+                data = await authFetch(`/students/driver/me/trip/${selectedRouteId ? `?route_id=${selectedRouteId}` : ""}`, { cache: "no-store" });
             } else {
                 if (!nextToken) return;
                 const res = await fetch(apiUrl(`/students/driver/transport/${nextToken}/`), { cache: "no-store" });
@@ -87,15 +97,17 @@ function DriverTripContent() {
             setRoute(data.route);
             setActiveTrip(data.active_trip);
             setStudents(Array.isArray(data.students) ? data.students : (Array.isArray(data.assigned_students) ? data.assigned_students : []));
+            if (data.all_routes) setAllRoutes(data.all_routes);
+            if (data.route && !selectedRouteId) setSelectedRouteId(String(data.route.id));
         } catch (err) {
             setRoute(null);
             setActiveTrip(null);
             setStudents([]);
-            setMessage(err instanceof Error ? err.message : "Could not load route");
+            showToast(err instanceof Error ? err.message : "Could not load route", "error");
         } finally {
             setLoading(false);
         }
-    }, [user, authFetch]);
+    }, [user, authFetch, showToast, selectedRouteId]);
 
     useEffect(() => {
         const urlToken = searchParams.get("token");
@@ -182,7 +194,7 @@ function DriverTripContent() {
                 data = await authFetch("/students/driver/me/trip/start/", {
                     method: "POST",
                     headers: jsonHeaders(),
-                    body: JSON.stringify({ trip_type: tripType }),
+                    body: JSON.stringify({ trip_type: tripType, route_id: selectedRouteId || route?.id }),
                 });
             } else {
                 const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/start/`), {
@@ -196,12 +208,12 @@ function DriverTripContent() {
             tripActiveRef.current = true;
             setActiveTrip(data);
             setSummary(null);
-            setMessage("Trip started. GPS sharing active.");
+            showToast("Trip started. GPS sharing active.", "success");
             void requestWakeLock();
             startWatching(data);
             await loadRoute(token);
         } catch (err) {
-            setMessage(err instanceof Error ? err.message : "Could not start trip");
+            showToast(err instanceof Error ? err.message : "Could not start trip", "error");
         } finally {
             setLoading(false);
         }
@@ -229,7 +241,7 @@ function DriverTripContent() {
                 saved = await authFetch("/students/driver/me/trip/location/", {
                     method: "POST",
                     headers: jsonHeaders(),
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify({ ...payload, route_id: selectedRouteId || route?.id }),
                 });
             } else {
                 const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/location/`), {
@@ -284,6 +296,12 @@ function DriverTripContent() {
             void authFetch("/students/driver/me/trip/toggle-gps/", {
                 method: "POST",
                 headers: jsonHeaders(),
+                body: JSON.stringify({ active: true, route_id: selectedRouteId || route?.id }),
+            }).catch(console.error);
+        } else if (token) {
+            void fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/toggle-gps/`), {
+                method: "POST",
+                headers: jsonHeaders(),
                 body: JSON.stringify({ active: true }),
             }).catch(console.error);
         }
@@ -295,7 +313,7 @@ function DriverTripContent() {
             },
             (error) => {
                 setTracking(false);
-                setMessage(error.message || "Location permission failed");
+                showToast(error.message || "Location permission failed", "error");
             },
             { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
         );
@@ -315,11 +333,17 @@ function DriverTripContent() {
             void authFetch("/students/driver/me/trip/toggle-gps/", {
                 method: "POST",
                 headers: jsonHeaders(),
+                body: JSON.stringify({ active: false, route_id: selectedRouteId || route?.id }),
+            }).catch(console.error);
+        } else if (token) {
+            void fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/toggle-gps/`), {
+                method: "POST",
+                headers: jsonHeaders(),
                 body: JSON.stringify({ active: false }),
             }).catch(console.error);
         }
 
-        setMessage("GPS sharing stopped.");
+        showToast("GPS sharing stopped.", "info");
     };
 
     const completeTrip = async () => {
@@ -342,6 +366,7 @@ function DriverTripContent() {
                 data = await authFetch("/students/driver/me/trip/complete/", {
                     method: "POST",
                     headers: jsonHeaders(),
+                    body: JSON.stringify({ route_id: selectedRouteId || route?.id })
                 });
             } else {
                 const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/complete/`), {
@@ -362,9 +387,9 @@ function DriverTripContent() {
             };
             setSummary(stats);
             setActiveTrip(null);
-            setMessage("Trip completed.");
+            showToast("Trip completed successfully!", "success");
         } catch (err) {
-            setMessage(err instanceof Error ? err.message : "Could not complete trip");
+            showToast(err instanceof Error ? err.message : "Could not complete trip", "error");
         } finally {
             // Safety net: ensure GPS is always stopped even if API call errored
             stopWatching();
@@ -379,18 +404,16 @@ function DriverTripContent() {
             return;
         }
         if (!activeTrip || activeTrip.status !== "LIVE") {
-            console.log("DEBUG: updateStudentStatus BLOCKED - no live trip", activeTrip);
-            setMessage("Start the trip before marking students.");
+            showToast("Start the trip before marking students.", "error");
             return;
         }
-        setMessage("");
         try {
             let data: any;
             if (user?.role === "driver") {
                 data = await authFetch("/students/driver/me/trip/student-status/", {
                     method: "POST",
                     headers: jsonHeaders(),
-                    body: JSON.stringify({ student_id: studentId, status }),
+                    body: JSON.stringify({ student_id: studentId, status, route_id: selectedRouteId || route?.id }),
                 });
             } else {
                 const res = await fetch(apiUrl(`/students/driver/transport/${cleanToken(token)}/student-status/`), {
@@ -414,9 +437,9 @@ function DriverTripContent() {
                         : student,
                 ),
             );
-            setMessage(`${data.student_name}: ${formatStatus(data.status)}`);
+            showToast(`${data.student_name}: ${formatStatus(data.status)}`, "info");
         } catch (err) {
-            setMessage(err instanceof Error ? err.message : "Could not update student status");
+            showToast(err instanceof Error ? err.message : "Could not update student status", "error");
         }
     };
 
@@ -460,18 +483,26 @@ function DriverTripContent() {
                             </div>
                             <div>
                                 <h1 className="text-xl font-bold text-orange-950">Driver Trip</h1>
+                                {allRoutes.length > 1 && (
+                                    <div className="mt-1">
+                                        <button
+                                            disabled={tracking || activeTrip?.status === "LIVE"}
+                                            onClick={() => setIsRouteDrawerOpen(true)}
+                                            className="bg-orange-50 border border-orange-100 text-orange-900 text-[11px] font-bold rounded-full px-3 py-1 flex items-center gap-1.5 active:scale-95 transition-transform disabled:opacity-50"
+                                        >
+                                            <Bus className="w-3 h-3" />
+                                            {allRoutes.find(r => String(r.id) === selectedRouteId)?.route_name || "Select Route"}
+                                            <ChevronDown className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                )}
                                 <p className="text-sm text-orange-700">Start route & share GPS.</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
                             {user && (
                                 <button
-                                    onClick={() => {
-                                        if (confirm("Are you sure you want to logout?")) {
-                                            authLogout();
-                                            router.push("/driver/login");
-                                        }
-                                    }}
+                                    onClick={() => setIsLogoutModalOpen(true)}
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-orange-100 text-[11px] font-bold text-red-600 shadow-sm hover:bg-red-50 transition-colors"
                                 >
                                     <LogOut className="w-3.5 h-3.5" />
@@ -534,6 +565,12 @@ function DriverTripContent() {
                         <div>
                             <h2 className="font-bold text-orange-950">{route.route_name}</h2>
                             <p className="text-sm text-orange-700">{route.vehicle_number || "Vehicle not added"}</p>
+                            {route.destination && (
+                                <p className="text-xs font-bold text-orange-600 uppercase mt-1 flex items-center gap-1">
+                                    <MapPin className="w-3.5 h-3.5" />
+                                    Destination: {route.destination}
+                                </p>
+                            )}
                             {route.driver_name && <p className="text-sm text-orange-700">Driver: {route.driver_name}</p>}
                         </div>
 
@@ -570,7 +607,7 @@ function DriverTripContent() {
                             </Button>
                         </div>
 
-                        <Button onClick={completeTrip} disabled={!activeTrip || loading} className="w-full bg-orange-100 text-orange-950">
+                        <Button onClick={() => setIsCompleteTripModalOpen(true)} disabled={!activeTrip || loading} className="w-full bg-orange-100 text-orange-950">
                             <CheckCircle2 className="w-4 h-4 mr-2" />
                             Complete Trip
                         </Button>
@@ -684,14 +721,91 @@ function DriverTripContent() {
                     ) : (
                         <p className="text-xs text-orange-700">No location sent yet.</p>
                     )}
+                    {message && (
+                        <p className="text-[10px] text-orange-600 font-medium">{message}</p>
+                    )}
                     {loading && (
                         <p className="flex items-center gap-2 text-xs text-orange-700">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             Working...
                         </p>
                     )}
-                    {message && <p className="text-sm text-orange-800">{message}</p>}
                 </section>
+
+                {/* Premium Bottom Sheets */}
+                <Drawer isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} title="Logout">
+                    <div className="space-y-6">
+                        <div className="bg-red-50 p-4 rounded-2xl">
+                            <p className="text-red-900 text-sm font-medium leading-relaxed">
+                                Are you sure you want to logout? You will need to login again or use a driver link to start your next trip.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Button variant="outline" className="w-full !rounded-2xl !h-14" onClick={() => setIsLogoutModalOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button className="w-full !rounded-2xl !h-14 bg-red-600 text-white shadow-red-100" onClick={() => {
+                                authLogout();
+                                router.push("/driver/login");
+                            }}>
+                                Logout
+                            </Button>
+                        </div>
+                    </div>
+                </Drawer>
+
+                <Drawer isOpen={isCompleteTripModalOpen} onClose={() => setIsCompleteTripModalOpen(false)} title="End Trip">
+                    <div className="space-y-6">
+                        <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
+                            <p className="text-orange-900 text-sm font-medium leading-relaxed">
+                                Great job! Finishing the route will stop GPS sharing and notify the centre that all students have been handled.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Button variant="outline" className="w-full !rounded-2xl !h-14" onClick={() => setIsCompleteTripModalOpen(false)}>
+                                Not yet
+                            </Button>
+                            <Button className="w-full !rounded-2xl !h-14 bg-[#FF922B] text-white shadow-orange-100" onClick={completeTrip}>
+                                Yes, Complete
+                            </Button>
+                        </div>
+                    </div>
+                </Drawer>
+
+                <Drawer isOpen={isRouteDrawerOpen} onClose={() => setIsRouteDrawerOpen(false)} title="Select Route">
+                    <div className="space-y-3">
+                        {allRoutes.map((r) => (
+                            <button
+                                key={r.id}
+                                onClick={() => {
+                                    const rid = String(r.id);
+                                    setSelectedRouteId(rid);
+                                    setIsRouteDrawerOpen(false);
+                                    void authFetch<any>(`/students/driver/me/trip/?route_id=${rid}`, { cache: "no-store" }).then(data => {
+                                        setRoute(data.route);
+                                        setActiveTrip(data.active_trip);
+                                        setStudents(data.students || []);
+                                    });
+                                }}
+                                className={`w-full p-4 rounded-2xl text-left transition-all border flex items-center justify-between ${
+                                    selectedRouteId === String(r.id)
+                                        ? "bg-orange-50 border-orange-200"
+                                        : "bg-white border-gray-100 active:bg-gray-50"
+                                }`}
+                            >
+                                <div>
+                                    <p className={`font-bold ${selectedRouteId === String(r.id) ? "text-orange-900" : "text-gray-900"}`}>
+                                        {r.route_name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">{r.vehicle_number || "No vehicle"}</p>
+                                </div>
+                                {selectedRouteId === String(r.id) && (
+                                    <CheckCircle2 className="w-5 h-5 text-orange-600" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </Drawer>
             </div>
         </main>
     );
