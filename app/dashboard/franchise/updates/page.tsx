@@ -9,6 +9,7 @@ import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { mediaUrl } from "@/lib/api-client";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Update {
     id: number;
@@ -45,6 +46,7 @@ export default function UpdatesPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const { register, handleSubmit, reset, setValue, formState: { isSubmitting } } = useForm<FormValues>();
     const { showToast } = useToast();
+    const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
 
     // Social Media Uploads & Support Files
     const [socialUploads, setSocialUploads] = useState<SocialMediaUpload[]>([]);
@@ -144,7 +146,6 @@ export default function UpdatesPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this update?")) return;
         try {
             await authFetch(`/updates/${id}/`, {
                 method: "DELETE",
@@ -428,7 +429,7 @@ export default function UpdatesPage() {
                                         </button>
                                         <button
                                             className="p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
-                                            onClick={() => handleDelete(update.id)}
+                                            onClick={() => setConfirmDelete({ isOpen: true, id: update.id })}
                                             title="Delete Update"
                                         >
                                             <Trash2 className="w-4 h-4" />
@@ -440,6 +441,15 @@ export default function UpdatesPage() {
                     ))}
                 </div>
             )}
+            <ConfirmModal
+                isOpen={confirmDelete.isOpen}
+                onClose={() => setConfirmDelete({ isOpen: false, id: null })}
+                onConfirm={() => confirmDelete.id && handleDelete(confirmDelete.id)}
+                title="Delete Update"
+                description="Are you sure you want to delete this update? This will remove it from your school webpage."
+                confirmText="Yes, Delete"
+                variant="danger"
+            />
         </div>
     );
 }
