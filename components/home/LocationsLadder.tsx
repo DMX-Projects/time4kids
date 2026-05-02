@@ -84,12 +84,12 @@ const LocationsLadder = () => {
     };
 
     return (
-        <section className="locations-ladder-section">
+        <section className="locations-ladder-section section-gap">
             <style jsx>{`
                 .locations-ladder-section {
                     position: relative;
                     overflow: hidden;
-                    padding: 40px 0;
+                    padding: 0;
                     float: left;
                     width: 100%;
                     clear: both;

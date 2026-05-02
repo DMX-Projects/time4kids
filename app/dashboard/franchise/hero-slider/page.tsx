@@ -329,7 +329,7 @@ export default function ManageHeroSlider() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-gray-700">Display Order</label>
                             <input

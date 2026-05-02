@@ -77,7 +77,7 @@ export default function BenefitsUpdates() {
     }, []);
 
     return (
-        <div className="benefits-updates">
+        <div className="benefits-updates section-gap">
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Benefits Column */}
@@ -135,7 +135,7 @@ export default function BenefitsUpdates() {
             <style jsx global>{`
                 .benefits-updates {
                     background: #fff;
-                    padding: 30px 0;
+                    padding: 0;
                 }
 
                 .benefits-updates h3 {
@@ -342,7 +342,7 @@ export default function BenefitsUpdates() {
                 @media (max-width: 768px) {
                     .benefits-updates {
                         background: none;
-                        padding: 30px 0;
+                        padding: 0;
                     }
 
                     .benefits-list li {

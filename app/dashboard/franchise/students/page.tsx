@@ -204,7 +204,7 @@ export default function FranchiseStudentsPage() {
                                 <p className="text-xs text-[#4B5563]">Roll Number: {viewingStudent.rollNumber || "—"}</p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 bg-orange-50/50 p-3 rounded-xl">
+                        <div className="grid sm:grid-cols-2 gap-4 bg-orange-50/50 p-3 rounded-xl">
                             <div>
                                 <p className="text-[10px] uppercase tracking-wider font-bold text-orange-600">Class</p>
                                 <p className="font-medium">{viewingStudent.grade || "—"}</p>

@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
 import dynamic from "next/dynamic";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth, RoleGuard } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
 import Drawer from "@/components/ui/Drawer";
@@ -52,7 +52,7 @@ const TOKEN_KEY = "tk-driver-route-token";
 
 function DriverTripContent() {
     const router = useRouter();
-    const { user, authFetch, logout: authLogout } = useAuth();
+    const { user, loading: authLoading, authFetch, logout: authLogout } = useAuth();
     const searchParams = useSearchParams();
     const [token, setToken] = useState("");
     const [route, setRoute] = useState<RouteInfo | null>(null);
@@ -114,6 +114,8 @@ function DriverTripContent() {
         const saved = localStorage.getItem(TOKEN_KEY);
         let timer: ReturnType<typeof setInterval> | null = null;
 
+        if (authLoading) return;
+
         if (user?.role === "driver") {
             void loadRoute();
             timer = setInterval(() => {
@@ -127,7 +129,7 @@ function DriverTripContent() {
                 timer = setInterval(() => {
                     void loadRoute(effectiveToken);
                 }, 5000);
-            } else if (!loading) {
+            } else if (!loading && !authLoading) {
                 // No token and not logged in as driver -> redirect to dedicated driver login
                 router.push("/driver/login");
             }
@@ -562,16 +564,23 @@ function DriverTripContent() {
 
                 {route && (
                     <section className="rounded-2xl bg-white border border-orange-100 p-5 shadow-sm space-y-4">
-                        <div>
-                            <h2 className="font-bold text-orange-950">{route.route_name}</h2>
-                            <p className="text-sm text-orange-700">{route.vehicle_number || "Vehicle not added"}</p>
-                            {route.destination && (
-                                <p className="text-xs font-bold text-orange-600 uppercase mt-1 flex items-center gap-1">
-                                    <MapPin className="w-3.5 h-3.5" />
-                                    Destination: {route.destination}
+                        <div className="space-y-1">
+                            <h2 className="text-2xl font-bold text-gray-900 tracking-tight leading-tight uppercase">
+                                {route.route_name}
+                            </h2>
+                            <div className="flex flex-wrap items-center gap-3 mt-1">
+                                <p className="text-sm font-medium text-gray-600 flex items-center gap-1.5 bg-gray-100 px-2 py-0.5 rounded-md">
+                                    <span className="text-lg">🚌</span>
+                                    {route.vehicle_number || "No Vehicle"}
                                 </p>
-                            )}
-                            {route.driver_name && <p className="text-sm text-orange-700">Driver: {route.driver_name}</p>}
+                                {route.destination && (
+                                    <p className="text-sm font-bold text-orange-600 uppercase flex items-center gap-1.5 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-100">
+                                        <MapPin className="w-4 h-4" />
+                                        To: {route.destination}
+                                    </p>
+                                )}
+                            </div>
+                            {route.driver_name && <p className="text-sm text-orange-700 mt-2">Driver: {route.driver_name}</p>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
@@ -772,7 +781,7 @@ function DriverTripContent() {
                     </div>
                 </Drawer>
 
-                <Drawer isOpen={isRouteDrawerOpen} onClose={() => setIsRouteDrawerOpen(false)} title="Select Route">
+                <Modal isOpen={isRouteDrawerOpen} onClose={() => setIsRouteDrawerOpen(false)} title="Select Route" size="sm">
                     <div className="space-y-3">
                         {allRoutes.map((r) => (
                             <button
@@ -787,31 +796,65 @@ function DriverTripContent() {
                                         setStudents(data.students || []);
                                     });
                                 }}
-                                className={`w-full p-4 rounded-2xl text-left transition-all border flex items-center justify-between ${
+                                className={`w-full flex items-center justify-between p-3.5 rounded-xl border transition-all duration-200 ${
                                     selectedRouteId === String(r.id)
-                                        ? "bg-orange-50 border-orange-200"
-                                        : "bg-white border-gray-100 active:bg-gray-50"
+                                        ? "bg-orange-50 border-orange-200 shadow-sm"
+                                        : "bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50"
                                 }`}
                             >
-                                <div>
-                                    <p className={`font-bold ${selectedRouteId === String(r.id) ? "text-orange-900" : "text-gray-900"}`}>
-                                        {r.route_name}
-                                    </p>
-                                    <p className="text-xs text-gray-500">{r.vehicle_number || "No vehicle"}</p>
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                                        selectedRouteId === String(r.id) ? "bg-orange-100" : "bg-gray-100"
+                                    }`}>
+                                        🚌
+                                    </div>
+                                    <div className="text-left">
+                                        <p className={`font-bold text-sm leading-tight ${selectedRouteId === String(r.id) ? "text-orange-900" : "text-gray-900"}`}>
+                                            {r.route_name}
+                                        </p>
+                                        <p className="text-[11px] font-medium text-gray-500 mt-0.5">
+                                            Vehicle: {r.vehicle_number || "Not set"}
+                                        </p>
+                                        {r.destination && (
+                                            <p className="text-[10px] text-orange-600 font-semibold uppercase mt-0.5">
+                                                To: {r.destination}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                                 {selectedRouteId === String(r.id) && (
-                                    <CheckCircle2 className="w-5 h-5 text-orange-600" />
+                                    <div className="bg-orange-600 rounded-full p-1">
+                                        <CheckCircle2 className="w-4 h-4 text-white" />
+                                    </div>
                                 )}
                             </button>
                         ))}
                     </div>
-                </Drawer>
+                </Modal>
             </div>
         </main>
     );
 }
 
 export default function DriverTripPage() {
+    const { user, loading } = useAuth();
+
+    // If user is logged in as a driver, use RoleGuard for premium refresh handling.
+    // If not logged in, they might be using a public token link, so just use Suspense.
+    if (user?.role === "driver" || (!loading && user)) {
+        return (
+            <RoleGuard allowedRole="driver">
+                <Suspense fallback={
+                    <div className="min-h-screen bg-[#FFF8ED] flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+                    </div>
+                }>
+                    <DriverTripContent />
+                </Suspense>
+            </RoleGuard>
+        );
+    }
+
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-[#FFF8ED] flex items-center justify-center">

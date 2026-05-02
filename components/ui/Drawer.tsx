@@ -48,7 +48,7 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, children, title }) => 
                         onDragEnd={(_, info) => {
                             if (info.offset.y > 100) onClose();
                         }}
-                        className="fixed bottom-0 left-0 right-0 z-[10001] bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgb(0,0,0,0.12)] p-6 pb-10 max-h-[90vh] overflow-y-auto"
+                        className="fixed bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-lg w-full z-[10001] bg-white rounded-t-[32px] shadow-[0_-8px_30px_rgb(0,0,0,0.12)] p-6 pb-10 max-h-[90vh] overflow-y-auto"
                     >
                         {/* Drag Handle */}
                         <div className="flex justify-center mb-6">

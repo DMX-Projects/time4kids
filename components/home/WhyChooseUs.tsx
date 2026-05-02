@@ -98,7 +98,7 @@ const WhyChooseUs = () => {
     };
 
     return (
-        <section ref={sectionRef} className="py-20 md:py-24 bg-[#FDFCFB] relative overflow-hidden select-none">
+        <section ref={sectionRef} className="section-gap bg-[#FDFCFB] relative overflow-hidden select-none">
 
             {/* Animated Wave BG */}
             <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
@@ -109,7 +109,7 @@ const WhyChooseUs = () => {
 
             <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-16 md:mb-20">
-                    <h2 className="font-fredoka font-bold text-4xl md:text-7xl text-[#003366]">
+                    <h2 className="font-luckiest text-3xl md:text-5xl text-[#003366]">
                         {home.why_choose_us.heading_prefix}
                         <span className="text-[#E67E22]">{home.why_choose_us.heading_accent}</span>
                     </h2>

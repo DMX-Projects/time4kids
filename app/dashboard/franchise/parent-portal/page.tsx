@@ -183,9 +183,9 @@ function ShowcaseTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToa
         }
 
         // File size validation
-        const maxSize = form.mediaType === "VIDEO" ? 30 * 1024 * 1024 : 5 * 1024 * 1024;
+        const maxSize = form.mediaType === "VIDEO" ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
         if (form.file.size > maxSize) {
-            showToast(`File too large. Max ${form.mediaType === "VIDEO" ? "30MB for video" : "5MB for image"}.`, "error");
+            showToast(`File too large. Max ${form.mediaType === "VIDEO" ? "50MB for video" : "5MB for image"}.`, "error");
             return;
         }
 
@@ -287,7 +287,7 @@ function ShowcaseTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToa
                     />
                     {form.mediaType === "VIDEO" && (
                         <p className="mt-1.5 text-[11px] text-orange-600 font-medium">
-                            Recommended: Under 30 seconds, MP4 format, Max 30MB.
+                            Recommended: Under 30 seconds, MP4 format, Max 50MB.
                         </p>
                     )}
                 </label>
@@ -396,7 +396,7 @@ function HomeworkTab({
     students: MiniStudent[];
     onRefresh: () => void;
 }) {
-    const [rows, setRows] = useState<{ id: number; title: string; assigned_date: string }[]>([]);
+    const [rows, setRows] = useState<{ id: number; title: string; assigned_date: string; read_count?: number; viewed_by_parents?: any[] }[]>([]);
     const [loading, setLoading] = useState(true);
     const [form, setForm] = useState({ studentId: "", class_name: "", assigned_date: "", title: "", description: "" });
     const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
@@ -405,7 +405,7 @@ function HomeworkTab({
         setLoading(true);
         try {
             const data = await authFetch<unknown>("/students/franchise/homework/");
-            setRows(normalizeList<{ id: number; title: string; assigned_date: string }>(data));
+            setRows(normalizeList<{ id: number; title: string; assigned_date: string; read_count?: number; viewed_by_parents?: any[] }>(data));
         } catch {
             setRows([]);
         } finally {
@@ -488,10 +488,12 @@ function HomeworkTab({
             <ul className="divide-y border rounded-2xl bg-white">
                 {rows.map((r) => (
                     <li key={r.id} className="flex items-center justify-between gap-2 px-4 py-3 text-sm">
-                        <span>
-                            <span className="font-medium">{r.title}</span>{" "}
-                            <span className="text-[#6B7280]">({r.assigned_date})</span>
-                        </span>
+                        <div className="flex items-center gap-3">
+                            <span>
+                                <span className="font-medium">{r.title}</span>{" "}
+                                <span className="text-[#6B7280]">({r.assigned_date})</span>
+                            </span>
+                        </div>
                         <button type="button" className="text-red-600 text-xs font-semibold" onClick={() => setConfirmDelete({ isOpen: true, id: r.id })}>
                             Delete
                         </button>
@@ -780,6 +782,8 @@ function TransportTab({
         driver_profile: "", // Link to DriverProfile ID
         tracking_note: "",
         destination: "",
+        destination_latitude: "",
+        destination_longitude: "",
         sort_order: "0",
     });
     const [drivers, setDrivers] = useState<any[]>([]);
@@ -871,6 +875,8 @@ function TransportTab({
                 driver_profile: form.driver_profile ? Number(form.driver_profile) : null,
                 tracking_note: form.tracking_note,
                 destination: form.destination,
+                destination_latitude: form.destination_latitude ? Number(form.destination_latitude) : null,
+                destination_longitude: form.destination_longitude ? Number(form.destination_longitude) : null,
                 sort_order: Number(form.sort_order) || 0,
             };
 
@@ -898,6 +904,8 @@ function TransportTab({
                 driver_profile: "",
                 tracking_note: "",
                 destination: "",
+                destination_latitude: "",
+                destination_longitude: "",
                 sort_order: "0",
                 driver_name: "", // from type
                 driver_phone: "", // from type
@@ -932,6 +940,8 @@ function TransportTab({
             sort_order: route.sort_order?.toString() || "0",
             tracking_note: route.tracking_note || "",
             destination: route.destination || "",
+            destination_latitude: route.destination_latitude?.toString() || "",
+            destination_longitude: route.destination_longitude?.toString() || "",
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -997,6 +1007,9 @@ function TransportTab({
         <div className="space-y-4 max-w-3xl">
             <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 grid md:grid-cols-2 gap-3">
                 <input required placeholder="Route name" value={form.route_name} onChange={(e) => setForm((p) => ({ ...p, route_name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
+                <input placeholder="Route Destination (e.g. Centre name or specific stop)" value={form.destination} onChange={(e) => setForm((p) => ({ ...p, destination: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
+                <input type="number" step="any" placeholder="Destination Latitude" value={form.destination_latitude} onChange={(e) => setForm((p) => ({ ...p, destination_latitude: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
+                <input type="number" step="any" placeholder="Destination Longitude" value={form.destination_longitude} onChange={(e) => setForm((p) => ({ ...p, destination_longitude: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
                 <input placeholder="Vehicle number" value={form.vehicle_number} onChange={(e) => setForm((p) => ({ ...p, vehicle_number: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
                 <select 
                     value={form.driver_profile} 
@@ -1012,7 +1025,6 @@ function TransportTab({
                 <textarea placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={3} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <input placeholder="Map URL (Google Maps)" value={form.map_url} onChange={(e) => setForm((p) => ({ ...p, map_url: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <input placeholder="Tracking note (e.g. call transport desk)" value={form.tracking_note} onChange={(e) => setForm((p) => ({ ...p, tracking_note: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
-                <input placeholder="Route Destination (e.g. Centre name or specific stop)" value={form.destination} onChange={(e) => setForm((p) => ({ ...p, destination: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <Button type="submit" className="bg-[#FF922B] text-white w-fit">
                     {editingRouteId ? "Update route" : "Add route"}
                 </Button>
@@ -1021,7 +1033,7 @@ function TransportTab({
                         type="button" 
                         onClick={() => {
                             setEditingRouteId(null);
-                            setForm({ route_name: "", vehicle_number: "", driver_name: "", driver_phone: "", description: "", map_url: "", driver_profile: "", sort_order: "0", tracking_note: "", destination: "" });
+                            setForm({ route_name: "", vehicle_number: "", driver_name: "", driver_phone: "", description: "", map_url: "", driver_profile: "", sort_order: "0", tracking_note: "", destination: "", destination_latitude: "", destination_longitude: "" });
                         }}
                         className="bg-gray-100 text-gray-700 w-fit"
                     >
@@ -1143,15 +1155,17 @@ function TransportTab({
                             <li key={r.id} className="rounded-xl border border-[#E5E7EB] p-3">
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1">
-                                        <p className="font-medium text-[#111827]">{r.route_name}</p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <p className="font-medium text-[#111827]">{r.route_name}</p>
+                                            {r.destination && (
+                                                <span className="text-[9px] font-black text-orange-500 bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                                                    to {r.destination}
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-[#4B5563]">
                                             {r.vehicle_number || "Vehicle not added"} {r.driver_info ? `- ${r.driver_info.full_name} (${r.driver_info.email})` : (r.driver_name ? `- ${r.driver_name}` : "")}
                                         </p>
-                                        {r.destination && (
-                                            <p className="text-[11px] font-semibold text-orange-600 uppercase mt-0.5">
-                                                Ends at: {r.destination}
-                                            </p>
-                                        )}
                                     </div>
                                     <div className="flex items-center gap-1 shrink-0">
                                         <button

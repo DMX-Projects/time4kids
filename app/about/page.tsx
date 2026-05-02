@@ -139,7 +139,7 @@ export default function AboutPage() {
             </div>
 
             {/* Hero Section */}
-            <section className="bg-gradient-to-br from-primary-50 via-purple-50 to-secondary-50 py-12 relative overflow-hidden">
+            <section className="bg-gradient-to-br from-primary-50 via-purple-50 to-secondary-50 section-gap relative overflow-hidden">
                 <TwinklingStars count={20} />
 
                 {/* Animated Floating Shapes */}
@@ -175,7 +175,7 @@ export default function AboutPage() {
             <MagicalStorySection />
 
             {/* Fun Stats Section */}
-            <section className="py-8 bg-white relative overflow-hidden">
+            <section className="section-gap bg-white relative overflow-hidden">
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-6xl mx-auto">
                         {/* Fun Stats with Oval Icons */}
@@ -252,7 +252,7 @@ export default function AboutPage() {
             <ZigzagDivider color="fill-yellow-50" />
 
             {/* Vision & Philosophy */}
-            <section className="py-8 bg-gradient-to-br from-yellow-50 via-pink-50 to-purple-50 relative overflow-hidden">
+            <section className="section-gap bg-gradient-to-br from-yellow-50 via-pink-50 to-purple-50 relative overflow-hidden">
                 <TwinklingStars count={15} />
 
                 {/* Decorative Elements */}
@@ -337,7 +337,7 @@ export default function AboutPage() {
             <WavyDivider flip={true} color="fill-white" />
 
             {/* T.I.M.E. Group Businesses */}
-            <section className="py-8 pb-20 bg-white relative overflow-hidden">
+            <section className="section-gap pb-20 bg-white relative overflow-hidden">
                 {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-5">
                     <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500 rounded-full blur-3xl"></div>

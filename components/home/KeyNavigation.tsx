@@ -8,7 +8,7 @@ export default function KeyNavigation() {
     const items = home.key_navigation?.length ? home.key_navigation : [];
 
     return (
-        <section className="key-nav-section">
+        <section className="key-nav-section section-gap">
             <div className="container mx-auto px-4">
                 <ul className="key-nav">
                     {items.map((item, index) => (

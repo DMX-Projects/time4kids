@@ -1,16 +1,21 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { gsap } from 'gsap';
 import {
     Shield, Users, BookOpen, Download, Video, Sparkles, Sun, Star, Heart,
-    Music, Smile, Brain, Palette, Dumbbell, Globe
+    Music, Smile, Brain, Palette, Dumbbell, Globe, Award, DollarSign, Headphones, TrendingUp
 } from 'lucide-react';
 
 import AdmissionForm from '@/components/admission/AdmissionForm';
 import FAQAccordion from '@/components/admission/FAQAccordion';
 import TestimonialVideo from '@/components/shared/TestimonialVideo';
+import { apiUrl } from '@/lib/api-client';
+
+const IconMap: Record<string, any> = {
+    Brain, Heart, Users, Palette, Music, Dumbbell, BookOpen, Globe, Award, DollarSign, Headphones, TrendingUp
+};
 
 // --- 1. Interactive Bubbles (Clean) ---
 const InteractiveBubbles = () => {
@@ -67,18 +72,58 @@ const CloudDivider = ({ flip = false, className = '' }) => (
 
 // --- 3. Main Page Component ---
 export default function AdmissionPage() {
-    const whyPreschool = ['Strong foundation for future', 'Social & emotional growth', 'Ready for big school!', 'Brain development boost', 'Confidence building'];
-    const whyTimeKids = ['17 Years of Happiness', '250+ Centers in India', 'NEP 2020 Compliant', 'Loving & Trained Teachers', 'Safe, Colorful Spaces', 'Fun Activity Learning'];
-    const skills = [
-        { title: 'Cognitive', desc: 'Problem solving', icon: <Brain className="w-8 h-8 text-white" />, color: 'bg-purple-500', shadow: 'shadow-purple-200', shape: 'rounded-[60%_40%_30%_70%_/_60%_30%_70%_40%]' },
-        { title: 'Emotional', desc: 'Self-awareness', icon: <Heart className="w-8 h-8 text-white" />, color: 'bg-pink-500', shadow: 'shadow-pink-200', shape: 'rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%]' },
-        { title: 'Social', desc: 'Team work', icon: <Users className="w-8 h-8 text-white" />, color: 'bg-blue-500', shadow: 'shadow-blue-200', shape: 'rounded-[50%_50%_20%_80%_/_25%_80%_20%_75%]' },
-        { title: 'Creative', desc: 'Art & Craft', icon: <Palette className="w-8 h-8 text-white" />, color: 'bg-orange-500', shadow: 'shadow-orange-200', shape: 'rounded-[40%_60%_60%_40%_/_40%_40%_60%_60%]' },
-        { title: 'Musical', desc: 'Rhythm & Beat', icon: <Music className="w-8 h-8 text-white" />, color: 'bg-green-500', shadow: 'shadow-green-200', shape: 'rounded-[70%_30%_30%_70%_/_60%_40%_60%_40%]' },
-        { title: 'Physical', desc: 'Motor skills', icon: <Dumbbell className="w-8 h-8 text-white" />, color: 'bg-red-500', shadow: 'shadow-red-200', shape: 'rounded-[40%_60%_70%_30%_/_40%_50%_60%_50%]' },
-        { title: 'Language', desc: 'Reading skills', icon: <BookOpen className="w-8 h-8 text-white" />, color: 'bg-indigo-500', shadow: 'shadow-indigo-200', shape: 'rounded-[60%_40%_40%_60%_/_50%_50%_50%_50%]' },
-        { title: 'Nature', desc: 'Eco awareness', icon: <Globe className="w-8 h-8 text-white" />, color: 'bg-teal-500', shadow: 'shadow-teal-200', shape: 'rounded-[30%_70%_50%_50%_/_30%_30%_70%_70%]' }
+    const [pageData, setPageData] = useState<any>(null);
+    const [assets, setAssets] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [contentRes, assetsRes] = await Promise.all([
+                    fetch(apiUrl('/common/page-content/admission/')),
+                    fetch(apiUrl('/common/marketing-assets/'))
+                ]);
+
+                if (contentRes.ok) {
+                    const data = await contentRes.json();
+                    setPageData(data);
+                }
+
+                if (assetsRes.ok) {
+                    const assetsData = await assetsRes.json();
+                    setAssets(assetsData);
+                }
+            } catch (err) {
+                console.error("Failed to fetch admission page content", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        void fetchData();
+    }, []);
+
+    const admissionBrochure = assets.find(a => a.slug === 'admission-brochure');
+    const virtualTour = assets.find(a => a.slug === 'virtual-tour');
+
+    const whyPreschool = pageData?.why_preschool || ['Strong foundation for future', 'Social & emotional growth', 'Ready for big school!', 'Brain development boost', 'Confidence building'];
+    const whyTimeKids = pageData?.why_time_kids || ['17 Years of Happiness', '250+ Centers in India', 'NEP 2020 Compliant', 'Loving & Trained Teachers', 'Safe, Colorful Spaces', 'Fun Activity Learning'];
+    
+    const defaultSkills = [
+        { title: 'Cognitive', desc: 'Problem solving', icon: 'Brain', color: 'bg-purple-500', shadow: 'shadow-purple-200', shape: 'rounded-[60%_40%_30%_70%_/_60%_30%_70%_40%]' },
+        { title: 'Emotional', desc: 'Self-awareness', icon: 'Heart', color: 'bg-pink-500', shadow: 'shadow-pink-200', shape: 'rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%]' },
+        { title: 'Social', desc: 'Team work', icon: 'Users', color: 'bg-blue-500', shadow: 'shadow-blue-200', shape: 'rounded-[50%_50%_20%_80%_/_25%_80%_20%_75%]' },
+        { title: 'Creative', desc: 'Art & Craft', icon: 'Palette', color: 'bg-orange-500', shadow: 'shadow-orange-200', shape: 'rounded-[40%_60%_60%_40%_/_40%_40%_60%_60%]' },
+        { title: 'Musical', desc: 'Rhythm & Beat', icon: 'Music', color: 'bg-green-500', shadow: 'shadow-green-200', shape: 'rounded-[70%_30%_30%_70%_/_60%_40%_60%_40%]' },
+        { title: 'Physical', desc: 'Motor skills', icon: 'Dumbbell', color: 'bg-red-500', shadow: 'shadow-red-200', shape: 'rounded-[40%_60%_70%_30%_/_40%_50%_60%_50%]' },
+        { title: 'Language', desc: 'Reading skills', icon: 'BookOpen', color: 'bg-indigo-500', shadow: 'shadow-indigo-200', shape: 'rounded-[60%_40%_40%_60%_/_50%_50%_50%_50%]' },
+        { title: 'Nature', desc: 'Eco awareness', icon: 'Globe', color: 'bg-teal-500', shadow: 'shadow-teal-200', shape: 'rounded-[30%_70%_50%_50%_/_30%_30%_70%_70%]' }
     ];
+
+    const skills = (pageData?.skills || defaultSkills).map((s: any, idx: number) => ({
+        ...s,
+        shadow: s.shadow || defaultSkills[idx % defaultSkills.length].shadow,
+        shape: s.shape || defaultSkills[idx % defaultSkills.length].shape
+    }));
 
     return (
         <div className="min-h-screen relative overflow-x-hidden bg-slate-50 font-sans selection:bg-pink-200" suppressHydrationWarning>
@@ -144,23 +189,21 @@ export default function AdmissionPage() {
                             <div className="bg-white relative rounded-[40%_60%_70%_30%_/_40%_50%_60%_50%] p-12 md:p-16 shadow-xl border-4 border-yellow-100 hover:border-yellow-300 transition-all duration-500 hover:-translate-y-2 h-full flex flex-col justify-center">
                                 <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mb-6 text-yellow-600 mx-auto shadow-inner"><BookOpen className="w-10 h-10" /></div>
                                 <h3 className="font-display font-black text-3xl mb-6 text-slate-800 text-center">Why Preschool?</h3>
-                                <ul className="space-y-4">{whyPreschool.map((item, index) => (<li key={index} className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-yellow-400 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-md">✓</div><span className="text-slate-600 font-bold text-lg">{item}</span></li>))}</ul>
+                                <ul className="space-y-4">{whyPreschool.map((item: string, index: number) => (<li key={index} className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-yellow-400 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-md">✓</div><span className="text-slate-600 font-bold text-lg">{item}</span></li>))}</ul>
                             </div>
                         </div>
 
                         {/* CHANGED: Purple Box to Orange/Yellow Theme */}
                         <div className="group relative mt-12 md:mt-0">
-                            <div className="absolute inset-0 bg-orange-400 rounded-[60%_40%_30%_70%_/_60%_30%_70%_40%] transform -rotate-2 scale-105 opacity-20 group-hover:-rotate-6 transition-transform duration-500"></div>
-                            {/* Changed Gradient to Orange/Yellow */}
-                            <div className="bg-gradient-to-br from-orange-400 to-yellow-500 text-white relative rounded-[60%_40%_30%_70%_/_60%_30%_70%_40%] p-12 md:p-16 shadow-xl border-4 border-white/20 transition-all duration-500 hover:-translate-y-2 h-full flex flex-col justify-center">
+                            <div className="absolute inset-0 bg-orange-400 rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] transform -rotate-2 scale-105 opacity-20 group-hover:-rotate-6 transition-transform duration-500"></div>
+                            <div className="bg-gradient-to-br from-orange-400 to-yellow-500 text-white relative rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%] p-14 md:p-20 shadow-xl border-4 border-white/20 transition-all duration-500 hover:-translate-y-2 min-h-[600px] flex flex-col justify-center">
                                 <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-6 text-white backdrop-blur-md mx-auto shadow-inner"><Star className="w-10 h-10 fill-current" /></div>
-                                <h3 className="font-display font-black text-3xl mb-6 text-center">Why T.I.M.E. Kids?</h3>
-                                <ul className="space-y-4">
-                                    {whyTimeKids.map((item, index) => (
-                                        <li key={index} className="flex items-center gap-3">
-                                            {/* Changed Check circle to White bg with Orange text */}
-                                            <div className="w-8 h-8 rounded-full bg-white text-orange-600 flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-lg">★</div>
-                                            <span className="text-white font-bold text-lg">{item}</span>
+                                <h3 className="font-display font-black text-3xl mb-8 text-center">Why T.I.M.E. Kids?</h3>
+                                <ul className="space-y-6">
+                                    {whyTimeKids.map((item: string, index: number) => (
+                                        <li key={index} className="flex items-center gap-4 group/item">
+                                            <div className="w-9 h-9 rounded-full bg-white text-orange-600 flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-lg group-hover/item:scale-110 transition-transform">★</div>
+                                            <span className="text-white font-bold text-lg leading-tight">{item}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -204,16 +247,21 @@ export default function AdmissionPage() {
                         <h2 className="font-display font-black text-4xl md:text-5xl text-slate-800">Skills We <span className="text-orange-500">Nurture</span></h2>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10 max-w-7xl mx-auto">
-                        {skills.map((skill, index) => (
-                            <div key={index} className="group relative flex flex-col items-center justify-center p-8 text-center transition-all duration-500 hover:-translate-y-2 cursor-pointer">
-                                <div className={`absolute inset-0 bg-white ${skill.shape} shadow-xl ${skill.shadow} border-4 border-white transition-all duration-500 ease-in-out group-hover:scale-110 group-hover:rotate-3 group-hover:rounded-[50%] z-0`}></div>
-                                <div className="relative z-10">
-                                    <div className={`${skill.color} w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300 ring-4 ring-white`}>{skill.icon}</div>
-                                    <h3 className="font-display font-bold text-xl text-slate-800 mb-1 group-hover:text-orange-500 transition-colors">{skill.title}</h3>
-                                    <p className="text-sm text-slate-500 font-medium">{skill.desc}</p>
+                        {skills.map((skill: any, index: number) => {
+                            const SkillIcon = IconMap[skill.icon] || Brain;
+                            return (
+                                <div key={index} className="group relative flex flex-col items-center justify-center p-8 text-center transition-all duration-500 hover:-translate-y-2 cursor-pointer">
+                                    <div className={`absolute inset-0 bg-white ${skill.shape} shadow-xl ${skill.shadow} border-4 border-white transition-all duration-500 ease-in-out group-hover:scale-110 group-hover:rotate-3 group-hover:rounded-[50%] z-0`}></div>
+                                    <div className="relative z-10">
+                                        <div className={`${skill.color} w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300 ring-4 ring-white`}>
+                                            <SkillIcon className="w-8 h-8 text-white" />
+                                        </div>
+                                        <h3 className="font-display font-bold text-xl text-slate-800 mb-1 group-hover:text-orange-500 transition-colors">{skill.title}</h3>
+                                        <p className="text-sm text-slate-500 font-medium">{skill.desc}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </section>
@@ -254,7 +302,7 @@ export default function AdmissionPage() {
                                 <div className="hidden lg:block relative h-64 w-full animate-float"><Image src="/2.png" alt="Question" fill className="object-contain drop-shadow-lg" /></div>
                             </div>
                         </div>
-                        <div className="lg:col-span-8"><FAQAccordion /></div>
+                        <div className="lg:col-span-8"><FAQAccordion customFaqs={pageData?.faqs} /></div>
                     </div>
                 </div>
             </section>
@@ -264,16 +312,27 @@ export default function AdmissionPage() {
                     <div className="max-w-4xl mx-auto text-center">
                         <h2 className="font-display font-black text-4xl mb-12 text-slate-800">Download Corner</h2>
                         <div className="grid md:grid-cols-2 gap-10">
-                            <a href="https://www.timekidspreschools.in/uploads/pc/TIME-KIDS-BROCHURE.pdf" target="_blank" rel="noopener noreferrer" download className="group relative bg-pink-50 rounded-[50%_50%_50%_50%_/_40%_40%_60%_60%] p-12 border-4 border-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 flex flex-col items-center">
+                            <a 
+                                href={admissionBrochure?.file || "https://www.timekidspreschools.in/uploads/pc/TIME-KIDS-BROCHURE.pdf"} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                download 
+                                className="group relative bg-pink-50 rounded-[50%_50%_50%_50%_/_40%_40%_60%_60%] p-12 border-4 border-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 flex flex-col items-center"
+                            >
                                 <div className="w-16 h-16 bg-pink-500 rounded-full flex items-center justify-center mb-4 text-white shadow-lg group-hover:rotate-12 transition-transform"><Download className="w-8 h-8" /></div>
-                                <h3 className="font-display font-bold text-2xl mb-2 text-slate-800">Brochure</h3>
+                                <h3 className="font-display font-bold text-2xl mb-2 text-slate-800">{admissionBrochure?.title || "Brochure"}</h3>
                                 <p className="text-slate-600 font-medium">Get all the details</p>
                             </a>
-                            <button className="group relative bg-purple-50 rounded-[50%_50%_50%_50%_/_60%_60%_40%_40%] p-12 border-4 border-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 flex flex-col items-center">
+                            <a 
+                                href={virtualTour?.link || "#"} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="group relative bg-purple-50 rounded-[50%_50%_50%_50%_/_60%_60%_40%_40%] p-12 border-4 border-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 flex flex-col items-center text-center"
+                            >
                                 <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mb-4 text-white shadow-lg group-hover:-rotate-12 transition-transform"><Video className="w-8 h-8" /></div>
-                                <h3 className="font-display font-bold text-2xl mb-2 text-slate-800">Virtual Tour</h3>
+                                <h3 className="font-display font-bold text-2xl mb-2 text-slate-800">{virtualTour?.title || "Virtual Tour"}</h3>
                                 <p className="text-slate-600 font-medium">Watch the magic</p>
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>

@@ -37,7 +37,7 @@ const CounterSection = () => {
 
 
     return (
-        <section ref={sectionRef} className="relative py-16 bg-[#E0F2FE] overflow-hidden">
+        <section ref={sectionRef} className="relative section-gap bg-[#E0F2FE] overflow-hidden">
             {/* Top Border - Scallop Pattern */}
             <div className="absolute top-0 left-0 w-full h-8 z-30 pointer-events-none overflow-hidden">
                 <motion.div
@@ -147,22 +147,26 @@ const CounterCard = ({ stat, isInView, delay }: { stat: any, isInView: boolean, 
         <motion.div
             className="relative w-60 h-40 flex items-center justify-center group"
             initial={{ scale: 0.8, opacity: 0 }}
-            animate={isInView ? { scale: 1, opacity: 1 } : {}}
-            transition={{ duration: 0.5, delay }}
+            animate={isInView ? {
+                scale: 1,
+                opacity: 1,
+                y: [-4, 4, -4]
+            } : {}}
+            transition={{
+                scale: { duration: 0.5, delay },
+                opacity: { duration: 0.5, delay },
+                y: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+            }}
         >
             {/* Cloud SVG Background */}
-            <motion.div
-                className="absolute inset-0 z-0"
-                animate={{ y: [-4, 4, -4] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            >
+            <div className="absolute inset-0 z-0">
                 <svg viewBox="0 0 500 300" className="w-full h-full text-white fill-current drop-shadow-xl" preserveAspectRatio="none">
                     <path d="M 400 200 Q 450 200 480 170 Q 500 140 480 110 Q 460 70 410 70 Q 390 30 340 30 Q 300 0 250 20 Q 200 0 160 30 Q 110 30 90 70 Q 40 70 20 110 Q 0 140 20 170 Q 50 200 100 200 Z" />
                 </svg>
-            </motion.div>
+            </div>
 
             {/* Text - High Contrast and Z-Index */}
-            <div className="relative z-20 text-center select-none pt-2">
+            <div className="relative z-20 text-center select-none pt-4">
                 <motion.span
                     className={`block font-fredoka font-bold text-4xl md:text-5xl ${stat.color} drop-shadow-sm`}
                     animate={isInView ? { scale: [1, 1.1, 1] } : {}}
@@ -170,7 +174,7 @@ const CounterCard = ({ stat, isInView, delay }: { stat: any, isInView: boolean, 
                 >
                     {count.toLocaleString()}+
                 </motion.span>
-                <span className="block text-sm md:text-base text-[#003366] font-bold font-baloo uppercase tracking-widest mt-1">
+                <span className="block text-sm md:text-base text-[#003366] font-bold font-baloo uppercase tracking-widest mt-2">
                     {stat.label}
                 </span>
             </div>

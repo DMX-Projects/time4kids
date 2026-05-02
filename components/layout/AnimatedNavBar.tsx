@@ -31,7 +31,7 @@ export default function AnimatedNavBar({ mobile = false }: { mobile?: boolean })
             className={`relative ${
                 mobile
                     ? 'w-full bg-transparent'
-                    : 'bg-white rounded-full px-4 py-2 sm:px-5 sm:py-2.5 lg:px-6 border border-gray-200 shadow-[0_4px_20px_rgba(0,0,0,0.08)]'
+                    : 'bg-transparent px-2'
             }`}
         >
             <ul className={`flex ${mobile ? 'flex-col gap-6 w-full' : 'flex-nowrap items-center gap-4 lg:gap-6'} m-0 p-0 list-none relative z-10`}>

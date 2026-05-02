@@ -44,10 +44,10 @@ const ProgramsPreview = () => {
                 }
             );
 
-            // School Bus Bounce (Running effect)
+            // School Bus Subtle Drive Vibration
             gsap.to(".school-bus", {
-                y: -5,
-                duration: 0.3,
+                y: -2, // Reduced from -5 for a subtler effect
+                duration: 0.6, // Increased from 0.3 for a smoother feel
                 repeat: -1,
                 yoyo: true,
                 ease: "sine.inOut"
@@ -68,7 +68,7 @@ const ProgramsPreview = () => {
     }, [programs.length]);
 
     return (
-        <section ref={sectionRef} className="relative py-12 bg-[#FFFAF5] overflow-hidden">
+        <section ref={sectionRef} className="relative section-gap bg-[#FFFAF5] overflow-hidden">
 
 
 
@@ -175,7 +175,7 @@ const ProgramsPreview = () => {
                                         />
                                     </div>
                                     <div
-                                        className="absolute -bottom-1 right-0 max-w-[min(100%,8.5rem)] rounded-full px-2 py-1 text-center text-[9px] font-black leading-tight text-white shadow-lg sm:-bottom-2 sm:right-1 sm:max-w-none sm:px-3 sm:py-1.5 sm:text-[10px]"
+                                        className="absolute -bottom-1 right-0 max-w-[min(100%,10rem)] rounded-full px-3 py-1.5 text-center text-[14px] font-black leading-tight text-white shadow-lg sm:-bottom-2 sm:right-1 sm:max-w-none sm:px-4 sm:py-2"
                                         style={{ backgroundColor: program.color }}
                                     >
                                         {program.ageGroup}

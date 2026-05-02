@@ -225,7 +225,7 @@ export default function UpdatesPage() {
             {/* Modal for Add/Edit Update */}
             <Modal isOpen={isAddOpen} onClose={closeModal} title={editingUpdate ? "Edit Update" : "Add New Update"}>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-700">Start Date</label>
                             <input

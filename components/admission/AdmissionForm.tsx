@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import QRCode from '@/components/ui/QRCode';
 import { useForm } from 'react-hook-form';
-import { CheckCircle, Sparkles } from 'lucide-react';
+import { CheckCircle, Sparkles, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 import { useToast } from '@/components/ui/Toast';
 import { trackLeadSubmission } from '@/lib/tracking';
+import { apiUrl } from '@/lib/api-client';
 
 interface AdmissionFormData {
     parentName: string;
@@ -19,6 +20,7 @@ interface AdmissionFormData {
     childAge: string;
     program: string;
     city: string;
+    center: string;
     message?: string;
 }
 
@@ -28,19 +30,59 @@ interface AdmissionFormProps {
     contactPhone?: string;
 }
 
+interface Center {
+    id: number;
+    name: string;
+    slug: string;
+    city: string;
+}
+
 const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFormProps) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const { register, handleSubmit, formState: { errors }, reset } = useForm<AdmissionFormData>({
+    const [centers, setCenters] = useState<Center[]>([]);
+    const [loadingCenters, setLoadingCenters] = useState(false);
+    
+    const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<AdmissionFormData>({
         defaultValues: {
             city: defaultCity || ''
         }
     });
-    const { addEnquiry } = useSchoolData();
+    
+    const selectedCity = watch('city');
+    const { addEnquiry, locations } = useSchoolData();
     const { showToast } = useToast();
+
+    // Fetch centers when city changes
+    useEffect(() => {
+        if (!selectedCity) {
+            setCenters([]);
+            return;
+        }
+
+        const fetchCenters = async () => {
+            setLoadingCenters(true);
+            try {
+                const res = await fetch(`${apiUrl('/franchises/public/list/')}?city=${encodeURIComponent(selectedCity)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setCenters(Array.isArray(data) ? data : data.results || []);
+                }
+            } catch (err) {
+                console.error("Failed to fetch centers:", err);
+            } finally {
+                setLoadingCenters(false);
+            }
+        };
+
+        void fetchCenters();
+    }, [selectedCity]);
 
     const onSubmit = async (data: AdmissionFormData) => {
         setSubmitError(null);
+        // Determine which slug to use: prop or selected from dropdown
+        const activeSlug = franchiseSlug || data.center;
+        
         try {
             await addEnquiry({
                 type: 'admission',
@@ -50,14 +92,14 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
                 city: data.city,
                 childAge: data.childAge,
                 message: `Child: ${data.childName}, Age: ${data.childAge}, Program: ${data.program}, City: ${data.city}${data.message ? ' | Note: ' + data.message : ''}`,
-                franchiseSlug: franchiseSlug,
+                franchiseSlug: activeSlug,
             });
             setIsSubmitted(true);
             reset();
             trackLeadSubmission({
                 formType: "admission",
                 location: window.location.href,
-                franchiseSlug,
+                franchiseSlug: activeSlug,
             });
             showToast("Admission enquiry submitted successfully!");
             setTimeout(() => setIsSubmitted(false), 5000);
@@ -75,7 +117,6 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
 
                 {/* Main Form Area */}
                 <div className="lg:col-span-8 p-4 md:p-6">
-                    {/* Header Pill */}
                     <div className="mb-12">
                         <motion.div
                             whileHover={{ scale: 1.02 }}
@@ -89,11 +130,10 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
                         <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
-                            {/* Form Fields */}
                             {[
                                 { name: 'parentName', label: 'Parent/Guardian Name', placeholder: 'Enter your name' },
                                 { name: 'email', label: 'Email Address', placeholder: 'your@email.com' },
-                                { name: 'phone', label: 'Phone Number', placeholder: '1234567890' },
+                                { name: 'phone', label: 'Phone Number', placeholder: '10-digit mobile number' },
                                 { name: 'childName', label: "Child's Name", placeholder: "Enter child's name" }
                             ].map((field) => (
                                 <div key={field.name} className="space-y-2">
@@ -107,6 +147,44 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
                                     />
                                 </div>
                             ))}
+
+                            <div className="space-y-2">
+                                <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1">
+                                    Your City <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    {...register('city', { required: true })}
+                                    className="w-full px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl appearance-none font-medium text-[#2D2D52] focus:ring-4 focus:ring-yellow-100 outline-none"
+                                >
+                                    <option value="">Select your city</option>
+                                    {locations.map((loc) => (
+                                        <option key={loc.city_name} value={loc.city_name}>{loc.city_name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1 flex items-center justify-between">
+                                    <span>Nearest Center <span className="text-red-500">*</span></span>
+                                    {loadingCenters && <Loader2 className="w-4 h-4 animate-spin text-orange-500" />}
+                                </label>
+                                <select
+                                    {...register('center', { required: !franchiseSlug })}
+                                    disabled={!selectedCity || franchiseSlug !== undefined}
+                                    className="w-full px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl appearance-none font-medium text-[#2D2D52] focus:ring-4 focus:ring-yellow-100 outline-none disabled:opacity-50"
+                                >
+                                    {franchiseSlug ? (
+                                        <option value={franchiseSlug}>Selected Center</option>
+                                    ) : (
+                                        <>
+                                            <option value="">{selectedCity ? 'Select a center' : 'Select city first'}</option>
+                                            {centers.map((c) => (
+                                                <option key={c.id} value={c.slug}>{c.name}</option>
+                                            ))}
+                                        </>
+                                    )}
+                                </select>
+                            </div>
 
                             <div className="space-y-2">
                                 <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1">
@@ -182,7 +260,6 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
                             </p>
                         </div>
 
-                        {/* Robot Illustration */}
                         <motion.div
                             animate={{
                                 y: [10, -10, 10],
@@ -204,16 +281,13 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
                             />
                         </motion.div>
 
-                        {/* Sparkles Background (keep current or replace) */}
                         <div className="absolute -right-8 -bottom-8 opacity-20 pointer-events-none">
                             <Sparkles size={200} className="text-blue-400/30" />
                         </div>
                     </div>
-
                 </div>
             </div>
 
-            {/* Success Message Pop */}
             <AnimatePresence>
                 {isSubmitted && (
                     <motion.div

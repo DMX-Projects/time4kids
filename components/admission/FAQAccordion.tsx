@@ -8,10 +8,14 @@ interface FAQItem {
     answer: string;
 }
 
-const FAQAccordion = () => {
+interface FAQAccordionProps {
+    customFaqs?: FAQItem[];
+}
+
+const FAQAccordion = ({ customFaqs }: FAQAccordionProps) => {
     const [openIndex, setOpenIndex] = useState<number | null>(0);
 
-    const faqs: FAQItem[] = [
+    const defaultFaqs: FAQItem[] = [
         {
             question: 'What is the admission process?',
             answer: 'Fill out the enquiry form, schedule a school tour, meet with our counselor, complete the registration form, and submit required documents. We will guide you through each step.'
@@ -45,6 +49,8 @@ const FAQAccordion = () => {
             answer: 'Yes, we encourage parents to schedule a visit. You can tour our facilities, meet our teachers, and understand our curriculum and approach.'
         },
     ];
+
+    const faqs = customFaqs && customFaqs.length > 0 ? customFaqs : defaultFaqs;
 
     const toggleFAQ = (index: number) => {
         setOpenIndex(openIndex === index ? null : index);

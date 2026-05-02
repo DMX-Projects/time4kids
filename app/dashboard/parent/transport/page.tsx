@@ -22,6 +22,7 @@ type Row = {
     description?: string;
     map_url?: string;
     tracking_note?: string;
+    destination?: string;
 };
 
 type LiveLocation = {
@@ -35,8 +36,16 @@ type LiveLocation = {
 
 type LiveTripEntry = {
     live: boolean;
-    route: (Row & { vehicle_number?: string; driver_name?: string; driver_phone?: string; driver_info?: { full_name: string; email: string; phone?: string } });
-    trip: { id: number; trip_type: string; status: string; started_at?: string | null };
+    route: (Row & { vehicle_number?: string; driver_name?: string; driver_phone?: string; destination?: string; driver_info?: { full_name: string; email: string; phone?: string } });
+    trip: { 
+        id: number; 
+        trip_type: string; 
+        status: string; 
+        started_at?: string | null; 
+        recent_locations?: Array<{ latitude: number; longitude: number }>;
+        destination_latitude?: number;
+        destination_longitude?: number;
+    };
     latest_location?: LiveLocation | null;
     student_status?: { student_id: number; student_name: string; status: string; note?: string; updated_at: string } | null;
 };
@@ -150,7 +159,10 @@ export default function TransportPage() {
                     return (
                         <div key={entry.trip.id} className={`space-y-4 ${idx > 0 ? "pt-6 border-t border-orange-100 mt-6" : ""}`}>
                             <div className="grid gap-3 md:grid-cols-3 text-sm">
-                                <Info label="Route" value={entry.route.route_name} />
+                                <Info 
+                                    label="Route & Destination" 
+                                    value={`${entry.route.route_name}${entry.route.destination ? ` → ${entry.route.destination}` : ""}`} 
+                                />
                                 <Info label="Vehicle" value={entry.route.vehicle_number || "Not added"} />
                                 <Info 
                                     label="Driver" 
@@ -168,21 +180,25 @@ export default function TransportPage() {
                                 </div>
                             )}
 
-                            {hasCoords ? (
+                            {entry.latest_location && Number.isFinite(Number(entry.latest_location.latitude)) ? (
                                 <div className="space-y-2">
                                     <div className="overflow-hidden rounded-2xl border border-orange-100 h-80 bg-orange-50 relative">
                                         <LiveBusMap 
-                                            lat={lat!} 
-                                            lng={lng!} 
-                                            heading={heading} 
+                                            lat={Number(entry.latest_location.latitude)} 
+                                            lng={Number(entry.latest_location.longitude)} 
+                                            heading={entry.latest_location.heading} 
                                             isLive={true} 
                                             schoolLat={liveTrip.school_location?.latitude} 
                                             schoolLng={liveTrip.school_location?.longitude} 
+                                            destLat={entry.trip.destination_latitude}
+                                            destLng={entry.trip.destination_longitude}
+                                            destinationName={entry.route.destination}
+                                            recentLocations={entry.trip.recent_locations}
                                         />
                                     </div>
                                     <p className="flex items-center gap-2 text-xs text-orange-700">
                                         <MapPin className="w-3.5 h-3.5" />
-                                        Last updated: {lastUpdated}
+                                        Last updated: {entry.latest_location.recorded_at ? new Date(entry.latest_location.recorded_at).toLocaleTimeString() : "Just now"}
                                     </p>
                                 </div>
                             ) : (
@@ -204,7 +220,14 @@ export default function TransportPage() {
             <ul className="space-y-4">
                 {rows.map((r) => (
                     <li key={r.id} className="rounded-xl border border-orange-100 bg-white p-4 shadow-sm space-y-2">
-                        <h2 className="font-semibold text-orange-900">{r.route_name}</h2>
+                        <h2 className="font-semibold text-orange-900 flex items-center gap-2 flex-wrap">
+                            {r.route_name}
+                            {r.destination && (
+                                <span className="text-[10px] font-black text-orange-500 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-lg uppercase tracking-widest">
+                                    to {r.destination}
+                                </span>
+                            )}
+                        </h2>
                         {r.description && <p className="text-sm text-orange-800 whitespace-pre-wrap">{r.description}</p>}
                         {r.tracking_note && <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg p-2">{r.tracking_note}</p>}
                         {r.map_url && (

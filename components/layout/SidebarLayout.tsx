@@ -36,7 +36,7 @@ export function AdminSidebar({ brand, navItems, open, onClose }: SidebarProps) {
                 open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none md:translate-x-0 md:pointer-events-auto"
             }`}
         >
-            <div className="h-screen bg-white border-r border-[#E5E7EB] flex flex-col">
+            <div className="h-screen overflow-y-auto bg-white border-r border-[#E5E7EB] flex flex-col">
                 {/* Header */}
                 <div className="px-4 py-4 border-b border-[#E5E7EB] flex items-center gap-3 flex-shrink-0">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-[#111827] bg-[#FFF4CC] shadow-sm">
@@ -49,7 +49,7 @@ export function AdminSidebar({ brand, navItems, open, onClose }: SidebarProps) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="px-3 py-3 space-y-1">
+                <nav className="px-3 py-3 space-y-1 flex-1 min-h-0 overflow-y-auto">
                     {navItems.map((item, idx) => {
                         const active = pathname === item.href;
                         return (
@@ -99,7 +99,7 @@ export function FranchiseSidebar({ brand, navItems, open, onClose }: SidebarProp
                 open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none md:translate-x-0 md:pointer-events-auto"
             }`}
         >
-            <div className="h-screen bg-white border-r border-[#E5E7EB] flex flex-col">
+            <div className="h-screen overflow-y-auto bg-white border-r border-[#E5E7EB] flex flex-col">
                 {/* Header */}
                 <div className="px-4 py-4 border-b border-[#E5E7EB] flex items-center gap-3 flex-shrink-0">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-[#111827] bg-[#FFF4CC] shadow-sm">
@@ -148,7 +148,7 @@ export function ParentSidebar({ brand, navItems, open, onClose }: SidebarProps) 
                 open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none md:translate-x-0 md:pointer-events-auto"
             }`}
         >
-            <div className="h-screen bg-white border-r border-[#E5E7EB] flex flex-col">
+            <div className="h-screen overflow-y-auto bg-white border-r border-[#E5E7EB] flex flex-col">
                 {/* Header */}
                 <div className="px-4 py-4 border-b border-[#E5E7EB] flex items-center gap-3 flex-shrink-0">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-[#111827] bg-[#FFF4CC] shadow-sm">

@@ -1,48 +1,85 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import FranchiseForm from '@/components/franchise/FranchiseForm';
 import TestimonialVideo from '@/components/shared/TestimonialVideo';
 import Card from '@/components/ui/Card';
 import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
 import TwinklingStars from '@/components/animations/TwinklingStars';
-import { TrendingUp, Users, BookOpen, Headphones, Award, DollarSign, Download } from 'lucide-react';
+import { TrendingUp, Users, BookOpen, Headphones, Award, DollarSign, Download, Brain, Heart, Palette, Music, Dumbbell, Globe } from 'lucide-react';
+import { apiUrl } from '@/lib/api-client';
+
+const IconMap: Record<string, any> = {
+    TrendingUp, Users, BookOpen, Headphones, Award, DollarSign, Brain, Heart, Palette, Music, Dumbbell, Globe
+};
 
 export default function FranchisePage() {
-    const benefits = [
+    const [pageData, setPageData] = useState<any>(null);
+    const [assets, setAssets] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [contentRes, assetsRes] = await Promise.all([
+                    fetch(apiUrl('/common/page-content/franchise-opportunity/')),
+                    fetch(apiUrl('/common/marketing-assets/'))
+                ]);
+
+                if (contentRes.ok) {
+                    const data = await contentRes.json();
+                    setPageData(data);
+                }
+
+                if (assetsRes.ok) {
+                    const assetsData = await assetsRes.json();
+                    setAssets(assetsData);
+                }
+            } catch (err) {
+                console.error("Failed to fetch franchise opportunity content", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        void fetchData();
+    }, []);
+
+    const franchiseBrochure = assets.find(a => a.slug === 'franchise-brochure');
+
+    const benefits = pageData?.benefits || [
         {
-            icon: Award,
+            icon: 'Award',
             title: 'Strong Brand Name',
             description: 'Leverage 17 years of T.I.M.E. Kids legacy and 30+ years of T.I.M.E. Group expertise',
         },
         {
-            icon: DollarSign,
+            icon: 'DollarSign',
             title: 'Low Investment, High Returns',
             description: 'Profitable business model with quick ROI and sustainable growth',
         },
         {
-            icon: BookOpen,
+            icon: 'BookOpen',
             title: 'Complete Curriculum Support',
             description: 'NEP 2020 updated curriculum, teaching materials, and activity plans',
         },
         {
-            icon: Users,
+            icon: 'Users',
             title: 'Regular Staff Training',
             description: 'Continuous training programs for teachers and staff development',
         },
         {
-            icon: Headphones,
+            icon: 'Headphones',
             title: 'Operational Support',
             description: 'End-to-end support in setup, marketing, and daily operations',
         },
         {
-            icon: TrendingUp,
+            icon: 'TrendingUp',
             title: 'Marketing Assistance',
             description: 'National and local marketing support to grow your centre',
         },
     ];
 
-    const offerings = [
+    const offerings = pageData?.offerings || [
         'Proven business model with 250+ successful centres',
         'Comprehensive training for franchisees and staff',
         'Marketing and promotional materials',
@@ -54,7 +91,7 @@ export default function FranchisePage() {
     return (
         <div className="min-h-screen">
             {/* Hero Section - Cloud Theme */}
-            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 py-20 relative overflow-hidden">
+            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 section-gap relative overflow-hidden pt-24 md:pt-32">
                 {/* Kid-Friendly Animations - Business Dreams */}
                 <AnimatedNumbers />
 
@@ -73,14 +110,14 @@ export default function FranchisePage() {
             </section>
 
             {/* Franchise Form */}
-            <section className="py-20 bg-white">
+            <section className="section-gap bg-white">
                 <div className="container mx-auto px-4">
                     <FranchiseForm />
                 </div>
             </section>
 
             {/* Why T.I.M.E. Kids Franchise */}
-            <section className="py-20 bg-gray-50">
+            <section className="section-gap bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16">
                         <h2 className="font-bubblegum text-4xl mb-4 tracking-wide text-[#003366]">
@@ -92,21 +129,24 @@ export default function FranchisePage() {
                     </div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        {benefits.map((benefit, index) => (
-                            <Card key={index} className="group">
-                                <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
-                                    <benefit.icon className="w-8 h-8 text-white" />
-                                </div>
-                                <h3 className="font-bubblegum text-xl mb-3 text-gray-900 tracking-wide">{benefit.title}</h3>
-                                <p className="text-gray-600 leading-relaxed">{benefit.description}</p>
-                            </Card>
-                        ))}
+                        {benefits.map((benefit: any, index: number) => {
+                            const BenefitIcon = IconMap[benefit.icon] || Award;
+                            return (
+                                <Card key={index} className="group">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
+                                        <BenefitIcon className="w-8 h-8 text-white" />
+                                    </div>
+                                    <h3 className="font-bubblegum text-xl mb-3 text-gray-900 tracking-wide">{benefit.title}</h3>
+                                    <p className="text-gray-600 leading-relaxed">{benefit.description}</p>
+                                </Card>
+                            );
+                        })}
                     </div>
                 </div>
             </section>
 
             {/* What We Offer */}
-            <section className="py-20 bg-white">
+            <section className="section-gap bg-white">
                 <div className="container mx-auto px-4">
                     <div className="max-w-4xl mx-auto">
                         <h2 className="font-bubblegum text-4xl mb-8 text-center text-[#003366] tracking-wide">
@@ -114,7 +154,7 @@ export default function FranchisePage() {
                         </h2>
                         <Card className="bg-gradient-to-br from-primary-500 to-primary-600 text-white">
                             <ul className="grid md:grid-cols-2 gap-4">
-                                {offerings.map((offering, index) => (
+                                {offerings.map((offering: string, index: number) => (
                                     <li key={index} className="flex items-start space-x-3">
                                         <span className="mt-1 flex-shrink-0">✓</span>
                                         <span className="text-white/90">{offering}</span>
@@ -127,7 +167,7 @@ export default function FranchisePage() {
             </section>
 
             {/* Franchise Testimonials */}
-            <section className="py-20 bg-gray-50">
+            <section className="section-gap bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">
                         <h2 className="font-bubblegum text-4xl mb-4 text-[#003366] tracking-wide">
@@ -157,7 +197,7 @@ export default function FranchisePage() {
             </section>
 
             {/* Main Branch Location */}
-            <section className="py-20 bg-white">
+            <section className="section-gap bg-white">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">
                         <h2 className="font-bubblegum text-4xl mb-4 text-[#003366] tracking-wide">
@@ -258,7 +298,7 @@ export default function FranchisePage() {
             </section>
 
             {/* Download Brochure */}
-            <section className="py-20 bg-gradient-to-br from-primary-500 to-primary-600 text-white">
+            <section className="section-gap bg-gradient-to-br from-primary-500 to-primary-600 text-white">
                 <div className="container mx-auto px-4">
                     <div className="max-w-2xl mx-auto text-center">
                         <Download className="w-16 h-16 mx-auto mb-6" />
@@ -267,13 +307,13 @@ export default function FranchisePage() {
                             Get detailed information about investment, support, and franchise benefits
                         </p>
                         <a
-                            href="https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf"
+                            href={franchiseBrochure?.file || "https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf"}
                             target="_blank"
                             rel="noopener noreferrer"
                             download
                             className="inline-block bg-white text-primary-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-xl hover:shadow-2xl"
                         >
-                            Download Brochure (PDF)
+                            {franchiseBrochure?.title || "Download Brochure (PDF)"}
                         </a>
                     </div>
                 </div>

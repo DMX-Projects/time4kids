@@ -158,11 +158,10 @@ export default function Header() {
                 }
 
                 .header {
-                    /* background: rgba(255, 255, 255, 0.05);
-                    backdrop-filter: blur(15px);
-                    -webkit-backdrop-filter: blur(15px);
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
-                    padding: 5px 0;
+                    background: #fff;
+                    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+                    border-bottom: 1px solid #eee;
+                    padding: 8px 0;
                     position: fixed;
                     width: 100%;
                     top: 28px; /* Offset for header-top */
@@ -172,10 +171,9 @@ export default function Header() {
 
                 .header-sticky {
                     top: 0;
-                    /* background: rgba(255, 255, 255, 0.1);
-                    backdrop-filter: blur(25px);
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-                    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); */
+                    background: #fff;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                    border-bottom: 1px solid #eee;
                 }
 
 
@@ -191,11 +189,11 @@ export default function Header() {
 
                 .header-inner {
                     position: relative;
-                    min-height: 80px;
+                    min-height: 70px;
                     display: flex;
                     align-items: center;
-                    justify-content: flex-start;
-                    gap: 40px;
+                    justify-content: space-between;
+                    gap: 15px;
                 }
 
                 /* Logo - Left aligned */
@@ -351,6 +349,10 @@ export default function Header() {
 
                     .header-top {
                         display: none;
+                    }
+
+                    .header {
+                        top: 0;
                     }
                 }
 

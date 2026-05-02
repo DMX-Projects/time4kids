@@ -119,7 +119,7 @@ export default function FranchiseEnquiriesPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-3 items-end md:items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div className="sticky top-[61px] z-20 flex flex-col md:flex-row gap-3 items-end md:items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                     <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto no-scrollbar">
                         {tabs.map((tab) => (
                             <button
