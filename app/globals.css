@@ -213,6 +213,25 @@ body {
   .rounded-brand {
     border-radius: 24px;
   }
+
+  /* ============ MOBILE UTILITIES ============ */
+
+  /* Hide scrollbar but keep scroll functionality (tab bars, chip rows) */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* iOS safe-area padding for sticky/fixed elements near notch/home bar */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
 
 /* Custom scrollbar */

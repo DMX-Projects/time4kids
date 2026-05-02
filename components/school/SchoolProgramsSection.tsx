@@ -90,7 +90,18 @@ const FloatingElement = ({ children, delay = 0, duration = 4, className }: any) 
     </motion.div>
 );
 
-const SchoolProgramsSection = () => {
+interface SchoolProgramsSectionProps {
+    selectedPrograms?: string;
+}
+
+const SchoolProgramsSection = ({ selectedPrograms }: SchoolProgramsSectionProps) => {
+    const filteredPrograms = React.useMemo(() => {
+        if (!selectedPrograms) return programs;
+        const selectedList = selectedPrograms.split(',').map(s => s.trim().toLowerCase());
+        const filtered = programs.filter(p => selectedList.includes(p.title.toLowerCase()));
+        return filtered.length > 0 ? filtered : programs;
+    }, [selectedPrograms]);
+
     return (
         <section id="programs" className="relative py-28 px-4 overflow-hidden min-h-screen flex items-center">
             {/* New Illustrative Background Image */}
@@ -148,7 +159,7 @@ const SchoolProgramsSection = () => {
 
                 {/* Programs Horizontal List */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
-                    {programs.map((program, index) => (
+                    {filteredPrograms.map((program, index) => (
                         <motion.div
                             key={program.id}
                             initial={{ opacity: 0, y: 50 }}

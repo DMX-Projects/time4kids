@@ -13,7 +13,7 @@ export default function MethodologySection() {
     const methodologyTitle = home.methodology.title;
 
     return (
-        <section className="methodology-block">
+        <section className="methodology-block section-gap">
             <div className="container mx-auto px-4">
                 <h3>{methodologyTitle}</h3>
                 <ul className="methodology-nav">
@@ -35,16 +35,16 @@ export default function MethodologySection() {
                     background: #bde2f4 url(/bg1.png) no-repeat center bottom;
                     background-size: cover;
                     text-align: center;
-                    padding: 50px 0;
+                    padding: 40px 0 60px 0;
                 }
 
                 .methodology-block h3 {
-                    font-family: 'Schoolbell', cursive;
+                    font-family: 'Luckiest Guy', cursive;
                     color: #085390;
-                    font-size: 28px;
+                    font-size: 48px;
                     line-height: 30px;
                     font-weight: 600;
-                    margin: 30px 0;
+                    margin: 20px 0;
                 }
 
                 .methodology-nav {

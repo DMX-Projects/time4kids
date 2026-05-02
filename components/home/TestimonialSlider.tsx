@@ -241,7 +241,7 @@ const TestimonialSlider = () => {
     return (
         <section
             ref={sectionRef}
-            className="w-full relative bg-gradient-to-br from-[#6032a8] via-[#7c4dff] to-[#6032a8] overflow-hidden"
+            className="w-full relative section-gap bg-gradient-to-br from-[#6032a8] via-[#7c4dff] to-[#6032a8] overflow-hidden"
             onMouseMove={handleMouseMove}
         >
 

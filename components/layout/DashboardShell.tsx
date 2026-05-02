@@ -109,37 +109,37 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                         onClose={() => setOpen(false)}
                     />
                 )}
-                {open && <button className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setOpen(false)} aria-label="Close menu" />}
+                {open && <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setOpen(false)} aria-label="Close menu" />}
 
-                <div className="flex-1 flex flex-col min-w-0 relative z-[1] h-full overflow-y-auto">
-                    <header className="sticky top-0 bg-white border-b border-[#E5E7EB] z-20">
-                        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-y-auto bg-slate-50">
+                    <header className="sticky top-0 bg-white border-b border-[#E5E7EB] z-30 shadow-sm">
+                        <div className="container mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                                 <button
-                                    className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full bg-white text-[#1F2937] border border-[#E5E7EB]"
+                                    className="md:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white text-[#1F2937] border border-[#E5E7EB] flex-shrink-0"
                                     onClick={() => setOpen((prev) => !prev)}
                                     aria-label="Toggle menu"
                                 >
                                     {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                                 </button>
-                                <div className="hidden md:flex items-center gap-3">
+                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                                     {isAdmin ? (
                                         <>
-                                            <div className="flex flex-col">
-                                                <span className="text-base font-semibold text-[#111827]">{brand.title}</span>
-                                                <span className="text-sm text-[#374151]">System command center</span>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-sm font-semibold text-[#111827] truncate">{brand.title}</span>
+                                                <span className="hidden sm:block text-xs text-[#374151]">System command center</span>
                                             </div>
-                                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF4CC] text-[#111827] text-xs font-semibold">
+                                            <span className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF4CC] text-[#111827] text-xs font-semibold">
                                                 System Control
                                             </span>
                                         </>
                                     ) : (
                                         <>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-semibold text-[#1F2937]">{brand.title}</span>
-                                                <span className="text-xs text-[#4B5563]">Welcome</span>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-sm font-semibold text-[#1F2937] truncate">{brand.title}</span>
+                                                <span className="hidden sm:block text-xs text-[#4B5563]">Welcome</span>
                                             </div>
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E5E7EB] text-[#1F2937]">
+                                            <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E5E7EB] text-[#1F2937]">
                                                 <Star className="w-4 h-4 text-[#FFA94D]" />
                                                 <span className="text-xs font-semibold">{brand.subtitle}</span>
                                             </div>
@@ -147,18 +147,18 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                                     )}
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center flex-shrink-0">
                                 <button
                                     onClick={handleLogoutClick}
-                                    className={`group relative overflow-hidden text-white font-semibold transition-all duration-150 rounded-full px-4 py-2 text-sm shadow-sm ${isAdmin
+                                    className={`group relative overflow-hidden text-white font-semibold transition-all duration-150 rounded-full shadow-sm px-3 py-2 sm:px-4 ${isAdmin
                                         ? "bg-[#FF922B] hover:brightness-110 active:brightness-90"
                                         : "bg-[#FF922B] hover:shadow-md active:brightness-90"
                                         }`}
                                 >
                                     {!isAdmin && <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />}
-                                    <span className="relative flex items-center gap-2">
+                                    <span className="relative flex items-center gap-1.5 text-sm">
                                         <LogOut className="w-4 h-4" />
-                                        Logout
+                                        <span className="hidden sm:inline">Logout</span>
                                     </span>
                                 </button>
                             </div>
@@ -166,7 +166,7 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                     </header>
 
                     {/* Avoid nested <main> (root layout already wraps app in main). */}
-                    <div className="container mx-auto px-4 py-8 flex-1 min-w-0 min-h-[50vh] w-full relative z-10 bg-slate-50/90">
+                    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 flex-1 min-w-0 min-h-[50vh] w-full relative z-10 bg-slate-50/90">
                         {children}
                     </div>
 

@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Users, UserPlus, Phone, Mail, Lock, ShieldCheck, Trash2 } from "lucide-react";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth, RoleGuard } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
 import { jsonHeaders } from "@/lib/api-client";
@@ -28,6 +28,14 @@ const normalizeList = <T,>(data: unknown): T[] => {
 };
 
 export default function DriverManagementPage() {
+    return (
+        <RoleGuard allowedRole="franchise">
+            <DriverManagementContent />
+        </RoleGuard>
+    );
+}
+
+function DriverManagementContent() {
     const { authFetch } = useAuth();
     const { showToast } = useToast();
     const [drivers, setDrivers] = useState<DriverProfile[]>([]);

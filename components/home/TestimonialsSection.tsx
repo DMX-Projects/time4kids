@@ -211,7 +211,7 @@ const TestimonialsSection = () => {
     }, [activeGroupIndex, activeItemIndex, nextMedia, prevMedia]);
 
     return (
-        <section className="relative py-24 bg-white overflow-hidden">
+        <section className="relative section-gap bg-white overflow-hidden">
             <style jsx global>{`
                 body.lightbox-open {
                     overflow: hidden !important;

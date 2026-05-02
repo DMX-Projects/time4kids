@@ -192,7 +192,7 @@ const InfoCard: React.FC<InfoCardProps> = ({ icon, iconBg, children, planePositi
 
 export default function MagicalStorySection() {
     return (
-        <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#7DD3FC] to-[#93C5FD] py-20 min-h-screen flex flex-col items-center justify-center">
+        <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#7DD3FC] to-[#93C5FD] section-gap min-h-screen flex flex-col items-center justify-center">
             {/* Thread Wave Animations */}
             {/* <WaveBackground position="bottom" color="#e1f6fb" opacity={1} className="z-10" /> */}
 

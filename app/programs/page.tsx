@@ -173,7 +173,7 @@ export default function ProgramsPage() {
             <div className="fixed top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 pointer-events-none z-[-1]"></div>
 
             {/* Hero Section */}
-            <section className="relative pt-12 pb-20 overflow-visible">
+            <section className="relative section-gap overflow-visible">
                 {/* Decorative Elements */}
                 <div className="absolute top-20 left-[10%] w-24 h-24 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
                 <div className="absolute top-24 right-[15%] w-32 h-32 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
@@ -212,7 +212,7 @@ export default function ProgramsPage() {
             </div>
 
             {/* Content Section - The Program Cards */}
-            <section className="relative bg-white pt-10 pb-32 z-10">
+            <section className="relative bg-white section-gap z-10">
                 <div className="container mx-auto px-4">
                     <div className="flex flex-col gap-12 md:gap-16">
                         {programs.map((program, index) => {

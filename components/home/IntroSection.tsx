@@ -9,7 +9,7 @@ export default function IntroSection() {
 
     return (
         <>
-            <div id="about" className="intro-block scroll-mt-40">
+            <div id="about" className="intro-block section-gap scroll-mt-40">
                 <div className="container mx-auto px-4">
                     <div className="intro-content">
                         <h1>{intro.title}</h1>
@@ -26,7 +26,7 @@ export default function IntroSection() {
                     text-align: center;
                     background: #f5f1dd url(/images/bg2.gif) repeat-x center bottom;
                     font-weight: 500;
-                    padding: 50px 0;
+                    padding: 0;
                 }
 
                 .intro-content { max-width: 900px; margin: 0 auto; }
@@ -46,7 +46,7 @@ export default function IntroSection() {
                 }
 
                 @media (max-width: 768px) {
-                    .intro-block { padding: 25px 0; }
+                    .intro-block { padding: 0; }
                     .intro-block h1 { font-size: 24px; }
                     .intro-block h2 { font-size: 20px; }
                 }

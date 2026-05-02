@@ -10,7 +10,6 @@ export default function WaveAnimationsWhale() {
             <div className="wave-horizontals">
                 <div className="wave-horizontal wave1"></div>
                 <div className="wave-horizontal wave2"></div>
-                <div className="wave-horizontal wave3"></div>
             </div>
 
             {/* Floating Whale */}
@@ -60,26 +59,21 @@ export default function WaveAnimationsWhale() {
                 }
 
                 .wave1,
-                .wave2,
-                .wave3 {
+                .wave2 {
                     background: url("data:image/svg+xml,%3Csvg version='1.1' xmlns='http://www.w3.org/2000/svg' x='0px' y='0px' width='350px' height='20px' viewBox='0 0 350 20'%3E%3Cpath fill='%23035392' d='M0,17.1C29.9,17.1,57.8,0,87.5,0c30.2,0,58.1,17.1,87.1,17.1c29.9,0,57.8-17.1,87.7-17.1 s57.8,17.1,87.7,17.1V20H0V17.1z'/%3E%3C/svg%3E");
                 }
 
                 .wave1 {
                     background-size: 100px 100px;
-                    opacity: 0.3;
+                    opacity: 0.4;
                     animation-delay: 0s;
+                    animation-duration: 15s;
                 }
 
                 .wave2 {
                     animation-delay: -2s;
-                    animation-duration: 12s;
-                    opacity: 0.5;
-                }
-
-                .wave3 {
-                    animation-delay: -4s;
-                    animation-duration: 8s;
+                    animation-duration: 10s;
+                    opacity: 0.8;
                 }
 
                 .floating-whale {

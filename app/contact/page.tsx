@@ -62,7 +62,7 @@ export default function ContactPage() {
     return (
         <div className="min-h-screen">
             {/* Hero Section - Pencil/Creative Theme */}
-            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 py-20 relative overflow-hidden">
+            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 section-gap relative overflow-hidden">
                 {/* Kid-Friendly Animations - Creative Communication */}
                 <AnimatedLetters />
                 <TwinklingStars count={18} />
@@ -81,7 +81,7 @@ export default function ContactPage() {
             </section>
 
             {/* Contact Information & Form */}
-            <section className="py-20 bg-white">
+            <section className="section-gap bg-white">
                 <div className="container mx-auto px-4">
                     <div className="grid lg:grid-cols-3 gap-12 max-w-6xl mx-auto">
                         {/* Contact Info */}
@@ -289,7 +289,7 @@ export default function ContactPage() {
             </section >
 
             {/* Careers Section */}
-            < section id="careers" className="py-20 bg-gradient-to-br from-primary-500 to-primary-600 text-white" >
+            < section id="careers" className="section-gap bg-gradient-to-br from-primary-500 to-primary-600 text-white" >
                 <div className="container mx-auto px-4">
                     <div className="max-w-4xl mx-auto text-center">
                         <Briefcase className="w-16 h-16 mx-auto mb-6" />

@@ -6,6 +6,7 @@ import Image from 'next/image';
 
 interface SchoolIntroSectionProps {
     schoolName: string;
+    about?: string;
 }
 
 const StarIcon = ({ className, fill = "currentColor" }: { className?: string, fill?: string }) => (
@@ -14,7 +15,34 @@ const StarIcon = ({ className, fill = "currentColor" }: { className?: string, fi
     </svg>
 );
 
-const SchoolIntroSection = ({ schoolName }: SchoolIntroSectionProps) => {
+const SchoolIntroSection = ({ schoolName, about }: SchoolIntroSectionProps) => {
+    const defaultText = (
+        <>
+            <p>
+                T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training.
+                After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+ pre-schools is now poised for major
+                expansion across the country.
+            </p>
+            <p>
+                The programme at T.I.M.E. Kids pre-schools aims at making the transition from home to school easy, by providing the
+                warm, safe and caring and learning environment that young children have at home. Our play schools offer wholesome,
+                fun-filled and memorable childhood education to our children.
+            </p>
+            <p>
+                T.I.M.E. Kids pre-schools are backed by our educational expertise of over 27 years, well trained care providers and a
+                balanced educational programme. The programme at T.I.M.E. Kids pre-schools is based on the principles of age-appropriate child
+                development practices.
+            </p>
+        </>
+    );
+
+    const renderAbout = () => {
+        if (!about) return defaultText;
+        return about.split('\n').filter(p => p.trim()).map((p, i) => (
+            <p key={i}>{p}</p>
+        ));
+    };
+
     return (
         <section className="relative bg-[#FFFBEB] py-24 md:py-32 overflow-hidden font-sans">
             {/* Background Pattern */}
@@ -88,21 +116,7 @@ const SchoolIntroSection = ({ schoolName }: SchoolIntroSectionProps) => {
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="space-y-6 text-gray-600 text-base md:text-lg leading-relaxed font-medium text-justify md:text-center"
                     >
-                        <p>
-                            T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training.
-                            After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+ pre-schools is now poised for major
-                            expansion across the country.
-                        </p>
-                        <p>
-                            The programme at T.I.M.E. Kids pre-schools aims at making the transition from home to school easy, by providing the
-                            warm, safe and caring and learning environment that young children have at home. Our play schools offer wholesome,
-                            fun-filled and memorable childhood education to our children.
-                        </p>
-                        <p>
-                            T.I.M.E. Kids pre-schools are backed by our educational expertise of over 27 years, well trained care providers and a
-                            balanced educational programme. The programme at T.I.M.E. Kids pre-schools is based on the principles of age-appropriate child
-                            development practices.
-                        </p>
+                        {renderAbout()}
                     </motion.div>
                 </div>
             </div>

@@ -239,18 +239,8 @@ export default function HeroSection() {
                                         />
 
                                         {/* New Blob Overlay */}
-                                        <BlobOverlay index={index} isActive={index === currentSlide} />
+                                         {/* Removed fallback text */}
 
-                                        {/* Original fallback text (only show if no blob content or for extra slides) */}
-                                        {(index >= 4 || (!slide.alt_text && index >= 4)) && slide.alt_text && slide.alt_text.trim() && slide.alt_text.toLowerCase() !== 'img' && (
-                                            <div className="absolute bottom-24 right-4 md:right-10 flex justify-end pointer-events-none">
-                                                <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-lg text-white border-l-4 border-orange-500 shadow-lg max-w-xl mx-4 transform transition-all hover:scale-105">
-                                                    <h2 className="text-xl md:text-3xl font-bold font-display drop-shadow-md leading-tight">
-                                                        {slide.alt_text}
-                                                    </h2>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 );
 
@@ -275,7 +265,9 @@ export default function HeroSection() {
                             })}
                         </Slider>
                     ) : (
-                        <div className="slide" style={{ backgroundColor: '#000' }}></div>
+                        <div className="slide bg-gradient-to-br from-[#fd5e60] via-[#f77542] to-[#19a0df] flex items-center justify-center">
+                            <div className="text-white/20 font-black text-4xl uppercase tracking-widest">T.I.M.E. Kids</div>
+                        </div>
                     )}
                 </div>
 
