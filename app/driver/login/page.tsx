@@ -2,6 +2,7 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { LoginPageContent } from "@/components/auth/LoginPageContent";
 
 export const dynamic = "force-dynamic";
 
