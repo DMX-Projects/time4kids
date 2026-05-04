@@ -219,65 +219,124 @@ export function DriverTripContent() {
         } catch (e) { showToast("Update failed", "error"); }
     };
 
-    const formatStatus = (s: string) => s.replace("_", " ");
-    const statusClass = (s: string) => s === "WAITING" ? "bg-orange-100 text-orange-800" : "bg-green-100 text-green-800";
-
     return (
         <main className="min-h-screen bg-[#FFF8ED] px-4 py-4">
-            <div className="mx-auto max-w-md space-y-4 pb-20">
-                <div className="flex items-center justify-between">
-                    <Link href="/"><Image src="/time-kids-logo-new.png" alt="Logo" width={100} height={40} className="h-8 w-auto" priority /></Link>
+            <div className="mx-auto max-w-md space-y-4 pb-10">
+                <div className="flex items-center justify-between px-1">
+                    <Link href="/">
+                        <Image src="/time-kids-logo-new.png" alt="T.I.M.E. Kids Logo" width={120} height={48} className="h-10 w-auto object-contain" priority />
+                    </Link>
                 </div>
 
-                <section className="rounded-2xl bg-white border border-orange-100 p-5 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between">
+                <section className="rounded-2xl bg-white border border-orange-100 p-5 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600"><Bus className="w-5 h-5" /></div>
+                            <div className="w-11 h-11 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center">
+                                <Bus className="w-6 h-6" />
+                            </div>
                             <div>
-                                <h1 className="font-bold text-gray-900">{route?.route_name || "Loading..."}</h1>
-                                <button onClick={() => setIsRouteDrawerOpen(true)} className="text-xs font-bold text-orange-600 uppercase flex items-center gap-1">Change Route <ChevronDown className="w-3 h-3" /></button>
+                                <h1 className="text-xl font-bold text-orange-950">Driver Trip</h1>
+                                {allRoutes.length > 1 && (
+                                    <div className="mt-1">
+                                        <button
+                                            disabled={tracking || activeTrip?.status === "LIVE"}
+                                            onClick={() => setIsRouteDrawerOpen(true)}
+                                            className="bg-orange-50 border border-orange-100 text-orange-900 text-[11px] font-bold rounded-full px-3 py-1 flex items-center gap-1.5 active:scale-95 transition-transform disabled:opacity-50"
+                                        >
+                                            <Bus className="w-3 h-3" />
+                                            {allRoutes.find(r => String(r.id) === selectedRouteId)?.route_name || "Select Route"}
+                                            <ChevronDown className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                )}
+                                <p className="text-sm text-orange-700">Start route & share GPS.</p>
                             </div>
                         </div>
-                        <button onClick={() => setIsLogoutModalOpen(true)} className="p-2 text-red-500 hover:bg-red-50 rounded-full"><LogOut className="w-5 h-5" /></button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => setTripType("PICKUP")} className={`py-2 rounded-xl text-sm font-bold ${tripType === "PICKUP" ? "bg-orange-500 text-white" : "bg-orange-50 text-orange-950"}`}>Pickup</button>
-                        <button onClick={() => setTripType("DROP")} className={`py-2 rounded-xl text-sm font-bold ${tripType === "DROP" ? "bg-orange-500 text-white" : "bg-orange-50 text-orange-950"}`}>Drop</button>
-                    </div>
-
-                    {!activeTrip ? (
-                        <Button onClick={startTrip} disabled={loading} className="w-full h-12 bg-green-600 text-white rounded-xl font-bold shadow-lg shadow-green-100">
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Play className="w-5 h-5 mr-2" /> Start Trip</>}
-                        </Button>
-                    ) : (
-                        <div className="space-y-2">
-                            <div className="flex gap-2">
-                                <Button onClick={tracking ? stopWatching : () => startWatching()} className={`flex-1 h-12 rounded-xl font-bold ${tracking ? "bg-red-500 text-white" : "bg-blue-600 text-white"}`}>
-                                    {tracking ? <><Square className="w-5 h-5 mr-2" /> Stop GPS</> : <><Crosshair className="w-5 h-5 mr-2" /> Share GPS</>}
-                                </Button>
-                            </div>
-                            <Button onClick={() => setIsCompleteTripModalOpen(true)} variant="outline" className="w-full h-12 rounded-xl font-bold border-orange-200 text-orange-900 bg-orange-50">
-                                <CheckCircle2 className="w-5 h-5 mr-2" /> Complete Trip
-                            </Button>
+                        <div className="flex items-center gap-2">
+                            {user && (
+                                <button
+                                    onClick={() => setIsLogoutModalOpen(true)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-orange-100 text-[11px] font-bold text-red-600 shadow-sm hover:bg-red-50 transition-colors"
+                                >
+                                    <LogOut className="w-3.5 h-3.5" />
+                                    LOGOUT
+                                </button>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </section>
 
                 {summary && (
-                    <div className="bg-green-50 border border-green-100 p-4 rounded-2xl flex items-center justify-between">
-                        <p className="text-green-800 text-sm font-bold">Trip completed! Picked: {summary.picked}/{summary.total}</p>
-                        <button onClick={() => setSummary(null)} className="text-green-900 text-xs font-bold underline">Close</button>
-                    </div>
+                    <section className="rounded-2xl bg-green-50 border border-green-100 p-5 shadow-sm space-y-3 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="flex items-center gap-2 text-green-800">
+                            <CheckCircle2 className="w-5 h-5" />
+                            <h2 className="font-bold">Trip Summary</h2>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-white/60 p-3 rounded-xl text-center">
+                                <p className="text-[10px] font-bold text-green-700 uppercase">Picked</p>
+                                <p className="text-xl font-bold text-green-900">{summary.picked}/{summary.total}</p>
+                            </div>
+                            <button onClick={() => setSummary(null)} className="w-full py-2 text-sm font-semibold text-green-800 hover:underline">Dismiss</button>
+                        </div>
+                    </section>
                 )}
 
-                <div className="px-1"><h2 className="font-bold text-gray-900">Student List</h2></div>
-                <StudentList students={students} onStatusChange={updateStudentStatus} />
+                {route && (
+                    <section className="rounded-2xl bg-white border border-orange-100 p-5 shadow-sm space-y-4">
+                        <div className="space-y-1">
+                            <h2 className="text-2xl font-bold text-gray-900 tracking-tight leading-tight uppercase">{route.route_name}</h2>
+                            <div className="flex flex-wrap items-center gap-3 mt-1">
+                                <p className="text-sm font-medium text-gray-600 flex items-center gap-1.5 bg-gray-100 px-2 py-0.5 rounded-md">🚌 {route.vehicle_number || "No Vehicle"}</p>
+                                {route.destination && (
+                                    <p className="text-sm font-bold text-orange-600 uppercase flex items-center gap-1.5 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-100">
+                                        <MapPin className="w-4 h-4" /> To: {route.destination}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => setTripType("PICKUP")} className={`rounded-xl px-3 py-2 text-sm font-semibold ${tripType === "PICKUP" ? "bg-orange-500 text-white" : "bg-orange-50 text-orange-800"}`}>Pickup</button>
+                            <button onClick={() => setTripType("DROP")} className={`rounded-xl px-3 py-2 text-sm font-semibold ${tripType === "DROP" ? "bg-orange-500 text-white" : "bg-orange-50 text-orange-800"}`}>Drop</button>
+                        </div>
+
+                        {!activeTrip ? (
+                            <Button onClick={startTrip} disabled={loading} className="w-full bg-green-600 text-white py-4 rounded-xl font-bold">
+                                <Play className="w-4 h-4 mr-2" /> Start Trip
+                            </Button>
+                        ) : (
+                            <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button onClick={tracking ? stopWatching : () => startWatching()} className={`flex-1 ${tracking ? "bg-red-500" : "bg-blue-600"} text-white`}>
+                                        {tracking ? <><Square className="w-4 h-4 mr-2" /> Stop GPS</> : <><Crosshair className="w-4 h-4 mr-2" /> Share GPS</>}
+                                    </Button>
+                                    <Button onClick={() => setIsCompleteTripModalOpen(true)} className="bg-orange-100 text-orange-950">
+                                        <CheckCircle2 className="w-4 h-4 mr-2" /> End Trip
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                <div className="px-1"><h2 className="font-bold text-orange-950">Students on this route</h2></div>
+                <StudentList students={students} onStatusChange={updateStudentStatus} activeTrip={activeTrip} tripType={tripType} />
+                
+                <section className="rounded-2xl bg-white border border-orange-100 p-4 shadow-sm space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="font-semibold text-orange-950">GPS status</span>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${tracking ? "bg-green-100 text-green-800" : "bg-orange-50 text-orange-800"}`}>
+                            {tracking ? "Sharing" : "Stopped"}
+                        </span>
+                    </div>
+                    {message && <p className="text-[10px] text-orange-600 font-medium">{message}</p>}
+                </section>
             </div>
 
             <Drawer isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} title="Logout">
                 <div className="p-4 space-y-4">
-                    <p className="text-gray-600">Are you sure you want to logout from the driver portal?</p>
+                    <p className="text-gray-600 text-sm">Are you sure you want to logout? You will need to login again to start your next trip.</p>
                     <div className="grid grid-cols-2 gap-3">
                         <Button variant="outline" onClick={() => setIsLogoutModalOpen(false)}>Cancel</Button>
                         <Button className="bg-red-600 text-white" onClick={() => { authLogout(); router.push("/driver/login"); }}>Logout</Button>
@@ -287,19 +346,19 @@ export function DriverTripContent() {
 
             <Drawer isOpen={isCompleteTripModalOpen} onClose={() => setIsCompleteTripModalOpen(false)} title="End Trip">
                 <div className="p-4 space-y-4">
-                    <p className="text-gray-600">Are you sure you want to complete this trip? This will stop GPS sharing.</p>
+                    <p className="text-gray-600 text-sm">Finishing the route will stop GPS sharing and notify the centre. Complete now?</p>
                     <div className="grid grid-cols-2 gap-3">
                         <Button variant="outline" onClick={() => setIsCompleteTripModalOpen(false)}>Not yet</Button>
-                        <Button className="bg-orange-500 text-white" onClick={completeTrip}>Yes, End Trip</Button>
+                        <Button className="bg-[#FF922B] text-white" onClick={completeTrip}>Yes, Complete</Button>
                     </div>
                 </div>
             </Drawer>
 
-            <Modal isOpen={isRouteDrawerOpen} onClose={() => setIsRouteDrawerOpen(false)} title="Switch Route">
-                <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto">
-                    {allRoutes.map(r => (
-                        <button key={r.id} onClick={() => { setSelectedRouteId(String(r.id)); setIsRouteDrawerOpen(false); void loadRoute(); }} 
-                            className={`w-full p-4 rounded-xl text-left border transition-all ${selectedRouteId === String(r.id) ? "bg-orange-50 border-orange-200" : "bg-white border-gray-100"}`}>
+            <Modal isOpen={isRouteDrawerOpen} onClose={() => setIsRouteDrawerOpen(false)} title="Select Route" size="sm">
+                <div className="space-y-3 p-2">
+                    {allRoutes.map((r) => (
+                        <button key={r.id} onClick={() => { setSelectedRouteId(String(r.id)); setIsRouteDrawerOpen(false); void loadRoute(); }}
+                            className={`w-full text-left p-4 rounded-xl border ${selectedRouteId === String(r.id) ? "bg-orange-50 border-orange-200" : "bg-white border-gray-100"}`}>
                             <p className="font-bold text-gray-900">{r.route_name}</p>
                             <p className="text-xs text-gray-500">{r.vehicle_number}</p>
                         </button>
