@@ -41,7 +41,7 @@ export default function FranchiseParentDocumentsPage() {
     const { showToast } = useToast();
     const searchParams = useSearchParams();
     const requestedCategory = searchParams.get("category") || "";
-    const validCategories = new Set(categories.map((c) => c.value));
+    const validCategories = useMemo(() => new Set(categories.map((c) => c.value)), []);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [docs, setDocs] = useState<ParentDoc[]>([]);
@@ -75,7 +75,7 @@ export default function FranchiseParentDocumentsPage() {
     useEffect(() => {
         if (!validCategories.has(requestedCategory)) return;
         setForm((prev) => ({ ...prev, category: requestedCategory }));
-    }, [requestedCategory]);
+    }, [requestedCategory, validCategories]);
 
     const grouped = useMemo(() => {
         const map = new Map<string, ParentDoc[]>();
