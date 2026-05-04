@@ -8,6 +8,9 @@ import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
 import { jsonHeaders } from "@/lib/api-client";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import dynamic from "next/dynamic";
+
+const MapPicker = dynamic(() => import('@/components/ui/MapPicker'), { ssr: false });
 
 type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 type ShowToastFn = (message: string, variant?: "success" | "error") => void;
@@ -820,6 +823,10 @@ function TransportTab({
         route: "",
         pickup_stop: "",
         drop_stop: "",
+        pickup_latitude: "",
+        pickup_longitude: "",
+        drop_latitude: "",
+        drop_longitude: "",
         pickup_time: "",
         drop_time: "",
     });
@@ -964,6 +971,10 @@ function TransportTab({
                             route: Number(assignmentForm.route),
                             pickup_stop: assignmentForm.pickup_stop,
                             drop_stop: assignmentForm.drop_stop,
+                            pickup_latitude: assignmentForm.pickup_latitude ? Number(assignmentForm.pickup_latitude) : null,
+                            pickup_longitude: assignmentForm.pickup_longitude ? Number(assignmentForm.pickup_longitude) : null,
+                            drop_latitude: assignmentForm.drop_latitude ? Number(assignmentForm.drop_latitude) : null,
+                            drop_longitude: assignmentForm.drop_longitude ? Number(assignmentForm.drop_longitude) : null,
                             pickup_time: assignmentForm.pickup_time || null,
                             drop_time: assignmentForm.drop_time || null,
                             is_active: true,
@@ -1008,8 +1019,14 @@ function TransportTab({
             <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 grid md:grid-cols-2 gap-3">
                 <input required placeholder="Route name" value={form.route_name} onChange={(e) => setForm((p) => ({ ...p, route_name: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
                 <input placeholder="Route Destination (e.g. Centre name or specific stop)" value={form.destination} onChange={(e) => setForm((p) => ({ ...p, destination: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm md:col-span-2" />
-                <input type="number" step="any" placeholder="Destination Latitude" value={form.destination_latitude} onChange={(e) => setForm((p) => ({ ...p, destination_latitude: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
-                <input type="number" step="any" placeholder="Destination Longitude" value={form.destination_longitude} onChange={(e) => setForm((p) => ({ ...p, destination_longitude: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
+                <div className="md:col-span-2 pt-2">
+                    <MapPicker 
+                        label="Set Route Destination Coordinates"
+                        lat={form.destination_latitude ? Number(form.destination_latitude) : null}
+                        lng={form.destination_longitude ? Number(form.destination_longitude) : null}
+                        onChange={(lat, lng) => setForm((p) => ({ ...p, destination_latitude: String(lat), destination_longitude: String(lng) }))}
+                    />
+                </div>
                 <input placeholder="Vehicle number" value={form.vehicle_number} onChange={(e) => setForm((p) => ({ ...p, vehicle_number: e.target.value }))} className="w-full rounded-xl border px-3 py-2 text-sm" />
                 <select 
                     value={form.driver_profile} 
@@ -1127,8 +1144,26 @@ function TransportTab({
                         </select>
                     </div>
                     
-                    <input placeholder="Optional Pickup stop" value={assignmentForm.pickup_stop} onChange={(e) => setAssignmentForm((p) => ({ ...p, pickup_stop: e.target.value }))} className="w-full rounded-xl border border-orange-100 px-3 py-2 text-sm" />
-                    <input placeholder="Optional Drop stop" value={assignmentForm.drop_stop} onChange={(e) => setAssignmentForm((p) => ({ ...p, drop_stop: e.target.value }))} className="w-full rounded-xl border border-orange-100 px-3 py-2 text-sm" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:col-span-2 pt-2 border-t border-orange-100 mt-2">
+                        <div className="space-y-2">
+                            <input placeholder="Optional Pickup stop" value={assignmentForm.pickup_stop} onChange={(e) => setAssignmentForm((p) => ({ ...p, pickup_stop: e.target.value }))} className="w-full rounded-xl border border-orange-100 px-3 py-2 text-sm" />
+                            <MapPicker 
+                                label="Set Pickup Coordinates"
+                                lat={assignmentForm.pickup_latitude ? Number(assignmentForm.pickup_latitude) : null}
+                                lng={assignmentForm.pickup_longitude ? Number(assignmentForm.pickup_longitude) : null}
+                                onChange={(lat, lng) => setAssignmentForm((p) => ({ ...p, pickup_latitude: String(lat), pickup_longitude: String(lng) }))}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <input placeholder="Optional Drop stop" value={assignmentForm.drop_stop} onChange={(e) => setAssignmentForm((p) => ({ ...p, drop_stop: e.target.value }))} className="w-full rounded-xl border border-orange-100 px-3 py-2 text-sm" />
+                            <MapPicker 
+                                label="Set Drop Coordinates"
+                                lat={assignmentForm.drop_latitude ? Number(assignmentForm.drop_latitude) : null}
+                                lng={assignmentForm.drop_longitude ? Number(assignmentForm.drop_longitude) : null}
+                                onChange={(lat, lng) => setAssignmentForm((p) => ({ ...p, drop_latitude: String(lat), drop_longitude: String(lng) }))}
+                            />
+                        </div>
+                    </div>
                     
                     <Button 
                         onClick={submitBulkAssignment} 
