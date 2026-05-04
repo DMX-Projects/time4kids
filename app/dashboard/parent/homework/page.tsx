@@ -91,7 +91,7 @@ export default function HomeworkPage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-orange-900">Learning Center</h1>
-                        <p className="text-sm text-orange-700">Explore today's homework and class activities.</p>
+                        <p className="text-sm text-orange-700">Explore today&apos;s homework and class activities.</p>
                     </div>
                 </div>
             </section>
