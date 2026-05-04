@@ -20,17 +20,17 @@ const nextConfig = {
         ],
         formats: ['image/avif', 'image/webp'],
     },
-    reactStrictMode: true,
+    reactStrictMode: false,
     // Performance optimizations
-    compress: true,
+    compress: false,
     poweredByHeader: false,
     // Optimize font loading
     optimizeFonts: true,
     // Faster compilation in development
-    swcMinify: false,
+    swcMinify: true,
     // Enable prefetching for better navigation performance
     experimental: {
-        optimizeCss: false,
+        optimizeCss: true,
         // Reduce compilation time
         optimizePackageImports: ['lucide-react', 'framer-motion', 'gsap'],
     },

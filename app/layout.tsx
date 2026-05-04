@@ -43,7 +43,8 @@ export default function RootLayout({
         <html lang="en">
             <head>
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-                {GTM_ID ? (
+                {/* GTM Disabled to reduce cookie bloat and troubleshoot 400 errors */}
+                {/* {GTM_ID ? (
                     <>
                         <Script
                             id="gtm-init"
@@ -60,10 +61,10 @@ export default function RootLayout({
                             }}
                         />
                     </>
-                ) : null}
+                ) : null} */}
             </head>
             <body className="antialiased touch-pan-y">
-                {GTM_ID ? (
+                {/* {GTM_ID ? (
                     <noscript>
                         <iframe
                             src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
@@ -72,7 +73,7 @@ export default function RootLayout({
                             style={{ display: "none", visibility: "hidden" }}
                         />
                     </noscript>
-                ) : null}
+                ) : null} */}
                 <AuthProvider>
                     <ToastProvider>
                         <SchoolDataProvider>
