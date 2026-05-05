@@ -25,6 +25,9 @@ interface FormValues {
     end_date?: string;
 }
 
+const UPDATE_TEXT_RECOMMENDED = 160;
+const UPDATE_TEXT_MAX = 280;
+
 type SocialMediaUpload = {
     id: number;
     media_type: "image" | "video";
@@ -44,7 +47,7 @@ export default function UpdatesPage() {
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editingUpdate, setEditingUpdate] = useState<Update | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const { register, handleSubmit, reset, setValue, formState: { isSubmitting } } = useForm<FormValues>();
+    const { register, handleSubmit, reset, setValue, watch, formState: { isSubmitting } } = useForm<FormValues>();
     const { showToast } = useToast();
     const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
 
@@ -56,6 +59,10 @@ export default function UpdatesPage() {
     const [socialTitle, setSocialTitle] = useState("");
     const [socialCaption, setSocialCaption] = useState("");
     const [socialFile, setSocialFile] = useState<File | null>(null);
+    const [socialSelectedInfo, setSocialSelectedInfo] = useState<string | null>(null);
+
+    const SOCIAL_IMAGE_MAX = 5 * 1024 * 1024; // 5MB
+    const SOCIAL_VIDEO_MAX = 20 * 1024 * 1024; // 20MB
 
     const fetchUpdates = async (signal?: { cancelled: boolean }) => {
         try {
@@ -106,10 +113,23 @@ export default function UpdatesPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const watchedText = watch("text") || "";
+    const textLen = watchedText.length;
+    const textTooLong = textLen > UPDATE_TEXT_MAX;
+
     const onSubmit = async (data: FormValues) => {
         try {
+            const cleanedText = (data.text || "").trim();
+            if (!cleanedText) {
+                showToast("Please enter update content.", "error");
+                return;
+            }
+            if (cleanedText.length > UPDATE_TEXT_MAX) {
+                showToast(`Update text is too long (${cleanedText.length} characters). Max allowed is ${UPDATE_TEXT_MAX}.`, "error");
+                return;
+            }
             // Clean optional end_date if empty
-            const payload = { ...data, end_date: data.end_date || null };
+            const payload = { ...data, text: cleanedText, end_date: data.end_date || null };
 
             const url = editingUpdate ? `/updates/${editingUpdate.id}/` : "/updates/";
             const method = editingUpdate ? "PUT" : "POST";
@@ -165,6 +185,12 @@ export default function UpdatesPage() {
             showToast("Please choose an image/video first.", "error");
             return;
         }
+        const maxBytes = socialMediaType === "image" ? SOCIAL_IMAGE_MAX : SOCIAL_VIDEO_MAX;
+        if (socialFile.size > maxBytes) {
+            const maxLabel = socialMediaType === "image" ? "5MB" : "20MB";
+            showToast(`File is too large (${(socialFile.size / (1024 * 1024)).toFixed(2)}MB). Max allowed is ${maxLabel}.`, "error");
+            return;
+        }
 
         setSocialSubmitting(true);
         try {
@@ -183,6 +209,7 @@ export default function UpdatesPage() {
             setSocialTitle("");
             setSocialCaption("");
             setSocialFile(null);
+            setSocialSelectedInfo(null);
             setSocialMediaType("image");
             await fetchSocialUploads();
         } catch (error) {
@@ -251,10 +278,24 @@ export default function UpdatesPage() {
                             rows={4}
                             {...register("text", { required: true })}
                         />
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <span className="text-gray-500">
+                                Recommended: <strong>{UPDATE_TEXT_RECOMMENDED}</strong> chars (fits nicely on the notice board). Max:{" "}
+                                <strong>{UPDATE_TEXT_MAX}</strong>.
+                            </span>
+                            <span className={textTooLong ? "text-red-600 font-semibold" : "text-gray-500"}>
+                                {textLen}/{UPDATE_TEXT_MAX}
+                            </span>
+                        </div>
+                        {textTooLong && (
+                            <div className="text-xs text-red-600">
+                                Text is too long and will be rejected on save. Please shorten it.
+                            </div>
+                        )}
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
                         <Button type="button" variant="outline" onClick={closeModal} className="bg-white text-gray-700 border-gray-300">Cancel</Button>
-                        <Button type="submit" disabled={isSubmitting} className="bg-[#FF9F1C] text-white">
+                        <Button type="submit" disabled={isSubmitting || textTooLong} className="bg-[#FF9F1C] text-white">
                             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                             {editingUpdate ? "Update Announcement" : "Save Update"}
                         </Button>
@@ -303,9 +344,38 @@ export default function UpdatesPage() {
                             <input
                                 type="file"
                                 accept={socialMediaType === "image" ? "image/*" : "video/*"}
-                                onChange={(e) => setSocialFile(e.target.files?.[0] || null)}
+                                onChange={async (e) => {
+                                    const f = e.target.files?.[0] || null;
+                                    setSocialFile(f);
+                                    setSocialSelectedInfo(null);
+                                    if (!f) return;
+                                    const mb = (f.size / (1024 * 1024)).toFixed(2);
+                                    if (socialMediaType === "image") {
+                                        try {
+                                            // Use Image() for broad compatibility
+                                            const url = URL.createObjectURL(f);
+                                            const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+                                                const el = new window.Image();
+                                                el.onload = () => resolve(el);
+                                                el.onerror = () => reject(new Error("Could not read image"));
+                                                el.src = url;
+                                            });
+                                            URL.revokeObjectURL(url);
+                                            setSocialSelectedInfo(`${f.name} • ${img.naturalWidth}×${img.naturalHeight}px • ${mb}MB`);
+                                        } catch {
+                                            setSocialSelectedInfo(`${f.name} • ${mb}MB`);
+                                        }
+                                    } else {
+                                        setSocialSelectedInfo(`${f.name} • ${mb}MB`);
+                                    }
+                                }}
                                 className="w-full text-sm"
                             />
+                            <div className="text-xs text-gray-500">
+                                <span className="font-semibold text-gray-700">Limits:</span>{" "}
+                                Images max <strong>5MB</strong>, videos max <strong>20MB</strong>.
+                            </div>
+                            {socialSelectedInfo && <div className="text-xs text-gray-600">Selected: {socialSelectedInfo}</div>}
                         </label>
                     </div>
 

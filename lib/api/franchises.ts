@@ -21,6 +21,7 @@ export interface Franchise {
     hero_image: string | null;
     programs: string;
     facilities: string;
+    school_program_cards?: { id: number; image: string }[];
     is_active: boolean;
     hero_slides: {
         id: number;

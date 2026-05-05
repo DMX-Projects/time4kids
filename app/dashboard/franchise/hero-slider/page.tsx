@@ -20,6 +20,37 @@ interface HeroSlide {
     is_active: boolean;
 }
 
+const HERO_MAX_BYTES = 5 * 1024 * 1024; // 5MB
+const HERO_RECOMMENDED = { w: 1920, h: 600 };
+const HERO_MIN = { w: 1600, h: 600 };
+const HERO_ASPECT = HERO_RECOMMENDED.w / HERO_RECOMMENDED.h; // 3.2
+const HERO_ASPECT_TOLERANCE = 0.25;
+
+function formatMb(bytes: number): string {
+    return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
+}
+
+async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+    if (typeof createImageBitmap === "function") {
+        const bmp = await createImageBitmap(file);
+        const dims = { width: bmp.width, height: bmp.height };
+        bmp.close?.();
+        return dims;
+    }
+    const url = URL.createObjectURL(file);
+    try {
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const el = new window.Image();
+            el.onload = () => resolve(el);
+            el.onerror = () => reject(new Error("Could not read image"));
+            el.src = url;
+        });
+        return { width: img.naturalWidth, height: img.naturalHeight };
+    } finally {
+        URL.revokeObjectURL(url);
+    }
+}
+
 export default function ManageHeroSlider() {
     const { showToast } = useToast();
     const { authFetch, tokens } = useAuth();
@@ -41,6 +72,7 @@ export default function ManageHeroSlider() {
     });
     const [previewImages, setPreviewImages] = useState<string[]>([]);
     const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+    const [selectedInfo, setSelectedInfo] = useState<string | null>(null);
 
     const fetchSlides = useCallback(async () => {
         try {
@@ -59,6 +91,7 @@ export default function ManageHeroSlider() {
     }, [fetchSlides]);
 
     const handleOpenModal = (slide?: HeroSlide) => {
+        setSelectedInfo(null);
         if (slide) {
             setEditingSlide(slide);
             setValue('alt_text', slide.alt_text || '');
@@ -134,11 +167,31 @@ export default function ManageHeroSlider() {
                     return;
                 }
 
-                // File Size Validation
-                const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-                const oversizedFiles = files.filter(file => file.size > MAX_SIZE);
-                if (oversizedFiles.length > 0) {
-                    showToast(`Some files are too large (Max 5MB). Please resize: ${oversizedFiles.map(f => f.name).join(', ')}`, 'error');
+                // File Validation (size + dimensions + ratio)
+                const problems: string[] = [];
+                for (const f of files) {
+                    if (f.size > HERO_MAX_BYTES) {
+                        problems.push(`"${f.name}" is too large (${formatMb(f.size)}). Max allowed is 5MB.`);
+                        continue;
+                    }
+                    try {
+                        const { width, height } = await getImageDimensions(f);
+                        const aspect = width / Math.max(1, height);
+                        const aspectOk = Math.abs(aspect - HERO_ASPECT) <= HERO_ASPECT_TOLERANCE;
+                        const minOk = width >= HERO_MIN.w && height >= HERO_MIN.h;
+                        if (!minOk || !aspectOk) {
+                            const why = [
+                                !minOk ? `needs at least ${HERO_MIN.w}×${HERO_MIN.h}px (got ${width}×${height}px)` : null,
+                                !aspectOk ? `needs wide banner ratio ~${HERO_ASPECT.toFixed(2)}:1 (got ${aspect.toFixed(2)}:1)` : null,
+                            ].filter(Boolean).join("; ");
+                            problems.push(`"${f.name}" ${why}. Recommended: ${HERO_RECOMMENDED.w}×${HERO_RECOMMENDED.h}px.`);
+                        }
+                    } catch {
+                        problems.push(`"${f.name}" could not be read. Please try a PNG/JPG/WebP image.`);
+                    }
+                }
+                if (problems.length) {
+                    showToast(problems[0], 'error');
                     setUploading(false);
                     return;
                 }
@@ -201,11 +254,19 @@ export default function ManageHeroSlider() {
     };
 
     // Handle Image Preview
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
             const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
             setPreviewImages(newPreviews);
+            try {
+                const first = files[0];
+                const { width, height } = await getImageDimensions(first);
+                const info = `${first.name} • ${width}×${height}px • ${formatMb(first.size)}`;
+                setSelectedInfo(info);
+            } catch {
+                setSelectedInfo(null);
+            }
         }
     };
 
@@ -308,7 +369,12 @@ export default function ManageHeroSlider() {
                                 {...register('image', { required: !editingSlide, onChange: handleImageChange })}
                             />
                         </div>
-                        <p className="text-xs text-gray-400">Recommended size: 1920x600px</p>
+                        <div className="mt-2 text-xs text-gray-600">
+                            <span className="font-semibold text-gray-700">Requirements:</span>{" "}
+                            Max <strong>5MB</strong>, at least <strong>{HERO_MIN.w}×{HERO_MIN.h}px</strong>, wide banner ratio ~
+                            <strong>{HERO_ASPECT.toFixed(1)}:1</strong>. Recommended <strong>{HERO_RECOMMENDED.w}×{HERO_RECOMMENDED.h}px</strong>.
+                        </div>
+                        {selectedInfo && <div className="mt-1 text-xs text-gray-600">Selected: {selectedInfo}</div>}
                     </div>
 
                     <div className="space-y-2">

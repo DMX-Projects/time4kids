@@ -232,12 +232,22 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
                             key={item.id}
                             className="group relative aspect-square rounded-lg overflow-hidden bg-gray-100 shadow-sm hover:shadow-md transition-all"
                         >
-                            <Image
-                                src={mediaUrl(item.file)}
-                                alt={item.caption || 'Event media'}
-                                fill
-                                className="object-cover"
-                            />
+                            {item.media_type === "VIDEO" ? (
+                                <video
+                                    src={mediaUrl(item.file)}
+                                    className="w-full h-full object-cover"
+                                    preload="metadata"
+                                    muted
+                                    playsInline
+                                />
+                            ) : (
+                                <Image
+                                    src={mediaUrl(item.file)}
+                                    alt={item.caption || 'Event media'}
+                                    fill
+                                    className="object-cover"
+                                />
+                            )}
                             {item.media_type === 'VIDEO' && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                     <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center">

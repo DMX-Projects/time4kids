@@ -239,14 +239,27 @@ export default function GallerySection({ schoolName, city, galleryItems = [], ev
 
                                             {/* Event Image */}
                                             <div className="relative h-40 w-full overflow-hidden">
-                                                {event.media && event.media.length > 0 ? (
-                                                    <Image
-                                                        src={mediaUrl(event.media[0].file)}
-                                                        alt={event.title}
-                                                        fill
-                                                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                                                    />
-                                                ) : (
+                                                {event.media && event.media.length > 0 ? (() => {
+                                                    const thumb =
+                                                        event.media.find((m) => m.media_type === "IMAGE") ?? event.media[0];
+                                                    if (!thumb) return null;
+                                                    return thumb.media_type === "VIDEO" ? (
+                                                        <video
+                                                            src={mediaUrl(thumb.file)}
+                                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                            preload="metadata"
+                                                            muted
+                                                            playsInline
+                                                        />
+                                                    ) : (
+                                                        <Image
+                                                            src={mediaUrl(thumb.file)}
+                                                            alt={event.title}
+                                                            fill
+                                                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                                        />
+                                                    );
+                                                })() : (
                                                     <div className="flex items-center justify-center h-full bg-gray-50 text-gray-300">
                                                         <ImageIcon size={40} />
                                                     </div>
@@ -333,13 +346,23 @@ export default function GallerySection({ schoolName, city, galleryItems = [], ev
                                             className="group relative aspect-[4/5] rounded-[32px] overflow-hidden cursor-pointer shadow-xl hover:shadow-[0_20px_40px_rgba(45,49,66,0.2)] transition-all hover:-translate-y-2"
                                             onClick={() => handleMediaClick(item)}
                                         >
-                                            <Image
-                                                src={mediaUrl(item.file)}
-                                                alt={item.caption || "Event Media"}
-                                                fill
-                                                className="object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
-                                                sizes="(max-width: 768px) 50vw, 25vw"
-                                            />
+                                            {item.media_type === "VIDEO" ? (
+                                                <video
+                                                    src={mediaUrl(item.file)}
+                                                    className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
+                                                    preload="metadata"
+                                                    muted
+                                                    playsInline
+                                                />
+                                            ) : (
+                                                <Image
+                                                    src={mediaUrl(item.file)}
+                                                    alt={item.caption || "Event Media"}
+                                                    fill
+                                                    className="object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
+                                                    sizes="(max-width: 768px) 50vw, 25vw"
+                                                />
+                                            )}
                                             {item.media_type === 'VIDEO' && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/30 transition-all">
                                                     <div className="w-16 h-16 bg-white/95 rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
