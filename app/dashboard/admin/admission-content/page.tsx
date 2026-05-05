@@ -130,7 +130,11 @@ export default function AdminAdmissionContentPage() {
                 { title: "New video", author: "Centre", location: "", video_url: "", thumbnail_url: "" },
             ] as any,
         });
-    const removeHappyParent = (i: number) => setData({ ...data, happy_parents_videos: happyParents.filter((_, j) => j !== i) as any });
+    const removeHappyParent = (i: number) =>
+        setData({
+            ...data,
+            happy_parents_videos: happyParents.filter((_item: AdmissionVideoCard, j: number) => j !== i) as any,
+        });
 
     const uploadMedia = async (key: string, opts: { title: string; media_type: "image" | "video"; file: File }) => {
         setError(null);
