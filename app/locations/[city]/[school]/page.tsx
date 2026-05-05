@@ -47,7 +47,7 @@ export default async function SchoolPage({ params }: PageProps) {
 
             {/* Classes Section - Component has internal id="programs" */}
             <div className="border-t border-slate-200/80 bg-[#f9fff7]">
-                <SchoolProgramsSection selectedPrograms={franchise.programs} />
+                <SchoolProgramsSection selectedPrograms={franchise.programs} programCards={franchise.school_program_cards} />
             </div>
 
             {/* Admissions Section - Component has internal id="admission" */}

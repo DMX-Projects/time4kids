@@ -51,7 +51,7 @@ export function AdminSidebar({ brand, navItems, open, onClose }: SidebarProps) {
                 {/* Navigation */}
                 <nav className="px-3 py-3 space-y-1 flex-1 min-h-0 overflow-y-auto">
                     {navItems.map((item, idx) => {
-                        const active = pathname === item.href;
+                        const active = isDashboardNavActive(pathname, item.href, "/dashboard/admin");
                         return (
                             <Link
                                 key={item.href}
@@ -71,11 +71,8 @@ export function AdminSidebar({ brand, navItems, open, onClose }: SidebarProps) {
                     })}
                 </nav>
 
-                {/* Spacer to push footer to bottom */}
-                <div className="flex-1"></div>
-
                 {/* Footer */}
-                <div className="px-4 py-3 border-t border-[#E5E7EB] flex-shrink-0">
+                <div className="px-4 py-3 border-t border-[#E5E7EB] flex-shrink-0 mt-auto">
                     <div className="space-y-1.5">
                         <div className="flex items-center gap-2 text-xs text-[#6B7280]">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>

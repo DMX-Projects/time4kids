@@ -19,6 +19,7 @@ const navItems: DashboardNavItem[] = [
     { label: "Attendance", href: "/dashboard/franchise/attendance", icon: <CalendarDays className="w-4 h-4" /> },
     { label: "Achievements", href: "/dashboard/franchise/student-achievements", icon: <Star className="w-4 h-4" /> },
     { label: "Home Page Photos", href: "/dashboard/franchise/hero-slider", icon: <ImageIcon className="w-4 h-4" /> },
+    { label: "Classes Photos", href: "/dashboard/franchise/classes-photos", icon: <Images className="w-4 h-4" /> },
     { label: "Updates", href: "/dashboard/franchise/updates", icon: <ClipboardList className="w-4 h-4" /> },
     { label: "Centre Gallery", href: "/dashboard/franchise/gallery", icon: <Images className="w-4 h-4" /> },
     { label: "Profile", href: "/dashboard/franchise/profile", icon: <UserCircle className="w-4 h-4" /> },

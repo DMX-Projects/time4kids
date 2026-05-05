@@ -20,6 +20,43 @@ interface HeroSlide {
 
 const emptySlide = { alt_text: "", link: "", order: 0, is_active: true };
 
+const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5MB
+// Public homepage hero: height is 600px desktop, 300px mobile (object-cover).
+// Recommended upload is a wide banner so it doesn't crop awkwardly.
+const HERO_RECOMMENDED = { w: 1920, h: 600 };
+const HERO_MIN = { w: 1600, h: 600 };
+const HERO_ASPECT = HERO_RECOMMENDED.w / HERO_RECOMMENDED.h; // 3.2
+const HERO_ASPECT_TOLERANCE = 0.25; // allow ~3.0 - 3.45
+
+async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+    // Prefer createImageBitmap when available (fast, no DOM).
+    if (typeof createImageBitmap === "function") {
+        const bmp = await createImageBitmap(file);
+        const dims = { width: bmp.width, height: bmp.height };
+        bmp.close?.();
+        return dims;
+    }
+
+    // Fallback to Image() (works in older environments).
+    const url = URL.createObjectURL(file);
+    try {
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const el = new window.Image();
+            el.onload = () => resolve(el);
+            el.onerror = () => reject(new Error("Could not read image"));
+            el.src = url;
+        });
+        return { width: img.naturalWidth, height: img.naturalHeight };
+    } finally {
+        URL.revokeObjectURL(url);
+    }
+}
+
+function formatBytes(bytes: number): string {
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(2)}MB`;
+}
+
 export default function HeroSlidesPage() {
     const [slides, setSlides] = useState<HeroSlide[]>([]);
     const [loading, setLoading] = useState(true);
@@ -78,14 +115,55 @@ export default function HeroSlidesPage() {
         setError(null);
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const files = Array.from(e.target.files);
-            setImageFiles(files);
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files) return;
 
-            // Create previews
-            const newPreviews = files.map(file => URL.createObjectURL(file));
-            setPreviews(newPreviews);
+        // Clear any previous error and cleanup old previews
+        setError(null);
+        setPreviews((prev) => {
+            prev.forEach((u) => URL.revokeObjectURL(u));
+            return [];
+        });
+
+        const files = Array.from(e.target.files);
+        const accepted: File[] = [];
+        const acceptedPreviews: string[] = [];
+        const problems: string[] = [];
+
+        for (const file of files) {
+            if (file.size > MAX_FILE_BYTES) {
+                problems.push(`"${file.name}" is too large (${formatBytes(file.size)}). Max allowed is 5MB.`);
+                continue;
+            }
+
+            try {
+                const { width, height } = await getImageDimensions(file);
+                const aspect = width / Math.max(1, height);
+                const aspectOk = Math.abs(aspect - HERO_ASPECT) <= HERO_ASPECT_TOLERANCE;
+                const minOk = width >= HERO_MIN.w && height >= HERO_MIN.h;
+
+                if (!minOk || !aspectOk) {
+                    const why = [
+                        !minOk ? `needs at least ${HERO_MIN.w}×${HERO_MIN.h}px (got ${width}×${height}px)` : null,
+                        !aspectOk ? `needs wide banner ratio ~${HERO_ASPECT.toFixed(2)}:1 (got ${(aspect).toFixed(2)}:1)` : null,
+                    ]
+                        .filter(Boolean)
+                        .join("; ");
+                    problems.push(`"${file.name}" ${why}. Recommended: ${HERO_RECOMMENDED.w}×${HERO_RECOMMENDED.h}px.`);
+                    continue;
+                }
+
+                accepted.push(file);
+                acceptedPreviews.push(URL.createObjectURL(file));
+            } catch {
+                problems.push(`"${file.name}" could not be read. Please try a PNG/JPG/WebP image.`);
+            }
+        }
+
+        setImageFiles(accepted);
+        setPreviews(acceptedPreviews);
+        if (problems.length) {
+            setError(problems.join("\n"));
         }
     };
 
@@ -287,8 +365,15 @@ export default function HeroSlidesPage() {
                                     <Upload className="w-5 h-5" />
                                 </div>
                                 <p className="text-sm font-medium text-slate-700">Click to upload images</p>
-                                <p className="text-xs text-slate-500 mt-1">SVG, PNG, JPG or GIF (max 5MB)</p>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    PNG/JPG/WebP (max 5MB). Recommended <strong>{HERO_RECOMMENDED.w}×{HERO_RECOMMENDED.h}px</strong> (wide banner).
+                                </p>
                             </div>
+                        </div>
+                        <div className="mt-2 text-xs text-slate-600">
+                            <span className="font-semibold text-slate-700">Requirements:</span>{" "}
+                            Max <strong>5MB</strong>, at least <strong>{HERO_MIN.w}×{HERO_MIN.h}px</strong>, wide banner ratio ~
+                            <strong>{HERO_ASPECT.toFixed(1)}:1</strong>.
                         </div>
 
                         {/* Image Previews */}
@@ -359,7 +444,7 @@ export default function HeroSlidesPage() {
                     </div>
 
                     {error && (
-                        <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">
+                        <div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm whitespace-pre-line">
                             {error}
                         </div>
                     )}

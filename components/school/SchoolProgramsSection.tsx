@@ -92,15 +92,25 @@ const FloatingElement = ({ children, delay = 0, duration = 4, className }: any) 
 
 interface SchoolProgramsSectionProps {
     selectedPrograms?: string;
+    programCards?: Array<{ id: number; image: string }> | null;
 }
 
-const SchoolProgramsSection = ({ selectedPrograms }: SchoolProgramsSectionProps) => {
+const SchoolProgramsSection = ({ selectedPrograms, programCards }: SchoolProgramsSectionProps) => {
     const filteredPrograms = React.useMemo(() => {
-        if (!selectedPrograms) return programs;
+        const overrides = new Map<number, string>(
+            Array.isArray(programCards)
+                ? programCards
+                      .filter((p) => p && typeof p.id === "number" && typeof p.image === "string")
+                      .map((p) => [p.id, p.image])
+                : [],
+        );
+        const merged = programs.map((p) => (overrides.has(p.id) ? { ...p, image: overrides.get(p.id)! } : p));
+
+        if (!selectedPrograms) return merged;
         const selectedList = selectedPrograms.split(',').map(s => s.trim().toLowerCase());
-        const filtered = programs.filter(p => selectedList.includes(p.title.toLowerCase()));
-        return filtered.length > 0 ? filtered : programs;
-    }, [selectedPrograms]);
+        const filtered = merged.filter(p => selectedList.includes(p.title.toLowerCase()));
+        return filtered.length > 0 ? filtered : merged;
+    }, [selectedPrograms, programCards]);
 
     return (
         <section id="programs" className="relative py-28 px-4 overflow-hidden min-h-screen flex items-center">
