@@ -72,15 +72,7 @@ export function AdminSidebar({ brand, navItems, open, onClose }: SidebarProps) {
                 </nav>
 
                 {/* Footer */}
-                <div className="px-4 py-3 border-t border-[#E5E7EB] flex-shrink-0 mt-auto">
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-xs text-[#6B7280]">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span>System Online</span>
-                        </div>
-                        <div className="text-xs text-[#9CA3AF]">v1.0.0 • Admin Panel</div>
-                    </div>
-                </div>
+                {/* Footer removed (System Online / version) */}
             </div>
         </aside>
     );

@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Slider from 'react-slick';
 import { apiUrl } from '@/lib/api-client';
+import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 
 export default function SchoolBenefitsUpdates() {
     const updatesSettings = {
@@ -19,28 +20,23 @@ export default function SchoolBenefitsUpdates() {
         verticalSwiping: false, // Changed to horizontal
     };
 
-    const benefits = [
-        { number: 1, text: 'Low Investment High Returns', class: 'benefit1' },
-        { number: 2, text: 'Strong Brand Name of T.I.M.E.', class: 'benefit2' },
-        { number: 3, text: 'Complete Curriculum Support', class: 'benefit3' },
-        { number: 4, text: 'Regular Staff Training', class: 'benefit4' },
-        { number: 5, text: 'Operational Support', class: 'benefit5' },
-    ];
+    const home = useHomePageContent();
+    const benefitTexts = (home.franchise_benefits ?? [])
+        .map((x) => String(x || '').trim())
+        .filter(Boolean);
+    const benefits = (benefitTexts.length > 0 ? benefitTexts : [
+        'Low Investment High Returns',
+        'Strong Brand Name of T.I.M.E.',
+        'Complete Curriculum Support',
+        'Regular Staff Training',
+        'Operational Support',
+    ]).map((text, idx) => ({
+        number: idx + 1,
+        text,
+        class: `benefit${((idx % 5) + 1)}`,
+    }));
 
-    const [updates, setUpdates] = React.useState([
-        {
-            date: '28-12-2015',
-            text: "T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+ pre-schools is now poised for major expansion across the country.",
-        },
-        {
-            date: '01-02-2000',
-            text: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-        },
-        {
-            date: '15-11-2020',
-            text: 'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
-        },
-    ]);
+    const [updates, setUpdates] = React.useState<Array<{ date?: string; text?: string }>>([]);
 
     React.useEffect(() => {
         const fetchUpdates = async () => {
@@ -49,17 +45,26 @@ export default function SchoolBenefitsUpdates() {
                 if (response.ok) {
                     const data = await response.json();
                     const items = Array.isArray(data) ? data : data.results || [];
-                    if (items.length > 0) {
-                        setUpdates(items);
-                    }
+                    const cleaned = items
+                        .map((u: any) => ({
+                            date: u?.start_date ? String(u.start_date).slice(0, 10) : u?.date,
+                            text: String(u?.text || '').trim(),
+                        }))
+                        .filter((u: any) => (u.text || '').length > 0);
+                    setUpdates(
+                        cleaned.length > 0
+                            ? cleaned
+                            : [{ date: '', text: (home.updates_empty_message || '').trim() || 'New updates will appear here once they are added under Admin → Updates.' }],
+                    );
                 }
             } catch (err) {
                 console.error('Failed to fetch updates:', err);
+                setUpdates([{ date: '', text: (home.updates_empty_message || '').trim() || 'New updates will appear here once they are added under Admin → Updates.' }]);
             }
         };
 
         fetchUpdates();
-    }, []);
+    }, [home.updates_empty_message]);
 
     return (
         <div className="benefits-updates">

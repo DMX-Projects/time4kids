@@ -167,9 +167,9 @@ export default function AdminDashboardPage() {
                                 </div>
                                 <div className="space-y-2">
                                     {enquiriesByType[key].slice(0, 3).map((enq) => (
-                                        <div key={enq.id} className="rounded-lg bg-white border border-[#E5E7EB] px-3 py-2">
-                                            <p className="text-sm font-semibold text-[#111827]">{enq.name}</p>
-                                            <p className="text-xs text-[#6B7280]">{enq.email}</p>
+                                        <div key={enq.id} className="rounded-lg bg-white border border-[#E5E7EB] px-3 py-2 min-w-0 overflow-hidden">
+                                            <p className="text-sm font-semibold text-[#111827] truncate">{enq.name}</p>
+                                            <p className="text-xs text-[#6B7280] truncate">{enq.email}</p>
                                             <p className="text-xs text-[#6B7280] truncate">{enq.message}</p>
                                         </div>
                                     ))}

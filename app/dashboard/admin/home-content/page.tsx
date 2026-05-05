@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders } from "@/lib/api-client";
-import { LayoutTemplate, Plus, Trash2, ChevronDown, Eye, ExternalLink } from "lucide-react";
+import { LayoutTemplate, Plus, Trash2, ChevronDown } from "lucide-react";
 import {
     DEFAULT_HOME_PAGE_DATA,
     mergeHomePageData,
@@ -54,6 +54,23 @@ const inputClass =
     "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100";
 const labelClass = "block text-xs font-medium text-slate-600 mb-1";
 
+function ImgThumb({ src, alt }: { src: string; alt: string }) {
+    const [ok, setOk] = useState(true);
+    const trimmed = (src || "").trim();
+    if (!trimmed || !ok) return null;
+    return (
+        <div className="h-10 w-10 rounded-lg border border-slate-200 bg-white overflow-hidden flex items-center justify-center">
+            {/* Use plain <img> so /media and /public paths both work without Next optimizer issues */}
+            <img
+                src={trimmed}
+                alt={alt}
+                className="h-full w-full object-cover"
+                onError={() => setOk(false)}
+            />
+        </div>
+    );
+}
+
 async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
     if (typeof createImageBitmap === "function") {
         const bmp = await createImageBitmap(file);
@@ -87,118 +104,126 @@ function colorForMethodologyClass(cls: string): string {
     return "#e6952e";
 }
 
-function PreviewPanel({ data }: { data: HomePageData }) {
-    const keyNav = data.key_navigation ?? [];
-    const intro = data.intro;
-    const why = data.why_choose_us;
-    const programs = data.programs_preview?.programs ?? [];
-    const meth = data.methodology;
-
+function MiniPreviewKeyNav({ items }: { items: HomePageData["key_navigation"] }) {
+    const list = items ?? [];
     return (
-        <aside className="hidden lg:block lg:sticky lg:top-20 h-[calc(100vh-6rem)] overflow-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                    <Eye className="w-4 h-4 text-slate-600" />
-                    <span className="text-sm font-semibold text-slate-900 truncate">Live preview</span>
-                </div>
-                <a
-                    href="/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-semibold text-orange-700 hover:text-orange-800 inline-flex items-center gap-1"
-                    title="Open public home page in a new tab"
-                >
-                    Open site <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
+            <div className="grid grid-cols-3 gap-2">
+                {list.slice(0, 6).map((item, i) => {
+                    const opt = NAV_CLASS_OPTIONS.find((o) => o.value === item.nav_class) ?? NAV_CLASS_OPTIONS[0];
+                    return (
+                        <div key={`${item.href}-${i}`} className="rounded-xl border border-slate-100 p-2 bg-slate-50">
+                            <div className={`h-8 rounded-xl bg-gradient-to-br ${opt.swatch}`} />
+                            <div className="mt-1 text-[11px] font-semibold text-slate-800 leading-snug line-clamp-2">
+                                {item.label || "—"}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
+        </div>
+    );
+}
 
-            <div className="p-4 space-y-5">
-                <div>
-                    <div className="text-xs font-semibold text-slate-700">Key navigation (under hero)</div>
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                        {keyNav.slice(0, 6).map((item, i) => {
-                            const opt = NAV_CLASS_OPTIONS.find((o) => o.value === item.nav_class) ?? NAV_CLASS_OPTIONS[0];
-                            return (
-                                <div key={`${item.href}-${i}`} className="rounded-xl border border-slate-100 p-2 bg-slate-50">
-                                    <div className={`h-10 rounded-xl bg-gradient-to-br ${opt.swatch}`} />
-                                    <div className="mt-1 text-[11px] font-semibold text-slate-800 leading-snug line-clamp-2">
-                                        {item.label || "—"}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    {keyNav.length > 6 && <div className="mt-2 text-[11px] text-slate-500">+ {keyNav.length - 6} more</div>}
+function MiniPreviewBenefits({ items }: { items: string[] | undefined }) {
+    const list = (items ?? []).map((x) => String(x || "").trim()).filter(Boolean);
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <div className="text-sm font-semibold text-slate-900">
+                    Benefits of Becoming <br />
+                    a T.I.M.E. Kids Franchise
                 </div>
+                <ul className="mt-3 space-y-2">
+                    {(list.length > 0 ? list : ["—"]).slice(0, 6).map((t, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold">
+                                {i + 1}
+                            </span>
+                            <span className="text-sm text-slate-800">{t}</span>
+                        </li>
+                    ))}
+                </ul>
+                {list.length > 6 ? <div className="mt-2 text-[11px] text-slate-500">+ {list.length - 6} more</div> : null}
+            </div>
+        </div>
+    );
+}
 
-                <div>
-                    <div className="text-xs font-semibold text-slate-700">Welcome / intro</div>
-                    <div className="mt-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                        <div className="text-sm font-semibold text-slate-900">{intro.title || "—"}</div>
-                        <div className="text-xs text-slate-600 mt-1 whitespace-pre-wrap">{intro.subtitle || "—"}</div>
-                        <div className="text-xs text-slate-700 mt-2 whitespace-pre-wrap">
-                            {(intro.paragraphs?.[0] ?? "").trim() ? intro.paragraphs[0] : "—"}
+function MiniPreviewIntro({ intro }: { intro: HomePageData["intro"] }) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                <div className="text-sm font-semibold text-slate-900">{intro.title || "—"}</div>
+                <div className="text-xs text-slate-600 mt-1 whitespace-pre-wrap">{intro.subtitle || "—"}</div>
+                <div className="text-xs text-slate-700 mt-2 line-clamp-3 whitespace-pre-wrap">
+                    {(intro.paragraphs?.[0] ?? "").trim() ? intro.paragraphs[0] : "—"}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function MiniPreviewWhy({ why }: { why: HomePageData["why_choose_us"] }) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
+            <div className="text-sm font-semibold text-slate-900">
+                {why.heading_prefix}
+                <span className="text-orange-600">{why.heading_accent}</span>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+                {why.features.slice(0, 4).map((f, i) => (
+                    <div key={i} className="rounded-xl border border-slate-100 p-2" style={{ background: f.color || "#F8FAFC" }}>
+                        <div className="text-[11px] font-semibold text-slate-900 line-clamp-2">{f.title || "—"}</div>
+                        <div className="text-[11px] text-slate-700 line-clamp-2 mt-0.5">{f.desc || "—"}</div>
+                        <div className="mt-1 h-1.5 w-10 rounded-full" style={{ background: f.accent || "#111827" }} />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function MiniPreviewPrograms({ programs }: { programs: HomePageData["programs_preview"]["programs"] }) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {programs.slice(0, 6).map((p, i) => (
+                    <div key={i} className="rounded-xl border border-slate-100 bg-slate-50 p-2">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-white border border-slate-200 overflow-hidden">
+                                <img src={(p.image || "").trim()} alt={p.programName || `Program ${i + 1}`} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-[11px] font-semibold text-slate-900 truncate">{p.programName || "—"}</div>
+                                <div className="text-[11px] text-slate-600 truncate">{p.ageGroup || ""}</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div>
-                    <div className="text-xs font-semibold text-slate-700">Why Choose Us (cards)</div>
-                    <div className="mt-2 text-sm font-semibold text-slate-900">
-                        {why.heading_prefix}
-                        <span className="text-orange-600">{why.heading_accent}</span>
-                    </div>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                        {why.features.slice(0, 4).map((f, i) => (
-                            <div
-                                key={i}
-                                className="rounded-xl border border-slate-100 p-2"
-                                style={{ background: f.color || "#F8FAFC" }}
-                            >
-                                <div className="text-[11px] font-semibold text-slate-900 line-clamp-2">{f.title || "—"}</div>
-                                <div className="text-[11px] text-slate-700 line-clamp-2 mt-0.5">{f.desc || "—"}</div>
-                                <div className="mt-1 h-1.5 w-10 rounded-full" style={{ background: f.accent || "#111827" }} />
-                            </div>
-                        ))}
-                    </div>
-                    {why.features.length > 4 && <div className="mt-2 text-[11px] text-slate-500">+ {why.features.length - 4} more</div>}
-                </div>
-
-                <div>
-                    <div className="text-xs font-semibold text-slate-700">Programs preview (circles)</div>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                        {programs.slice(0, 4).map((p, i) => (
-                            <div key={i} className="rounded-xl border border-slate-100 bg-slate-50 p-2">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full" style={{ background: p.color || "#CBD5E1" }} />
-                                    <div className="min-w-0">
-                                        <div className="text-[11px] font-semibold text-slate-900 truncate">{p.programName || "—"}</div>
-                                        <div className="text-[11px] text-slate-600 truncate">{p.ageGroup || ""}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    {programs.length > 4 && <div className="mt-2 text-[11px] text-slate-500">+ {programs.length - 4} more</div>}
-                </div>
-
-                <div>
-                    <div className="text-xs font-semibold text-slate-700">Methodology (icon row)</div>
-                    <div className="mt-2 text-sm font-semibold text-slate-900">{meth.title || "—"}</div>
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                        {(meth.items ?? []).slice(0, 6).map((it, i) => (
-                            <div
-                                key={i}
-                                className="rounded-xl border border-slate-100 p-2 text-white"
-                                style={{ background: colorForMethodologyClass(it.class) }}
-                            >
-                                <div className="text-[11px] font-semibold leading-snug line-clamp-2">{it.label || "—"}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                ))}
             </div>
-        </aside>
+        </div>
+    );
+}
+
+function MiniPreviewMethodology({ meth }: { meth: HomePageData["methodology"] }) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
+            <div className="text-sm font-semibold text-slate-900">{meth.title || "—"}</div>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+                {(meth.items ?? []).slice(0, 6).map((it, i) => (
+                    <div key={i} className="rounded-xl border border-slate-100 p-2 text-white" style={{ background: colorForMethodologyClass(it.class) }}>
+                        <div className="text-[11px] font-semibold leading-snug line-clamp-2">{it.label || "—"}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
 }
 
@@ -293,6 +318,23 @@ export default function AdminHomeContentPage() {
             ...data,
             key_navigation: data.key_navigation.filter((_, j) => j !== i),
         });
+    };
+
+    const updateBenefit = (i: number, text: string) => {
+        const base = Array.isArray(data.franchise_benefits) ? data.franchise_benefits : [];
+        const next = [...base];
+        next[i] = text;
+        setData({ ...data, franchise_benefits: next });
+    };
+
+    const addBenefit = () => {
+        const base = Array.isArray(data.franchise_benefits) ? data.franchise_benefits : [];
+        setData({ ...data, franchise_benefits: [...base, "New benefit"] });
+    };
+
+    const removeBenefit = (i: number) => {
+        const base = Array.isArray(data.franchise_benefits) ? data.franchise_benefits : [];
+        setData({ ...data, franchise_benefits: base.filter((_, j) => j !== i) });
     };
 
     const uploadProgramsPreviewImage = async (programIndex: number, file: File) => {
@@ -399,17 +441,22 @@ export default function AdminHomeContentPage() {
                     Home page content
                 </h1>
                 <p className="text-sm text-slate-600">
-                    Edit the sections below. Use <strong>Save</strong> when finished. On desktop, the right side shows a <strong>live preview</strong>{" "}
-                    so it’s clear what you’re editing.
+                    Edit the sections below. Each section shows a <strong>Preview</strong> first, and the edit fields are below it. Use{" "}
+                    <strong>Save</strong> when finished.
                 </p>
             </div>
 
             {loading ? (
                 <p className="text-slate-500">Loading…</p>
             ) : (
-                <div className="grid lg:grid-cols-[1fr_380px] gap-6 max-w-6xl">
+                <div className="grid gap-6 max-w-6xl">
                     <div className="space-y-4 min-w-0">
+                    <div id="key-nav" className="scroll-mt-24" />
                     <Section title="1. Key navigation (icons under the hero)">
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                            <strong>Where it shows:</strong> Home page → directly under the main hero banner.
+                        </div>
+                        <MiniPreviewKeyNav items={data.key_navigation} />
                         <p className="text-xs text-slate-500">
                             Image paths are under <code className="bg-slate-100 px-1 rounded">/public</code> (e.g.{" "}
                             <code className="bg-slate-100 px-1 rounded">/icon-tour.png</code>).
@@ -430,7 +477,10 @@ export default function AdminHomeContentPage() {
                                 <div className="grid sm:grid-cols-2 gap-2">
                                     <div>
                                         <label className={labelClass}>Icon image path</label>
-                                        <input className={inputClass} value={row.icon} onChange={(e) => updateKeyNav(i, { icon: e.target.value })} />
+                                        <div className="flex items-center gap-2">
+                                            <input className={inputClass} value={row.icon} onChange={(e) => updateKeyNav(i, { icon: e.target.value })} />
+                                            <ImgThumb src={row.icon} alt={row.alt || row.label || `Icon ${i + 1}`} />
+                                        </div>
                                     </div>
                                     <div>
                                         <label className={labelClass}>Alt text (accessibility)</label>
@@ -447,28 +497,6 @@ export default function AdminHomeContentPage() {
                                             value={row.label}
                                             onChange={(e) => updateKeyNav(i, { label: e.target.value })}
                                         />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Visual style</label>
-                                        <select
-                                            className={inputClass}
-                                            value={row.nav_class}
-                                            onChange={(e) => updateKeyNav(i, { nav_class: e.target.value })}
-                                        >
-                                            {NAV_CLASS_OPTIONS.map((o) => (
-                                                <option key={o.value} value={o.value}>
-                                                    {o.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <div className="mt-2 flex items-center gap-2">
-                                            <span className="text-[11px] text-slate-500">Looks like</span>
-                                            <span
-                                                className={`inline-block h-3 w-10 rounded-full bg-gradient-to-r ${
-                                                    (NAV_CLASS_OPTIONS.find((o) => o.value === row.nav_class) ?? NAV_CLASS_OPTIONS[0]).swatch
-                                                }`}
-                                            />
-                                        </div>
                                     </div>
                                     <div className="flex items-end pb-2">
                                         <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
@@ -488,7 +516,44 @@ export default function AdminHomeContentPage() {
                         </Button>
                     </Section>
 
-                    <Section title="2. Welcome / intro (heading and paragraphs)">
+                    <div id="benefits" className="scroll-mt-24" />
+                    <Section title="2. Franchise benefits (list on the home page)">
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                            <strong>Where it shows:</strong> Home page → “Benefits of Becoming a T.I.M.E. Kids Franchise”.
+                        </div>
+                        <MiniPreviewBenefits items={data.franchise_benefits} />
+                        <p className="text-xs text-slate-500">Add, edit, or remove list items. They will show as items 1, 2, 3… on the site.</p>
+
+                        {(Array.isArray(data.franchise_benefits) ? data.franchise_benefits : []).map((t, i) => (
+                            <div key={i} className="rounded-xl border border-slate-100 p-3 space-y-2 bg-slate-50/80">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-slate-700">Benefit {i + 1}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeBenefit(i)}
+                                        className="text-red-600 hover:bg-red-50 p-1 rounded"
+                                        aria-label="Remove"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Text</label>
+                                    <input className={inputClass} value={t} onChange={(e) => updateBenefit(i, e.target.value)} />
+                                </div>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={addBenefit} className="inline-flex items-center gap-2">
+                            <Plus className="w-4 h-4" /> Add benefit
+                        </Button>
+                    </Section>
+
+                    <div id="intro" className="scroll-mt-24" />
+                    <Section title="4. Welcome / intro (heading and paragraphs)">
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                            <strong>Where it shows:</strong> Home page → the “Welcome” text section.
+                        </div>
+                        <MiniPreviewIntro intro={data.intro} />
                         <div>
                             <label className={labelClass}>Main heading</label>
                             <input
@@ -549,7 +614,12 @@ export default function AdminHomeContentPage() {
                         </Button>
                     </Section>
 
-                    <Section title='3. Why Choose Us (cards with photos)'>
+                    <div id="why" className="scroll-mt-24" />
+                    <Section title='5. Why Choose Us (cards with photos)'>
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                            <strong>Where it shows:</strong> Home page → “Why Choose T.I.M.E. Kids?” cards section.
+                        </div>
+                        <MiniPreviewWhy why={data.why_choose_us} />
                         <div className="grid sm:grid-cols-2 gap-2">
                             <div>
                                 <label className={labelClass}>Heading (first part)</label>
@@ -644,6 +714,7 @@ export default function AdminHomeContentPage() {
                                             >
                                                 Remove
                                             </button>
+                                            <ImgThumb src={f.image} alt={f.title || `Why choose us ${i + 1}`} />
                                         </div>
                                         <div className="mt-1 text-[11px] text-slate-500 space-y-1">
                                             <div>
@@ -672,30 +743,6 @@ export default function AdminHomeContentPage() {
                                             onChange={(e) => {
                                                 const next = [...data.why_choose_us.features];
                                                 next[i] = { ...next[i], desc: e.target.value };
-                                                setData({ ...data, why_choose_us: { ...data.why_choose_us, features: next } });
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Card background colour (hex)</label>
-                                        <input
-                                            className={inputClass}
-                                            value={f.color}
-                                            onChange={(e) => {
-                                                const next = [...data.why_choose_us.features];
-                                                next[i] = { ...next[i], color: e.target.value };
-                                                setData({ ...data, why_choose_us: { ...data.why_choose_us, features: next } });
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Accent colour (hex)</label>
-                                        <input
-                                            className={inputClass}
-                                            value={f.accent}
-                                            onChange={(e) => {
-                                                const next = [...data.why_choose_us.features];
-                                                next[i] = { ...next[i], accent: e.target.value };
                                                 setData({ ...data, why_choose_us: { ...data.why_choose_us, features: next } });
                                             }}
                                         />
@@ -730,7 +777,12 @@ export default function AdminHomeContentPage() {
                         </Button>
                     </Section>
 
-                    <Section title="4. Programs preview (circles on the home page)">
+                    <div id="programs" className="scroll-mt-24" />
+                    <Section title="6. Programs preview (circles on the home page)">
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                            <strong>Where it shows:</strong> Home page → “Our Programs” circle row.
+                        </div>
+                        <MiniPreviewPrograms programs={data.programs_preview.programs} />
                         {data.programs_preview.programs.map((prog, i) => (
                             <div key={i} className="rounded-xl border border-slate-100 p-3 space-y-2 bg-slate-50/80">
                                 <div className="flex justify-between items-center">
@@ -808,6 +860,7 @@ export default function AdminHomeContentPage() {
                                                 />
                                                 {uploadingProgramIndex === i ? "Uploading…" : "Upload"}
                                             </label>
+                                            <ImgThumb src={prog.image} alt={prog.programName || `Program ${i + 1}`} />
                                         </div>
                                         <div className="mt-1 text-[11px] text-slate-500 space-y-1">
                                             <div>
@@ -900,7 +953,12 @@ export default function AdminHomeContentPage() {
                         </Button>
                     </Section>
 
-                    <Section title="5. Value based methodology (icon row)">
+                    <div id="methodology" className="scroll-mt-24" />
+                    <Section title="7. Value based methodology (icon row)">
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                            <strong>Where it shows:</strong> Home page → the methodology icon row.
+                        </div>
+                        <MiniPreviewMethodology meth={data.methodology} />
                         <div>
                             <label className={labelClass}>Section title</label>
                             <input
@@ -931,15 +989,18 @@ export default function AdminHomeContentPage() {
                                 </div>
                                 <div>
                                     <label className={labelClass}>Icon path</label>
-                                    <input
-                                        className={inputClass}
-                                        value={item.icon}
-                                        onChange={(e) => {
-                                            const next = [...data.methodology.items];
-                                            next[i] = { ...next[i], icon: e.target.value };
-                                            setData({ ...data, methodology: { ...data.methodology, items: next } });
-                                        }}
-                                    />
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            className={inputClass}
+                                            value={item.icon}
+                                            onChange={(e) => {
+                                                const next = [...data.methodology.items];
+                                                next[i] = { ...next[i], icon: e.target.value };
+                                                setData({ ...data, methodology: { ...data.methodology, items: next } });
+                                            }}
+                                        />
+                                        <ImgThumb src={item.icon} alt={item.label || `Methodology ${i + 1}`} />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className={labelClass}>Label</label>
@@ -1011,8 +1072,6 @@ export default function AdminHomeContentPage() {
                         </Button>
                     </Section>
                     </div>
-
-                    <PreviewPanel data={data} />
                 </div>
             )}
 

@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Slider from 'react-slick';
 import { apiUrl } from '@/lib/api-client';
+import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 
 type Slide = { id?: number; date: string; text: string };
 
@@ -39,13 +40,21 @@ export default function BenefitsUpdates() {
         verticalSwiping: false,
     };
 
-    const benefits = [
-        { number: 1, text: 'Low Investment High Returns', class: 'benefit1' },
-        { number: 2, text: 'Strong Brand Name of T.I.M.E.', class: 'benefit2' },
-        { number: 3, text: 'Complete Curriculum Support', class: 'benefit3' },
-        { number: 4, text: 'Regular Staff Training', class: 'benefit4' },
-        { number: 5, text: 'Operational Support', class: 'benefit5' },
-    ];
+    const home = useHomePageContent();
+    const benefitTexts = (home.franchise_benefits ?? [])
+        .map((x) => String(x || '').trim())
+        .filter(Boolean);
+    const benefits = (benefitTexts.length > 0 ? benefitTexts : [
+        'Low Investment High Returns',
+        'Strong Brand Name of T.I.M.E.',
+        'Complete Curriculum Support',
+        'Regular Staff Training',
+        'Operational Support',
+    ]).map((text, idx) => ({
+        number: idx + 1,
+        text,
+        class: `benefit${((idx % 5) + 1)}`,
+    }));
 
     const [slides, setSlides] = React.useState<Slide[]>([]);
     const [updatesReady, setUpdatesReady] = React.useState(false);
@@ -65,7 +74,7 @@ export default function BenefitsUpdates() {
                 setSlides(
                     mapped.length > 0
                         ? mapped
-                        : [{ date: '', text: 'New updates will appear here once they are added under Admin → Updates.' }],
+                        : [{ date: '', text: (home.updates_empty_message || '').trim() || 'New updates will appear here once they are added under Admin → Updates.' }],
                 );
             } catch {
                 setSlides(FALLBACK_UPDATES);
@@ -74,7 +83,7 @@ export default function BenefitsUpdates() {
             }
         };
         fetchUpdates();
-    }, []);
+    }, [home.updates_empty_message]);
 
     return (
         <div className="benefits-updates section-gap">
