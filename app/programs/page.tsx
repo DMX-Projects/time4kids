@@ -215,7 +215,7 @@ export default function ProgramsPage() {
                                     <div className="w-full md:w-1/2 text-center md:text-left space-y-10">
                                         <div className="space-y-6">
                                             <div className="inline-block">
-                                                <span className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-widest bg-white border ${program.accent} border-current shadow-sm`}>
+                                                <span className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-widest bg-white border ${theme.accent} border-current shadow-sm`}>
                                                     {program.ageGroup}
                                                 </span>
                                             </div>
@@ -254,7 +254,7 @@ export default function ProgramsPage() {
                                         </div>
                                     </div>
                                 </div>
-                                {index < programs.length - 1 && (
+                                {index < pageData.programs.length - 1 && (
                                     <hr
                                         className="w-full max-w-5xl mx-auto border-0 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent my-2 md:my-4"
                                         aria-hidden
