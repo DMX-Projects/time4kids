@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Building2, Home, GraduationCap } from 'lucide-react';
 import WaveBackground from '@/components/animations/WaveBackground';
+import type { AboutMagicalStory } from '@/config/about-page-defaults';
 
 const RedBiplane = () => (
     <svg viewBox="80 20 420 180" className="w-full h-full drop-shadow-2xl filter" style={{ overflow: 'visible' }}>
@@ -190,7 +191,19 @@ const InfoCard: React.FC<InfoCardProps> = ({ icon, iconBg, children, planePositi
     );
 };
 
-export default function MagicalStorySection() {
+export default function MagicalStorySection({ data }: { data?: AboutMagicalStory }) {
+    const titlePrefix = data?.title_prefix || "Our";
+    const titleAccent = data?.title_accent || "Magical";
+    const titleSuffix = data?.title_suffix || "Story";
+    const subtitle = data?.subtitle || "A journey of love, learning, and laughter!";
+    const cards = Array.isArray(data?.cards) ? data?.cards : [];
+
+    const iconByName: Record<string, React.ReactNode> = {
+        Building2: <Building2 className="w-8 h-8 text-white" />,
+        Home: <Home className="w-8 h-8 text-white" />,
+        GraduationCap: <GraduationCap className="w-8 h-8 text-white" />,
+    };
+
     return (
         <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#7DD3FC] to-[#93C5FD] section-gap min-h-screen flex flex-col items-center justify-center">
             {/* Thread Wave Animations */}
@@ -218,51 +231,49 @@ export default function MagicalStorySection() {
                     transition={{ duration: 0.8 }}
                 >
                     <h2 className="font-bubblegum text-5xl md:text-6xl text-white drop-shadow-lg mb-4 tracking-wide">
-                        Our <span className="text-[#ef5f5f]">Magical</span> Story
+                        {titlePrefix} <span className="text-[#ef5f5f]">{titleAccent}</span> {titleSuffix}
                     </h2>
-                    <p className="font-fredoka text-xl text-white/90">A journey of love, learning, and laughter!</p>
+                    <p className="font-fredoka text-xl text-white/90">{subtitle}</p>
                 </motion.div>
 
                 {/* Info Cards with Planes */}
                 <div className="space-y-12">
-                    {/* Card 1 - Plane on RIGHT pulling Text on LEFT */}
-                    <InfoCard
-                        icon={<Building2 className="w-8 h-8 text-white" />}
-                        iconBg="bg-gradient-to-br from-orange-400 to-orange-600"
-                        planePosition="right"
-                        delay={0.2}
-                    >
-                        <p>
-                            <strong className="text-gray-900">T.I.M.E. Kids pre-schools</strong> is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with{' '}
-                            <span className="text-orange-600 font-bold">250+ pre-schools</span> is now poised for major expansion across the country.
-                        </p>
-                    </InfoCard>
-
-                    {/* Card 2 - Plane on LEFT pulling Text on RIGHT */}
-                    <InfoCard
-                        icon={<Home className="w-8 h-8 text-white" />}
-                        iconBg="bg-gradient-to-br from-pink-400 to-pink-600"
-                        planePosition="left"
-                        delay={0.4}
-                    >
-                        <p>
-                            The programme at T.I.M.E. Kids pre-schools aims at making the transition from home to school easy, by providing the{' '}
-                            <span className="text-blue-600 font-bold">warm, safe and caring learning environment</span> that young children have at home. Our play schools offer wholesome, fun-filled and memorable childhood education to our children.
-                        </p>
-                    </InfoCard>
-
-                    {/* Card 3 - Plane on RIGHT pulling Text on LEFT */}
-                    <InfoCard
-                        icon={<GraduationCap className="w-8 h-8 text-white" />}
-                        iconBg="bg-gradient-to-br from-purple-400 to-purple-600"
-                        planePosition="right"
-                        delay={0.6}
-                    >
-                        <p>
-                            T.I.M.E. Kids pre-schools are backed by our educational expertise of{' '}
-                            <span className="text-orange-600 font-bold">over 30 years</span>, well trained care providers and a balanced educational programme. The programme at T.I.M.E. Kids pre-schools is based on the principles of age-appropriate child development practices.
-                        </p>
-                    </InfoCard>
+                    {(cards.length ? cards : [
+                        {
+                            icon: "Building2",
+                            icon_gradient: "from-orange-400 to-orange-600",
+                            plane_position: "right",
+                            text: "T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 250+ pre-schools is now poised for major expansion across the country.",
+                        },
+                        {
+                            icon: "Home",
+                            icon_gradient: "from-pink-400 to-pink-600",
+                            plane_position: "left",
+                            text: "The programme at T.I.M.E. Kids pre-schools aims at making the transition from home to school easy, by providing the warm, safe and caring learning environment that young children have at home. Our play schools offer wholesome, fun-filled and memorable childhood education to our children.",
+                        },
+                        {
+                            icon: "GraduationCap",
+                            icon_gradient: "from-purple-400 to-purple-600",
+                            plane_position: "right",
+                            text: "T.I.M.E. Kids pre-schools are backed by our educational expertise of over 30 years, well trained care providers and a balanced educational programme. The programme at T.I.M.E. Kids pre-schools is based on the principles of age-appropriate child development practices.",
+                        },
+                    ]).map((c: any, idx: number) => {
+                        const iconName = String(c?.icon || "Building2");
+                        const iconBg = `bg-gradient-to-br ${String(c?.icon_gradient || "from-orange-400 to-orange-600")}`;
+                        const planePosition = String(c?.plane_position || "right") === "left" ? "left" : "right";
+                        const delay = 0.2 + idx * 0.2;
+                        return (
+                            <InfoCard
+                                key={idx}
+                                icon={iconByName[iconName] || iconByName.Building2}
+                                iconBg={iconBg}
+                                planePosition={planePosition as any}
+                                delay={delay}
+                            >
+                                <p>{String(c?.text || "")}</p>
+                            </InfoCard>
+                        );
+                    })}
                 </div>
             </div>
 

@@ -11,6 +11,9 @@ type HwRow = {
     student_name?: string | null;
     class_name?: string;
     is_read?: boolean;
+    attachment?: string | null;
+    attachment_name?: string;
+    attachment_kind?: "IMAGE" | "PDF" | string;
 };
 
 const normalizeHomework = (data: unknown): HwRow[] => {
@@ -169,6 +172,41 @@ export default function HomeworkPage() {
                                                 ) : (
                                                     <p className="pt-4 text-sm text-gray-400 italic">No description provided.</p>
                                                 )}
+                                                {h.attachment ? (
+                                                    <div className="pt-4 space-y-2">
+                                                        <p className="text-[11px] font-black text-orange-500 uppercase tracking-widest">
+                                                            Attachment
+                                                        </p>
+                                                        {String(h.attachment_kind || "").toUpperCase() === "IMAGE" ? (
+                                                            <div className="space-y-2">
+                                                                <img
+                                                                    src={h.attachment}
+                                                                    alt={h.attachment_name || "Homework attachment"}
+                                                                    className="w-full max-w-md rounded-2xl border border-orange-100"
+                                                                />
+                                                                <a
+                                                                    href={h.attachment}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="inline-flex text-sm font-bold text-blue-600 underline"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    Open image
+                                                                </a>
+                                                            </div>
+                                                        ) : (
+                                                            <a
+                                                                href={h.attachment}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="inline-flex text-sm font-bold text-blue-600 underline break-all"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                {h.attachment_name || "Open PDF"}
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                ) : null}
                                                 <div className="mt-6 flex justify-end">
                                                     <div className="px-3 py-1 bg-orange-50 rounded-full text-[10px] font-bold text-orange-600">
                                                         VIEWED ✓

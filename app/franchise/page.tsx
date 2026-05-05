@@ -8,15 +8,17 @@ import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
 import TwinklingStars from '@/components/animations/TwinklingStars';
 import { TrendingUp, Users, BookOpen, Headphones, Award, DollarSign, Download, Brain, Heart, Palette, Music, Dumbbell, Globe } from 'lucide-react';
 import { apiUrl } from '@/lib/api-client';
+import { DEFAULT_FRANCHISE_PAGE_DATA, mergeFranchisePageData } from '@/config/franchise-page-defaults';
 
 const IconMap: Record<string, any> = {
     TrendingUp, Users, BookOpen, Headphones, Award, DollarSign, Brain, Heart, Palette, Music, Dumbbell, Globe
 };
 
 export default function FranchisePage() {
-    const [pageData, setPageData] = useState<any>(null);
+    const [pageData, setPageData] = useState<any>(DEFAULT_FRANCHISE_PAGE_DATA);
     const [assets, setAssets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [playingIndex, setPlayingIndex] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -28,7 +30,7 @@ export default function FranchisePage() {
 
                 if (contentRes.ok) {
                     const data = await contentRes.json();
-                    setPageData(data);
+                    setPageData(mergeFranchisePageData(data));
                 }
 
                 if (assetsRes.ok) {
@@ -46,47 +48,17 @@ export default function FranchisePage() {
 
     const franchiseBrochure = assets.find(a => a.slug === 'franchise-brochure');
 
-    const benefits = pageData?.benefits || [
-        {
-            icon: 'Award',
-            title: 'Strong Brand Name',
-            description: 'Leverage 17 years of T.I.M.E. Kids legacy and 30+ years of T.I.M.E. Group expertise',
-        },
-        {
-            icon: 'DollarSign',
-            title: 'Low Investment, High Returns',
-            description: 'Profitable business model with quick ROI and sustainable growth',
-        },
-        {
-            icon: 'BookOpen',
-            title: 'Complete Curriculum Support',
-            description: 'NEP 2020 updated curriculum, teaching materials, and activity plans',
-        },
-        {
-            icon: 'Users',
-            title: 'Regular Staff Training',
-            description: 'Continuous training programs for teachers and staff development',
-        },
-        {
-            icon: 'Headphones',
-            title: 'Operational Support',
-            description: 'End-to-end support in setup, marketing, and daily operations',
-        },
-        {
-            icon: 'TrendingUp',
-            title: 'Marketing Assistance',
-            description: 'National and local marketing support to grow your centre',
-        },
-    ];
+    const benefits = pageData?.benefits || DEFAULT_FRANCHISE_PAGE_DATA.benefits;
+    const offerings = pageData?.offerings || DEFAULT_FRANCHISE_PAGE_DATA.offerings;
+    const hero = pageData?.hero || DEFAULT_FRANCHISE_PAGE_DATA.hero;
+    const testimonials = pageData?.testimonials || DEFAULT_FRANCHISE_PAGE_DATA.testimonials;
+    const mainBranch = pageData?.main_branch || DEFAULT_FRANCHISE_PAGE_DATA.main_branch;
+    const brochure = pageData?.brochure || DEFAULT_FRANCHISE_PAGE_DATA.brochure;
 
-    const offerings = pageData?.offerings || [
-        'Proven business model with 250+ successful centres',
-        'Comprehensive training for franchisees and staff',
-        'Marketing and promotional materials',
-        'Technology platform for operations',
-        'Quality assurance and monitoring',
-        'Parent engagement programs',
-    ];
+    const brochureAssetSlug = (brochure?.marketing_asset_slug || 'franchise-brochure').trim();
+    const brochureAsset = assets.find((a) => a.slug === brochureAssetSlug);
+    const brochureHref = brochureAsset?.file || brochure?.fallback_url || franchiseBrochure?.file || "https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf";
+    const brochureLabel = brochureAsset?.title || brochure?.button_label || franchiseBrochure?.title || "Download Brochure (PDF)";
 
     return (
         <div className="min-h-screen">
@@ -100,10 +72,10 @@ export default function FranchisePage() {
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
                         <h1 className="font-luckiest text-5xl md:text-6xl mb-6 text-[#003366] tracking-wider">
-                            <span className="text-[#E67E22]">Franchise</span> Opportunity
+                            <span className="text-[#E67E22]">{hero.title_prefix}</span> {hero.title_accent}
                         </h1>
                         <p className="text-xl text-gray-700 leading-relaxed">
-                            Partner with India&apos;s trusted preschool brand and build a rewarding business
+                            {hero.subtitle}
                         </p>
                     </div>
                 </div>
@@ -177,21 +149,18 @@ export default function FranchisePage() {
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        <TestimonialVideo
-                            title="Best business decision"
-                            author="Franchise Partner"
-                            location="Bangalore"
-                        />
-                        <TestimonialVideo
-                            title="Complete support from day one"
-                            author="Franchise Partner"
-                            location="Chennai"
-                        />
-                        <TestimonialVideo
-                            title="Rewarding and fulfilling"
-                            author="Franchise Partner"
-                            location="Pune"
-                        />
+                        {testimonials.slice(0, 6).map((t: any, idx: number) => (
+                            <TestimonialVideo
+                                key={idx}
+                                title={t.title}
+                                author={t.author}
+                                location={t.location}
+                                videoUrl={(t.video_url || "").trim() || undefined}
+                                thumbnailUrl={(t.thumbnail_url || "").trim() || undefined}
+                                isPlaying={playingIndex === idx}
+                                onPlay={() => setPlayingIndex(idx)}
+                            />
+                        ))}
                     </div>
                 </div>
             </section>
@@ -201,10 +170,10 @@ export default function FranchisePage() {
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">
                         <h2 className="font-bubblegum text-4xl mb-4 text-[#003366] tracking-wide">
-                            Visit Our <span className="text-[#E67E22]">Main Branch</span>
+                            {mainBranch.heading_prefix} <span className="text-[#E67E22]">{mainBranch.heading_accent}</span>
                         </h2>
                         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                            Come meet our team and explore our flagship centre
+                            {mainBranch.subtitle}
                         </p>
                     </div>
 
@@ -213,7 +182,7 @@ export default function FranchisePage() {
                             {/* Map */}
                             <div className="rounded-3xl overflow-hidden shadow-xl h-[400px] md:h-[500px]">
                                 <iframe
-                                    src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=Siddamsetty+Complex+Parklane+Secunderabad+500003&zoom=15"
+                                    src={mainBranch.map_embed_url}
                                     width="100%"
                                     height="100%"
                                     style={{ border: 0 }}
@@ -227,7 +196,7 @@ export default function FranchisePage() {
                             {/* Contact Details */}
                             <Card className="flex flex-col justify-center">
                                 <h3 className="font-bubblegum text-2xl mb-6 text-gray-900 tracking-wide">
-                                    T.I.M.E. Kids Corporate Office
+                                    {mainBranch.office_title}
                                 </h3>
 
                                 <div className="space-y-4">
@@ -240,13 +209,10 @@ export default function FranchisePage() {
                                         </div>
                                         <div>
                                             <p className="font-semibold text-gray-900 mb-1">Address</p>
-                                            <p className="text-gray-600 leading-relaxed">
-                                                Triumphant Institute of Management Education Pvt. (T.I.M.E.)<br />
-                                                95B, Second Floor<br />
-                                                Siddamsetty Complex<br />
-                                                Parklane, Secunderabad<br />
-                                                500003
-                                            </p>
+                                            <p
+                                                className="text-gray-600 leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: mainBranch.address_html }}
+                                            />
                                         </div>
                                     </div>
 
@@ -258,8 +224,8 @@ export default function FranchisePage() {
                                         </div>
                                         <div>
                                             <p className="font-semibold text-gray-900 mb-1">Phone</p>
-                                            <p className="text-gray-600">040-40088300</p>
-                                            <p className="text-sm text-gray-500 mt-1">Fax: 040-27847334</p>
+                                            <p className="text-gray-600">{mainBranch.phone}</p>
+                                            <p className="text-sm text-gray-500 mt-1">Fax: {mainBranch.fax}</p>
                                         </div>
                                     </div>
 
@@ -271,15 +237,15 @@ export default function FranchisePage() {
                                         </div>
                                         <div>
                                             <p className="font-semibold text-gray-900 mb-1">Email</p>
-                                            <p className="text-gray-600">info@timekidspreschools.com</p>
-                                            <p className="text-sm text-gray-500 mt-1">Franchise: franchise@timekidspreschools.com</p>
-                                            <p className="text-sm text-gray-500">Cell: 8096355335</p>
+                                            <p className="text-gray-600">{mainBranch.email}</p>
+                                            <p className="text-sm text-gray-500 mt-1">Franchise: {mainBranch.franchise_email}</p>
+                                            <p className="text-sm text-gray-500">Cell: {mainBranch.cell}</p>
                                         </div>
                                     </div>
 
                                     <div className="pt-4">
                                         <a
-                                            href="https://www.google.com/maps/dir/?api=1&destination=Siddamsetty+Complex+Secunderabad+500003"
+                                            href={mainBranch.directions_url}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center space-x-2 bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors shadow-md hover:shadow-lg"
@@ -287,7 +253,7 @@ export default function FranchisePage() {
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                                             </svg>
-                                            <span>Get Directions</span>
+                                            <span>{mainBranch.directions_label}</span>
                                         </a>
                                     </div>
                                 </div>
@@ -302,18 +268,16 @@ export default function FranchisePage() {
                 <div className="container mx-auto px-4">
                     <div className="max-w-2xl mx-auto text-center">
                         <Download className="w-16 h-16 mx-auto mb-6" />
-                        <h2 className="font-bubblegum text-4xl mb-6 tracking-wide">Download Franchise Brochure</h2>
-                        <p className="text-xl text-white/90 mb-8">
-                            Get detailed information about investment, support, and franchise benefits
-                        </p>
+                        <h2 className="font-bubblegum text-4xl mb-6 tracking-wide">{brochure.heading}</h2>
+                        <p className="text-xl text-white/90 mb-8">{brochure.subtitle}</p>
                         <a
-                            href={franchiseBrochure?.file || "https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf"}
+                            href={brochureHref}
                             target="_blank"
                             rel="noopener noreferrer"
                             download
                             className="inline-block bg-white text-primary-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-xl hover:shadow-2xl"
                         >
-                            {franchiseBrochure?.title || "Download Brochure (PDF)"}
+                            {brochureLabel}
                         </a>
                     </div>
                 </div>

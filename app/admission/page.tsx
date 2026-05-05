@@ -12,6 +12,7 @@ import AdmissionForm from '@/components/admission/AdmissionForm';
 import FAQAccordion from '@/components/admission/FAQAccordion';
 import TestimonialVideo from '@/components/shared/TestimonialVideo';
 import { apiUrl } from '@/lib/api-client';
+import { DEFAULT_ADMISSION_PAGE_DATA, mergeAdmissionPageData } from '@/config/admission-page-defaults';
 
 const IconMap: Record<string, any> = {
     Brain, Heart, Users, Palette, Music, Dumbbell, BookOpen, Globe, Award, DollarSign, Headphones, TrendingUp
@@ -72,7 +73,7 @@ const CloudDivider = ({ flip = false, className = '' }) => (
 
 // --- 3. Main Page Component ---
 export default function AdmissionPage() {
-    const [pageData, setPageData] = useState<any>(null);
+    const [pageData, setPageData] = useState<any>(DEFAULT_ADMISSION_PAGE_DATA);
     const [assets, setAssets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -86,7 +87,7 @@ export default function AdmissionPage() {
 
                 if (contentRes.ok) {
                     const data = await contentRes.json();
-                    setPageData(data);
+                    setPageData(mergeAdmissionPageData(data));
                 }
 
                 if (assetsRes.ok) {
@@ -105,8 +106,9 @@ export default function AdmissionPage() {
     const admissionBrochure = assets.find(a => a.slug === 'admission-brochure');
     const virtualTour = assets.find(a => a.slug === 'virtual-tour');
 
-    const whyPreschool = pageData?.why_preschool || ['Strong foundation for future', 'Social & emotional growth', 'Ready for big school!', 'Brain development boost', 'Confidence building'];
-    const whyTimeKids = pageData?.why_time_kids || ['17 Years of Happiness', '250+ Centers in India', 'NEP 2020 Compliant', 'Loving & Trained Teachers', 'Safe, Colorful Spaces', 'Fun Activity Learning'];
+    const faqSection = pageData?.faq_section || DEFAULT_ADMISSION_PAGE_DATA.faq_section;
+    const whyPreschool = pageData?.why_preschool || DEFAULT_ADMISSION_PAGE_DATA.why_preschool;
+    const whyTimeKids = pageData?.why_time_kids || DEFAULT_ADMISSION_PAGE_DATA.why_time_kids;
     
     const defaultSkills = [
         { title: 'Cognitive', desc: 'Problem solving', icon: 'Brain', color: 'bg-purple-500', shadow: 'shadow-purple-200', shape: 'rounded-[60%_40%_30%_70%_/_60%_30%_70%_40%]' },
@@ -285,9 +287,17 @@ export default function AdmissionPage() {
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16"><h2 className="font-display font-black text-4xl md:text-6xl mb-4 text-slate-800">Happy <span className="text-orange-500 underline decoration-wavy decoration-yellow-400">Parents</span></h2></div>
                     <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-                        <div className="transform hover:rotate-1 transition-transform duration-300"><TestimonialVideo title="Annual Day Fun" author="T.I.M.E. Kids Kilpauk" location="Chennai" videoUrl="/chaninai kilpauk-AnnualDay-Video-2018-19.mp4" thumbnailUrl="/day care.png" /></div>
-                        <div className="transform hover:-rotate-1 transition-transform duration-300 md:-mt-8"><TestimonialVideo title="School Activities" author="T.I.M.E. Kids Chennai" location="Chennai" videoUrl="/chennai2.mp4" thumbnailUrl="/infra.jpg" /></div>
-                        <div className="transform hover:rotate-1 transition-transform duration-300"><TestimonialVideo title="Happy Moments" author="T.I.M.E. Kids Trichy" location="Trichy" videoUrl="/trichy-rajacolony.mp4" thumbnailUrl="/5.jpeg" /></div>
+                        {(pageData?.happy_parents_videos || DEFAULT_ADMISSION_PAGE_DATA.happy_parents_videos || []).slice(0, 6).map((v: any, i: number) => (
+                            <div key={i} className={`transform transition-transform duration-300 ${i === 1 ? "hover:-rotate-1 md:-mt-8" : "hover:rotate-1"}`}>
+                                <TestimonialVideo
+                                    title={v.title}
+                                    author={v.author}
+                                    location={v.location}
+                                    videoUrl={v.video_url}
+                                    thumbnailUrl={v.thumbnail_url}
+                                />
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
@@ -297,9 +307,14 @@ export default function AdmissionPage() {
                     <div className="grid lg:grid-cols-12 gap-12 items-start">
                         <div className="lg:col-span-4 lg:sticky lg:top-24">
                             <div className="bg-yellow-50 rounded-[40px_60px_40px_60px] p-10 border-4 border-yellow-100 shadow-xl">
-                                <h2 className="font-display font-black text-4xl mb-6 text-slate-800">Got <span className="text-yellow-500">Questions?</span></h2>
-                                <p className="text-lg text-slate-600 font-bold mb-8">We have answers! Here is everything you need to know.</p>
-                                <div className="hidden lg:block relative h-64 w-full animate-float"><Image src="/2.png" alt="Question" fill className="object-contain drop-shadow-lg" /></div>
+                                <h2 className="font-display font-black text-4xl mb-6 text-slate-800">
+                                    {faqSection?.title_prefix || "Got"}{" "}
+                                    <span className="text-yellow-500">{faqSection?.title_accent || "Questions?"}</span>
+                                </h2>
+                                <p className="text-lg text-slate-600 font-bold mb-8">{faqSection?.subtitle || "We have answers! Here is everything you need to know."}</p>
+                                <div className="hidden lg:block relative h-64 w-full animate-float">
+                                    <Image src={faqSection?.image || "/2.png"} alt="Questions" fill className="object-contain drop-shadow-lg" unoptimized />
+                                </div>
                             </div>
                         </div>
                         <div className="lg:col-span-8"><FAQAccordion customFaqs={pageData?.faqs} /></div>

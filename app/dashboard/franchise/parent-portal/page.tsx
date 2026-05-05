@@ -399,16 +399,43 @@ function HomeworkTab({
     students: MiniStudent[];
     onRefresh: () => void;
 }) {
-    const [rows, setRows] = useState<{ id: number; title: string; assigned_date: string; read_count?: number; viewed_by_parents?: any[] }[]>([]);
+    const [rows, setRows] = useState<{
+        id: number;
+        title: string;
+        assigned_date: string;
+        attachment?: string | null;
+        attachment_name?: string;
+        attachment_kind?: string;
+        read_count?: number;
+        viewed_by_parents?: any[];
+    }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [form, setForm] = useState({ studentId: "", class_name: "", assigned_date: "", title: "", description: "" });
+    const [form, setForm] = useState({
+        studentId: "",
+        class_name: "",
+        assigned_date: "",
+        title: "",
+        description: "",
+        attachment: null as File | null,
+    });
     const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
             const data = await authFetch<unknown>("/students/franchise/homework/");
-            setRows(normalizeList<{ id: number; title: string; assigned_date: string; read_count?: number; viewed_by_parents?: any[] }>(data));
+            setRows(
+                normalizeList<{
+                    id: number;
+                    title: string;
+                    assigned_date: string;
+                    attachment?: string | null;
+                    attachment_name?: string;
+                    attachment_kind?: string;
+                    read_count?: number;
+                    viewed_by_parents?: any[];
+                }>(data),
+            );
         } catch {
             setRows([]);
         } finally {
@@ -426,15 +453,42 @@ function HomeworkTab({
             const selectedStudent = students.find((s) => String(s.id) === form.studentId);
             const normalizedClassName = form.class_name.trim() || selectedStudent?.class_name?.trim() || "";
 
-            const body: Record<string, unknown> = {
-                title: form.title.trim(),
-                description: form.description.trim(),
-                assigned_date: form.assigned_date,
-                class_name: normalizedClassName,
-            };
-            body.student = form.studentId ? Number(form.studentId) : null;
-            await authFetch("/students/franchise/homework/", { method: "POST", headers: jsonHeaders(), body: JSON.stringify(body) });
-            setForm({ studentId: "", class_name: "", assigned_date: "", title: "", description: "" });
+            if (form.attachment) {
+                const maxSize = 5 * 1024 * 1024;
+                if (form.attachment.size > maxSize) {
+                    showToast("Attachment too large. Max 5MB.", "error");
+                    return;
+                }
+                const ct = (form.attachment.type || "").toLowerCase();
+                const isPdf = ct === "application/pdf" || form.attachment.name.toLowerCase().endsWith(".pdf");
+                const isImage = ct.startsWith("image/");
+                if (!isPdf && !isImage) {
+                    showToast("Only image or PDF attachments allowed.", "error");
+                    return;
+                }
+
+                const fd = new FormData();
+                fd.append("title", form.title.trim());
+                fd.append("description", form.description.trim());
+                fd.append("assigned_date", form.assigned_date);
+                fd.append("class_name", normalizedClassName);
+                if (form.studentId) fd.append("student", String(Number(form.studentId)));
+                fd.append("attachment", form.attachment);
+                fd.append("attachment_name", form.attachment.name);
+                fd.append("attachment_kind", isPdf ? "PDF" : "IMAGE");
+                await authFetch("/students/franchise/homework/", { method: "POST", body: fd });
+            } else {
+                const body: Record<string, unknown> = {
+                    title: form.title.trim(),
+                    description: form.description.trim(),
+                    assigned_date: form.assigned_date,
+                    class_name: normalizedClassName,
+                };
+                body.student = form.studentId ? Number(form.studentId) : null;
+                await authFetch("/students/franchise/homework/", { method: "POST", headers: jsonHeaders(), body: JSON.stringify(body) });
+            }
+
+            setForm({ studentId: "", class_name: "", assigned_date: "", title: "", description: "", attachment: null });
             showToast("Homework published", "success");
             await load();
             onRefresh();
@@ -482,6 +536,15 @@ function HomeworkTab({
                 <label className="text-xs font-semibold text-[#4B5563] md:col-span-2">
                     Description
                     <textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={3} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs font-semibold text-[#4B5563] md:col-span-2">
+                    Attachment (optional: image or PDF, max 5MB)
+                    <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        onChange={(e) => setForm((p) => ({ ...p, attachment: e.target.files?.[0] || null }))}
+                        className="mt-1 w-full rounded-xl border px-3 py-2 text-sm bg-white"
+                    />
                 </label>
                 <Button type="submit" className="md:col-span-2 bg-[#FF922B] text-white w-fit">
                     Add homework

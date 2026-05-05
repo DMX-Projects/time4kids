@@ -11,6 +11,8 @@ export type KeyNavItem = {
 
 export type HomePageData = {
     key_navigation: KeyNavItem[];
+    franchise_benefits?: string[];
+    updates_empty_message?: string;
     intro: {
         title: string;
         subtitle: string;
@@ -65,6 +67,14 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
         },
         { icon: "/icon-television.png", alt: "TV Commercial", href: "/tv-commercial", label: "TV\nCommercial", nav_class: "nav-link3" },
     ],
+    franchise_benefits: [
+        "Low Investment High Returns",
+        "Strong Brand Name of T.I.M.E.",
+        "Complete Curriculum Support",
+        "Regular Staff Training",
+        "Operational Support",
+    ],
+    updates_empty_message: "New updates will appear here once they are added under Admin → Updates.",
     intro: {
         title: "Welcome to T.I.M.E. Kids",
         subtitle:

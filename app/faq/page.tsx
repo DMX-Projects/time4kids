@@ -4,97 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PreschoolBackground, CuteSchoolBus, FloatingBalloon, PlayfulStar, PastelBlob } from '../../components/ui/PreschoolDecorations';
-
-const faqsData = [
-    {
-        id: 1,
-        question: "Why send your child to T.I.M.E. Kids?",
-        answer: [
-            "Your child learns to make friends and important social skills like caring and sharing.",
-            "Our pre-schools provide a learning-through-play environment.",
-            "We help children start learning important life skills early.",
-            "Children feel comfortable among peers of the same age group."
-        ]
-    },
-    {
-        id: 2,
-        question: "Do the children have an opportunity to be creative each day?",
-        answer: [
-            "Children get ample opportunities for artistic expression.",
-            "Activities include painting, clay modelling, role play, etc."
-        ]
-    },
-    {
-        id: 3,
-        question: "How does T.I.M.E. Kids pre-schools helps children acquire different skills?",
-        answer: [
-            "Our curriculum involves a blend of structural learning and free play.",
-            "We focus on cognitive, physical, emotional, and social development through activities like puzzles, storytelling, group games, and interactive learning sessions."
-        ]
-    },
-    {
-        id: 4,
-        question: "Isn't it too early for a child of one-and-a-half year to be attending play school?",
-        answer: [
-            "The first six years are critical for a child's brain development.",
-            "Our program for this age group acts as a bridge between home and school, providing a secure and stimulating environment that encourages exploration and social interaction."
-        ]
-    },
-    {
-        id: 5,
-        question: "Are basic maths, language and science concepts included in each day's program?",
-        answer: [
-            "Yes, we introduce fundamental concepts of numeracy, language, and environmental science through age-appropriate, play-based activities that make learning fun and engaging."
-        ]
-    },
-    {
-        id: 6,
-        question: "What is the importance of experienced educationists?",
-        answer: [
-            "Experienced educationists ensure that the curriculum is developmentally appropriate, safe, and effective.",
-            "They understand child psychology and can tailor learning experiences to meet the unique needs of every child."
-        ]
-    },
-    {
-        id: 7,
-        question: "Are manners and etiquette also important as studies?",
-        answer: [
-            "Absolutely. We believe in holistic development.",
-            "Along with academics, we emphasize value education, teaching children essential social manners, table etiquette, and respect for others."
-        ]
-    },
-    {
-        id: 8,
-        question: "Are admissions to the programs open through out the year?",
-        answer: [
-            "Yes, admissions are generally open throughout the year, subject to the availability of seats in the respective program."
-        ]
-    },
-    {
-        id: 9,
-        question: "What is the procedure for enrolment to T.I.M.E. Kids pre-schools?",
-        answer: [
-            "Parents can visit the nearest T.I.M.E. Kids centre to collect the admission kit.",
-            "The process involves filling out an application form and interacting with the centre head. You can also enquire online through our website."
-        ]
-    },
-    {
-        id: 10,
-        question: "Why should we enrol in T.I.M.E. Kids?",
-        answer: [
-            "T.I.M.E. Kids offers a proven curriculum, safe infrastructure, and trained facilitators.",
-            "We focus on the all-round development of your child in a nurturing environment, backed by the trusted T.I.M.E. brand."
-        ]
-    },
-    {
-        id: 11,
-        question: "Does T.I.M.E. Kids pre-schools offer transportation facilities?",
-        answer: [
-            "Most of our centres offer safe and reliable transportation facilities with female attendants.",
-            "Please check with your specific centre for route availability."
-        ]
-    }
-];
+import { apiUrl } from '@/lib/api-client';
+import { DEFAULT_FAQ_PAGE_DATA, mergeFaqPageData, type FaqItem } from '@/config/faq-page-defaults';
 
 const AnimatedWave = ({ position = 'top', showObjects = false }: { position?: 'top' | 'bottom', showObjects?: boolean }) => {
     return (
@@ -406,7 +317,29 @@ export default function FAQPage() {
     const [openAccordion, setOpenAccordion] = useState<number | null>(null);
     const [activeSlide, setActiveSlide] = useState(0);
 
-    const bannerImages = ['/faq-banner-new-1.png', '/faq-banner-new-2.png'];
+    const [pageData, setPageData] = useState(() => DEFAULT_FAQ_PAGE_DATA);
+    const bannerImages = pageData.banner_images?.length ? pageData.banner_images : DEFAULT_FAQ_PAGE_DATA.banner_images;
+    const faqsData: Array<FaqItem & { id: number }> = (pageData.faqs?.length ? pageData.faqs : DEFAULT_FAQ_PAGE_DATA.faqs).map((f, idx) => ({
+        ...f,
+        id: idx + 1,
+    }));
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(apiUrl('/common/page-content/faq/'));
+                if (!res.ok) throw new Error('bad status');
+                const json = await res.json();
+                if (!cancelled) setPageData(mergeFaqPageData(json));
+            } catch {
+                if (!cancelled) setPageData(DEFAULT_FAQ_PAGE_DATA);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -567,7 +500,7 @@ export default function FAQPage() {
 
                                     {openAccordion === faq.id && (
                                         <div className="faq-answer">
-                                            {faq.answer.map((line, i) => (
+                                            {(faq.answer || []).map((line, i) => (
                                                 <p key={i}>{line}</p>
                                             ))}
                                         </div>

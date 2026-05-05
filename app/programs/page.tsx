@@ -8,6 +8,8 @@ import { Clock, BookOpen, Star, Heart, Music, Palette, Users, Sparkles, Sun, Clo
 import TwinklingStars from '@/components/animations/TwinklingStars';
 import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
 import { gsap } from 'gsap';
+import { apiUrl } from '@/lib/api-client';
+import { DEFAULT_PROGRAMS_PAGE_DATA, mergeProgramsPageData, type ProgramsPageProgram } from '@/config/programs-page-defaults';
 
 // --- Interactive Bubbles Component ---
 const InteractiveBubbles = () => {
@@ -93,78 +95,35 @@ const CloudDivider = ({ flip = false }) => (
 );
 
 export default function ProgramsPage() {
-    const programs = [
-        {
-            image: '/1.png',
-            name: 'Play Group',
-            ageGroup: '2 - 3 years',
-            duration: '2-3 hours',
-            description: 'A magical start to learning! We focus on sensory play, making friends, and discovering the colorful world around us.',
-            features: ['Messy & Sensory Play', 'Music & Dance', 'Making Friends', 'Fun with Colors'],
-            colorStart: 'from-[#FF9A9E]',
-            colorEnd: 'to-[#FECFEF]',
-            accent: 'text-pink-500',
-            bg: 'bg-pink-50',
-            blobShape: 'rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%]',
-            icon: Music,
-        },
-        {
-            image: '/2 (1).png',
-            name: 'Nursery',
-            ageGroup: '3 - 4 years',
-            duration: '3-4 hours',
-            description: 'Building bridges to big ideas! Hands-on activities that spark curiosity, language, and creativity in little minds.',
-            features: ['Story Time Fun', 'Arts & Crafts', 'Counting Games', 'Outdoor Exploration'],
-            colorStart: 'from-[#a18cd1]',
-            colorEnd: 'to-[#fbc2eb]',
-            accent: 'text-purple-500',
-            bg: 'bg-purple-50',
-            blobShape: 'rounded-[60%_40%_30%_70%_/_60%_30%_70%_40%]',
-            icon: Palette,
-        },
-        {
-            image: '/2.png',
-            name: 'Pre-Primary 1',
-            ageGroup: '4 - 5 years',
-            duration: '4 hours',
-            description: 'Ready, set, grow! We introduce phonics, writing, and numbers through exciting themes and interactive play.',
-            features: ['Phonics & Reading', 'Writing Fun', 'Number Magic', 'World Around Us'],
-            colorStart: 'from-[#84fab0]',
-            colorEnd: 'to-[#8fd3f4]',
-            accent: 'text-teal-600',
-            bg: 'bg-teal-50',
-            blobShape: 'rounded-[40%_60%_70%_30%_/_40%_50%_60%_50%]',
-            icon: BookOpen,
-        },
-        {
-            image: '/16.png',
-            name: 'Pre-Primary 2',
-            ageGroup: '5 - 6 years',
-            duration: '4-5 hours',
-            description: 'Future school superstars! Advanced concepts in math, science, and language to prep for big school with confidence.',
-            features: ['Little Scientists', 'Math Whiz', 'Creative Writing', 'Public Speaking'],
-            colorStart: 'from-[#f6d365]',
-            colorEnd: 'to-[#fda085]',
-            accent: 'text-orange-500',
-            bg: 'bg-orange-50',
-            blobShape: 'rounded-[50%_50%_20%_80%_/_25%_80%_20%_75%]',
-            icon: Star,
-        },
-        {
-            image: '/day care.png',
-            name: 'Day Care',
-            ageGroup: '2 - 10 years',
-            duration: 'Full Day',
-            description: 'A home away from home! Safe, loving, and engaging care with nutritious meals and help with homework.',
-            features: ['Homework Help', 'Yummy Meals', 'Nap Time', 'Free Play'],
-            colorStart: 'from-[#4facfe]',
-            colorEnd: 'to-[#00f2fe]',
-            accent: 'text-blue-500',
-            bg: 'bg-blue-50',
-            blobShape: 'rounded-[70%_30%_30%_70%_/_60%_40%_60%_40%]',
-            icon: Heart,
-        },
-    ];
+    const [pageData, setPageData] = useState(() => DEFAULT_PROGRAMS_PAGE_DATA);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(apiUrl('/common/page-content/programs/'));
+                if (!res.ok) throw new Error('bad status');
+                const json = await res.json();
+                if (!cancelled) setPageData(mergeProgramsPageData(json));
+            } catch {
+                if (!cancelled) setPageData(DEFAULT_PROGRAMS_PAGE_DATA);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const themeByIndex = (index: number) => {
+        const themes = [
+            { colorStart: 'from-[#FF9A9E]', colorEnd: 'to-[#FECFEF]', accent: 'text-pink-500', bg: 'bg-pink-50', icon: Music },
+            { colorStart: 'from-[#a18cd1]', colorEnd: 'to-[#fbc2eb]', accent: 'text-purple-500', bg: 'bg-purple-50', icon: Palette },
+            { colorStart: 'from-[#84fab0]', colorEnd: 'to-[#8fd3f4]', accent: 'text-teal-600', bg: 'bg-teal-50', icon: BookOpen },
+            { colorStart: 'from-[#f6d365]', colorEnd: 'to-[#fda085]', accent: 'text-orange-500', bg: 'bg-orange-50', icon: Star },
+            { colorStart: 'from-[#4facfe]', colorEnd: 'to-[#00f2fe]', accent: 'text-blue-500', bg: 'bg-blue-50', icon: Heart },
+        ];
+        return themes[index % themes.length];
+    };
 
     return (
         <div className="min-h-screen relative overflow-hidden bg-[#FDFBF7] font-sans selection:bg-yellow-200">
@@ -183,12 +142,12 @@ export default function ProgramsPage() {
                 <div className="container mx-auto px-4 relative z-10 text-center">
                     <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-md px-5 py-1.5 rounded-full shadow-sm mb-4 border border-orange-100 hover:scale-105 transition-transform cursor-default">
                         <Sun className="w-4 h-4 text-yellow-500 animate-spin-slow" />
-                        <span className="font-bold text-orange-500 tracking-wide uppercase text-xs">Bright futures start here</span>
+                        <span className="font-bold text-orange-500 tracking-wide uppercase text-xs">{pageData.hero.badge}</span>
                     </div>
 
                     <h1 className="font-display font-black text-5xl md:text-6xl mb-4 text-slate-800 tracking-tight drop-shadow-sm">
-                        Our <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500 relative inline-block">
-                            Programs
+                        {pageData.hero.title_prefix} <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500 relative inline-block">
+                            {pageData.hero.title_accent}
                             <svg className="absolute w-full h-3 -bottom-1 left-0 text-yellow-300 -z-10 opacity-80" viewBox="0 0 100 10" preserveAspectRatio="none">
                                 <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" />
                             </svg>
@@ -196,7 +155,7 @@ export default function ProgramsPage() {
                     </h1>
 
                     <p className="text-lg text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed">
-                        Curiosity-led learning adventures for every stage of your child&apos;s magical early years.
+                        {pageData.hero.subtitle}
                     </p>
                 </div>
 
@@ -215,8 +174,9 @@ export default function ProgramsPage() {
             <section className="relative bg-white section-gap z-10">
                 <div className="container mx-auto px-4">
                     <div className="flex flex-col gap-12 md:gap-16">
-                        {programs.map((program, index) => {
-                            const isDayCare = program.name === 'Day Care';
+                        {pageData.programs.map((program: ProgramsPageProgram, index) => {
+                            const theme = themeByIndex(index);
+                            const isDayCare = (program.name || '').trim().toLowerCase() === 'day care';
 
                             return (
                                 <React.Fragment key={index}>
@@ -229,7 +189,7 @@ export default function ProgramsPage() {
 
                                     {/* Image Side */}
                                     <div className="w-full md:w-1/2 relative group perspective-1000">
-                                        <div className={`absolute inset-0 bg-gradient-to-br ${program.colorStart} ${program.colorEnd} opacity-30 blur-2xl transform scale-90 group-hover:scale-105 transition-all duration-700 rounded-full`}></div>
+                                        <div className={`absolute inset-0 bg-gradient-to-br ${theme.colorStart} ${theme.colorEnd} opacity-30 blur-2xl transform scale-90 group-hover:scale-105 transition-all duration-700 rounded-full`}></div>
 
                                         <div className={`relative w-full aspect-square md:aspect-[4/3] overflow-hidden shadow-2xl transition-all duration-500 transform group-hover:rotate-1 group-hover:-translate-y-2 border-4 border-white`} style={{ borderRadius: index % 2 === 0 ? '60% 40% 30% 70% / 60% 30% 70% 40%' : '30% 70% 70% 30% / 30% 30% 70% 70%' }}>
                                             <div className="absolute inset-0 bg-black/5 z-10 group-hover:bg-transparent transition-colors duration-500"></div>
@@ -242,7 +202,7 @@ export default function ProgramsPage() {
 
                                             {/* Floating Badge - Enhanced */}
                                             <div className={`absolute bottom-8 ${index % 2 === 0 ? 'right-8' : 'left-8'} z-20 bg-white/90 backdrop-blur-md p-5 rounded-full shadow-2xl animate-float border border-white/60 ring-4 ring-black/5`}>
-                                                <program.icon className={`w-10 h-10 ${program.accent}`} />
+                                                <theme.icon className={`w-10 h-10 ${theme.accent}`} />
                                             </div>
                                         </div>
 
@@ -266,7 +226,7 @@ export default function ProgramsPage() {
                                         </div>
 
                                         <div className="flex items-center justify-center md:justify-start gap-4 text-slate-500 font-bold text-lg">
-                                            <div className={`p-3 rounded-full bg-slate-100 ${program.accent}`}>
+                                            <div className={`p-3 rounded-full bg-slate-100 ${theme.accent}`}>
                                                 <Clock className="w-6 h-6" />
                                             </div>
                                             <span>{program.duration}</span>
@@ -279,16 +239,16 @@ export default function ProgramsPage() {
                                         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4">
                                             {program.features.map((feature, idx) => (
                                                 <li key={idx} className="flex items-center gap-4 text-slate-700 font-bold text-lg bg-white px-5 py-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all group cursor-default">
-                                                    <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${program.colorStart} ${program.colorEnd} group-hover:scale-150 transition-transform`}></div>
+                                                    <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${theme.colorStart} ${theme.colorEnd} group-hover:scale-150 transition-transform`}></div>
                                                     {feature}
                                                 </li>
                                             ))}
                                         </ul>
 
                                         <div className="pt-10">
-                                            <Link href="/admission">
+                                            <Link href={pageData.hero.cta_href || "/admission"}>
                                                 <Button className={`px-14 py-7 text-xl rounded-2xl font-bold shadow-2xl shadow-orange-200/50 hover:shadow-orange-300/60 hover:-translate-y-1 transition-all bg-gradient-to-r from-orange-500 to-red-500 text-white border-none uppercase tracking-wider`}>
-                                                    Enroll Your Child
+                                                    {pageData.hero.cta_label || "Enroll Your Child"}
                                                 </Button>
                                             </Link>
                                         </div>

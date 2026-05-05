@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Building2, Target, Lightbulb, Award, School, Home, GraduationCap, Users, BookOpen, Heart, Sparkles } from 'lucide-react';
 import MagicalStorySection from './MagicalStorySection';
 import { apiUrl } from '@/lib/api-client';
+import { DEFAULT_ABOUT_PAGE_DATA, mergeAboutPageData, type AboutPageData } from '@/config/about-page-defaults';
 
 interface CardProps {
     children: React.ReactNode;
@@ -92,6 +93,7 @@ export default function AboutPage() {
         total_cities: 80,
         total_students: 50000
     });
+    const [pageData, setPageData] = useState<AboutPageData>(DEFAULT_ABOUT_PAGE_DATA);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -108,28 +110,42 @@ export default function AboutPage() {
         fetchStats();
     }, []);
 
-    const businesses = [
-        {
-            name: 'T.I.M.E.',
-            description: 'National leader in entrance exam training',
-            icon: Award,
-        },
-        {
-            name: 'CLAT Training',
-            description: 'Specialized coaching for law entrance exams',
-            icon: Building2,
-        },
-        {
-            name: 'School Level Programs',
-            description: 'Academic support for school students',
-            icon: Lightbulb,
-        },
-        {
-            name: 'T.I.M.E. School',
-            description: 'Complete K-12 education',
-            icon: Target,
-        },
-    ];
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(apiUrl('/common/page-content/about/'));
+                if (!res.ok) throw new Error('Failed to load about page content');
+                const raw = (await res.json()) as unknown;
+                if (!cancelled) setPageData(mergeAboutPageData(raw));
+            } catch {
+                if (!cancelled) setPageData(DEFAULT_ABOUT_PAGE_DATA);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const iconByName: Record<string, any> = {
+        Building2,
+        Target,
+        Lightbulb,
+        Award,
+        School,
+        Home,
+        GraduationCap,
+        Users,
+        BookOpen,
+        Heart,
+        Sparkles,
+    };
+    const businesses = Array.isArray(pageData.time_group?.businesses) ? pageData.time_group?.businesses : [];
+    const trustItems = Array.isArray(pageData.time_group?.trust_items) ? pageData.time_group?.trust_items : [];
+    const coreValues = Array.isArray(pageData.beliefs?.core_values) ? pageData.beliefs?.core_values : [];
+    const hero = pageData.hero || {};
+    const beliefs = pageData.beliefs || {};
+    const timeGroup = pageData.time_group || {};
 
     return (
         <div className="min-h-screen relative overflow-hidden">
@@ -152,17 +168,17 @@ export default function AboutPage() {
                         <div className="inline-block mb-4 animate-on-scroll">
                             <span className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
                                 <Sparkles className="inline w-4 h-4 mr-2" />
-                                Trusted by {stats.total_schools}{stats.total_schools >= 100 ? '+' : ''} Schools Nationwide
+                                {(hero.badge_prefix || "Trusted by")} {stats.total_schools}{stats.total_schools >= 100 ? '+' : ''} {(hero.badge_suffix || "Schools Nationwide")}
                             </span>
                         </div>
                         <h1 className="font-luckiest text-5xl md:text-7xl mb-4 animate-on-scroll delay-100 tracking-wider text-[#003366]">
-                            About <span className="text-[#E67E22]">T.I.M.E. Kids</span>
+                            {hero.title_prefix || "About"} <span className="text-[#E67E22]">{hero.title_accent || "T.I.M.E. Kids"}</span>
                         </h1>
                         <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-6 animate-on-scroll delay-200">
-                            Where little dreamers become big achievers!
+                            {hero.tagline || "Where little dreamers become big achievers!"}
                         </p>
                         <p className="text-base text-gray-600 animate-on-scroll delay-300">
-                            A legacy of educational excellence spanning over 17 years in early childhood education
+                            {hero.subtitle || "A legacy of educational excellence spanning over 17 years in early childhood education"}
                         </p>
                     </div>
                 </div>
@@ -172,7 +188,7 @@ export default function AboutPage() {
             <WavyDivider color="fill-white" />
 
             {/* Our Magical Story with Aeroplanes */}
-            <MagicalStorySection />
+            <MagicalStorySection data={pageData.magical_story} />
 
             {/* Fun Stats Section */}
             <section className="section-gap bg-white relative overflow-hidden">
@@ -262,9 +278,9 @@ export default function AboutPage() {
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="text-center mb-8">
                         <h2 className="font-bubblegum text-4xl md:text-5xl mb-3 text-[#003366] tracking-wide">
-                            What We <span className="text-[#ef5f5f]">Believe In</span>
+                            {beliefs.heading_prefix || "What We"} <span className="text-[#ef5f5f]">{beliefs.heading_accent || "Believe In"}</span>
                         </h2>
-                        <p className="text-gray-600 text-base">Our guiding stars in nurturing young minds</p>
+                        <p className="text-gray-600 text-base">{beliefs.subtitle || "Our guiding stars in nurturing young minds"}</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-12 max-w-7xl mx-auto mb-16">
@@ -277,9 +293,9 @@ export default function AboutPage() {
                                     <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6 backdrop-blur-sm shadow-inner group-hover:scale-110 transition-transform duration-300">
                                         <Target className="w-12 h-12 text-white animate-pulse-soft" />
                                     </div>
-                                    <h3 className="font-display font-bold text-4xl mb-6">Our Vision</h3>
+                                    <h3 className="font-display font-bold text-4xl mb-6">{beliefs.vision?.title || "Our Vision"}</h3>
                                     <p className="text-white/95 leading-relaxed text-xl font-medium max-w-md mx-auto">
-                                        To be the most trusted and preferred preschool chain in India, providing world-class early childhood education that nurtures every child&apos;s potential and prepares them for a bright future.
+                                        {beliefs.vision?.text || "—"}
                                     </p>
                                 </div>
                             </div>
@@ -294,9 +310,9 @@ export default function AboutPage() {
                                     <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6 backdrop-blur-sm shadow-inner group-hover:scale-110 transition-transform duration-300">
                                         <Lightbulb className="w-12 h-12 text-white animate-pulse-soft" />
                                     </div>
-                                    <h3 className="font-display font-bold text-4xl mb-6">Our Philosophy</h3>
+                                    <h3 className="font-display font-bold text-4xl mb-6">{beliefs.philosophy?.title || "Our Philosophy"}</h3>
                                     <p className="text-white/95 leading-relaxed text-xl font-medium max-w-md mx-auto">
-                                        We believe in holistic development through play-based learning, fostering creativity, curiosity, and confidence in every child. Our approach combines traditional values with modern educational practices.
+                                        {beliefs.philosophy?.text || "—"}
                                     </p>
                                 </div>
                             </div>
@@ -305,29 +321,32 @@ export default function AboutPage() {
 
                     {/* Core Values */}
                     <div className="max-w-5xl mx-auto">
-                        <h3 className="font-display font-bold text-3xl text-center mb-6">Our Core Values</h3>
+                        <h3 className="font-display font-bold text-3xl text-center mb-6">{beliefs.core_values_title || "Our Core Values"}</h3>
                         <div className="grid md:grid-cols-3 gap-6">
-                            <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center">
-                                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                                    <Heart className="w-8 h-8 text-white" />
-                                </div>
-                                <h4 className="font-bold text-xl mb-2 text-gray-800">Care & Safety</h4>
-                                <p className="text-gray-600">Every child is precious and deserves a nurturing environment</p>
-                            </div>
-                            <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center">
-                                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                                    <Sparkles className="w-8 h-8 text-white" />
-                                </div>
-                                <h4 className="font-bold text-xl mb-2 text-gray-800">Creativity First</h4>
-                                <p className="text-gray-600">Encouraging imagination and innovative thinking</p>
-                            </div>
-                            <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center">
-                                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                                    <BookOpen className="w-8 h-8 text-white" />
-                                </div>
-                                <h4 className="font-bold text-xl mb-2 text-gray-800">Holistic Growth</h4>
-                                <p className="text-gray-600">Developing mind, body, and character together</p>
-                            </div>
+                            {(coreValues.length ? coreValues : [
+                                { title: "Care & Safety", text: "Every child is precious and deserves a nurturing environment", icon: "Heart" },
+                                { title: "Creativity First", text: "Encouraging imagination and innovative thinking", icon: "Sparkles" },
+                                { title: "Holistic Growth", text: "Developing mind, body, and character together", icon: "BookOpen" },
+                            ]).map((cv: any, idx: number) => {
+                                const Icon = iconByName[String(cv?.icon || "")] || Heart;
+                                const gradients = [
+                                    "from-blue-400 to-blue-500",
+                                    "from-purple-400 to-purple-500",
+                                    "from-green-400 to-green-500",
+                                    "from-orange-400 to-orange-500",
+                                    "from-pink-400 to-pink-500",
+                                ];
+                                const g = gradients[idx % gradients.length];
+                                return (
+                                    <div key={idx} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all hover:scale-105 text-center">
+                                        <div className={`w-16 h-16 bg-gradient-to-br ${g} rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                                            <Icon className="w-8 h-8 text-white" />
+                                        </div>
+                                        <h4 className="font-bold text-xl mb-2 text-gray-800">{String(cv?.title || "—")}</h4>
+                                        <p className="text-gray-600">{String(cv?.text || "—")}</p>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -349,73 +368,69 @@ export default function AboutPage() {
                         <div className="inline-block mb-3">
                             <span className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-full text-sm font-semibold">
                                 <Award className="inline w-4 h-4 mr-2" />
-                                30+ Years of Excellence
+                                {timeGroup.badge || "30+ Years of Excellence"}
                             </span>
                         </div>
                         <h2 className="font-bubblegum text-4xl md:text-5xl mb-3 text-[#003366] tracking-wide">
-                            Part of the <span className="text-[#ef5f5f]">T.I.M.E. Group</span>
+                            {timeGroup.heading_prefix || "Part of the"} <span className="text-[#ef5f5f]">{timeGroup.heading_accent || "T.I.M.E. Group"}</span>
                         </h2>
                         <p className="text-base text-gray-600 max-w-2xl mx-auto">
-                            Backed by three decades of educational excellence across multiple domains,
-                            bringing trusted expertise to early childhood education
+                            {timeGroup.subtitle || "Backed by three decades of educational excellence across multiple domains, bringing trusted expertise to early childhood education"}
                         </p>
                     </div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                        {businesses.map((business, index) => (
-                            <Card key={index} className="text-center group hover:scale-105 transition-transform bg-gradient-to-br from-white to-gray-50 border-2 border-gray-100 hover:border-primary-300">
+                        {(businesses.length ? businesses : []).map((business: any, index: number) => {
+                            const Icon = iconByName[String(business?.icon || "")] || Award;
+                            return (
+                                <Card key={index} className="text-center group hover:scale-105 transition-transform bg-gradient-to-br from-white to-gray-50 border-2 border-gray-100 hover:border-primary-300">
                                 <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all shadow-lg">
-                                    <business.icon className="w-10 h-10 text-white" />
+                                    <Icon className="w-10 h-10 text-white" />
                                 </div>
-                                <h3 className="font-display font-bold text-xl mb-3 text-gray-900">{business.name}</h3>
-                                <p className="text-gray-600">{business.description}</p>
+                                <h3 className="font-display font-bold text-xl mb-3 text-gray-900">{String(business?.name || "—")}</h3>
+                                <p className="text-gray-600">{String(business?.description || "—")}</p>
                             </Card>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* Why Choose Us Section */}
                     <div className="mt-10 max-w-5xl mx-auto">
                         <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-3xl p-8 md:p-10 shadow-xl">
                             <h3 className="font-display font-bold text-2xl text-center mb-6">
-                                Why Parents <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">Trust Us</span>
+                                {timeGroup.trust_title_prefix || "Why Parents"}{" "}
+                                <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+                                    {timeGroup.trust_title_accent || "Trust Us"}
+                                </span>
                             </h3>
                             <div className="grid md:grid-cols-2 gap-6">
-                                <div className="flex gap-4">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                                        <Award className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-lg mb-1">Proven Track Record</h4>
-                                        <p className="text-gray-600 text-sm">30+ years of educational excellence and expertise</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-4">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                                        <Users className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-lg mb-1">Trained Educators</h4>
-                                        <p className="text-gray-600 text-sm">Well-qualified and caring teachers who love children</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-4">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                                        <BookOpen className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-lg mb-1">Age-Appropriate Curriculum</h4>
-                                        <p className="text-gray-600 text-sm">Based on child development best practices</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-4">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                                        <Home className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-lg mb-1">Home-Like Environment</h4>
-                                        <p className="text-gray-600 text-sm">Safe, warm, and nurturing spaces for learning</p>
-                                    </div>
-                                </div>
+                                {(trustItems.length ? trustItems : [
+                                    { title: "Proven Track Record", text: "30+ years of educational excellence and expertise", icon: "Award" },
+                                    { title: "Trained Educators", text: "Well-qualified and caring teachers who love children", icon: "Users" },
+                                    { title: "Age-Appropriate Curriculum", text: "Based on child development best practices", icon: "BookOpen" },
+                                    { title: "Home-Like Environment", text: "Safe, warm, and nurturing spaces for learning", icon: "Home" },
+                                ]).map((it: any, idx: number) => {
+                                    const Icon = iconByName[String(it?.icon || "")] || Award;
+                                    const gradients = [
+                                        "from-green-400 to-green-500",
+                                        "from-blue-400 to-blue-500",
+                                        "from-purple-400 to-purple-500",
+                                        "from-pink-400 to-pink-500",
+                                        "from-orange-400 to-orange-500",
+                                    ];
+                                    const g = gradients[idx % gradients.length];
+                                    return (
+                                        <div key={idx} className="flex gap-4">
+                                            <div className={`w-12 h-12 bg-gradient-to-br ${g} rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg`}>
+                                                <Icon className="w-6 h-6 text-white" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-lg mb-1">{String(it?.title || "—")}</h4>
+                                                <p className="text-gray-600 text-sm">{String(it?.text || "—")}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>

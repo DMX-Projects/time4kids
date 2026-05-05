@@ -4,7 +4,6 @@ import Script from "next/script";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import Chatbot from "@/components/shared/Chatbot";
 import ScrollProgress from "@/components/animations/ScrollProgress";
 import SmoothScroll from "@/components/shared/SmoothScroll";
 import BlobBackground from "@/components/animations/BlobBackground";
@@ -91,7 +90,6 @@ export default function RootLayout({
 
                             <ConditionalChrome>
                                 <Footer />
-                                <Chatbot />
                             </ConditionalChrome>
                         </SchoolDataProvider>
                     </ToastProvider>
