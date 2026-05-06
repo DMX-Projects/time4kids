@@ -290,11 +290,11 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
                 setParentSchoolLoading(false);
             }
         } else if (user.role === "franchise") {
+            // Attendance: loaded on dashboard / attendance pages only (keeps payload obvious + avoids burying the UI behind sidebar-only navigation).
             await Promise.all([
                 loadFranchiseEvents(),
                 loadFranchiseEnquiries(),
                 loadFranchiseStudentsAndGrades(),
-                loadAttendance(),
             ]);
         } else if (user.role === "admin") {
             await loadAdminEnquiries();

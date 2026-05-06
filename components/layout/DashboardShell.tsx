@@ -9,6 +9,7 @@ import { Role, RoleGuard, useAuth } from "@/components/auth/AuthProvider";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { AdminSidebar, FranchiseSidebar, ParentSidebar } from "./SidebarLayout";
+import { SidebarMenuProvider } from "./SidebarMenuContext";
 
 export type DashboardNavItem = {
     label: string;
@@ -84,31 +85,12 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
         <RoleGuard allowedRole={role}>
             <div className="h-screen flex bg-white isolate overflow-hidden">
 
-                {/* Render role-specific sidebar */}
-                {isAdmin && (
-                    <AdminSidebar
-                        brand={brand}
-                        navItems={navItems}
-                        open={open}
-                        onClose={() => setOpen(false)}
-                    />
-                )}
-                {role === "franchise" && (
-                    <FranchiseSidebar
-                        brand={brand}
-                        navItems={navItems}
-                        open={open}
-                        onClose={() => setOpen(false)}
-                    />
-                )}
-                {role === "parent" && (
-                    <ParentSidebar
-                        brand={brand}
-                        navItems={navItems}
-                        open={open}
-                        onClose={() => setOpen(false)}
-                    />
-                )}
+                <SidebarMenuProvider closeMenu={() => setOpen(false)}>
+                    {/* Render role-specific sidebar */}
+                    {isAdmin && <AdminSidebar brand={brand} navItems={navItems} open={open} />}
+                    {role === "franchise" && <FranchiseSidebar brand={brand} navItems={navItems} open={open} />}
+                    {role === "parent" && <ParentSidebar brand={brand} navItems={navItems} open={open} />}
+                </SidebarMenuProvider>
                 {open && <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setOpen(false)} aria-label="Close menu" />}
 
                 <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-y-auto bg-slate-50">
