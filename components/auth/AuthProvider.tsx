@@ -69,46 +69,70 @@ type StoredAuth = {
     tokens: Tokens;
 };
 
+function getStorage(): Storage | null {
+    if (typeof window === "undefined") return null;
+    // Prefer localStorage, but some browser/privacy modes disable it.
+    try {
+        const k = "__tk_test__";
+        window.localStorage.setItem(k, "1");
+        window.localStorage.removeItem(k);
+        return window.localStorage;
+    } catch {
+        try {
+            const k = "__tk_test__";
+            window.sessionStorage.setItem(k, "1");
+            window.sessionStorage.removeItem(k);
+            return window.sessionStorage;
+        } catch {
+            return null;
+        }
+    }
+}
+
 function migrateLegacyIfNeeded(): void {
     if (typeof window === "undefined") return;
-    const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    const storage = getStorage();
+    if (!storage) return;
+    const raw = storage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return;
     try {
         const parsed = JSON.parse(raw) as StoredAuth;
         const role = normalizeRole(parsed.user.role);
         const key = storageKeyForRole(role);
-        if (!localStorage.getItem(key)) {
-            localStorage.setItem(key, raw);
+        if (!storage.getItem(key)) {
+            storage.setItem(key, raw);
         }
-        localStorage.removeItem(LEGACY_STORAGE_KEY);
-        localStorage.setItem(LAST_ROLE_KEY, role);
+        storage.removeItem(LEGACY_STORAGE_KEY);
+        storage.setItem(LAST_ROLE_KEY, role);
     } catch {
-        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        storage.removeItem(LEGACY_STORAGE_KEY);
     }
 }
 
 /** Pick which saved session to restore so franchise refresh does not load parent tokens from the same browser. */
 function readStoredSessionRaw(): string | null {
     if (typeof window === "undefined") return null;
+    const storage = getStorage();
+    if (!storage) return null;
     migrateLegacyIfNeeded();
 
     const pathRole = pathnameDashboardRole();
 
     if (pathRole) {
         const key = storageKeyForRole(pathRole);
-        const direct = localStorage.getItem(key);
+        const direct = storage.getItem(key);
         if (direct) return direct;
         return null;
     }
 
-    const last = localStorage.getItem(LAST_ROLE_KEY) as Role | null;
+    const last = storage.getItem(LAST_ROLE_KEY) as Role | null;
     if (last === "parent" || last === "franchise" || last === "admin" || last === "driver") {
-        const fromLast = localStorage.getItem(storageKeyForRole(last));
+        const fromLast = storage.getItem(storageKeyForRole(last));
         if (fromLast) return fromLast;
     }
 
     for (const r of ["admin", "franchise", "parent", "driver"] as const) {
-        const raw = localStorage.getItem(storageKeyForRole(r));
+        const raw = storage.getItem(storageKeyForRole(r));
         if (raw) return raw;
     }
     return null;
@@ -116,16 +140,18 @@ function readStoredSessionRaw(): string | null {
 
 function persistSession(next: StoredAuth | null, previousUser: User | null) {
     if (typeof window === "undefined") return;
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    const storage = getStorage();
+    if (!storage) return;
+    storage.removeItem(LEGACY_STORAGE_KEY);
     if (!next) {
         if (previousUser) {
-            localStorage.removeItem(storageKeyForRole(previousUser.role));
+            storage.removeItem(storageKeyForRole(previousUser.role));
         }
         return;
     }
     const role = normalizeRole(next.user.role);
-    localStorage.setItem(storageKeyForRole(role), JSON.stringify(next));
-    localStorage.setItem(LAST_ROLE_KEY, role);
+    storage.setItem(storageKeyForRole(role), JSON.stringify(next));
+    storage.setItem(LAST_ROLE_KEY, role);
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -229,10 +255,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setTokens(null);
         persistSession(null, prev);
         if (typeof window !== "undefined") {
-            localStorage.removeItem(LAST_ROLE_KEY);
-            localStorage.removeItem(LEGACY_STORAGE_KEY);
-            // Ensure full sign-out on shared devices and avoid role re-hydration loops.
-            for (const key of ALL_ROLE_KEYS) localStorage.removeItem(key);
+            const storage = getStorage();
+            if (storage) {
+                storage.removeItem(LAST_ROLE_KEY);
+                storage.removeItem(LEGACY_STORAGE_KEY);
+                // Ensure full sign-out on shared devices and avoid role re-hydration loops.
+                for (const key of ALL_ROLE_KEYS) storage.removeItem(key);
+            }
         }
     };
 

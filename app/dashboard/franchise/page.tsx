@@ -278,6 +278,7 @@ function ActionChip({
     return (
         <Link
             href={href}
+            prefetch={false}
             className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#74C0FC] focus-visible:ring-offset-1 ${activeStyles}`}
         >
             {label}

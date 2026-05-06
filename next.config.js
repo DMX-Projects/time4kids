@@ -1,16 +1,20 @@
 /** @type {import('next').NextConfig} */
+/** Django server URL — Next proxies `/api` and `/media` here in dev (and when env is set for local prod runs). */
+const djangoFromEnv = (process.env.DJANGO_DEV_BACKEND_URL || '').replace(/\/$/, '');
+const djangoDevFallback = 'http://127.0.0.1:8000';
+
 const nextConfig = {
+    trailingSlash: true,
     eslint: {
-        // Project has many legacy react/no-unescaped-entities issues; typecheck still runs.
         ignoreDuringBuilds: true,
     },
     images: {
-        domains: ['localhost', '127.0.0.1', '103.65.21.176'],
         remotePatterns: [
-            {
-                protocol: 'https',
-                hostname: '**',
-            },
+            { protocol: 'http', hostname: 'localhost' },
+            { protocol: 'http', hostname: '127.0.0.1' },
+            { protocol: 'https', hostname: 'localhost' },
+            { protocol: 'https', hostname: '127.0.0.1' },
+            { protocol: 'https', hostname: '**' },
             {
                 protocol: 'http',
                 hostname: '103.65.21.176',
@@ -21,30 +25,38 @@ const nextConfig = {
         formats: ['image/avif', 'image/webp'],
     },
     reactStrictMode: false,
-    // Performance optimizations
     compress: false,
     poweredByHeader: false,
-    // Optimize font loading
     optimizeFonts: true,
-    // Faster compilation in development
     swcMinify: true,
-    // Enable prefetching for better navigation performance
     experimental: {
-        optimizeCss: true,
-        // Reduce compilation time
         optimizePackageImports: ['lucide-react', 'framer-motion', 'gsap'],
     },
-    // Webpack optimizations for faster builds
     webpack: (config, { dev, isServer }) => {
         if (dev && !isServer) {
-            // Faster refresh in development
             config.watchOptions = {
                 poll: 1000,
-                aggregateTimeout: 300,
+                aggregateTimeout: 600,
             };
         }
         return config;
     },
-}
 
-module.exports = nextConfig
+    /**
+     * Proxy browser requests `http://localhost:3000/api/...` → Django so `/api/*` is never answered by Next (would be 404).
+     */
+    async rewrites() {
+        const isDev = process.env.NODE_ENV === 'development';
+        const djangoBase = isDev ? djangoFromEnv || djangoDevFallback : djangoFromEnv;
+        if (!djangoBase) return [];
+        return [
+            // Preserve trailing slashes to avoid Django APPEND_SLASH 301s via the proxy.
+            { source: '/api/:path*/', destination: `${djangoBase}/api/:path*/` },
+            { source: '/api/:path*', destination: `${djangoBase}/api/:path*` },
+            { source: '/media/:path*/', destination: `${djangoBase}/media/:path*/` },
+            { source: '/media/:path*', destination: `${djangoBase}/media/:path*` },
+        ];
+    },
+};
+
+module.exports = nextConfig;

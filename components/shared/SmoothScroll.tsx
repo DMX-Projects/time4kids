@@ -5,6 +5,15 @@ import Lenis from '@studio-freight/lenis';
 
 const SmoothScroll = () => {
     useEffect(() => {
+        // Lenis has known touch-edge crashes on some mobile emulation / older Android UA.
+        // For touch-first devices, fall back to native scrolling.
+        const hasTouch =
+            typeof window !== 'undefined' &&
+            (navigator.maxTouchPoints > 0 ||
+                (navigator as any).msMaxTouchPoints > 0 ||
+                'ontouchstart' in window);
+        if (hasTouch) return;
+
         // Disable CSS smooth scroll when Lenis is active
         const html = document.documentElement;
         const originalScrollBehavior = html.style.scrollBehavior;
@@ -17,7 +26,8 @@ const SmoothScroll = () => {
             gestureOrientation: 'vertical',
             smoothWheel: true,
             wheelMultiplier: 0.8, // Reduce wheel sensitivity for better control
-            touchMultiplier: 1.5,
+            // Touch disabled (we early-return on touch devices)
+            touchMultiplier: 1.0,
             infinite: false,
         });
 

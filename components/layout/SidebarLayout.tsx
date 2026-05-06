@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { DashboardNavItem } from "./DashboardShell";
+import { useSidebarMenu } from "./SidebarMenuContext";
 
 /** Exact match or a real child path (`href/...`), never sibling URLs that only share a string prefix (e.g. /events vs /event-gallery). */
 export function isDashboardNavActive(pathname: string, href: string, dashboardRootHref: string): boolean {
@@ -23,12 +24,12 @@ type SidebarProps = {
     };
     navItems: DashboardNavItem[];
     open: boolean;
-    onClose: () => void;
 };
 
 // ==================== ADMIN SIDEBAR ====================
-export function AdminSidebar({ brand, navItems, open, onClose }: SidebarProps) {
+export function AdminSidebar({ brand, navItems, open }: SidebarProps) {
     const pathname = usePathname();
+    const { closeMenu } = useSidebarMenu();
 
     return (
         <aside
@@ -57,7 +58,7 @@ export function AdminSidebar({ brand, navItems, open, onClose }: SidebarProps) {
                                 key={item.href}
                                 href={item.href}
                                 prefetch
-                                onClick={onClose}
+                                onClick={closeMenu}
                                 className={`group flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${active
                                     ? "bg-[#FFF4CC] text-[#111827] font-semibold"
                                     : "text-[#374151] hover:bg-[#F3F4F6]"
@@ -79,8 +80,9 @@ export function AdminSidebar({ brand, navItems, open, onClose }: SidebarProps) {
 }
 
 // ==================== FRANCHISE SIDEBAR ====================
-export function FranchiseSidebar({ brand, navItems, open, onClose }: SidebarProps) {
+export function FranchiseSidebar({ brand, navItems, open }: SidebarProps) {
     const pathname = usePathname();
+    const { closeMenu } = useSidebarMenu();
 
     return (
         <aside
@@ -103,13 +105,13 @@ export function FranchiseSidebar({ brand, navItems, open, onClose }: SidebarProp
                 {/* Navigation */}
                 <nav className="px-3 py-3 space-y-1 flex-1 min-h-0 overflow-y-auto">
                     {navItems.map((item, idx) => {
-                        const active = isDashboardNavActive(pathname, item.href, "/dashboard/franchise");
+                        const active = isDashboardNavActive(pathname, item.href, "/dashboard/franchise/");
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 prefetch={false}
-                                onClick={onClose}
+                                onClick={closeMenu}
                                 className={`group flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${active
                                     ? "bg-[#FFF4CC] text-[#111827] font-semibold"
                                     : "text-[#374151] hover:bg-[#F3F4F6]"
@@ -128,8 +130,9 @@ export function FranchiseSidebar({ brand, navItems, open, onClose }: SidebarProp
 }
 
 // ==================== PARENT SIDEBAR ====================
-export function ParentSidebar({ brand, navItems, open, onClose }: SidebarProps) {
+export function ParentSidebar({ brand, navItems, open }: SidebarProps) {
     const pathname = usePathname();
+    const { closeMenu } = useSidebarMenu();
 
     return (
         <aside
@@ -158,7 +161,7 @@ export function ParentSidebar({ brand, navItems, open, onClose }: SidebarProps) 
                                 key={item.href}
                                 href={item.href}
                                 prefetch
-                                onClick={onClose}
+                                onClick={closeMenu}
                                 className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium leading-snug transition-all duration-200 ${active
                                     ? "bg-[#FFF4CC] text-[#111827] font-semibold"
                                     : "text-[#374151] hover:bg-[#F3F4F6]"

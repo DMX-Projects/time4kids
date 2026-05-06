@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { SERVER_URL, mediaUrl } from '@/lib/api-client';
+import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { buildFallbackGalleryFromMock } from '@/lib/mock-media-data';
 import Modal from '@/components/ui/Modal';
 
@@ -37,7 +37,7 @@ export default function MediaPage() {
             };
 
             try {
-                const res = await fetch(`${SERVER_URL}/api/media/`);
+                const res = await fetch(apiUrl('/media/'));
 
                 if (!res.ok) throw new Error('Failed to fetch media');
 
