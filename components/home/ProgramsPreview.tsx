@@ -133,7 +133,7 @@ const ProgramsPreview = () => {
 
                 <div className="relative">
                     {/* Adventure Path Line (Static) */}
-                    <svg className="hidden md:block absolute top-1/2 left-0 w-full h-32 -translate-y-1/2 -z-10" preserveAspectRatio="none" viewBox="0 0 1000 100">
+                    <svg className="hidden md:block absolute top-[25%] left-0 w-full h-32 -translate-y-1/2 -z-10" preserveAspectRatio="none" viewBox="0 0 1000 100">
                         <path
                             id="adventurePath"
                             d="M0,50 Q125,0 250,50 T500,50 T750,50 T1000,50"
