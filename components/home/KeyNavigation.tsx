@@ -23,9 +23,9 @@ const THEMES = [
     { primary: "#f59e0b", light: "#fcd34d" },
 ];
 
-const WAVE_SEQUENCE_SECONDS = 3;
-const WAVE_DURATION_SECONDS = 0.72;
-const WAVE_RING_GAP_SECONDS = 0.05;
+const WAVE_SEQUENCE_SECONDS = 6;
+const WAVE_DURATION_SECONDS = 1.15;
+const WAVE_RING_GAP_SECONDS = 0.22;
 const WAVE_RING_DELAYS = [0, WAVE_RING_GAP_SECONDS, WAVE_RING_GAP_SECONDS * 2];
 
 const formatNavLabel = (label: string) => {
@@ -38,15 +38,12 @@ const NavigationCard = ({
     item,
     index,
     isActive,
-    waveDelay,
 }: {
     item: NavItem,
     index: number,
     isActive: boolean,
-    waveDelay: number,
 }) => {
     const theme = THEMES[index % THEMES.length];
-    const isFastWave = index < 2;
     const displayLabel = formatNavLabel(item.label);
     
     return (
@@ -62,37 +59,30 @@ const NavigationCard = ({
                         <motion.div
                             key={i}
                             animate={{
-                                scale: isFastWave
-                                    ? [0.98, 1.36, 1.76]
-                                    : [0.98, 1.3, 1.64],
-                                opacity: isFastWave
-                                    ? [0, 0.82, 0]
-                                    : [0, 0.68, 0],
+                                scale: isActive ? [1.02, 1.26, 1.55, 1.82] : 1.03,
+                                opacity: isActive ? [0, 0.38, 0.2, 0] : 0,
                             }}
                             transition={{
                                 duration: WAVE_DURATION_SECONDS,
-                                ease: [0.22, 1, 0.36, 1],
-                                delay: waveDelay + delay,
-                                repeat: Infinity,
-                                repeatDelay: WAVE_SEQUENCE_SECONDS - WAVE_DURATION_SECONDS,
+                                ease: "easeOut",
+                                delay,
+                                repeat: isActive ? Infinity : 0,
+                                repeatDelay: 0,
                             }}
                             className="absolute h-full w-full rounded-[45px] border"
                             style={{
                                 borderColor: theme.primary,
-                                boxShadow: isFastWave ? `0 0 18px ${theme.primary}33` : undefined,
+                                boxShadow: `0 0 10px ${theme.primary}1f`,
                                 mixBlendMode: "multiply",
                             }}
                         />
                     ))}
                     {!isActive && (
-                        <motion.div
-                            animate={{
-                                scale: 1.08,
-                                opacity: 0.18,
-                            }}
+                        <div
                             className="absolute h-full w-full rounded-[45px] border"
                             style={{
                                 borderColor: theme.primary,
+                                opacity: 0.08,
                                 mixBlendMode: "multiply",
                             }}
                         />
@@ -102,7 +92,7 @@ const NavigationCard = ({
                 {/* 1. Base Glass Card (Squircle) */}
                 <motion.div 
                     animate={{
-                        scale: isActive ? 1.05 : 1,
+                        scale: isActive ? 1.025 : 1,
                         boxShadow: isActive 
                             ? `0 30px 60px -12px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.3)`
                             : `0 10px 30px -10px rgba(0,0,0,0.1)`,
@@ -110,7 +100,7 @@ const NavigationCard = ({
                             ? `2.5px solid rgba(255,255,255,0.8)` 
                             : `1.5px solid rgba(255,255,255,0.4)`
                     }}
-                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                    transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
                     className="relative w-full h-full rounded-[45px] overflow-hidden flex items-center justify-center transition-all duration-700"
                     style={{ 
                         background: `linear-gradient(145deg, ${theme.light}, ${theme.primary})`,
@@ -179,22 +169,17 @@ export default function KeyNavigation() {
     const home = useHomePageContent();
     const items = home.key_navigation?.length ? home.key_navigation : [];
     const [activeIndex, setActiveIndex] = useState(0);
-    const lastRingDelay = WAVE_RING_DELAYS[WAVE_RING_DELAYS.length - 1];
-    const waveCompleteSeconds = WAVE_DURATION_SECONDS + lastRingDelay;
-    const waveDelayStep = items.length > 1
-        ? (WAVE_SEQUENCE_SECONDS - waveCompleteSeconds) / (items.length - 1)
-        : 0;
 
     useEffect(() => {
         if (!items.length) return;
 
-        // Sequential timer completes one ordered pass across all cards in 3 seconds.
+        // Complete one smooth pass across all cards in about 6 seconds.
         const interval = setInterval(() => {
             setActiveIndex((prev) => (prev + 1) % items.length);
-        }, Math.max(waveDelayStep * 1000, 350));
+        }, Math.max((WAVE_SEQUENCE_SECONDS * 1000) / items.length, 650));
 
         return () => clearInterval(interval);
-    }, [items.length, waveDelayStep]);
+    }, [items.length]);
 
     return (
         <section className="relative py-32 overflow-hidden bg-white font-jakarta">
@@ -212,7 +197,6 @@ export default function KeyNavigation() {
                             item={item} 
                             index={index} 
                             isActive={index === activeIndex}
-                            waveDelay={index * waveDelayStep}
                         />
                     ))}
                 </div>
