@@ -101,3 +101,12 @@ SSR API base (direct Django): http://127.0.0.1:8000/api
  GET /_next/static/chunks/app-pages-internals.js 404 in 6203ms
  GET /_next/static/css/app/page.css?v=1778517166461 404 in 6256ms
  GET / 200 in 567ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 61.7s (1498 modules)
+--- API Client Configuration (Server) ---
+NEXT_PUBLIC_SERVER_URL: http://127.0.0.1:8000
+BASE_URL (Computed): http://127.0.0.1:8000
+SSR API base (direct Django): http://127.0.0.1:8000/api
+-----------------------------------------
+ GET /_next/static/webpack/3b317f386c19ef87.webpack.hot-update.json 404 in 10936ms
+ GET / 200 in 56848ms
