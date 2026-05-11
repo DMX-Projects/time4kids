@@ -118,7 +118,7 @@ const ProgramsPreview = () => {
                     alt=""
                     width={90}
                     height={90}
-                    className="school-bus absolute bottom-32 opacity-80"
+                    className="school-bus absolute -bottom-2 md:bottom-0 opacity-100 saturate-200 brightness-95 contrast-125 drop-shadow-[0_10px_14px_rgba(120,72,20,0.35)]"
                     style={{ left: '100%' }} // Start off-screen Right
                 />
             </div>
