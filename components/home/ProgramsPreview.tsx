@@ -125,7 +125,7 @@ const ProgramsPreview = () => {
 
             <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-16">
-                    <h2 className="font-bubblegum text-5xl md:text-6xl text-[#003366]">
+                    <h2 className="font-display text-5xl font-black leading-tight text-[#253247] md:text-6xl">
                         Our <span className="text-[#ef5f5f]">Programs</span>
                     </h2>
                     <p className="text-gray-400 font-medium italic mt-2">Where learning feels like an adventure...</p>
@@ -181,13 +181,13 @@ const ProgramsPreview = () => {
                                         {program.ageGroup}
                                     </div>
                                 </div>
-                                <h3 className="font-bubblegum text-xl leading-tight text-[#003366] sm:text-2xl lg:text-3xl mb-1 sm:mb-2 whitespace-pre-line">
+                                <h3 className="font-display text-xl font-black leading-tight text-[#253247] sm:text-2xl lg:text-3xl mb-1 sm:mb-2 whitespace-pre-line">
                                     {program.programName}
                                 </h3>
                                 <p className="mb-3 px-0 text-xs font-medium leading-relaxed text-gray-500 sm:mb-4 sm:px-1 sm:text-sm">
                                     {program.description}
                                 </p>
-                                <Link href="/programs" className="inline-flex items-center gap-2 font-black text-[10px] uppercase tracking-widest" style={{ color: program.color }}>
+                                <Link href="/programs" className="inline-flex items-center gap-2 rounded-full px-4 py-2 font-black text-[10px] uppercase tracking-widest text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_14px_30px_rgba(15,23,42,0.22)]" style={{ backgroundColor: program.color }}>
                                     JOIN THE FUN <span className="text-lg">→</span>
                                 </Link>
                             </div>
@@ -198,7 +198,7 @@ const ProgramsPreview = () => {
                 {/* Explore Button */}
                 <div className="mt-4 text-center">
                     <Link href="/programs" className="relative inline-block group">
-                        <div className="relative bg-[#ef5f5f] text-white font-bubblegum text-2xl px-12 py-5 rounded-[2rem_4rem_2rem_5rem] shadow-lg hover:shadow-xl transition-all">
+                        <div className="relative bg-[#ef5f5f] text-white font-display text-2xl font-black px-12 py-5 rounded-[2rem_4rem_2rem_5rem] shadow-lg hover:shadow-xl transition-all">
                             Explore All Classes
                         </div>
                     </Link>

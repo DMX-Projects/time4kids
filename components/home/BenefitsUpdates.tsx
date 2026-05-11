@@ -9,7 +9,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
     Bell,
     BookOpen,
-    BriefcaseBusiness,
+    Briefcase,
     CalendarDays,
     ChevronRight,
     GraduationCap,
@@ -29,7 +29,7 @@ gsap.registerPlugin(ScrollTrigger);
 type Slide = { id?: number; date: string; text: string };
 type IconType = React.ComponentType<{ size?: number; className?: string }>;
 
-const benefitIcons: IconType[] = [TrendingUp, Star, BookOpen, GraduationCap, ShieldCheck, BriefcaseBusiness];
+const benefitIcons: IconType[] = [TrendingUp, Star, BookOpen, GraduationCap, ShieldCheck, Briefcase];
 const benefitGradients = [
     'from-emerald-400 to-lime-400',
     'from-sky-400 to-blue-500',
@@ -44,6 +44,20 @@ const floatingElements = [
     { label: 'B', className: 'right-[12%] top-[20%] bg-orange-100 text-orange-600', delay: 0.7 },
     { label: 'C', className: 'left-[16%] bottom-[18%] bg-emerald-100 text-emerald-600', delay: 1.2 },
 ];
+
+const BrandLogoText = () => (
+    <span className="inline-flex flex-wrap items-end gap-x-3 gap-y-2 align-baseline">
+        <span className="inline-flex -rotate-2 items-center rounded-xl bg-[#fed509] px-3 py-1.5 text-[#075094] shadow-[0_8px_0_rgba(7,80,148,0.16),0_16px_24px_rgba(15,23,42,0.12)] ring-2 ring-white/80">
+            T.I.M.E.
+        </span>
+        <span className="inline-flex items-baseline font-black">
+            <span className="text-[#f58220]">K</span>
+            <span className="text-[#94c947]">i</span>
+            <span className="text-[#0da9df]">d</span>
+            <span className="text-[#ed1c24]">s</span>
+        </span>
+    </span>
+);
 
 function formatSlideDate(iso: string | null | undefined): string {
     if (!iso) return '';
@@ -89,13 +103,6 @@ const BenefitCard = ({ text, number, index }: { text: string; number: number; in
                     <div className="flex items-center gap-2">
                         <Icon size={17} className="text-orange-500 transition-transform duration-300 group-hover:rotate-6" />
                         <p className="font-display text-sm font-black leading-snug text-slate-900 xl:text-base">{text}</p>
-                    </div>
-                    <div className="mt-2 h-px w-full overflow-hidden rounded-full bg-slate-200/70">
-                        <motion.div
-                            animate={{ x: ['-100%', '100%'] }}
-                            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: index * 0.2 }}
-                            className={`h-full w-1/2 bg-gradient-to-r ${gradient}`}
-                        />
                     </div>
                 </div>
             </div>
@@ -264,12 +271,15 @@ export default function BenefitsUpdates() {
                             <span className="text-xs font-black uppercase tracking-[0.18em] text-orange-700">Franchise advantage</span>
                         </div>
                         <h2
-                            className="font-display text-4xl font-black leading-[1.05] tracking-[-0.02em] text-[#07142f] md:text-5xl xl:text-[3.35rem]"
+                            className="font-display text-4xl font-black leading-[1.05] text-[#253247] md:text-5xl xl:text-[3.35rem]"
                             style={{ fontFamily: "'Clash Display', 'Satoshi', 'Plus Jakarta Sans', var(--font-poppins), system-ui, sans-serif" }}
                         >
                             Why Choose{' '}
-                            <span className="block bg-gradient-to-r from-orange-500 via-amber-400 to-sky-400 bg-clip-text text-transparent">
-                                T.I.M.E. Kids Franchise?
+                            <span className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
+                                <BrandLogoText />
+                                <span className="bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 bg-clip-text text-transparent">
+                                    Franchise?
+                                </span>
                             </span>
                         </h2>
                         <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
@@ -362,10 +372,10 @@ export default function BenefitsUpdates() {
                                     <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-600">Live updates</span>
                                 </div>
                                 <h3
-                                    className="mt-3 font-display text-4xl font-black leading-tight tracking-[-0.02em] text-[#07142f] md:text-5xl"
+                                    className="mt-3 font-display text-4xl font-black leading-tight text-[#253247] md:text-5xl"
                                     style={{ fontFamily: "'Clash Display', 'Satoshi', 'Plus Jakarta Sans', var(--font-poppins), system-ui, sans-serif" }}
                                 >
-                                    T.I.M.E. Kids Updates
+                                    Latest New update
                                 </h3>
                             </div>
                             <motion.div
@@ -377,7 +387,7 @@ export default function BenefitsUpdates() {
                             </motion.div>
                         </div>
 
-                        <div className="updates-panel relative overflow-hidden rounded-[32px] border border-white/15 bg-[#042f37] p-4 shadow-[0_30px_100px_rgba(2,47,55,0.28)]">
+                        <div className="updates-panel relative overflow-hidden rounded-[32px] border border-white/20 bg-[#3f4652] p-4 shadow-[0_30px_100px_rgba(63,70,82,0.22)]">
                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.25),transparent_30%),radial-gradient(circle_at_82%_20%,rgba(251,191,36,0.18),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_35%)]" />
                             <div className="absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(255,255,255,0.35)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.35)_1px,transparent_1px)] [background-size:26px_26px]" />
                             <motion.div
@@ -385,7 +395,7 @@ export default function BenefitsUpdates() {
                                 transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
                                 className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/12 to-transparent"
                             />
-                            <div className="relative min-h-[350px] rounded-[26px] border border-white/10 bg-slate-950/20 p-5 backdrop-blur-xl xl:min-h-[430px]">
+                            <div className="relative min-h-[350px] rounded-[26px] border border-white/12 bg-[#4b5563]/45 p-5 backdrop-blur-xl xl:min-h-[430px]">
                                 {!updatesReady ? (
                                     <div className="flex min-h-[300px] items-center justify-center text-center text-sm font-semibold text-white/80">
                                         Loading updates...

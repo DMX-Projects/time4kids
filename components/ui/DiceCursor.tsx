@@ -40,16 +40,15 @@ export default function DiceCursor() {
     const [isHovering, setIsHovering] = useState(false);
     const [isTextZone, setIsTextZone] = useState(false);
 
-    // Rotation state for the cube
-    const [rotateX, setRotateX] = useState(0);
-    const [rotateY, setRotateY] = useState(0);
-
     // Mouse position tracking for smooth movement
     const mouseX = useRef(0);
     const mouseY = useRef(0);
     const cursorX = useRef(0);
     const cursorY = useRef(0);
     const hoverRef = useRef(false);
+    const rotateX = useRef(0);
+    const rotateY = useRef(0);
+    const [rotation, setRotation] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -159,29 +158,6 @@ export default function DiceCursor() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isEnabled]);
 
-    // Scroll handling
-    useEffect(() => {
-        if (!isEnabled) return;
-        let lastScrollY = window.scrollY;
-        const onScroll = () => {
-            const current = window.scrollY;
-            const delta = current - lastScrollY;
-            lastScrollY = current;
-
-            // Force dice cursor during scroll
-            hoverRef.current = false;
-            setIsHovering(false);
-
-            // Multiply delta for speed control. 
-            // Y axis scroll -> Rotate X axis for tumbling forward/back
-            setRotateX(prev => prev + delta * 0.5);
-            // Add a bit of twist
-            setRotateY(prev => prev + delta * 0.2);
-        };
-        window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
-    }, [isEnabled]);
-
     // Blast effect state
     const [blasts, setBlasts] = useState<{ id: number, x: number, y: number }[]>([]);
 
@@ -203,8 +179,9 @@ export default function DiceCursor() {
         const randomY = Math.floor(Math.random() * 4) * 90 + (360 * intensity);
 
         // Snap current rotation to nearest 90 so we always land flat after a click spin
-        setRotateX(prev => Math.round(prev / 90) * 90 + randomX);
-        setRotateY(prev => Math.round(prev / 90) * 90 + randomY);
+        rotateX.current = Math.round(rotateX.current / 90) * 90 + randomX;
+        rotateY.current = Math.round(rotateY.current / 90) * 90 + randomY;
+        setRotation({ x: rotateX.current, y: rotateY.current });
 
         if (isInteractive) {
             triggerBlast(mouseX.current, mouseY.current);
@@ -246,8 +223,8 @@ export default function DiceCursor() {
                                 animate={{
                                     opacity: 1,
                                     scale: 1,
-                                    rotateX: rotateX,
-                                    rotateY: rotateY
+                                    rotateX: rotation.x,
+                                    rotateY: rotation.y
                                 }}
                                 exit={{ opacity: 0, scale: 0.3 }}
                                 className="w-full h-full relative"

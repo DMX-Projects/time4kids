@@ -23,12 +23,12 @@ const SmoothScroll = () => {
         html.style.scrollBehavior = 'auto';
 
         const lenis = new Lenis({
-            duration: 1.45,
-            easing: (t) => 1 - Math.pow(1 - t, 4),
+            duration: 0.65,
+            easing: (t) => 1 - Math.pow(1 - t, 3),
             orientation: 'vertical',
             gestureOrientation: 'vertical',
             smoothWheel: true,
-            wheelMultiplier: 0.72,
+            wheelMultiplier: 1.05,
             // Touch disabled (we early-return on touch devices)
             touchMultiplier: 1.0,
             infinite: false,

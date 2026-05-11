@@ -23,10 +23,10 @@ gsap.registerPlugin(ScrollTrigger);
 type IconType = React.ComponentType<{ size?: number; className?: string }>;
 
 const headingWords = [
-    { text: 'Where', className: 'text-[#07142f]' },
+    { text: 'Where', className: 'text-slate-700' },
     { text: 'Every', className: 'text-[#ff8058]' },
     { text: 'Child', className: 'text-[#ffb347]' },
-    { text: 'Begins', className: 'text-[#07142f]' },
+    { text: 'Begins', className: 'text-slate-700' },
     { text: 'Their', className: 'text-[#45c8e6]' },
 ];
 
@@ -66,7 +66,7 @@ const infoCards: Array<{ icon: IconType; value: string; label: string; className
     {
         icon: ShieldCheck,
         value: 'Safe',
-        label: 'Learning',
+        label: 'Transport',
         className: 'left-3 bottom-24 md:-left-10',
         delay: 1.2,
     },
@@ -337,14 +337,14 @@ export default function IntroSection() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.65, delay: 0.25 }}
-                            className="cta-sweep group relative z-40 mb-5 ml-auto inline-flex min-h-[54px] items-center justify-center overflow-hidden rounded-full bg-slate-950 px-7 text-base font-black text-white shadow-[0_22px_55px_rgba(15,23,42,0.28)] ring-1 ring-slate-800 transition-colors duration-300 hover:bg-orange-600"
+                            className="cta-sweep group relative z-40 mb-5 ml-auto inline-flex min-h-[54px] items-center justify-center overflow-hidden rounded-full bg-slate-700 px-7 text-base font-black text-white shadow-[0_22px_55px_rgba(15,23,42,0.22)] ring-1 ring-slate-500 transition-colors duration-300 hover:bg-orange-600"
                         >
                             <span className="particle-trail absolute left-7 top-1/2 h-1.5 w-1.5 rounded-full bg-amber-200 opacity-0" />
                             <span className="relative z-10 whitespace-nowrap">Discover Our Programs</span>
                             <motion.span
                                 animate={{ x: [0, 5, 0] }}
                                 transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-                                className="relative z-10 ml-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-950 transition-transform duration-300 group-hover:scale-110"
+                                className="relative z-10 ml-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 transition-transform duration-300 group-hover:scale-110"
                             >
                                 <ArrowRight size={18} />
                             </motion.span>
@@ -434,7 +434,7 @@ export default function IntroSection() {
                 }
 
                 .animated-gradient-text {
-                    background: linear-gradient(90deg, #45c8e6, #5fd8bd, #ffb347, #ff8058, #45c8e6);
+                    background: linear-gradient(90deg, #475569, #64748b, #475569);
                     background-size: 260% auto;
                     -webkit-background-clip: text;
                     background-clip: text;

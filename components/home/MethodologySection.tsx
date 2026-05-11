@@ -62,13 +62,6 @@ export default function MethodologySection() {
                 ease: 'sine.inOut',
             });
 
-            gsap.to('.methodology-bg', {
-                scale: 1.035,
-                duration: 10,
-                repeat: -1,
-                yoyo: true,
-                ease: 'sine.inOut',
-            });
         }, sectionRef);
 
         return () => ctx.revert();
@@ -96,21 +89,14 @@ export default function MethodologySection() {
             ref={sectionRef}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
-            className="relative isolate overflow-hidden py-20 font-sans md:py-24"
+            className="relative isolate overflow-hidden bg-[#fff8ed] py-20 font-sans md:py-24"
         >
-            <Image
-                src="/Morning Assembly.png"
-                alt="T.I.M.E. Kids children in a warm preschool environment"
-                fill
-                sizes="100vw"
-                className="methodology-bg -z-30 object-cover object-center"
-                priority={false}
-            />
-
-            <div className="absolute inset-0 -z-20 bg-gradient-to-r from-slate-950/74 via-slate-950/46 to-orange-950/34" />
-            <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_50%_42%,rgba(255,245,225,0.2),transparent_34%),radial-gradient(circle_at_15%_16%,rgba(251,191,36,0.24),transparent_30%)] backdrop-blur-[2px]" />
-            <div className="absolute inset-x-0 top-0 -z-10 h-56 bg-gradient-to-b from-amber-200/18 to-transparent" />
-            <div className="sun-ray absolute -left-24 -top-20 -z-10 h-[560px] w-[560px] rotate-[-18deg] bg-[conic-gradient(from_180deg,rgba(255,214,128,0.0),rgba(255,214,128,0.18),rgba(255,214,128,0.0),rgba(255,255,255,0.08),rgba(255,214,128,0.0))] blur-2xl" />
+            <div className="absolute inset-0 -z-30 bg-[radial-gradient(circle_at_16%_20%,rgba(45,212,191,0.28),transparent_32%),radial-gradient(circle_at_82%_16%,rgba(251,146,60,0.24),transparent_30%),linear-gradient(135deg,#fff8ed_0%,#eefcff_48%,#fff4d6_100%)]" />
+            <div className="absolute inset-x-0 top-0 -z-20 h-40 bg-gradient-to-b from-white/90 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 -z-20 h-44 bg-gradient-to-t from-white/80 to-transparent" />
+            <div className="absolute left-[8%] top-20 -z-10 h-48 w-48 rounded-full bg-teal-200/30 blur-3xl" />
+            <div className="absolute right-[10%] top-12 -z-10 h-56 w-56 rounded-full bg-orange-200/35 blur-3xl" />
+            <div className="sun-ray absolute -left-24 -top-20 -z-10 h-[560px] w-[560px] rotate-[-18deg] bg-[conic-gradient(from_180deg,rgba(255,214,128,0.0),rgba(255,214,128,0.2),rgba(255,214,128,0.0),rgba(255,255,255,0.18),rgba(255,214,128,0.0))] blur-2xl" />
             <div ref={glowRef} className="pointer-events-none absolute left-0 top-0 z-0 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,200,120,0.28),rgba(125,211,252,0.14)_44%,transparent_72%)] opacity-0 blur-2xl" />
 
             {particles.map((particle, index) => (
@@ -125,7 +111,7 @@ export default function MethodologySection() {
 
             <div className="container relative z-10 mx-auto px-4">
                 <div className="mx-auto max-w-4xl text-center">
-                    <div className="methodology-reveal mb-5 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/62 px-4 py-2 shadow-xl backdrop-blur-xl">
+                    <div className="methodology-reveal mb-5 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/78 px-4 py-2 shadow-xl backdrop-blur-md">
                         <Sparkles size={16} className="text-orange-500" />
                         <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-800">Joyful learning, thoughtfully designed</span>
                     </div>
@@ -140,8 +126,8 @@ export default function MethodologySection() {
                     <div className="methodology-reveal mx-auto mt-5 h-1 w-32 rounded-full bg-gradient-to-r from-orange-300 via-amber-100 to-sky-200 shadow-[0_0_24px_rgba(252,211,77,0.55)]" />
                 </div>
 
-                <div className="relative mt-12 rounded-[34px] border border-white/20 bg-white/12 p-4 shadow-[0_35px_120px_rgba(15,23,42,0.28)] backdrop-blur-md md:p-6">
-                    <div className="absolute inset-0 rounded-[34px] bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.22),transparent_36%)]" />
+                <div className="relative mt-12 rounded-[34px] border border-white/80 bg-white/60 p-4 shadow-[0_35px_95px_rgba(15,23,42,0.14)] backdrop-blur-sm md:p-6">
+                    <div className="absolute inset-0 rounded-[34px] bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.68),transparent_42%)]" />
                     <ul className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                         {methodologyItems.map((item, index) => {
                             const gradient = cardGradients[index % cardGradients.length];
@@ -155,7 +141,7 @@ export default function MethodologySection() {
                                 >
                                     <Link
                                         href={item.href}
-                                        className="group relative flex min-h-[190px] flex-col items-center justify-center overflow-hidden rounded-[26px] border border-white/35 bg-white/20 p-5 text-center text-white shadow-[0_20px_55px_rgba(0,0,0,0.18)] backdrop-blur-xl transition duration-500 hover:-translate-y-2 hover:border-amber-100/70 hover:bg-white/28 hover:shadow-[0_28px_80px_rgba(251,191,36,0.20)]"
+                                        className="group relative flex min-h-[190px] flex-col items-center justify-center overflow-hidden rounded-[26px] border border-white/70 bg-white/40 p-5 text-center text-white shadow-[0_20px_48px_rgba(15,23,42,0.13)] backdrop-blur-sm transition duration-500 hover:-translate-y-2 hover:border-amber-100 hover:bg-white/52 hover:shadow-[0_28px_70px_rgba(251,191,36,0.18)]"
                                     >
                                         <div className={`absolute -inset-16 bg-gradient-to-br ${gradient} opacity-18 blur-3xl transition duration-500 group-hover:opacity-35`} />
                                         <div className="absolute inset-0 translate-x-[-130%] bg-gradient-to-r from-transparent via-white/22 to-transparent transition-transform duration-700 group-hover:translate-x-[130%]" />
