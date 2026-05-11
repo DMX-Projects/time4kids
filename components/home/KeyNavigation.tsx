@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 
 // --- Types & Constants ---
@@ -15,17 +15,18 @@ interface NavItem {
 }
 
 const THEMES = [
-    { primary: "#F15A29", light: "#ff825c", shadow: "rgba(241, 90, 41, 0.4)", wave: "linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)" },
-    { primary: "#8AC43F", light: "#b0e66a", shadow: "rgba(138, 196, 63, 0.4)", wave: "linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)" },
-    { primary: "#C94A36", light: "#f0715d", shadow: "rgba(201, 74, 54, 0.4)", wave: "linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)" },
-    { primary: "#0ea5e9", light: "#7dd3fc", shadow: "rgba(14, 165, 233, 0.4)", wave: "linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)" },
-    { primary: "#8b5cf6", light: "#c4b5fd", shadow: "rgba(139, 92, 246, 0.4)", wave: "linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)" },
-    { primary: "#f59e0b", light: "#fcd34d", shadow: "rgba(245, 158, 11, 0.4)", wave: "linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)" },
+    { primary: "#F15A29", light: "#ff825c" },
+    { primary: "#8AC43F", light: "#b0e66a" },
+    { primary: "#C94A36", light: "#f0715d" },
+    { primary: "#0ea5e9", light: "#7dd3fc" },
+    { primary: "#8b5cf6", light: "#c4b5fd" },
+    { primary: "#f59e0b", light: "#fcd34d" },
 ];
 
 // --- Card Component ---
 const NavigationCard = ({ item, index, isActive }: { item: NavItem, index: number, isActive: boolean }) => {
     const theme = THEMES[index % THEMES.length];
+    const isFastWave = index < 2;
     
     return (
         <motion.div
@@ -34,6 +35,38 @@ const NavigationCard = ({ item, index, isActive }: { item: NavItem, index: numbe
         >
             {/* Main Visual Card Container */}
             <div className="relative w-40 h-40 md:w-48 md:h-48 flex items-center justify-center z-10">
+                {/* Outside card wave lines */}
+                <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center">
+                    {[0, 0.32, 0.64, 0.96].map((delay, i) => (
+                        <motion.div
+                            key={i}
+                            animate={{
+                                scale: isActive
+                                    ? isFastWave
+                                        ? [0.96, 1.38, 1.82]
+                                        : [0.96, 1.28, 1.62]
+                                    : 1.08 + i * 0.1,
+                                opacity: isActive
+                                    ? isFastWave
+                                        ? [0, 0.72, 0]
+                                        : [0, 0.56, 0]
+                                    : 0.18,
+                            }}
+                            transition={{
+                                duration: isFastWave ? 1.45 : 2.25,
+                                ease: [0.22, 1, 0.36, 1],
+                                delay: isFastWave ? delay * 0.7 : delay,
+                                repeat: isActive ? Infinity : 0,
+                            }}
+                            className="absolute h-full w-full rounded-[45px] border"
+                            style={{
+                                borderColor: theme.primary,
+                                boxShadow: isFastWave ? `0 0 18px ${theme.primary}33` : undefined,
+                                mixBlendMode: "multiply",
+                            }}
+                        />
+                    ))}
+                </div>
                 
                 {/* 1. Base Glass Card (Squircle) */}
                 <motion.div 
@@ -53,51 +86,12 @@ const NavigationCard = ({ item, index, isActive }: { item: NavItem, index: numbe
                     }}
                 >
                     {/* Glass Layer & Inner Glow */}
-                    <div className="absolute inset-0 bg-white/10 backdrop-blur-sm" />
-                    
-                    {/* 2. INTERNAL WAVE LAYER (Radial Expansion from Center) */}
-                    <AnimatePresence>
-                        {isActive && (
-                            <motion.div 
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: [0, 2.5], opacity: [0, 0.4, 0] }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 1.8, ease: "easeOut" }}
-                                className="absolute inset-0 w-full h-full z-10 pointer-events-none flex items-center justify-center"
-                            >
-                                {[0, 0.4, 0.8].map((delay, i) => (
-                                    <motion.div 
-                                        key={i}
-                                        initial={{ scale: 0, opacity: 0 }}
-                                        animate={{ scale: [0, 2], opacity: [0, 1 - (i * 0.3), 0] }}
-                                        transition={{ 
-                                            duration: 2, 
-                                            ease: "easeOut",
-                                            delay: delay
-                                        }}
-                                        className="absolute w-10 h-10 rounded-full border-2 border-white/60 shadow-[0_0_15px_rgba(255,255,255,0.2)]"
-                                    />
-                                ))}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    <div className="absolute inset-0 bg-white/10 backdrop-blur-sm pointer-events-none" />
 
 
 
-                    {/* 4. Icon Animation */}
-                    <motion.div 
-                        animate={{ 
-                            y: isActive ? -12 : [0, -5, 0],
-                            scale: isActive ? 1.15 : 1,
-                            rotate: isActive ? 5 : 0
-                        }}
-                        transition={{ 
-                            duration: isActive ? 1.2 : 4, 
-                            repeat: isActive ? 0 : Infinity, 
-                            ease: "easeInOut" 
-                        }}
-                        className="relative z-20 w-16 h-16 md:w-20 md:h-20 flex items-center justify-center"
-                    >
+                    {/* 4. Icon */}
+                    <div className="relative z-20 w-16 h-16 md:w-20 md:h-20 flex items-center justify-center">
                         <Image 
                             src={item.icon} 
                             alt={item.alt} 
@@ -106,7 +100,7 @@ const NavigationCard = ({ item, index, isActive }: { item: NavItem, index: numbe
                             className="object-contain invert brightness-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.2)]" 
                             unoptimized 
                         />
-                    </motion.div>
+                    </div>
                 </motion.div>
 
 
@@ -161,7 +155,7 @@ export default function KeyNavigation() {
         // Sequential Timer to cycle through active cards
         const interval = setInterval(() => {
             setActiveIndex((prev) => (prev + 1) % items.length);
-        }, 2500); // 2.5s duration per card animation
+        }, 3000); // 3s duration per card animation
 
         return () => clearInterval(interval);
     }, [items.length]);
