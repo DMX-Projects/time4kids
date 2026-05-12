@@ -14,7 +14,7 @@ export default function SchoolKeyNavigation() {
                                 <Image src="/icon-tour.png" alt="Virtual Tour" width={38} height={38} className="key-nav-icon" />
                             </span>
                         </figure>
-                        <a href="/media">
+                        <a href="/gallery">
                             Virtual <br />Tour
                         </a>
                     </li>
@@ -24,7 +24,7 @@ export default function SchoolKeyNavigation() {
                                 <Image src="/icon-gallery.png" alt="Photo / Video Gallery" width={38} height={38} className="key-nav-icon" />
                             </span>
                         </figure>
-                        <a href="/media">Photo / Video Gallery</a>
+                        <a href="/gallery">Photo / Video Gallery</a>
                     </li>
                     <li className="nav-link3">
                         <figure>

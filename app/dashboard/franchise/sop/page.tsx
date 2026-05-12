@@ -76,7 +76,7 @@ export default function SopPage() {
             )}
 
             <p className="text-xs text-[#6B7280]">
-                These documents are shown from the Resource Hub document library. Uploads/updates can be done by your HO admin.
+                Shared by HO for your centre. Uploads and updates are managed by HO admin.
             </p>
         </div>
     );

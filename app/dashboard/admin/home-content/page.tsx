@@ -18,15 +18,6 @@ const NAV_CLASS_OPTIONS = [
     { value: "nav-link3", label: "Red bubble (Style 3)", swatch: "from-[#D36655] to-[#BD2B13]" },
 ];
 
-const METH_CLASS_PRESETS = [
-    { value: "nav-item1", label: "Orange tile (1)" },
-    { value: "nav-item2", label: "Green tile (2)" },
-    { value: "nav-item3", label: "Red tile (3)" },
-    { value: "nav-item4", label: "Orange tile (4)" },
-    { value: "nav-item5", label: "Green tile (5)" },
-    { value: "nav-item6", label: "Red tile (6)" },
-];
-
 function Section({
     title,
     children,
@@ -342,18 +333,20 @@ export default function AdminHomeContentPage() {
         setMessage(null);
         setUploadingProgramIndex(programIndex);
         try {
-            const dims0 = await getImageDimensions(file);
-            setProgramUploadInfo((prev) => ({
-                ...prev,
-                [programIndex]: `${file.name} • ${dims0.width}×${dims0.height}px • ${formatMb(file.size)}`,
-            }));
             if (file.size > MAX_UPLOAD_BYTES) {
                 throw new Error(`File is too large (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max allowed is 5MB.`);
             }
-            const { width, height } = dims0;
-            const min = 256;
-            if (width < min || height < min) {
-                throw new Error(`Image is too small (${width}×${height}). Please upload at least ${min}×${min}px (recommended 512×512).`);
+            try {
+                const dims0 = await getImageDimensions(file);
+                setProgramUploadInfo((prev) => ({
+                    ...prev,
+                    [programIndex]: `${file.name} • ${dims0.width}×${dims0.height}px • ${formatMb(file.size)}`,
+                }));
+            } catch {
+                setProgramUploadInfo((prev) => ({
+                    ...prev,
+                    [programIndex]: `${file.name} • ${formatMb(file.size)}`,
+                }));
             }
 
             const programName = data.programs_preview.programs[programIndex]?.programName || `Program ${programIndex + 1}`;
@@ -385,28 +378,20 @@ export default function AdminHomeContentPage() {
         setMessage(null);
         setUploadingWhyIndex(featureIndex);
         try {
-            const dims0 = await getImageDimensions(file);
-            setWhyUploadInfo((prev) => ({
-                ...prev,
-                [featureIndex]: `${file.name} • ${dims0.width}×${dims0.height}px • ${formatMb(file.size)}`,
-            }));
             if (file.size > MAX_UPLOAD_BYTES) {
                 throw new Error(`File is too large (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max allowed is 5MB.`);
             }
-
-            const { width, height } = dims0;
-            const minW = 800;
-            const minH = 600;
-            if (width < minW || height < minH) {
-                throw new Error(`Image is too small (${width}×${height}). Please upload at least ${minW}×${minH}px (recommended 1200×900).`);
-            }
-
-            // Card uses aspect-[4/3]. Accept near 4:3 to avoid awkward crop.
-            const aspect = width / Math.max(1, height);
-            const ideal = 4 / 3;
-            const tol = 0.25; // allow some flexibility
-            if (Math.abs(aspect - ideal) > tol) {
-                throw new Error(`Image ratio should be close to 4:3 (e.g. 1200×900). Your image is ${width}×${height} (${aspect.toFixed(2)}:1).`);
+            try {
+                const dims0 = await getImageDimensions(file);
+                setWhyUploadInfo((prev) => ({
+                    ...prev,
+                    [featureIndex]: `${file.name} • ${dims0.width}×${dims0.height}px • ${formatMb(file.size)}`,
+                }));
+            } catch {
+                setWhyUploadInfo((prev) => ({
+                    ...prev,
+                    [featureIndex]: `${file.name} • ${formatMb(file.size)}`,
+                }));
             }
 
             const title = data.why_choose_us.features[featureIndex]?.title || `Card ${featureIndex + 1}`;
@@ -458,8 +443,7 @@ export default function AdminHomeContentPage() {
                         </div>
                         <MiniPreviewKeyNav items={data.key_navigation} />
                         <p className="text-xs text-slate-500">
-                            Image paths are under <code className="bg-slate-100 px-1 rounded">/public</code> (e.g.{" "}
-                            <code className="bg-slate-100 px-1 rounded">/icon-tour.png</code>).
+                            Icons use the site’s bundled images; edit link URL, text, alt text, and “open in new tab” below.
                         </p>
                         {data.key_navigation.map((row, i) => (
                             <div key={i} className="rounded-xl border border-slate-100 p-3 space-y-2 bg-slate-50/80">
@@ -474,23 +458,16 @@ export default function AdminHomeContentPage() {
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
-                                <div className="grid sm:grid-cols-2 gap-2">
-                                    <div>
-                                        <label className={labelClass}>Icon image path</label>
-                                        <div className="flex items-center gap-2">
-                                            <input className={inputClass} value={row.icon} onChange={(e) => updateKeyNav(i, { icon: e.target.value })} />
-                                            <ImgThumb src={row.icon} alt={row.alt || row.label || `Icon ${i + 1}`} />
-                                        </div>
-                                    </div>
+                                <div className="grid gap-2">
                                     <div>
                                         <label className={labelClass}>Alt text (accessibility)</label>
                                         <input className={inputClass} value={row.alt} onChange={(e) => updateKeyNav(i, { alt: e.target.value })} />
                                     </div>
-                                    <div className="sm:col-span-2">
+                                    <div>
                                         <label className={labelClass}>Link URL</label>
                                         <input className={inputClass} value={row.href} onChange={(e) => updateKeyNav(i, { href: e.target.value })} />
                                     </div>
-                                    <div className="sm:col-span-2">
+                                    <div>
                                         <label className={labelClass}>Link text (use Enter for a new line)</label>
                                         <textarea
                                             className={`${inputClass} min-h-[60px]`}
@@ -717,8 +694,14 @@ export default function AdminHomeContentPage() {
                                             <ImgThumb src={f.image} alt={f.title || `Why choose us ${i + 1}`} />
                                         </div>
                                         <div className="mt-1 text-[11px] text-slate-500 space-y-1">
-                                            <div>
-                                                Requirements: max <strong>5MB</strong>, minimum <strong>800×600</strong>, best is <strong>1200×900 (4:3)</strong>.
+                                            <div className="space-y-0.5">
+                                                <div>
+                                                    <span className="font-semibold text-slate-700">Requirements (recommended):</span> max{" "}
+                                                    <strong>5MB</strong>, minimum <strong>800×600</strong>, best <strong>1200×900 (4:3)</strong>.
+                                                </div>
+                                                <div className="text-slate-500">
+                                                    <span className="font-semibold text-slate-600">Enforced:</span> file size ≤5MB only — smaller or non-4:3 images still upload.
+                                                </div>
                                             </div>
                                             {whyUploadInfo[i] && <div className="text-slate-600">Selected: {whyUploadInfo[i]}</div>}
                                         </div>
@@ -863,8 +846,14 @@ export default function AdminHomeContentPage() {
                                             <ImgThumb src={prog.image} alt={prog.programName || `Program ${i + 1}`} />
                                         </div>
                                         <div className="mt-1 text-[11px] text-slate-500 space-y-1">
-                                            <div>
-                                                Upload a square image (recommended <strong>512×512</strong>, minimum <strong>256×256</strong>). Use “Image crop” below if the face is not centered.
+                                            <div className="space-y-0.5">
+                                                <div>
+                                                    <span className="font-semibold text-slate-700">Requirements (recommended):</span> max{" "}
+                                                    <strong>5MB</strong>, square image recommended <strong>512×512</strong>, minimum <strong>256×256</strong>. Use “Image crop” below if the face is not centered.
+                                                </div>
+                                                <div className="text-slate-500">
+                                                    <span className="font-semibold text-slate-600">Enforced:</span> file size ≤5MB only — smaller or non-square images still upload.
+                                                </div>
                                             </div>
                                             {programUploadInfo[i] && <div className="text-slate-600">Selected: {programUploadInfo[i]}</div>}
                                         </div>
@@ -959,6 +948,9 @@ export default function AdminHomeContentPage() {
                             <strong>Where it shows:</strong> Home page → the methodology icon row.
                         </div>
                         <MiniPreviewMethodology meth={data.methodology} />
+                        <p className="text-xs text-slate-500">
+                            Icons and tile colours follow bundled presets; edit section title, item label, and link below.
+                        </p>
                         <div>
                             <label className={labelClass}>Section title</label>
                             <input
@@ -987,62 +979,31 @@ export default function AdminHomeContentPage() {
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
-                                <div>
-                                    <label className={labelClass}>Icon path</label>
-                                    <div className="flex items-center gap-2">
+                                <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
+                                    <div>
+                                        <label className={labelClass}>Label</label>
                                         <input
                                             className={inputClass}
-                                            value={item.icon}
+                                            value={item.label}
                                             onChange={(e) => {
                                                 const next = [...data.methodology.items];
-                                                next[i] = { ...next[i], icon: e.target.value };
+                                                next[i] = { ...next[i], label: e.target.value };
                                                 setData({ ...data, methodology: { ...data.methodology, items: next } });
                                             }}
                                         />
-                                        <ImgThumb src={item.icon} alt={item.label || `Methodology ${i + 1}`} />
                                     </div>
-                                </div>
-                                <div>
-                                    <label className={labelClass}>Label</label>
-                                    <input
-                                        className={inputClass}
-                                        value={item.label}
-                                        onChange={(e) => {
-                                            const next = [...data.methodology.items];
-                                            next[i] = { ...next[i], label: e.target.value };
-                                            setData({ ...data, methodology: { ...data.methodology, items: next } });
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={labelClass}>Link</label>
-                                    <input
-                                        className={inputClass}
-                                        value={item.href}
-                                        onChange={(e) => {
-                                            const next = [...data.methodology.items];
-                                            next[i] = { ...next[i], href: e.target.value };
-                                            setData({ ...data, methodology: { ...data.methodology, items: next } });
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={labelClass}>Shape style</label>
-                                    <select
-                                        className={inputClass}
-                                        value={item.class}
-                                        onChange={(e) => {
-                                            const next = [...data.methodology.items];
-                                            next[i] = { ...next[i], class: e.target.value };
-                                            setData({ ...data, methodology: { ...data.methodology, items: next } });
-                                        }}
-                                    >
-                                        {METH_CLASS_PRESETS.map((c) => (
-                                            <option key={c.value} value={c.value}>
-                                                {c.label}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div>
+                                        <label className={labelClass}>Link</label>
+                                        <input
+                                            className={inputClass}
+                                            value={item.href}
+                                            onChange={(e) => {
+                                                const next = [...data.methodology.items];
+                                                next[i] = { ...next[i], href: e.target.value };
+                                                setData({ ...data, methodology: { ...data.methodology, items: next } });
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         ))}

@@ -20,11 +20,10 @@ interface HeroSlide {
     is_active: boolean;
 }
 
-const HERO_MAX_BYTES = 5 * 1024 * 1024; // 5MB
+const HERO_MAX_BYTES = 5 * 1024 * 1024; // 5MB — only enforced limit
 const HERO_RECOMMENDED = { w: 1920, h: 600 };
 const HERO_MIN = { w: 1600, h: 600 };
-const HERO_ASPECT = HERO_RECOMMENDED.w / HERO_RECOMMENDED.h; // 3.2
-const HERO_ASPECT_TOLERANCE = 0.25;
+const HERO_ASPECT = HERO_RECOMMENDED.w / HERO_RECOMMENDED.h;
 
 function formatMb(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
@@ -167,27 +166,11 @@ export default function ManageHeroSlider() {
                     return;
                 }
 
-                // File Validation (size + dimensions + ratio)
+                // Only enforce max file size; dimensions/ratio are optional (recommended in UI).
                 const problems: string[] = [];
                 for (const f of files) {
                     if (f.size > HERO_MAX_BYTES) {
                         problems.push(`"${f.name}" is too large (${formatMb(f.size)}). Max allowed is 5MB.`);
-                        continue;
-                    }
-                    try {
-                        const { width, height } = await getImageDimensions(f);
-                        const aspect = width / Math.max(1, height);
-                        const aspectOk = Math.abs(aspect - HERO_ASPECT) <= HERO_ASPECT_TOLERANCE;
-                        const minOk = width >= HERO_MIN.w && height >= HERO_MIN.h;
-                        if (!minOk || !aspectOk) {
-                            const why = [
-                                !minOk ? `needs at least ${HERO_MIN.w}×${HERO_MIN.h}px (got ${width}×${height}px)` : null,
-                                !aspectOk ? `needs wide banner ratio ~${HERO_ASPECT.toFixed(2)}:1 (got ${aspect.toFixed(2)}:1)` : null,
-                            ].filter(Boolean).join("; ");
-                            problems.push(`"${f.name}" ${why}. Recommended: ${HERO_RECOMMENDED.w}×${HERO_RECOMMENDED.h}px.`);
-                        }
-                    } catch {
-                        problems.push(`"${f.name}" could not be read. Please try a PNG/JPG/WebP image.`);
                     }
                 }
                 if (problems.length) {
@@ -369,10 +352,21 @@ export default function ManageHeroSlider() {
                                 {...register('image', { required: !editingSlide, onChange: handleImageChange })}
                             />
                         </div>
-                        <div className="mt-2 text-xs text-gray-600">
-                            <span className="font-semibold text-gray-700">Requirements:</span>{" "}
-                            Max <strong>5MB</strong>, at least <strong>{HERO_MIN.w}×{HERO_MIN.h}px</strong>, wide banner ratio ~
-                            <strong>{HERO_ASPECT.toFixed(1)}:1</strong>. Recommended <strong>{HERO_RECOMMENDED.w}×{HERO_RECOMMENDED.h}px</strong>.
+                        <div className="mt-2 text-xs text-gray-600 space-y-1">
+                            <div>
+                                <span className="font-semibold text-gray-700">Requirements (recommended):</span> max{" "}
+                                <strong>5MB</strong>, at least <strong>
+                                    {HERO_MIN.w}×{HERO_MIN.h}px
+                                </strong>
+                                , wide banner ratio ~<strong>{HERO_ASPECT.toFixed(1)}:1</strong>. Best:{" "}
+                                <strong>
+                                    {HERO_RECOMMENDED.w}×{HERO_RECOMMENDED.h}px
+                                </strong>
+                                .
+                            </div>
+                            <div className="text-gray-500">
+                                <span className="font-semibold text-gray-600">Enforced:</span> file size ≤5MB only — smaller dimensions or other ratios still upload.
+                            </div>
                         </div>
                         {selectedInfo && <div className="mt-1 text-xs text-gray-600">Selected: {selectedInfo}</div>}
                     </div>
