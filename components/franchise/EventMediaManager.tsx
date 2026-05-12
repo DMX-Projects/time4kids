@@ -186,12 +186,12 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
                         </div>
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-gray-700">
-                                Select Files {mediaType === 'IMAGE' && '(Multiple allowed)'}
+                                Select files (multiple allowed)
                             </label>
                             <input
                                 type="file"
                                 accept={mediaType === 'IMAGE' ? 'image/*' : 'video/*'}
-                                multiple={mediaType === 'IMAGE'}
+                                multiple
                                 onChange={(e) => setSelectedFiles(e.target.files)}
                                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
                             />
@@ -249,20 +249,23 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
                                 />
                             )}
                             {item.media_type === 'VIDEO' && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
                                     <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center">
                                         <Play className="w-6 h-6 text-red-600 fill-current" />
                                     </div>
                                 </div>
                             )}
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <button
-                                    onClick={() => handleDelete(item.id)}
-                                    className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                                    title="Delete"
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
+                            <button
+                                type="button"
+                                onClick={() => handleDelete(item.id)}
+                                className="absolute top-2 right-2 z-10 p-2 rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 transition-colors"
+                                title="Remove this photo or video"
+                                aria-label="Remove this photo or video"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                <span className="text-white text-xs font-semibold px-2 py-1 rounded bg-black/50">Tap trash to remove</span>
                             </div>
                             {item.caption && (
                                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">

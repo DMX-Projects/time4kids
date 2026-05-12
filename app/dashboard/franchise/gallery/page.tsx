@@ -22,6 +22,13 @@ interface Event {
     media: any[];
 }
 
+/** HTML date inputs need YYYY-MM-DD; API may return ISO datetimes. */
+function toDateOnly(raw: string | undefined): string {
+    if (!raw) return "";
+    const m = String(raw).trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : "";
+}
+
 export default function ManageGallery() {
     const { tokens } = useAuth();
     const { showToast } = useToast();
@@ -34,7 +41,7 @@ export default function ManageGallery() {
     const [selectedEventForMedia, setSelectedEventForMedia] = useState<Event | null>(null);
     const [saving, setSaving] = useState(false);
 
-    const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
+    const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
     const fetchEvents = useCallback(async () => {
         if (!token) return;
@@ -64,11 +71,13 @@ export default function ManageGallery() {
     const handleOpenModal = (event?: Event) => {
         if (event) {
             setEditingEvent(event);
-            setValue('title', event.title);
-            setValue('description', event.description);
-            setValue('start_date', event.start_date);
-            setValue('end_date', event.end_date || '');
-            setValue('location', event.location);
+            reset({
+                title: event.title,
+                description: event.description ?? '',
+                start_date: toDateOnly(event.start_date),
+                end_date: toDateOnly(event.end_date),
+                location: event.location ?? '',
+            });
         } else {
             setEditingEvent(null);
             reset({
