@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import { apiUrl } from '@/lib/api-client';
+import { formatIndianInteger } from '@/lib/format-indian-number';
 
 const AdmissionBar = () => {
     const [stats, setStats] = useState({
@@ -109,17 +110,26 @@ const AdmissionBar = () => {
                 <div className="mt-8 flex flex-wrap justify-center items-center gap-x-8 gap-y-3 text-gray-600 font-medium text-sm md:text-base">
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-green-500" />
-                        <span>{stats.total_schools}{stats.total_schools >= 100 ? '+' : ''} Schools</span>
+                        <span>
+                            {formatIndianInteger(stats.total_schools)}
+                            {stats.total_schools >= 100 ? '+' : ''} Schools
+                        </span>
                     </div>
                     <div className="hidden md:block w-px h-4 bg-gray-300" />
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-500" />
-                        <span>{stats.total_students}{stats.total_students >= 1000 ? '+' : ''} Smart Students</span>
+                        <span>
+                            {formatIndianInteger(stats.total_students)}
+                            {stats.total_students >= 1000 ? '+' : ''} Smart Students
+                        </span>
                     </div>
                     <div className="hidden md:block w-px h-4 bg-gray-300" />
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-purple-500" />
-                        <span>{stats.total_cities}{stats.total_cities >= 50 ? '+' : ''} Cities</span>
+                        <span>
+                            {formatIndianInteger(stats.total_cities)}
+                            {stats.total_cities >= 50 ? '+' : ''} Cities
+                        </span>
                     </div>
                 </div>
             </div>

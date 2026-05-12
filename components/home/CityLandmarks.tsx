@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { apiUrl } from '@/lib/api-client';
+import React from 'react';
 
 // Type definitions
 export type LandmarkType =
@@ -31,59 +30,6 @@ export type LandmarkType =
     | 'beach_rk'
     | 'temple_hill'
     | 'fort_moat';
-
-export interface CityData {
-    id?: number;
-    name: string;
-    landmark: string;
-    type: LandmarkType;
-}
-
-// Custom hook to fetch city landmarks from API
-export const useCityLandmarks = () => {
-    const [cityLandmarks, setCityLandmarks] = useState<CityData[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchLocations = async () => {
-            try {
-                setLoading(true);
-                const response = await fetch(apiUrl('/franchises/public/locations/'));
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                // Handle both paginated (DRF default) and non-paginated responses
-                const results = Array.isArray(data) ? data : (data.results || []);
-
-                // Transform API data to match CityData interface
-                const transformedData: CityData[] = results.map((item: any) => ({
-                    id: item.id,
-                    name: item.city_name,
-                    landmark: item.landmark_name,
-                    type: item.landmark_type as LandmarkType
-                }));
-
-                setCityLandmarks(transformedData);
-                setError(null);
-            } catch (err) {
-                console.error('Error fetching franchise locations:', err);
-                setError(err instanceof Error ? err.message : 'Failed to fetch locations');
-                setCityLandmarks([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchLocations();
-    }, []);
-
-    return { cityLandmarks, loading, error };
-};
 
 export const LandmarkIcon = ({ type, className = "w-6 h-6" }: { type: LandmarkType, className?: string }) => {
     // Reference Style: High Detail Line Art, Monochrome (Black), Transparent Fills.

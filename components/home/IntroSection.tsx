@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
+    type LucideIcon,
     ArrowRight,
     BookOpen,
     GraduationCap,
@@ -20,8 +21,6 @@ import {
 
 gsap.registerPlugin(ScrollTrigger);
 
-type IconType = React.ComponentType<{ size?: number; className?: string }>;
-
 const headingWords = [
     { text: 'Where', className: 'text-slate-700' },
     { text: 'Every', className: 'text-[#ff8058]' },
@@ -30,7 +29,7 @@ const headingWords = [
     { text: 'Their', className: 'text-[#45c8e6]' },
 ];
 
-const features: Array<{ icon: IconType; title: string; desc: string }> = [
+const features: Array<{ icon: LucideIcon; title: string; desc: string }> = [
     {
         icon: ShieldCheck,
         title: 'Safe & Caring Environment',
@@ -48,7 +47,7 @@ const features: Array<{ icon: IconType; title: string; desc: string }> = [
     },
 ];
 
-const infoCards: Array<{ icon: IconType; value: string; label: string; className: string; delay: number }> = [
+const infoCards: Array<{ icon: LucideIcon; value: string; label: string; className: string; delay: number }> = [
     {
         icon: Users,
         value: '350+',
@@ -111,7 +110,7 @@ const FloatingInfoCard = ({ icon: Icon, value, label, className, delay }: (typeo
     </motion.div>
 );
 
-const FeatureCard = ({ icon: Icon, title, desc, index }: { icon: IconType; title: string; desc: string; index: number }) => (
+const FeatureCard = ({ icon: Icon, title, desc, index }: { icon: LucideIcon; title: string; desc: string; index: number }) => (
     <motion.div
         initial={{ opacity: 0, y: 28 }}
         whileInView={{ opacity: 1, y: 0 }}

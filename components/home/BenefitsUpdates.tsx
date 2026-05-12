@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
+    type LucideIcon,
     Bell,
     BookOpen,
     Briefcase,
@@ -27,9 +28,8 @@ import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 gsap.registerPlugin(ScrollTrigger);
 
 type Slide = { id?: number; date: string; text: string };
-type IconType = React.ComponentType<{ size?: number; className?: string }>;
 
-const benefitIcons: IconType[] = [TrendingUp, Star, BookOpen, GraduationCap, ShieldCheck, Briefcase];
+const benefitIcons: LucideIcon[] = [TrendingUp, Star, BookOpen, GraduationCap, ShieldCheck, Briefcase];
 const benefitGradients = [
     'from-emerald-400 to-lime-400',
     'from-sky-400 to-blue-500',

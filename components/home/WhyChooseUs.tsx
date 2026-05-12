@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
+    type LucideIcon,
     Award,
     BookOpen,
     GraduationCap,
@@ -29,9 +30,7 @@ type Feature = {
     color: string;
 };
 
-type IconType = React.ComponentType<{ size?: number; className?: string }>;
-
-const cardIcons: IconType[] = [ShieldCheck, GraduationCap, BookOpen, Award, Heart, Lightbulb];
+const cardIcons: LucideIcon[] = [ShieldCheck, GraduationCap, BookOpen, Award, Heart, Lightbulb];
 const cardGradients = [
     'from-rose-400 via-orange-300 to-amber-300',
     'from-sky-400 via-cyan-300 to-blue-400',

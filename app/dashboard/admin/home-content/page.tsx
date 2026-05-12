@@ -762,7 +762,7 @@ export default function AdminHomeContentPage() {
                                         features: [
                                             ...data.why_choose_us.features,
                                             {
-                                                image: "/infra.jpg",
+                                                image: "/feature-safe-infrastructure.png",
                                                 title: "New card",
                                                 desc: "Description",
                                                 color: "#FEE2E2",

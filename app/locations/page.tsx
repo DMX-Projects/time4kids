@@ -6,6 +6,11 @@ import Link from 'next/link';
 import { MapPin, ChevronRight, GraduationCap } from 'lucide-react';
 import TwinklingStars from '@/components/animations/TwinklingStars';
 import Card from '@/components/ui/Card';
+import {
+    comparePresenceCities,
+    matchesPresenceSectionLocation,
+    PRESENCE_SECTION_CITY_LIMIT,
+} from '@/lib/site-location-presence';
 
 export default function LocationsPage() {
     // Get unique cities
@@ -19,7 +24,26 @@ export default function LocationsPage() {
                 const res = await fetch(apiUrl('/franchises/public/locations/'));
                 if (!res.ok) throw new Error('Failed to fetch locations');
                 const data = await res.json();
-                setLocations(data);
+                const rows = Array.isArray(data) ? data : [];
+                const picked = rows
+                    .filter((loc: { state?: string; city?: string; city_name?: string }) =>
+                        matchesPresenceSectionLocation(
+                            loc.state || '',
+                            loc.city_name || loc.city || ''
+                        )
+                    )
+                    .sort((a: { city_name?: string; city?: string }, b: { city_name?: string; city?: string }) =>
+                        comparePresenceCities(
+                            a.city_name || a.city || '',
+                            b.city_name || b.city || ''
+                        )
+                    )
+                    .slice(0, PRESENCE_SECTION_CITY_LIMIT)
+                    .map((loc: { city?: string; city_name?: string; franchise_count?: number }) => ({
+                        city: loc.city_name || loc.city || '',
+                        franchise_count: loc.franchise_count ?? 0,
+                    }));
+                setLocations(picked);
             } catch (err) {
                 console.error(err);
                 setLocations([]);
@@ -48,7 +72,7 @@ export default function LocationsPage() {
                         Our <span className="text-secondary-500">Locations</span>
                     </h1>
                     <p className="text-xl text-gray-700 max-w-2xl mx-auto font-medium mb-10">
-                        Select a city to find the best T.I.M.E. Kids preschool near you.
+                        Telangana, Bengaluru, and Andhra Pradesh — pick a city to explore centres.
                     </p>
                 </div>
             </section>

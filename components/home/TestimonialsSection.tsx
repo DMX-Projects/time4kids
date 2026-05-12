@@ -49,7 +49,7 @@ const TestimonialsSection = () => {
             author: "T.I.M.E. Kids Kilpauk",
             location: "Chennai",
             videoUrl: "/chaninai kilpauk-AnnualDay-Video-2018-19.mp4",
-            thumbnailUrl: "/day care.png",
+            thumbnailUrl: "/feature-annual-day-celebrations.png",
             type: 'video'
         },
         {
