@@ -80,10 +80,19 @@ const Modal: React.FC<ModalProps> = ({
                         </button>
                     </div>
                 )}
+                {!title && (
+                    <button
+                        onClick={onClose}
+                        className="absolute right-4 top-4 z-10 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        aria-label="Close"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                )}
 
                 {/* Body - Scrollable content */}
                 <div
-                    className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 overscroll-contain"
+                    className={`flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 overscroll-contain ${!title ? 'pt-12' : ''}`}
                     style={{
                         WebkitOverflowScrolling: 'touch',
                         scrollBehavior: 'smooth'

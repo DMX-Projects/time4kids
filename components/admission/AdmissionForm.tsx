@@ -1,11 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import Button from '@/components/ui/Button';
-import QRCode from '@/components/ui/QRCode';
 import { useForm } from 'react-hook-form';
-import { CheckCircle, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 import { useToast } from '@/components/ui/Toast';
@@ -37,7 +34,7 @@ interface Center {
     city: string;
 }
 
-const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFormProps) => {
+const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [centers, setCenters] = useState<Center[]>([]);
@@ -109,27 +106,18 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
         }
     };
 
-    const formUrl = typeof window !== 'undefined' ? window.location.href : 'https://timekids.com/admission';
-
     return (
         <div className="relative">
-            <div className="grid lg:grid-cols-12 gap-6 relative">
+            <div className="relative">
 
                 {/* Main Form Area */}
-                <div className="lg:col-span-8 p-4 md:p-6">
-                    <div className="mb-12">
-                        <motion.div
-                            whileHover={{ scale: 1.02 }}
-                            className="inline-block bg-[#FFD95A] px-12 py-5 rounded-[2rem] shadow-[0_8px_0_#F9A825] border-4 border-white"
-                        >
-                            <h3 className="font-fredoka font-bold text-3xl md:text-4xl text-[#2D2D52]">
-                                Admission Enquiry
-                            </h3>
-                        </motion.div>
-                    </div>
+                <div className="p-2 md:p-4">
+                    <h3 className="mb-7 font-display text-3xl font-black leading-tight text-[#253247] md:text-4xl">
+                        Admission Enquiry
+                    </h3>
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                        <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-6">
                             {[
                                 { name: 'parentName', label: 'Parent/Guardian Name', placeholder: 'Enter your name' },
                                 { name: 'email', label: 'Email Address', placeholder: 'your@email.com' },
@@ -241,50 +229,6 @@ const AdmissionForm = ({ franchiseSlug, defaultCity, contactPhone }: AdmissionFo
                             </motion.button>
                         </div>
                     </form>
-                </div>
-
-                {/* Sidebar Enquiry Section */}
-                <div className="lg:col-span-4 relative">
-                    <div className="bg-[#FFFCF5] rounded-[2rem] border-2 border-[#FFEBB7] p-8 text-center shadow-[inset_0_4px_10px_rgba(0,0,0,0.02)] h-full flex flex-col items-center justify-center relative">
-                        <h4 className="font-fredoka font-bold text-3xl text-[#2D2D52] mb-3">Quick Enquiry</h4>
-                        <p className="text-gray-500 font-medium mb-10">Scan to fill the form on your mobile</p>
-
-                        <div className="bg-white p-4 rounded-3xl shadow-xl border-4 border-[#FFEBB7] mb-10 transform rotate-2">
-                            <QRCode value={formUrl} size={160} />
-                        </div>
-
-                        <div className="space-y-2 relative z-10">
-                            <p className="text-gray-500 font-bold">Or call us at</p>
-                            <p className="text-[#FF7A2F] font-fredoka font-black text-3xl tracking-wide">
-                                {contactPhone || '+91 123 456 7890'}
-                            </p>
-                        </div>
-
-                        <motion.div
-                            animate={{
-                                y: [10, -10, 10],
-                                rotate: [0, 5, 0]
-                            }}
-                            transition={{
-                                duration: 4,
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                            }}
-                            className="mt-6 z-20 w-52 h-52 transition-all"
-                        >
-                            <Image
-                                src="/robot.png"
-                                alt="Robot"
-                                width={500}
-                                height={500}
-                                className="w-full h-auto drop-shadow-xl"
-                            />
-                        </motion.div>
-
-                        <div className="absolute -right-8 -bottom-8 opacity-20 pointer-events-none">
-                            <Sparkles size={200} className="text-blue-400/30" />
-                        </div>
-                    </div>
                 </div>
             </div>
 

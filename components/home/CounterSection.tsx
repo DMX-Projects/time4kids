@@ -38,24 +38,6 @@ const CounterSection = () => {
 
     return (
         <section ref={sectionRef} className="relative section-gap bg-[#E0F2FE] overflow-hidden">
-            {/* Top Border - Scallop Pattern */}
-            <div className="absolute top-0 left-0 w-full h-8 z-30 pointer-events-none overflow-hidden">
-                <motion.div
-                    className="absolute top-0 left-0 w-[200%] h-full"
-                    animate={{ x: [-60, 0] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-                >
-                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
-                        <defs>
-                            <pattern id="scallopPatternTop" x="0" y="0" width="60" height="24" patternUnits="userSpaceOnUse">
-                                <path d="M0 0 V12 Q15 24 30 12 T60 12 V0 H0 Z" fill="white" />
-                            </pattern>
-                        </defs>
-                        <rect x="0" y="0" width="100%" height="24" fill="url(#scallopPatternTop)" />
-                    </svg>
-                </motion.div>
-            </div>
-
             {/* Background Bubbles */}
             <div className="absolute inset-0 pointer-events-none">
                 {[...Array(12)].map((_, i) => (
@@ -92,18 +74,6 @@ const CounterSection = () => {
                 </div>
             </div>
 
-            {/* Bottom Border - Scallop Pattern */}
-            <div className="absolute bottom-0 left-0 w-full h-8 z-30 pointer-events-none rotate-180 overflow-hidden">
-                <motion.div
-                    className="absolute top-0 left-0 w-[200%] h-full"
-                    animate={{ x: [-60, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                >
-                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
-                        <rect x="0" y="0" width="100%" height="24" fill="url(#scallopPatternTop)" />
-                    </svg>
-                </motion.div>
-            </div>
         </section>
     );
 };
