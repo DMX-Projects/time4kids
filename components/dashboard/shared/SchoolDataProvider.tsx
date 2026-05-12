@@ -111,7 +111,7 @@ export type AttendanceRecord = {
     note?: string;
 };
 
-/** Public enquiry form submission (no auth); maps to POST /api/enquiries/submit/ */
+/** Public enquiry form submission (no auth); admission/contact → POST /enquiries/submit/, franchise → POST /enquiries/franchise-submit/ */
 export type AddEnquiryInput = {
     type: EnquiryType;
     name: string;
@@ -199,6 +199,8 @@ type ApiEventMedia = {
 
 type ApiEnquiry = {
     id: number;
+    /** Backend discriminator for merged admin/franchise enquiry lists */
+    record_source?: "enquiry" | "franchise_enquiry";
     enquiry_type: string;
     name: string;
     email: string;
@@ -227,20 +229,26 @@ const mapMedia = (media: ApiEventMedia, eventId?: string): EventMedia => ({
     eventId,
 });
 
-const mapEnquiry = (enq: ApiEnquiry): Enquiry => ({
-    id: String(enq.id),
-    type: (enq.enquiry_type || "contact").toLowerCase() as EnquiryType,
-    name: enq.name,
-    email: enq.email,
-    phone: enq.phone,
-    city: enq.city,
-    childAge: enq.child_age,
-    message: enq.message || "",
-    createdAt: enq.created_at,
-    status: (enq.status as any) || "new",
-    channel: "dashboard",
-    franchiseName: enq.franchise_name || undefined,
-});
+const mapEnquiry = (enq: ApiEnquiry): Enquiry => {
+    const source =
+        enq.record_source ||
+        (enq.enquiry_type === "FRANCHISE" ? "franchise_enquiry" : "enquiry");
+    const idPrefix = source === "franchise_enquiry" ? "f" : "e";
+    return {
+        id: `${idPrefix}-${enq.id}`,
+        type: (enq.enquiry_type || "contact").toLowerCase() as EnquiryType,
+        name: enq.name,
+        email: enq.email,
+        phone: enq.phone,
+        city: enq.city,
+        childAge: enq.child_age,
+        message: enq.message || "",
+        createdAt: enq.created_at,
+        status: (enq.status as any) || "new",
+        channel: "dashboard",
+        franchiseName: enq.franchise_name || undefined,
+    };
+};
 
 const mapAttendance = (raw: any): AttendanceRecord => ({
     id: String(raw.id),
@@ -522,6 +530,23 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     const addEnquiry = async (payload: AddEnquiryInput) => {
+        if (payload.type === "franchise") {
+            const body: Record<string, string> = {
+                name: payload.name,
+                email: payload.email,
+                phone: payload.phone ?? "",
+                message: payload.message,
+            };
+            if (payload.city) body.city = payload.city;
+            const res = await fetch(apiUrl("/enquiries/franchise-submit/"), {
+                method: "POST",
+                headers: jsonHeaders(),
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw await toApiError(res);
+            return;
+        }
+
         const body: Record<string, string> = {
             enquiry_type: API_ENQUIRY_TYPE[payload.type],
             name: payload.name,
@@ -542,8 +567,20 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     const patchEnquiryStatusRemote = async (id: string, status: string) => {
-        const path =
-            user?.role === "franchise" ? `/enquiries/franchise/${id}/` : `/enquiries/admin/${id}/`;
+        const isFranchiseLead = id.startsWith("f-");
+        const numericId = id.startsWith("f-") || id.startsWith("e-") ? id.slice(2) : id;
+        let path: string;
+        if (isFranchiseLead) {
+            path =
+                user?.role === "franchise"
+                    ? `/enquiries/franchise/lead/${numericId}/`
+                    : `/enquiries/admin/franchise/${numericId}/`;
+        } else {
+            path =
+                user?.role === "franchise"
+                    ? `/enquiries/franchise/${numericId}/`
+                    : `/enquiries/admin/${numericId}/`;
+        }
         await authFetch(path, {
             method: "PATCH",
             headers: jsonHeaders(),

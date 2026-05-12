@@ -31,7 +31,8 @@ export default function CityLocationsPage({ params }: { params: { city: string }
     useEffect(() => {
         const fetchCentres = async () => {
             try {
-                const res = await fetch(apiUrl('/franchises/public/'));
+                const queryParams = new URLSearchParams({ city });
+                const res = await fetch(apiUrl(`/franchises/public/?${queryParams.toString()}`));
                 if (!res.ok) throw new Error('Failed to fetch data');
                 const data = await res.json();
                 const rawData = Array.isArray(data) ? data : (data.results || []);
@@ -46,14 +47,7 @@ export default function CityLocationsPage({ params }: { params: { city: string }
                     state: item.state,
                     phone: item.contact_phone || item.phone || '', // Use 'phone' field
                 }));
-
-                const filtered = mappedData.filter(centre =>
-                    centre.city.toLowerCase() === city.toLowerCase() ||
-                    centre.city.toLowerCase().includes(city.toLowerCase()) ||
-                    city.toLowerCase().includes(centre.city.toLowerCase())
-                );
-
-                setCentres(filtered);
+                setCentres(mappedData);
             } catch (err) {
                 console.error(err);
                 setCentres([]); // Ensure centres is empty on error
