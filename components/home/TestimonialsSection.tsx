@@ -62,23 +62,6 @@ function GalleryAlbumCard({
         [wrap]
     );
 
-    useEffect(() => {
-        const el = document.getElementById(`gallery-card-${index}`);
-        if (!el || wrap <= 1) return;
-
-        const onWheel = (e: WheelEvent) => {
-            if (Math.abs(e.deltaY) < 8) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const cur = slideRef.current;
-            if (e.deltaY > 0) goTo(cur + 1, 1);
-            else goTo(cur - 1, -1);
-        };
-
-        el.addEventListener('wheel', onWheel, { passive: false });
-        return () => el.removeEventListener('wheel', onWheel);
-    }, [index, wrap, goTo]);
-
     const current = group.items[slideIndex];
 
     return (

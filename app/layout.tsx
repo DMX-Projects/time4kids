@@ -95,7 +95,6 @@ export default function RootLayout({
                         <SchoolDataProvider>
                             <ConditionalChrome>
                                 <SmoothScroll />
-                                <BlobBackground />
                                 <ScrollProgress />
                                 <Header />
                             </ConditionalChrome>

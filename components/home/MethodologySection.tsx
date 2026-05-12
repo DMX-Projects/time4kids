@@ -90,8 +90,6 @@ export default function MethodologySection() {
     return (
         <section
             ref={sectionRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
             className="relative isolate overflow-hidden bg-[#fff8ed] py-20 font-sans md:py-24"
         >
             <div className="absolute inset-0 -z-30 bg-[radial-gradient(circle_at_16%_20%,rgba(45,212,191,0.28),transparent_32%),radial-gradient(circle_at_82%_16%,rgba(251,146,60,0.24),transparent_30%),linear-gradient(135deg,#fff8ed_0%,#eefcff_48%,#fff4d6_100%)]" />
