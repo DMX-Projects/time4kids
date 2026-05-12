@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ImageIcon, Play, Sparkles } from 'lucide-react';
@@ -8,12 +8,191 @@ import FluidBackground from '@/components/ui/FluidBackground';
 
 import { apiUrl, mediaUrl } from '@/lib/api-client';
 
+type GalleryItem = {
+    title: string;
+    author: string;
+    location: string;
+    thumbnailUrl: string;
+    videoUrl: string | null;
+    type: string;
+};
+
+type GalleryGroup = { title: string; items: GalleryItem[] };
+
+const slideVariants = {
+    enter: (direction: number) => ({
+        x: direction >= 0 ? '100%' : '-100%',
+        opacity: 0,
+    }),
+    center: {
+        zIndex: 1,
+        x: 0,
+        opacity: 1,
+    },
+    exit: (direction: number) => ({
+        zIndex: 0,
+        x: direction >= 0 ? '-100%' : '100%',
+        opacity: 0,
+    }),
+};
+
+function GalleryAlbumCard({
+    group,
+    index,
+    gridClass,
+    onOpen,
+}: {
+    group: GalleryGroup;
+    index: number;
+    gridClass: string;
+    onOpen: (previewIndex: number) => void;
+}) {
+    const slideRef = useRef(0);
+    const [[slideIndex, direction], setSlide] = useState<[number, number]>([0, 0]);
+    const touchStartX = useRef<number | null>(null);
+    const wrap = group.items.length;
+
+    const goTo = useCallback(
+        (next: number, dir: number) => {
+            if (wrap <= 1) return;
+            const i = ((next % wrap) + wrap) % wrap;
+            slideRef.current = i;
+            setSlide([i, dir]);
+        },
+        [wrap]
+    );
+
+    useEffect(() => {
+        const el = document.getElementById(`gallery-card-${index}`);
+        if (!el || wrap <= 1) return;
+
+        const onWheel = (e: WheelEvent) => {
+            if (Math.abs(e.deltaY) < 8) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const cur = slideRef.current;
+            if (e.deltaY > 0) goTo(cur + 1, 1);
+            else goTo(cur - 1, -1);
+        };
+
+        el.addEventListener('wheel', onWheel, { passive: false });
+        return () => el.removeEventListener('wheel', onWheel);
+    }, [index, wrap, goTo]);
+
+    const current = group.items[slideIndex];
+
+    return (
+        <motion.div
+            id={`gallery-card-${index}`}
+            className={`relative group cursor-pointer overflow-hidden rounded-[2rem] border-[8px] border-white/80 bg-white shadow-[0_22px_65px_rgba(15,23,42,0.13)] ${gridClass} min-h-[260px] md:min-h-0`}
+            initial={{ opacity: 0, y: 30, filter: 'blur(8px)' }}
+            whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            viewport={{ once: true, margin: '-80px' }}
+            whileHover={{ y: -8, scale: 1.012 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+            onClick={() => onOpen(slideIndex)}
+            onTouchStart={(e) => {
+                touchStartX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+                if (touchStartX.current === null || wrap <= 1) return;
+                const dx = e.changedTouches[0].clientX - touchStartX.current;
+                touchStartX.current = null;
+                if (Math.abs(dx) < 40) return;
+                const cur = slideRef.current;
+                if (dx < 0) goTo(cur + 1, 1);
+                else goTo(cur - 1, -1);
+            }}
+        >
+            <div className="absolute inset-0" aria-hidden>
+                <AnimatePresence initial={false} custom={direction} mode="popLayout">
+                    <motion.div
+                        key={slideIndex}
+                        custom={direction}
+                        variants={slideVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{
+                            x: { type: 'spring', stiffness: 300, damping: 30 },
+                            opacity: { duration: 0.25 },
+                        }}
+                        className="absolute inset-0"
+                    >
+                        <Image
+                            src={current.thumbnailUrl}
+                            alt={group.title}
+                            fill
+                            className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                            unoptimized
+                        />
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/48 via-transparent to-white/5 opacity-70 transition-opacity duration-500 group-hover:opacity-90" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,255,255,0.34),transparent_28%)] opacity-70" />
+
+            <div className="absolute top-4 left-4 z-20 max-w-[calc(100%-2rem)]">
+                <div className="flex items-center gap-2 rounded-full border border-white/60 bg-white/88 px-3.5 py-2 shadow-lg backdrop-blur-md">
+                    {current.type === 'video' ? (
+                        <Play size={13} className="text-[#F15A29]" fill="currentColor" />
+                    ) : (
+                        <ImageIcon size={13} className="text-[#F15A29]" />
+                    )}
+                    <h3 className="truncate text-[#003366] text-[11px] font-black uppercase tracking-[0.12em]">{group.title}</h3>
+                </div>
+            </div>
+
+            {wrap > 1 && (
+                <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-1.5">
+                    {group.items.map((_, i) => (
+                        <span
+                            key={i}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${i === slideIndex ? 'w-5 bg-white shadow' : 'w-1.5 bg-white/50'}`}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {wrap > 1 && (
+                <div className="absolute top-4 right-4 z-20">
+                    <div className="bg-[#F15A29] text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.12em] shadow-lg">
+                        {wrap} Files
+                    </div>
+                </div>
+            )}
+
+            <div className="absolute inset-0 bg-[#003366]/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+                <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    whileInView={{ scale: 1, opacity: 1 }}
+                    className="w-16 h-16 bg-white text-[#F15A29] rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95"
+                >
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                    </svg>
+                </motion.div>
+            </div>
+
+            {current.type === 'video' && (
+                <div className="absolute inset-0 flex items-center justify-center group-hover:opacity-0 transition-opacity pointer-events-none">
+                    <div className="w-12 h-12 bg-white/92 rounded-full flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-[#F15A29] ml-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                        </svg>
+                    </div>
+                </div>
+            )}
+        </motion.div>
+    );
+}
+
 const TestimonialsSection = () => {
-    const [playingIndex, setPlayingIndex] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [groups, setGroups] = useState<any[]>([]);
     const [activeGroupIndex, setActiveGroupIndex] = useState<number | null>(null);
     const [activeItemIndex, setActiveItemIndex] = useState<number>(0);
+    const [lightboxDir, setLightboxDir] = useState(0);
 
     const STATIC_TESTIMONIALS = [
         {
@@ -150,18 +329,18 @@ const TestimonialsSection = () => {
 
 
     const nextMedia = useCallback(() => {
-        if (activeGroupIndex !== null) {
-            const group = groups[activeGroupIndex];
-            setActiveItemIndex((activeItemIndex + 1) % group.items.length);
-        }
-    }, [activeGroupIndex, activeItemIndex, groups]);
+        if (activeGroupIndex === null) return;
+        setLightboxDir(1);
+        const group = groups[activeGroupIndex];
+        setActiveItemIndex((i) => (i + 1) % group.items.length);
+    }, [activeGroupIndex, groups]);
 
     const prevMedia = useCallback(() => {
-        if (activeGroupIndex !== null) {
-            const group = groups[activeGroupIndex];
-            setActiveItemIndex((activeItemIndex - 1 + group.items.length) % group.items.length);
-        }
-    }, [activeGroupIndex, activeItemIndex, groups]);
+        if (activeGroupIndex === null) return;
+        setLightboxDir(-1);
+        const group = groups[activeGroupIndex];
+        setActiveItemIndex((i) => (i - 1 + group.items.length) % group.items.length);
+    }, [activeGroupIndex, groups]);
 
     // Organic line paths for the fluid animation (Hollow/Stroked effect)
     const organicLinePaths = [
@@ -171,7 +350,19 @@ const TestimonialsSection = () => {
         "M0,50 C360,90 720,10 1080,90 1440,50"
     ];
 
-    const getGridClass = (index: number) => {
+    const getGridClass = (index: number, total: number) => {
+        if (total <= 6) {
+            switch (index) {
+                case 0: return "md:col-start-1 md:row-start-1 md:row-span-2";
+                case 1: return "md:col-start-2 md:row-start-1 md:row-span-1";
+                case 2: return "md:col-start-3 md:row-start-1 md:row-span-1";
+                case 3: return "md:col-start-2 md:row-start-2 md:row-span-2";
+                case 4: return "md:col-start-1 md:row-start-3 md:row-span-1";
+                case 5: return "md:col-start-3 md:row-start-2 md:row-span-2";
+                default: return "";
+            }
+        }
+
         // Handle dynamic number of items by looping through patterns
         const patternIndex = index % 9;
         switch (patternIndex) {
@@ -259,78 +450,26 @@ const TestimonialsSection = () => {
                     </motion.p>
                 </div>
 
-                <div className={`grid grid-cols-1 md:grid-cols-3 relative z-10 h-auto max-w-7xl mx-auto gap-5 md:gap-6 ${groups.length > 0 ? 'md:h-[980px] md:grid-rows-4' : ''}`}>
+                <div className={`grid grid-cols-1 md:grid-cols-3 relative z-10 h-auto max-w-7xl mx-auto gap-5 md:gap-6 ${groups.length > 0 ? (groups.length <= 6 ? 'md:h-[720px] md:grid-rows-3' : 'md:h-[980px] md:grid-rows-4') : ''}`}>
                     {loading ? (
                         <div className="col-span-3 flex items-center justify-center h-64">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F15A29]"></div>
                         </div>
                     ) : (
                         groups.map((group, index) => (
-                            <motion.div
-                                key={index}
-                                className={`relative group cursor-pointer overflow-hidden rounded-[2rem] border-[8px] border-white/80 bg-white shadow-[0_22px_65px_rgba(15,23,42,0.13)] ${getGridClass(index)} min-h-[260px] md:min-h-0`}
-                                initial={{ opacity: 0, y: 30, filter: 'blur(8px)' }}
-                                whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                                viewport={{ once: true, margin: '-80px' }}
-                                whileHover={{ y: -8, scale: 1.012 }}
-                                transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                                onClick={() => {
+                            <GalleryAlbumCard
+                                key={`${group.title}-${index}`}
+                                group={group as GalleryGroup}
+                                index={index}
+                                gridClass={getGridClass(index, groups.length)}
+                                onOpen={(previewIndex) => {
                                     setActiveGroupIndex(index);
-                                    setActiveItemIndex(0);
+                                    setActiveItemIndex(previewIndex);
+                                    setLightboxDir(0);
                                 }}
-                            >
-                                <Image
-                                    src={group.items[0].thumbnailUrl}
-                                    alt={group.title}
-                                    fill
-                                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
-                                    unoptimized
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/48 via-transparent to-white/5 opacity-70 transition-opacity duration-500 group-hover:opacity-90" />
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,255,255,0.34),transparent_28%)] opacity-70" />
-
-                                {/* Album Badge */}
-                                <div className="absolute top-4 left-4 z-20 max-w-[calc(100%-2rem)]">
-                                    <div className="flex items-center gap-2 rounded-full border border-white/60 bg-white/88 px-3.5 py-2 shadow-lg backdrop-blur-md">
-                                        {group.items[0].type === 'video' ? <Play size={13} className="text-[#F15A29]" fill="currentColor" /> : <ImageIcon size={13} className="text-[#F15A29]" />}
-                                        <h3 className="truncate text-[#003366] text-[11px] font-black uppercase tracking-[0.12em]">{group.title}</h3>
-                                    </div>
-                                </div>
-
-                                {/* Count Badge */}
-                                {group.items.length > 1 && (
-                                    <div className="absolute bottom-4 right-4 z-20">
-                                        <div className="bg-[#F15A29] text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.12em] shadow-lg">
-                                            {group.items.length} Files
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Hover Overlay */}
-                                <div className="absolute inset-0 bg-[#003366]/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                    <motion.div
-                                        initial={{ scale: 0.5, opacity: 0 }}
-                                        whileInView={{ scale: 1, opacity: 1 }}
-                                        className="w-16 h-16 bg-white text-[#F15A29] rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95"
-                                    >
-                                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                    </motion.div>
-                                </div>
-
-                                {/* Play Button for video featured albums */}
-                                {group.items[0].type === 'video' && (
-                                    <div className="absolute inset-0 flex items-center justify-center group-hover:opacity-0 transition-opacity">
-                                        <div className="w-12 h-12 bg-white/92 rounded-full flex items-center justify-center shadow-lg">
-                                            <svg className="w-6 h-6 text-[#F15A29] ml-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                )}
-                            </motion.div>
-                        )))}
+                            />
+                        ))
+                    )}
                 </div>
             </div>
 
@@ -377,44 +516,71 @@ const TestimonialsSection = () => {
                         )}
 
                         {/* Content */}
-                        <motion.div
-                            key={`${activeGroupIndex}-${activeItemIndex}`}
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
+                        <div
                             onClick={(e) => e.stopPropagation()}
-                            className="relative w-auto max-w-[90vw] max-h-[85vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+                            className="relative max-w-[90vw] max-h-[85vh] w-auto overflow-visible rounded-3xl flex flex-col"
                         >
-                            <div className="flex-1 flex items-center justify-center overflow-hidden bg-black/20">
-                                {groups[activeGroupIndex].items[activeItemIndex].type === 'video' ? (
-                                    <video
-                                        src={groups[activeGroupIndex].items[activeItemIndex].videoUrl}
-                                        controls
-                                        autoPlay
-                                        className="max-w-full max-h-[60vh] w-auto h-auto"
-                                    />
-                                ) : (
-                                    <div className="relative w-[80vw] h-[60vh]">
-                                        <Image
-                                            src={groups[activeGroupIndex].items[activeItemIndex].thumbnailUrl}
-                                            alt={groups[activeGroupIndex].items[activeItemIndex].title}
-                                            fill
-                                            className="object-contain"
-                                            unoptimized
-                                        />
+                            <AnimatePresence initial={false} custom={lightboxDir} mode="popLayout">
+                                <motion.div
+                                    key={`${activeGroupIndex}-${activeItemIndex}`}
+                                    custom={lightboxDir}
+                                    variants={{
+                                        enter: (dir: number) =>
+                                            dir === 0
+                                                ? { x: 0, opacity: 1 }
+                                                : {
+                                                      x: dir > 0 ? '12%' : '-12%',
+                                                      opacity: 0,
+                                                  },
+                                        center: { x: 0, opacity: 1 },
+                                        exit: (dir: number) =>
+                                            dir === 0
+                                                ? { x: 0, opacity: 0 }
+                                                : {
+                                                      x: dir > 0 ? '-12%' : '12%',
+                                                      opacity: 0,
+                                                  },
+                                    }}
+                                    initial="enter"
+                                    animate="center"
+                                    exit="exit"
+                                    transition={{
+                                        x: { type: 'spring', stiffness: 320, damping: 32 },
+                                        opacity: { duration: 0.22 },
+                                    }}
+                                    className="relative w-auto overflow-hidden rounded-3xl shadow-2xl flex flex-col bg-slate-900/40"
+                                >
+                                    <div className="flex-1 flex items-center justify-center overflow-hidden bg-black/20 min-h-0">
+                                        {groups[activeGroupIndex].items[activeItemIndex].type === 'video' ? (
+                                            <video
+                                                src={groups[activeGroupIndex].items[activeItemIndex].videoUrl ?? undefined}
+                                                controls
+                                                autoPlay
+                                                className="max-w-full max-h-[60vh] w-auto h-auto"
+                                            />
+                                        ) : (
+                                            <div className="relative w-[80vw] h-[60vh]">
+                                                <Image
+                                                    src={groups[activeGroupIndex].items[activeItemIndex].thumbnailUrl}
+                                                    alt={groups[activeGroupIndex].items[activeItemIndex].title}
+                                                    fill
+                                                    className="object-contain"
+                                                    unoptimized
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
 
-                            {/* Caption */}
-                            <div className="p-6 bg-white/10 backdrop-blur-md">
-                                <h3 className="text-white text-xl font-black uppercase tracking-tight">{groups[activeGroupIndex].items[activeItemIndex].title}</h3>
-                                <p className="text-white/60 text-sm font-bold">{groups[activeGroupIndex].items[activeItemIndex].author} - {groups[activeGroupIndex].items[activeItemIndex].location}</p>
-                                <div className="mt-2 text-white/40 text-[10px] font-black uppercase tracking-[0.2em]">
-                                    {activeItemIndex + 1} of {groups[activeGroupIndex].items.length} in {groups[activeGroupIndex].title}
-                                </div>
-                            </div>
-                        </motion.div>
+                                    <div className="p-6 bg-white/10 backdrop-blur-md">
+                                        <h3 className="text-white text-xl font-black uppercase tracking-tight">{groups[activeGroupIndex].items[activeItemIndex].title}</h3>
+                                        <p className="text-white/60 text-sm font-bold">{groups[activeGroupIndex].items[activeItemIndex].author} - {groups[activeGroupIndex].items[activeItemIndex].location}</p>
+                                        <div className="mt-2 text-white/40 text-[10px] font-black uppercase tracking-[0.2em]">
+                                            {activeItemIndex + 1} of {groups[activeGroupIndex].items.length} in {groups[activeGroupIndex].title}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

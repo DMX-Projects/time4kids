@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -116,7 +117,7 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                         Admission Enquiry
                     </h3>
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-6">
                             {[
                                 { name: 'parentName', label: 'Parent/Guardian Name', placeholder: 'Enter your name' },
@@ -206,27 +207,39 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1">
-                                Additional Message (Optional)
-                            </label>
-                            <textarea
-                                {...register('message')}
-                                rows={3}
-                                className="w-full px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl focus:ring-4 focus:ring-yellow-100 focus:border-[#FFD95A] outline-none transition-all resize-none font-medium text-[#2D2D52] placeholder:text-gray-400"
-                                placeholder="Any specific questions or requirements..."
-                            />
-                        </div>
-
-                        <div className="flex justify-center md:justify-start pt-6">
-                            <motion.button
-                                whileHover={{ scale: 1.05, y: -4 }}
-                                whileTap={{ scale: 0.95 }}
-                                type="submit"
-                                className="bg-[#FF7A2F] text-white px-16 py-5 rounded-2xl font-fredoka font-bold text-2xl shadow-[0_8px_0_#D35400] border-2 border-white transition-all"
-                            >
-                                Submit Enquiry
-                            </motion.button>
+                        <div className="flex flex-col gap-3 md:grid md:grid-cols-12 md:items-start md:gap-x-6 md:gap-y-4">
+                            <div className="flex flex-col gap-3 md:col-span-8">
+                                <div className="space-y-2">
+                                    <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1">
+                                        Additional Message (Optional)
+                                    </label>
+                                    <textarea
+                                        {...register('message')}
+                                        rows={3}
+                                        className="w-full resize-none px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl focus:ring-4 focus:ring-yellow-100 focus:border-[#FFD95A] outline-none transition-all font-medium text-[#2D2D52] placeholder:text-gray-400"
+                                        placeholder="Any specific questions or requirements..."
+                                    />
+                                </div>
+                                <div className="flex justify-center md:justify-start pt-1">
+                                    <motion.button
+                                        whileHover={{ scale: 1.03, y: -2 }}
+                                        whileTap={{ scale: 0.97 }}
+                                        type="submit"
+                                        className="bg-[#FF7A2F] text-white px-8 py-2.5 rounded-xl font-fredoka font-bold text-base md:text-lg shadow-[0_5px_0_#D35400] border border-white/90 transition-all whitespace-nowrap"
+                                    >
+                                        Submit Enquiry
+                                    </motion.button>
+                                </div>
+                            </div>
+                            <div className="relative aspect-[10/13] w-full overflow-visible border-0 bg-transparent ring-0 outline-none md:col-span-4 md:aspect-[4/5] md:-mt-28 max-md:mx-auto max-md:-mt-1 max-md:max-w-sm">
+                                <Image
+                                    src="/student-welcome.png"
+                                    alt="Welcome to T.I.M.E. Kids"
+                                    fill
+                                    sizes="(max-width: 768px) 90vw, 400px"
+                                    className="object-contain object-center"
+                                />
+                            </div>
                         </div>
                     </form>
                 </div>

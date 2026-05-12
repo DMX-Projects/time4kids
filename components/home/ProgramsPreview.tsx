@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ArrowRight } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
@@ -111,15 +112,17 @@ const ProgramsPreview = () => {
                     className="floating-fish absolute bottom-40 right-10 md:right-20"
                     style={{}}
                 />
+            </div>
 
-                {/* School Bus */}
+            {/* School bus — outside low-opacity decor layer so it stays visible */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
                 <Image
                     src="/images/school-bus.png"
                     alt=""
                     width={90}
                     height={90}
-                    className="school-bus absolute -bottom-2 md:bottom-0 opacity-100 saturate-200 brightness-95 contrast-125 drop-shadow-[0_10px_14px_rgba(120,72,20,0.35)]"
-                    style={{ left: '100%' }} // Start off-screen Right
+                    className="school-bus absolute -bottom-2 opacity-100 saturate-200 brightness-100 contrast-110 drop-shadow-[0_10px_14px_rgba(120,72,20,0.35)] md:bottom-0"
+                    style={{ left: '100%' }}
                 />
             </div>
 
@@ -198,8 +201,12 @@ const ProgramsPreview = () => {
                 {/* Explore Button */}
                 <div className="mt-4 text-center">
                     <Link href="/programs" className="relative inline-block group">
-                        <div className="relative bg-[#ef5f5f] text-white font-display text-2xl font-black px-12 py-5 rounded-[2rem_4rem_2rem_5rem] shadow-lg hover:shadow-xl transition-all">
-                            Explore All Classes
+                        <div className="relative inline-flex items-center gap-3 rounded-[2rem_4rem_2rem_5rem] bg-[#ef5f5f] px-12 py-5 font-display text-2xl font-black text-white shadow-lg transition-all hover:shadow-xl">
+                            <span className="leading-none">Explore All Classes</span>
+                            <ArrowRight
+                                className="h-7 w-7 shrink-0 translate-y-px stroke-[2.5] transition-transform duration-300 group-hover:translate-x-1"
+                                aria-hidden
+                            />
                         </div>
                     </Link>
                 </div>

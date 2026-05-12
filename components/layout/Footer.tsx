@@ -10,22 +10,13 @@ const Footer = () => {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="relative bg-[#87CEEB] text-gray-800 overflow-hidden font-sans">
-            {/* Background Image */}
-            <div className="absolute inset-0 w-full h-full">
-                <Image
-                    src="/footer-bg-updated.png"
-                    alt="Kids playing background"
-                    fill
-                    className="object-cover object-center"
-                    priority={true}
-                    sizes="100vw"
-                />
-            </div>
-
-            {/* Main Footer Content */}
-            <div className="relative z-10 container mx-auto px-8 md:px-16 lg:px-24 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <>
+            <footer
+                className="relative overflow-hidden font-sans text-gray-800 bg-[url('/footer.jpg.jpeg')] bg-cover bg-no-repeat bg-[center_bottom] pb-[150px]"
+            >
+                {/* Main Footer Content */}
+                <div className="relative z-10 container mx-auto px-8 md:px-16 lg:px-24 py-12">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {/* Column 1: Logo & Description */}
                     <div className="space-y-4">
                         <div className="relative w-40 h-16">
@@ -149,16 +140,17 @@ const Footer = () => {
                     </div>
                 </div>
             </div>
+            </footer>
 
-            {/* Copyright Section */}
-            <div className="relative z-10 bg-gradient-to-r from-blue-50 to-green-50 py-4 border-t border-gray-300">
+            {/* Copyright — outside <footer> (sibling); wrapped in fragment for valid JSX */}
+            <div className="border-t border-gray-300 bg-gradient-to-r from-blue-50 to-green-50 py-4">
                 <div className="container mx-auto px-8 text-center">
-                    <p className="text-gray-800 text-sm font-medium">
-                        © {currentYear} All Rights Reserved. T.I.M.E. Kids Preschools. Designed by T.I.M.E. Digital Team
+                    <p className="text-sm font-medium text-gray-800">
+                        © {currentYear} All Rights Reserved. T.I.M.E. Kids Preschools.
                     </p>
                 </div>
             </div>
-        </footer>
+        </>
     );
 };
 

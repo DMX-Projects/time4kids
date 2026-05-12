@@ -73,9 +73,9 @@ const PremiumFeatureCard = ({
             <div className="card-sheen absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
             <div className="relative z-10">
-                <div className="mb-4 flex items-center justify-between">
+                <div className="mb-2 flex items-center justify-between">
                     <motion.div
-                        animate={{ y: [0, -5, 0], rotate: [0, 3, 0] }}
+                        animate={{ y: [0, -3, 0], rotate: [0, 3, 0] }}
                         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: index * 0.25 }}
                         className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white shadow-[0_14px_36px_rgba(15,23,42,0.18)]`}
                     >
