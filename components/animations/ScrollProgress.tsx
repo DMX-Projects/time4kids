@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 
+type LenisLike = { scroll: number; on: (e: string, fn: () => void) => void; off: (e: string, fn: () => void) => void };
+
 export default function ScrollProgress() {
     const barRef = useRef<HTMLDivElement>(null);
 
@@ -12,9 +14,11 @@ export default function ScrollProgress() {
             if (rafId !== null) return;
 
             rafId = requestAnimationFrame(() => {
+                const lenis = (window as unknown as { lenis?: LenisLike }).lenis;
+                const scrollY = lenis ? lenis.scroll : window.scrollY;
                 const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
                 if (windowHeight > 0 && barRef.current) {
-                    const progress = (window.scrollY / windowHeight) * 100;
+                    const progress = (scrollY / windowHeight) * 100;
                     barRef.current.style.transform = `scaleX(${progress / 100})`;
                 }
                 rafId = null;
@@ -22,8 +26,17 @@ export default function ScrollProgress() {
         };
 
         updateScrollProgress();
-        window.addEventListener('scroll', updateScrollProgress, { passive: true });
 
+        const lenis = (window as unknown as { lenis?: LenisLike }).lenis;
+        if (lenis) {
+            lenis.on('scroll', updateScrollProgress);
+            return () => {
+                lenis.off('scroll', updateScrollProgress);
+                if (rafId !== null) cancelAnimationFrame(rafId);
+            };
+        }
+
+        window.addEventListener('scroll', updateScrollProgress, { passive: true });
         return () => {
             window.removeEventListener('scroll', updateScrollProgress);
             if (rafId !== null) cancelAnimationFrame(rafId);

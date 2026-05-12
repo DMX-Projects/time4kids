@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-
-/** Dispatched when Lenis is attached to `window.lenis` so listeners can switch from native scroll. */
-export const LENIS_READY_EVENT = 'lenis-ready';
+import Lenis from '@studio-freight/lenis';
 
 const SmoothScroll = () => {
     useEffect(() => {
@@ -24,57 +22,35 @@ const SmoothScroll = () => {
 
         const html = document.documentElement;
         const originalScrollBehavior = html.style.scrollBehavior;
-        let cancelled = false;
-        let lenis: { raf: (time: number) => void; destroy: () => void } | null = null;
-        let rafId: number | null = null;
+        // Must override globals.css `scroll-behavior: smooth` while Lenis runs — mixing both causes wheel jitter.
+        html.style.scrollBehavior = 'auto';
 
-        void (async () => {
-            const { default: Lenis } = await import('@studio-freight/lenis');
-            if (cancelled) return;
+        const lenis = new Lenis({
+            duration: 0.65,
+            easing: (t) => 1 - Math.pow(1 - t, 3),
+            orientation: 'vertical',
+            gestureOrientation: 'vertical',
+            smoothWheel: true,
+            wheelMultiplier: 1.05,
+            touchMultiplier: 1.0,
+            infinite: false,
+        });
 
-            html.style.scrollBehavior = 'auto';
-
-            const instance = new Lenis({
-                duration: 0.55,
-                easing: (t: number) => 1 - Math.pow(1 - t, 3),
-                orientation: 'vertical',
-                gestureOrientation: 'vertical',
-                smoothWheel: true,
-                wheelMultiplier: 1,
-                touchMultiplier: 1,
-                infinite: false,
-            });
-
-            if (cancelled) {
-                instance.destroy();
-                html.style.scrollBehavior = originalScrollBehavior;
-                return;
-            }
-
-            lenis = instance;
-
-            const raf = (time: number) => {
-                instance.raf(time);
-                rafId = requestAnimationFrame(raf);
-            };
+        let rafId: number;
+        function raf(time: number) {
+            lenis.raf(time);
             rafId = requestAnimationFrame(raf);
+        }
 
-            (window as unknown as { lenis: typeof instance }).lenis = instance;
-            window.dispatchEvent(new Event(LENIS_READY_EVENT));
-        })();
+        rafId = requestAnimationFrame(raf);
+
+        (window as unknown as { lenis: typeof lenis }).lenis = lenis;
 
         return () => {
-            cancelled = true;
-            if (rafId !== null) {
-                cancelAnimationFrame(rafId);
-                rafId = null;
-            }
-            if (lenis) {
-                lenis.destroy();
-                lenis = null;
-                delete (window as unknown as { lenis?: unknown }).lenis;
-            }
+            cancelAnimationFrame(rafId);
+            lenis.destroy();
             html.style.scrollBehavior = originalScrollBehavior;
+            delete (window as unknown as { lenis?: unknown }).lenis;
         };
     }, []);
 
