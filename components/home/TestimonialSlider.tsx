@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
-import { Star, Quote } from 'lucide-react';
+import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
+import { Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { apiUrl } from '@/lib/api-client';
@@ -96,12 +96,17 @@ const TiltCard = ({ children }: { children: React.ReactNode }) => {
 
 const TestimonialSlider = () => {
     const sectionRef = useRef<HTMLElement>(null);
-    const pinContainerRef = useRef<HTMLDivElement>(null);
+    const viewportRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const bgRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const [isMounted, setIsMounted] = useState(false);
     const [testimonials, setTestimonials] = useState<TestimonialItem[] | null>(null);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const wheelCooldown = useRef(false);
+    const touchStartX = useRef<number | null>(null);
+    /** After the first snap, user-driven index changes use GSAP tween. */
+    const shouldAnimateCarousel = useRef(false);
 
     useEffect(() => {
         setIsMounted(true);
@@ -133,98 +138,161 @@ const TestimonialSlider = () => {
     }, []);
 
     const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+    const tickerFnRef = useRef<(() => void) | null>(null);
 
-    // GSAP Horizontal Scroll Logic with Curve
+    const count = testimonials?.length ?? 0;
+
+    const centerCarouselAtIndex = useCallback(
+        (index: number, animate: boolean) => {
+            const viewport = viewportRef.current;
+            const wrapper = wrapperRef.current;
+            const card = cardsRef.current[index];
+            if (!viewport || !wrapper || !card || count < 1) return;
+
+            const vx = viewport.clientWidth;
+            const targetX = vx / 2 - (card.offsetLeft + card.offsetWidth / 2);
+
+            if (animate) {
+                gsap.to(wrapper, {
+                    x: targetX,
+                    duration: 0.55,
+                    ease: 'power3.out',
+                    overwrite: 'auto',
+                });
+            } else {
+                gsap.set(wrapper, { x: targetX, force3D: true });
+            }
+        },
+        [count]
+    );
+
+    useEffect(() => {
+        if (!testimonials || testimonials.length === 0) return;
+        shouldAnimateCarousel.current = false;
+        setActiveIndex((i) => Math.min(i, Math.max(0, testimonials.length - 1)));
+    }, [testimonials]);
+
+    useEffect(() => {
+        const onResize = () => centerCarouselAtIndex(activeIndex, false);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [activeIndex, centerCarouselAtIndex]);
+
+    // Header intro + cover-flow style transforms (no scroll-scrub horizontal drive)
     useIsomorphicLayoutEffect(() => {
-        if (!isMounted || !pinContainerRef.current || !wrapperRef.current) return;
+        if (!isMounted || !sectionRef.current) return;
         if (testimonials === null || testimonials.length === 0) return;
 
         const ctx = gsap.context(() => {
-            const totalWidth = wrapperRef.current!.scrollWidth;
-            const viewWidth = window.innerWidth;
-
-            // Only enable on Desktop/Tablet
-            if (window.innerWidth > 768) {
-                // Horizontal Scroll with smoother scrub
-                gsap.to(wrapperRef.current, {
-                    x: () => -(totalWidth - viewWidth + 200),
-                    ease: "none",
+            if (headerRef.current) {
+                gsap.from(headerRef.current.children, {
+                    y: 30,
+                    opacity: 0,
+                    duration: 1,
+                    stagger: 0.2,
+                    ease: 'power3.out',
                     scrollTrigger: {
-                        trigger: pinContainerRef.current,
-                        pin: true,
-                        scrub: 1, // Reduced from 2.5 for more responsive feel
-                        start: "top top",
-                        end: () => "+=" + (Math.max(600, totalWidth - viewWidth + 600)), // Adjusted to prevent getting stuck too long
-                        invalidateOnRefresh: true,
+                        trigger: sectionRef.current,
+                        start: 'top 80%',
+                        toggleActions: 'play none none reverse',
                     },
-                    force3D: true // Force hardware acceleration
-                });
-
-                // Animate Header Entry
-                if (headerRef.current) {
-                    gsap.from(headerRef.current.children, {
-                        y: 30,
-                        opacity: 0,
-                        duration: 1,
-                        stagger: 0.2,
-                        ease: "power3.out",
-                        scrollTrigger: {
-                            trigger: pinContainerRef.current,
-                            start: "top 80%", // Animates when section hits view
-                            toggleActions: "play none none reverse"
-                        }
-                    });
-                }
-
-                // Curved Path Animation Loop
-                gsap.ticker.add(() => {
-                    const centerScreen = window.innerWidth / 2;
-                    const parabolaSteepness = 0.0008; // Slightly reduced for broader arch
-
-                    cardsRef.current.forEach((card) => {
-                        if (!card) return;
-
-                        const rect = card.getBoundingClientRect();
-                        const cardCenter = rect.left + rect.width / 2;
-                        const distFromCenter = cardCenter - centerScreen;
-                        const absDist = Math.abs(distFromCenter);
-
-                        // 1. Parabolic Y-Offset (Arch)
-                        // Flatten the curve significantly since we show more cards
-                        const yOffset = Math.pow(distFromCenter, 2) * 0.0004;
-
-                        // 2. Rotation (Follow the curve)
-                        const rotation = distFromCenter * 0.008;
-
-                        // 3. Scale Effect (Center card largest)
-                        // Make the difference less dramatic so side cards are clearly visible
-                        const scale = Math.max(0.92, 1 - (absDist / centerScreen) * 0.15);
-
-                        // 4. Opacity - Keep high visibility
-                        const opacity = Math.max(0.8, 1 - (absDist / centerScreen) * 0.3);
-
-                        // REMOVED BLUR as requested
-
-                        gsap.set(card, {
-                            y: yOffset,
-                            rotation: rotation,
-                            scale: scale,
-                            opacity: opacity,
-                            // filter: blur(...) REMOVED
-                            zIndex: Math.round(100 - absDist * 0.1), // Ensure center is on top
-                            force3D: true, // Hardware acceleration
-                            overwrite: 'auto' // Prevent conflict
-                        });
-                    });
                 });
             }
+
+            const tick = () => {
+                const centerScreen = window.innerWidth / 2;
+                cardsRef.current.forEach((card) => {
+                    if (!card) return;
+
+                    const rect = card.getBoundingClientRect();
+                    const cardCenter = rect.left + rect.width / 2;
+                    const distFromCenter = cardCenter - centerScreen;
+                    const absDist = Math.abs(distFromCenter);
+
+                    const yOffset = Math.pow(distFromCenter, 2) * 0.0004;
+                    const rotation = distFromCenter * 0.008;
+                    const scale = Math.max(0.92, 1 - (absDist / centerScreen) * 0.15);
+                    const opacity = Math.max(0.8, 1 - (absDist / centerScreen) * 0.3);
+
+                    gsap.set(card, {
+                        y: yOffset,
+                        rotation,
+                        scale,
+                        opacity,
+                        zIndex: Math.round(100 - absDist * 0.1),
+                        force3D: true,
+                        overwrite: 'auto',
+                    });
+                });
+            };
+
+            tickerFnRef.current = tick;
+            gsap.ticker.add(tick);
         }, sectionRef);
 
         return () => {
+            if (tickerFnRef.current) {
+                gsap.ticker.remove(tickerFnRef.current);
+                tickerFnRef.current = null;
+            }
             ctx.revert();
-            gsap.ticker.remove(() => { }); // Cleanup ticker (Note: this naive remove might not work if reference is lost, but ctx.revert handles most)
         };
     }, [isMounted, testimonials]);
+
+    useEffect(() => {
+        if (!testimonials || testimonials.length <= 1) return;
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+
+        const n = testimonials.length;
+
+        const onWheel = (e: WheelEvent) => {
+            const dy = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+            if (Math.abs(dy) < 12) return;
+
+            const atStart = activeIndex <= 0;
+            const atEnd = activeIndex >= n - 1;
+            if (dy > 0 && atEnd) return;
+            if (dy < 0 && atStart) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (wheelCooldown.current) return;
+            wheelCooldown.current = true;
+            window.setTimeout(() => {
+                wheelCooldown.current = false;
+            }, 420);
+
+            shouldAnimateCarousel.current = true;
+            if (dy > 0) setActiveIndex((i) => Math.min(i + 1, n - 1));
+            else setActiveIndex((i) => Math.max(i - 1, 0));
+        };
+
+        viewport.addEventListener('wheel', onWheel, { passive: false });
+        return () => viewport.removeEventListener('wheel', onWheel);
+    }, [testimonials, activeIndex]);
+
+    useEffect(() => {
+        if (!testimonials?.length) return;
+        const animated = shouldAnimateCarousel.current;
+        const id = requestAnimationFrame(() => {
+            centerCarouselAtIndex(activeIndex, animated);
+        });
+        return () => cancelAnimationFrame(id);
+    }, [activeIndex, testimonials, centerCarouselAtIndex]);
+
+    const goPrev = () => {
+        if (!testimonials?.length) return;
+        shouldAnimateCarousel.current = true;
+        setActiveIndex((i) => Math.max(0, i - 1));
+    };
+
+    const goNext = () => {
+        if (!testimonials?.length) return;
+        shouldAnimateCarousel.current = true;
+        setActiveIndex((i) => Math.min(testimonials.length - 1, i + 1));
+    };
 
 
     // Cursor Parallax Logic (Optimized)
@@ -269,8 +337,7 @@ const TestimonialSlider = () => {
                 </svg>
             </div>
 
-            {/* Sticky Container for Horizontal Scroll */}
-            <div ref={pinContainerRef} className="min-h-0 flex flex-col justify-center relative py-4">
+            <div className="min-h-0 flex flex-col justify-center relative py-4">
                 <div ref={headerRef} className="container mx-auto px-4 relative z-10 mb-4">
                     <div className="text-center max-w-3xl mx-auto">
                         <h2 className="font-bubblegum font-bold text-5xl md:text-6xl text-white mb-2 drop-shadow-xl tracking-wide leading-tight">
@@ -287,10 +354,47 @@ const TestimonialSlider = () => {
                     </div>
                 </div>
 
-                <div className="w-full overflow-hidden">
+                <div
+                    ref={viewportRef}
+                    className="relative w-full overflow-hidden min-h-[320px] md:min-h-[340px] touch-pan-y"
+                    onTouchStart={(e) => {
+                        touchStartX.current = e.touches[0].clientX;
+                    }}
+                    onTouchEnd={(e) => {
+                        if (touchStartX.current === null || !testimonials || testimonials.length <= 1) return;
+                        const dx = e.changedTouches[0].clientX - touchStartX.current;
+                        touchStartX.current = null;
+                        if (Math.abs(dx) < 50) return;
+                        shouldAnimateCarousel.current = true;
+                        if (dx < 0) goNext();
+                        else goPrev();
+                    }}
+                >
+                    {testimonials && testimonials.length > 1 && (
+                        <>
+                            <button
+                                type="button"
+                                aria-label="Previous testimonial"
+                                onClick={goPrev}
+                                disabled={activeIndex <= 0}
+                                className="absolute left-1 md:left-4 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/30 bg-white/15 p-2 text-white shadow-lg backdrop-blur-md transition hover:bg-white/25 disabled:pointer-events-none disabled:opacity-30"
+                            >
+                                <ChevronLeft className="h-7 w-7" />
+                            </button>
+                            <button
+                                type="button"
+                                aria-label="Next testimonial"
+                                onClick={goNext}
+                                disabled={activeIndex >= testimonials.length - 1}
+                                className="absolute right-1 md:right-4 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/30 bg-white/15 p-2 text-white shadow-lg backdrop-blur-md transition hover:bg-white/25 disabled:pointer-events-none disabled:opacity-30"
+                            >
+                                <ChevronRight className="h-7 w-7" />
+                            </button>
+                        </>
+                    )}
                     <div
                         ref={wrapperRef}
-                        className="flex flex-nowrap items-center px-4 md:px-20 gap-8 md:gap-16 w-max pt-2 pb-8 will-change-transform" /* Added will-change-transform for perf and padding-bottom for curve dip */
+                        className="flex flex-nowrap items-center px-4 md:px-20 gap-8 md:gap-16 w-max pt-2 pb-2 will-change-transform"
                     >
                         {testimonials === null ? (
                             <div className="flex-shrink-0 w-full max-w-xl mx-auto text-center text-white/90 py-12 px-4">
@@ -340,6 +444,25 @@ const TestimonialSlider = () => {
                         ))
                         )}
                     </div>
+                    {testimonials && testimonials.length > 1 && (
+                        <div className="flex justify-center gap-2 pb-6 pt-2" role="tablist" aria-label="Testimonial slides">
+                            {testimonials.map((_, i) => (
+                                <button
+                                    key={i}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={i === activeIndex}
+                                    aria-label={`Go to testimonial ${i + 1}`}
+                                    onClick={() => {
+                                        if (i === activeIndex) return;
+                                        shouldAnimateCarousel.current = true;
+                                        setActiveIndex(i);
+                                    }}
+                                    className={`h-2 rounded-full transition-all duration-300 ${i === activeIndex ? 'w-8 bg-[#fbd267]' : 'w-2 bg-white/35 hover:bg-white/50'}`}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 

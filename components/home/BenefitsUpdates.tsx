@@ -45,17 +45,19 @@ const floatingElements = [
     { label: 'C', className: 'left-[16%] bottom-[18%] bg-emerald-100 text-emerald-600', delay: 1.2 },
 ];
 
+/** Clean horizontal mark from `public` (no screenshot / checkerboard). Replace file if you export a new PNG with alpha. */
+const FRANCHISE_HEADING_LOGO = '/time-kids-logo-new.png';
+
 const BrandLogoText = () => (
-    <span className="inline-flex flex-wrap items-end gap-x-3 gap-y-2 align-baseline">
-        <span className="inline-flex -rotate-2 items-center rounded-xl bg-[#fed509] px-3 py-1.5 text-[#075094] shadow-[0_8px_0_rgba(7,80,148,0.16),0_16px_24px_rgba(15,23,42,0.12)] ring-2 ring-white/80">
-            T.I.M.E.
-        </span>
-        <span className="inline-flex items-baseline font-black">
-            <span className="text-[#f58220]">K</span>
-            <span className="text-[#94c947]">i</span>
-            <span className="text-[#0da9df]">d</span>
-            <span className="text-[#ed1c24]">s</span>
-        </span>
+    <span className="inline-flex shrink-0 items-end self-end leading-none">
+        <Image
+            src={FRANCHISE_HEADING_LOGO}
+            alt="T.I.M.E. Kids"
+            width={520}
+            height={208}
+            className="h-[3.25rem] w-auto max-w-[min(100%,24rem)] object-contain object-left object-bottom md:h-[4.25rem] xl:h-[4.75rem] sm:max-w-none"
+            sizes="(max-width:768px) 85vw,(max-width:1280px) 380px,480px"
+        />
     </span>
 );
 
@@ -274,8 +276,8 @@ export default function BenefitsUpdates() {
                             className="font-display text-4xl font-black leading-[1.05] text-[#253247] md:text-5xl xl:text-[3.35rem]"
                             style={{ fontFamily: "'Clash Display', 'Satoshi', 'Plus Jakarta Sans', var(--font-poppins), system-ui, sans-serif" }}
                         >
-                            Why Choose{' '}
-                            <span className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-2">
+                            <span className="block">Why Choose</span>
+                            <span className="mt-3 flex flex-wrap items-end gap-x-3 gap-y-1">
                                 <BrandLogoText />
                                 <span className="bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 bg-clip-text text-transparent">
                                     Franchise?
@@ -363,7 +365,7 @@ export default function BenefitsUpdates() {
                         className="relative"
                     >
                         <div className="mb-5 flex items-center justify-between gap-4">
-                            <div>
+                            <div className="min-w-0 flex-1">
                                 <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-4 py-2 shadow-lg shadow-sky-200/20 backdrop-blur-xl">
                                     <span className="relative flex h-2.5 w-2.5">
                                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -372,16 +374,16 @@ export default function BenefitsUpdates() {
                                     <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-600">Live updates</span>
                                 </div>
                                 <h3
-                                    className="mt-3 font-display text-4xl font-black leading-tight text-[#253247] md:text-5xl"
+                                    className="mt-3 text-nowrap font-display text-3xl font-black leading-tight text-[#253247] sm:text-4xl md:text-5xl"
                                     style={{ fontFamily: "'Clash Display', 'Satoshi', 'Plus Jakarta Sans', var(--font-poppins), system-ui, sans-serif" }}
                                 >
-                                    Latest New update
+                                    Latest News & Updates
                                 </h3>
                             </div>
                             <motion.div
                                 animate={{ rotate: [-7, 8, -7], y: [0, -5, 0] }}
                                 transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
-                                className="hidden h-14 w-14 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-xl shadow-orange-300/35 md:flex"
+                                className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-xl shadow-orange-300/35 md:flex"
                             >
                                 <Megaphone size={25} />
                             </motion.div>
@@ -425,7 +427,7 @@ export default function BenefitsUpdates() {
                                                     </div>
                                                     <p className="text-lg font-semibold leading-8 text-white/88">{update.text}</p>
                                                     <div className="mt-7 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-sky-200">
-                                                        Read update <ChevronRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+                                                        Read more <ChevronRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
                                                     </div>
                                                 </motion.article>
                                             </div>

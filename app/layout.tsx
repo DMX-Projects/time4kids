@@ -8,7 +8,6 @@ import ScrollProgress from "@/components/animations/ScrollProgress";
 import SmoothScroll from "@/components/shared/SmoothScroll";
 import BlobBackground from "@/components/animations/BlobBackground";
 import ConditionalChrome from "@/components/layout/ConditionalChrome";
-import DiceCursor from "@/components/ui/DiceCursor";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
@@ -80,7 +79,6 @@ export default function RootLayout({
                                 <SmoothScroll />
                                 <BlobBackground />
                                 <ScrollProgress />
-                                <DiceCursor />
                                 <Header />
                             </ConditionalChrome>
 

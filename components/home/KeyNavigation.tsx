@@ -49,7 +49,7 @@ const NavigationCard = ({
     return (
         <motion.div
             layout
-            className="relative flex flex-col items-center group cursor-pointer min-w-[180px] md:min-w-[220px] px-4 pt-10 pb-0"
+            className="relative flex flex-col items-center group cursor-pointer min-w-[180px] md:min-w-[220px] px-4 pt-6 pb-2"
         >
             {/* Main Visual Card Container */}
             <div className="relative w-40 h-40 md:w-48 md:h-48 flex items-center justify-center z-10">
@@ -182,7 +182,7 @@ export default function KeyNavigation() {
     }, [items.length]);
 
     return (
-        <section className="relative pt-[70px] md:pt-[80px] pb-[15px] overflow-hidden bg-white font-jakarta">
+        <section className="relative pt-9 md:pt-11 pb-5 overflow-hidden bg-white font-jakarta">
             {/* Background Architecture */}
             <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-slate-50/80 to-white" />
@@ -190,7 +190,7 @@ export default function KeyNavigation() {
             </div>
 
             <div className="container mx-auto px-4 relative z-10">
-                <div className="flex flex-nowrap lg:justify-center items-center gap-2 md:gap-6 overflow-x-auto no-scrollbar px-4 pt-10 pb-0">
+                <div className="flex flex-nowrap lg:justify-center items-center gap-2 md:gap-6 overflow-x-auto no-scrollbar px-4 pt-6 pb-4">
                     {items.map((item, index) => (
                         <NavigationCard 
                             key={`${item.href}-${index}`} 

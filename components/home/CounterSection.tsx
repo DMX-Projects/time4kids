@@ -145,7 +145,7 @@ const CounterCard = ({ stat, isInView, delay }: { stat: any, isInView: boolean, 
                 >
                     {formatIndianInteger(count)}+
                 </motion.span>
-                <span className="block text-sm md:text-base text-[#003366] font-bold font-baloo uppercase tracking-widest mt-2">
+                <span className="block text-sm md:text-base text-[#003366] font-bold font-baloo uppercase tracking-widest mt-3 md:mt-4">
                     {stat.label}
                 </span>
             </div>
