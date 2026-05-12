@@ -148,6 +148,7 @@ export type SchoolDataContextValue = {
     deleteEvent: (id: string) => Promise<void>;
     addMedia: (m: AddEventMediaPayload) => Promise<void>;
     addEventMedia: (m: AddEventMediaInput) => Promise<void>;
+    deleteEventMedia: (eventId: string, mediaId: string) => Promise<void>;
     addEnquiry: (payload: AddEnquiryInput) => Promise<void>;
     addOrUpdateStudent: (data: {
         id?: string;
@@ -213,10 +214,18 @@ type ApiEnquiry = {
     status?: string;
 };
 
+/** API may return `2026-04-28` or ISO datetime; `<input type="date">` needs YYYY-MM-DD only. */
+const toDateOnly = (raw: string | undefined): string => {
+    if (!raw) return "";
+    const s = String(raw).trim();
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : "";
+};
+
 const mapEvent = (ev: ApiEvent): EventRecord => ({
     id: String(ev.id),
     title: ev.title,
-    date: ev.start_date || ev.end_date || "",
+    date: toDateOnly(ev.start_date) || toDateOnly(ev.end_date) || "",
     venue: ev.location || "",
     notes: ev.description || "",
 });
@@ -451,11 +460,15 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     const addEvent = async (payload: Omit<EventRecord, "id">) => {
+        const start = toDateOnly(payload.date);
+        if (!start) {
+            throw new Error("Please choose a valid event date.");
+        }
         const body = {
             title: payload.title,
             description: payload.notes || "",
-            start_date: payload.date,
-            end_date: payload.date,
+            start_date: start,
+            end_date: start,
             location: payload.venue,
         };
         const created = await authFetch<ApiEvent>("/events/franchise/", {
@@ -467,11 +480,15 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     const updateEvent = async (id: string, payload: Omit<EventRecord, "id">) => {
+        const start = toDateOnly(payload.date);
+        if (!start) {
+            throw new Error("Please choose a valid event date.");
+        }
         const body = {
             title: payload.title,
             description: payload.notes || "",
-            start_date: payload.date,
-            end_date: payload.date,
+            start_date: start,
+            end_date: start,
             location: payload.venue,
         };
         const updated = await authFetch<ApiEvent>(`/events/franchise/${id}/`, {
@@ -527,6 +544,15 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             return;
         }
         throw new Error("Upload a file or provide a media URL");
+    };
+
+    const deleteEventMedia = async (eventId: string, mediaId: string) => {
+        if (mediaId.startsWith("ext-")) {
+            setEventMedia((prev) => prev.filter((m) => !(m.eventId === eventId && m.id === mediaId)));
+            return;
+        }
+        await authFetch(`/events/franchise/${eventId}/media/${mediaId}/`, { method: "DELETE" });
+        setEventMedia((prev) => prev.filter((m) => !(m.eventId === eventId && m.id === mediaId)));
     };
 
     const addEnquiry = async (payload: AddEnquiryInput) => {
@@ -751,6 +777,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         deleteEvent,
         addMedia,
         addEventMedia,
+        deleteEventMedia,
         addEnquiry,
         addOrUpdateStudent,
         resolveEnquiry,
