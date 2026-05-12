@@ -6,7 +6,6 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ScrollProgress from "@/components/animations/ScrollProgress";
 import SmoothScroll from "@/components/shared/SmoothScroll";
-import BlobBackground from "@/components/animations/BlobBackground";
 import ConditionalChrome from "@/components/layout/ConditionalChrome";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -77,7 +76,6 @@ export default function RootLayout({
                         <SchoolDataProvider>
                             <ConditionalChrome>
                                 <SmoothScroll />
-                                <BlobBackground />
                                 <ScrollProgress />
                                 <Header />
                             </ConditionalChrome>

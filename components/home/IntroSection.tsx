@@ -160,16 +160,6 @@ export default function IntroSection() {
                 ease: 'sine.inOut',
             });
 
-            gsap.to('.parallax-layer', {
-                y: (index) => -24 - index * 10,
-                ease: 'none',
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: 'top bottom',
-                    end: 'bottom top',
-                    scrub: 0.7,
-                },
-            });
         }, sectionRef);
 
         return () => ctx.revert();
@@ -218,8 +208,6 @@ export default function IntroSection() {
         <section
             id="about"
             ref={sectionRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
             className="relative isolate overflow-hidden bg-[#fff8ec] py-16 font-sans scroll-mt-20 md:py-20 lg:flex lg:min-h-screen lg:items-center lg:py-12"
         >
             <div

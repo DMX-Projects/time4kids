@@ -103,7 +103,6 @@ const TestimonialSlider = () => {
     const [isMounted, setIsMounted] = useState(false);
     const [testimonials, setTestimonials] = useState<TestimonialItem[] | null>(null);
     const [activeIndex, setActiveIndex] = useState(0);
-    const wheelCooldown = useRef(false);
     const touchStartX = useRef<number | null>(null);
     /** After the first snap, user-driven index changes use GSAP tween. */
     const shouldAnimateCarousel = useRef(false);
@@ -138,7 +137,6 @@ const TestimonialSlider = () => {
     }, []);
 
     const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
-    const tickerFnRef = useRef<(() => void) | null>(null);
 
     const count = testimonials?.length ?? 0;
 
@@ -178,7 +176,7 @@ const TestimonialSlider = () => {
         return () => window.removeEventListener('resize', onResize);
     }, [activeIndex, centerCarouselAtIndex]);
 
-    // Header intro + cover-flow style transforms (no scroll-scrub horizontal drive)
+    // Header intro only. Card movement is button/touch driven so normal page scroll stays native.
     useIsomorphicLayoutEffect(() => {
         if (!isMounted || !sectionRef.current) return;
         if (testimonials === null || testimonials.length === 0) return;
@@ -198,80 +196,10 @@ const TestimonialSlider = () => {
                     },
                 });
             }
-
-            const tick = () => {
-                const centerScreen = window.innerWidth / 2;
-                cardsRef.current.forEach((card) => {
-                    if (!card) return;
-
-                    const rect = card.getBoundingClientRect();
-                    const cardCenter = rect.left + rect.width / 2;
-                    const distFromCenter = cardCenter - centerScreen;
-                    const absDist = Math.abs(distFromCenter);
-
-                    const yOffset = Math.pow(distFromCenter, 2) * 0.0004;
-                    const rotation = distFromCenter * 0.008;
-                    const scale = Math.max(0.92, 1 - (absDist / centerScreen) * 0.15);
-                    const opacity = Math.max(0.8, 1 - (absDist / centerScreen) * 0.3);
-
-                    gsap.set(card, {
-                        y: yOffset,
-                        rotation,
-                        scale,
-                        opacity,
-                        zIndex: Math.round(100 - absDist * 0.1),
-                        force3D: true,
-                        overwrite: 'auto',
-                    });
-                });
-            };
-
-            tickerFnRef.current = tick;
-            gsap.ticker.add(tick);
         }, sectionRef);
 
-        return () => {
-            if (tickerFnRef.current) {
-                gsap.ticker.remove(tickerFnRef.current);
-                tickerFnRef.current = null;
-            }
-            ctx.revert();
-        };
+        return () => ctx.revert();
     }, [isMounted, testimonials]);
-
-    useEffect(() => {
-        if (!testimonials || testimonials.length <= 1) return;
-        const viewport = viewportRef.current;
-        if (!viewport) return;
-
-        const n = testimonials.length;
-
-        const onWheel = (e: WheelEvent) => {
-            const dy = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-            if (Math.abs(dy) < 12) return;
-
-            const atStart = activeIndex <= 0;
-            const atEnd = activeIndex >= n - 1;
-            if (dy > 0 && atEnd) return;
-            if (dy < 0 && atStart) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (wheelCooldown.current) return;
-            wheelCooldown.current = true;
-            window.setTimeout(() => {
-                wheelCooldown.current = false;
-            }, 420);
-
-            shouldAnimateCarousel.current = true;
-            if (dy > 0) setActiveIndex((i) => Math.min(i + 1, n - 1));
-            else setActiveIndex((i) => Math.max(i - 1, 0));
-        };
-
-        viewport.addEventListener('wheel', onWheel, { passive: false });
-        return () => viewport.removeEventListener('wheel', onWheel);
-    }, [testimonials, activeIndex]);
 
     useEffect(() => {
         if (!testimonials?.length) return;
@@ -294,30 +222,17 @@ const TestimonialSlider = () => {
         setActiveIndex((i) => Math.min(testimonials.length - 1, i + 1));
     };
 
-
-    // Cursor Parallax Logic (Optimized)
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (bgRef.current) {
-            // Using requestAnimationFrame for smoother updates is implicit in modern browsers,
-            // but keeping it simple. Adding will-change to CSS is more critical.
-            const moveX = (window.innerWidth / 2 - e.clientX) * 0.02; // Reduced modifier for subtler, smoother feel
-            const moveY = (window.innerHeight / 2 - e.clientY) * 0.02;
-            bgRef.current.style.transform = `translate3d(${moveX}px, ${moveY}px, 0)`; // force 3d
-        }
-    };
-
     return (
         <section
             ref={sectionRef}
             className="w-full relative section-gap bg-gradient-to-br from-[#6032a8] via-[#7c4dff] to-[#6032a8] overflow-hidden"
-            onMouseMove={handleMouseMove}
         >
 
             {/* Background Decorations */}
-            <div ref={bgRef} className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-30 transition-transform duration-300 ease-out will-change-transform">
-                <div className="bg-blob absolute top-10 left-10 w-64 h-64 bg-purple-400 rounded-full blur-[80px] animate-blob"></div>
-                <div className="bg-blob absolute bottom-10 right-10 w-80 h-80 bg-indigo-400 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
-                <div className="bg-blob absolute top-1/2 left-1/2 -translate-x-1/2 w-96 h-48 bg-pink-400 rounded-full blur-[120px] animate-blob animation-delay-4000"></div>
+            <div ref={bgRef} className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-25">
+                <div className="absolute top-10 left-10 w-64 h-64 bg-purple-400 rounded-full blur-[80px]"></div>
+                <div className="absolute bottom-10 right-10 w-80 h-80 bg-indigo-400 rounded-full blur-[100px]"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-96 h-48 bg-pink-400 rounded-full blur-[120px]"></div>
             </div>
 
             {/* Animated Wavy Top Divider - Micro Ripples (Flipped) */}

@@ -156,16 +156,6 @@ const WhyChooseUs = () => {
                 ease: 'sine.inOut',
             });
 
-            gsap.to('.why-parallax', {
-                y: (index) => -18 - index * 7,
-                ease: 'none',
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: 'top bottom',
-                    end: 'bottom top',
-                    scrub: 0.8,
-                },
-            });
         }, sectionRef);
 
         return () => ctx.revert();
@@ -192,8 +182,6 @@ const WhyChooseUs = () => {
     return (
         <section
             ref={sectionRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
             className="relative isolate overflow-hidden bg-[#fff8ee] py-20 font-sans select-none md:py-28"
         >
             <div

@@ -204,16 +204,6 @@ export default function BenefitsUpdates() {
                 ease: 'sine.inOut',
             });
 
-            gsap.to('.franchise-parallax', {
-                y: (index) => -18 - index * 8,
-                ease: 'none',
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: 'top bottom',
-                    end: 'bottom top',
-                    scrub: 0.8,
-                },
-            });
         }, sectionRef);
 
         return () => ctx.revert();
@@ -239,8 +229,6 @@ export default function BenefitsUpdates() {
     return (
         <section
             ref={sectionRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
             className="relative isolate overflow-hidden bg-[#fff8ec] py-16 font-sans md:py-20 xl:flex xl:min-h-screen xl:items-center xl:py-10"
         >
             <div ref={glowRef} className="pointer-events-none absolute left-0 top-0 z-0 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,185,92,0.28),rgba(125,211,252,0.16)_45%,transparent_72%)] opacity-0 blur-2xl" />
