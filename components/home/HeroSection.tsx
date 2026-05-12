@@ -299,8 +299,7 @@ export default function HeroSection() {
             <Modal
                 isOpen={showAdmissionModal}
                 onClose={() => setShowAdmissionModal(false)}
-                title="Admission Enquiry"
-                size="lg"
+                size="xl"
             >
                 <AdmissionForm />
             </Modal>

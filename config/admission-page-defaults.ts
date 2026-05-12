@@ -108,14 +108,14 @@ export const DEFAULT_ADMISSION_PAGE_DATA: AdmissionPageData = {
             author: "T.I.M.E. Kids Kilpauk",
             location: "Chennai",
             video_url: "/chaninai kilpauk-AnnualDay-Video-2018-19.mp4",
-            thumbnail_url: "/day care.png",
+            thumbnail_url: "/feature-annual-day-celebrations.png",
         },
         {
             title: "School Activities",
             author: "T.I.M.E. Kids Chennai",
             location: "Chennai",
             video_url: "/chennai2.mp4",
-            thumbnail_url: "/infra.jpg",
+            thumbnail_url: "/feature-safe-infrastructure.png",
         },
         {
             title: "Happy Moments",

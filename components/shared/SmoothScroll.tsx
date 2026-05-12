@@ -12,7 +12,10 @@ const SmoothScroll = () => {
             (navigator.maxTouchPoints > 0 ||
                 (navigator as any).msMaxTouchPoints > 0 ||
                 'ontouchstart' in window);
-        if (hasTouch) return;
+        if (hasTouch) {
+            document.documentElement.style.scrollBehavior = 'smooth';
+            return;
+        }
 
         // Disable CSS smooth scroll when Lenis is active
         const html = document.documentElement;
@@ -20,12 +23,12 @@ const SmoothScroll = () => {
         html.style.scrollBehavior = 'auto';
 
         const lenis = new Lenis({
-            duration: 1.0, // Reduced from 1.2 for snappier feel
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            duration: 0.65,
+            easing: (t) => 1 - Math.pow(1 - t, 3),
             orientation: 'vertical',
             gestureOrientation: 'vertical',
             smoothWheel: true,
-            wheelMultiplier: 0.8, // Reduce wheel sensitivity for better control
+            wheelMultiplier: 1.05,
             // Touch disabled (we early-return on touch devices)
             touchMultiplier: 1.0,
             infinite: false,

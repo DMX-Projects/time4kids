@@ -6,6 +6,7 @@ import { MapPin, Phone, Search, Navigation, Star, Sun, Facebook, Instagram, Yout
 import { useRouter, useSearchParams } from 'next/navigation';
 import { slugify, cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api-client';
+import { shouldCapLocateCentreResults, PRESENCE_SECTION_CITY_LIMIT } from '@/lib/site-location-presence';
 import { CentreMap } from '@/components/shared/CentreMap';
 
 export const dynamic = 'force-dynamic';
@@ -252,8 +253,14 @@ function LocateCentreContent() {
     // Determine if any filters are active
     const isFiltered = !!(selectedState || selectedCity || debouncedSearchTerm);
 
-    // Filtered or limited centres to display
-    const displayedCentres = isFiltered ? centres : centres.slice(0, 4);
+    // Filtered or limited centres to display (cap long lists in TG / AP / Bengaluru at 15 schools)
+    const displayedCentres = (() => {
+        let list = isFiltered ? centres : centres.slice(0, 4);
+        if (isFiltered && shouldCapLocateCentreResults(selectedState, selectedCity)) {
+            list = list.slice(0, PRESENCE_SECTION_CITY_LIMIT);
+        }
+        return list;
+    })();
 
     // Helper to format full address
     const formatAddress = (centre: Centre) => {

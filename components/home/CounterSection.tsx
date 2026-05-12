@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { apiUrl } from '@/lib/api-client';
+import { formatIndianInteger } from '@/lib/format-indian-number';
 
 const CounterSection = () => {
     const sectionRef = useRef<HTMLElement>(null);
@@ -38,24 +39,6 @@ const CounterSection = () => {
 
     return (
         <section ref={sectionRef} className="relative section-gap bg-[#E0F2FE] overflow-hidden">
-            {/* Top Border - Scallop Pattern */}
-            <div className="absolute top-0 left-0 w-full h-8 z-30 pointer-events-none overflow-hidden">
-                <motion.div
-                    className="absolute top-0 left-0 w-[200%] h-full"
-                    animate={{ x: [-60, 0] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-                >
-                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
-                        <defs>
-                            <pattern id="scallopPatternTop" x="0" y="0" width="60" height="24" patternUnits="userSpaceOnUse">
-                                <path d="M0 0 V12 Q15 24 30 12 T60 12 V0 H0 Z" fill="white" />
-                            </pattern>
-                        </defs>
-                        <rect x="0" y="0" width="100%" height="24" fill="url(#scallopPatternTop)" />
-                    </svg>
-                </motion.div>
-            </div>
-
             {/* Background Bubbles */}
             <div className="absolute inset-0 pointer-events-none">
                 {[...Array(12)].map((_, i) => (
@@ -92,18 +75,6 @@ const CounterSection = () => {
                 </div>
             </div>
 
-            {/* Bottom Border - Scallop Pattern */}
-            <div className="absolute bottom-0 left-0 w-full h-8 z-30 pointer-events-none rotate-180 overflow-hidden">
-                <motion.div
-                    className="absolute top-0 left-0 w-[200%] h-full"
-                    animate={{ x: [-60, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                >
-                    <svg className="w-full h-full block" preserveAspectRatio="none" viewBox="0 0 1200 24">
-                        <rect x="0" y="0" width="100%" height="24" fill="url(#scallopPatternTop)" />
-                    </svg>
-                </motion.div>
-            </div>
         </section>
     );
 };
@@ -172,7 +143,7 @@ const CounterCard = ({ stat, isInView, delay }: { stat: any, isInView: boolean, 
                     animate={isInView ? { scale: [1, 1.1, 1] } : {}}
                     transition={{ duration: 0.3, delay: delay + 2 }}
                 >
-                    {count.toLocaleString()}+
+                    {formatIndianInteger(count)}+
                 </motion.span>
                 <span className="block text-sm md:text-base text-[#003366] font-bold font-baloo uppercase tracking-widest mt-2">
                     {stat.label}
