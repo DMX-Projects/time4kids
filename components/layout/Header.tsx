@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Home, Briefcase, Phone, Menu, X } from 'lucide-react';
 import AnimatedNavBar from './AnimatedNavBar';
+import { LENIS_READY_EVENT } from '@/components/shared/SmoothScroll';
 
 export default function Header() {
     const pathname = usePathname();
@@ -13,37 +14,53 @@ export default function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        // Use Lenis scroll event if available for better performance
-        const lenis = (window as any).lenis;
-
         let rafId: number | null = null;
+
         const handleScroll = () => {
             if (rafId === null) {
                 rafId = requestAnimationFrame(() => {
-                    const scrollY = lenis ? lenis.scroll : window.scrollY;
+                    const lenisInstance = (window as unknown as { lenis?: { scroll: number } }).lenis;
+                    const scrollY = lenisInstance ? lenisInstance.scroll : window.scrollY;
                     setIsSticky(scrollY >= 35);
                     rafId = null;
                 });
             }
         };
 
-        if (lenis) {
-            lenis.on('scroll', handleScroll);
-            handleScroll(); // Initial call
-        } else {
-            window.addEventListener('scroll', handleScroll, { passive: true });
-            handleScroll(); // Initial call
-        }
-
-        return () => {
+        const detach = () => {
             if (rafId !== null) {
                 cancelAnimationFrame(rafId);
+                rafId = null;
             }
-            if (lenis) {
-                lenis.off('scroll', handleScroll);
+            const lenisInstance = (window as unknown as { lenis?: { off: (e: string, fn: () => void) => void } }).lenis;
+            if (lenisInstance) {
+                lenisInstance.off('scroll', handleScroll);
+            }
+            window.removeEventListener('scroll', handleScroll);
+        };
+
+        const attach = () => {
+            const lenisInstance = (window as unknown as { lenis?: { on: (e: string, fn: () => void) => void } }).lenis;
+            if (lenisInstance) {
+                lenisInstance.on('scroll', handleScroll);
             } else {
-                window.removeEventListener('scroll', handleScroll);
+                window.addEventListener('scroll', handleScroll, { passive: true });
             }
+            handleScroll();
+        };
+
+        attach();
+
+        const onLenisReady = () => {
+            detach();
+            attach();
+        };
+
+        window.addEventListener(LENIS_READY_EVENT, onLenisReady);
+
+        return () => {
+            window.removeEventListener(LENIS_READY_EVENT, onLenisReady);
+            detach();
         };
     }, []);
 

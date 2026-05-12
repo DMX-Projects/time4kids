@@ -25,7 +25,7 @@ const nextConfig = {
         formats: ['image/avif', 'image/webp'],
     },
     reactStrictMode: false,
-    compress: false,
+    compress: true,
     poweredByHeader: false,
     optimizeFonts: true,
     swcMinify: true,
