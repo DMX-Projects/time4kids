@@ -20,6 +20,24 @@ interface HeroSlide {
     order: number;
 }
 
+/** Always-on hero banners (served from `/public`). Shown first, then CMS slides from the API. */
+const STATIC_HERO_SLIDES: HeroSlide[] = [
+    {
+        id: -1,
+        image: '/1.jpg.jpeg',
+        alt_text: 'Safe, smart & joyful early learning for every child — T.I.M.E. Kids',
+        link: '',
+        order: -2,
+    },
+    {
+        id: -2,
+        image: '/2.jpg.jpeg',
+        alt_text: 'Creative, caring early learning at T.I.M.E. Kids',
+        link: '',
+        order: -1,
+    },
+];
+
 export default function HeroSection() {
     const [showAdmissionModal, setShowAdmissionModal] = useState(false);
     // Define slides state
@@ -55,8 +73,13 @@ export default function HeroSection() {
 
         fetchSlides();
 
-        // Generate particles for magnetic button
-        const newParticles = Array.from({ length: 50 }).map(() => ({
+        const hasTouch =
+            typeof navigator !== 'undefined' &&
+            (navigator.maxTouchPoints > 0 ||
+                ((navigator as unknown as { msMaxTouchPoints?: number }).msMaxTouchPoints ?? 0) > 0 ||
+                'ontouchstart' in window);
+        const particleCount = hasTouch ? 0 : 28;
+        const newParticles = Array.from({ length: particleCount }).map(() => ({
             x: `${Math.random() * 200 - 100}px`,
             y: `${Math.random() * 200 - 100}px`,
             anim: `${1 + Math.random() * 2}s`,
@@ -73,8 +96,8 @@ export default function HeroSection() {
         slidesToShow: 1,
         slidesToScroll: 1,
         autoplay: true,
-        autoplaySpeed: 5000,
-        speed: 1500,
+        autoplaySpeed: 4500,
+        speed: 850,
         cssEase: "cubic-bezier(0.7, 0, 0.3, 1)",
         pauseOnHover: false,
         arrows: true,
@@ -215,14 +238,12 @@ export default function HeroSection() {
     // Logic moved to JSX
 
 
-    // Use slides if available, otherwise it would have returned null above.
-    // We REMOVED the static fallback.
-    const heroSlides = slides;
+    const heroSlides = [...STATIC_HERO_SLIDES, ...slides];
 
     return (
         <>
             {/* Banner Slider Section */}
-            <section className="banner-section">
+            <section className="banner-section mt-[80px]">
                 <div className="banner-slider">
                     {heroSlides.length > 0 ? (
                         <Slider {...settings}>

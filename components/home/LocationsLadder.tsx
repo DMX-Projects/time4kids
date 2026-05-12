@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { MapPin } from 'lucide-react';
 import { apiUrl } from '@/lib/api-client';
 import { matchesHyderabadMetroCity, OUR_PRESENCE_HYDERABAD_CENTRE_LIMIT } from '@/lib/site-location-presence';
@@ -87,11 +86,11 @@ const LadderColumn = ({ items, columnIndex, onSelect }: LadderColumnProps) => {
                             <div className="shrink-0 transition-transform group-hover:scale-110 bg-white/40 rounded-full w-10 h-10 flex items-center justify-center">
                                 <MapPin className="w-5 h-5 text-gray-900" aria-hidden />
                             </div>
-                            <div className="flex flex-col min-w-0 justify-center h-full">
-                                <span className="text-sm font-bold text-gray-900 leading-tight truncate w-full group-hover:text-[#D2691E] transition-colors">
+                            <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center">
+                                <span className="font-display truncate text-sm font-black leading-tight text-slate-900 transition-colors group-hover:text-[#D2691E]">
                                     {data.name}
                                 </span>
-                                <span className="text-[11px] font-semibold text-gray-700/90 truncate w-full leading-snug">
+                                <span className="truncate text-[11px] font-semibold leading-snug text-slate-600">
                                     {data.city}
                                 </span>
                             </div>
@@ -139,7 +138,7 @@ const LocationsLadder = () => {
     };
 
     return (
-        <section className="locations-ladder-section section-gap">
+        <section className="locations-ladder-section section-gap bg-gradient-to-b from-[#ffffff] to-[#dbf5ff]">
             <style jsx>{`
                 .locations-ladder-section {
                     position: relative;
@@ -150,28 +149,18 @@ const LocationsLadder = () => {
                     clear: both;
                 }
             `}</style>
-            <div className="absolute inset-0 z-0">
-                <Image
-                    src="/bg-footer.jpg"
-                    alt="Locations Background"
-                    fill
-                    className="object-cover object-center"
-                    priority={false}
-                    sizes="100vw"
-                />
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm"></div>
-            </div>
 
             <div className="container mx-auto px-4 relative z-10 w-full max-w-[1600px]">
                 <div className="text-center mb-12">
-                    <h2 className="text-4xl md:text-5xl font-bubblegum text-[#085390] mb-4 tracking-wide drop-shadow-sm">
+                    <h2 className="font-display text-4xl font-black leading-tight tracking-[-0.02em] text-slate-800 md:text-6xl">
                         Our Presence
                     </h2>
-                    <p className="text-xl text-gray-700 font-baloo font-medium max-w-2xl mx-auto">
-                        T.I.M.E. Kids preschools in <strong className="font-bold text-[#085390]">Hyderabad</strong> and{' '}
-                        <strong className="font-bold text-[#085390]">Secunderabad</strong>. Tap a centre to open its page.
+                    <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
+                        T.I.M.E. Kids preschools in{' '}
+                        <strong className="font-semibold text-slate-800">Hyderabad</strong> and{' '}
+                        <strong className="font-semibold text-slate-800">Secunderabad</strong>. Tap a centre to open its page.
                     </p>
-                    <p className="text-base text-gray-600 font-baloo mt-3 max-w-2xl mx-auto">
+                    <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-500 md:text-base">
                         Showing up to {OUR_PRESENCE_HYDERABAD_CENTRE_LIMIT} centres from active franchise listings in these cities.
                     </p>
                     <div className="h-1.5 w-24 bg-[#fed509] mx-auto mt-4 rounded-full shadow-sm"></div>
@@ -180,20 +169,20 @@ const LocationsLadder = () => {
                 {loading && (
                     <div className="text-center py-12">
                         <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent"></div>
-                        <p className="mt-4 text-gray-600">Loading Hyderabad centres…</p>
+                        <p className="mt-4 text-base text-slate-600">Loading Hyderabad centres…</p>
                     </div>
                 )}
 
                 {error && !loading && (
                     <div className="text-center py-12">
-                        <p className="text-red-600 mb-2">⚠️ {error}</p>
-                        <p className="text-gray-600 text-sm">Could not load centres. Try again later.</p>
+                        <p className="mb-2 text-base text-red-600">⚠️ {error}</p>
+                        <p className="text-sm text-slate-600">Could not load centres. Try again later.</p>
                     </div>
                 )}
 
                 {!loading && centres.length === 0 && !error && (
-                    <div className="text-center py-12 text-gray-600 max-w-lg mx-auto">
-                        <p className="font-baloo text-lg">
+                    <div className="mx-auto max-w-lg py-12 text-center text-slate-600">
+                        <p className="text-base leading-8 md:text-lg">
                             No active preschools found in Hyderabad or Secunderabad. Add franchises with city set to Hyderabad or Secunderabad (Admin).
                         </p>
                     </div>
@@ -212,15 +201,6 @@ const LocationsLadder = () => {
                     </div>
                 )}
             </div>
-
-            <style jsx>{`
-                :global(.font-bubblegum) {
-                    font-family: var(--font-bubblegum);
-                }
-                :global(.font-baloo) {
-                    font-family: var(--font-baloo);
-                }
-            `}</style>
         </section>
     );
 };

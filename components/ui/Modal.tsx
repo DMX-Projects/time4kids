@@ -65,14 +65,16 @@ const Modal: React.FC<ModalProps> = ({
             {/* Modal Content - Fixed height structure */}
             <div
                 ref={modalContentRef}
-                className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} h-auto max-h-[85vh] flex flex-col animate-scale-in overflow-hidden z-[10000]`}
+                className={`relative isolate bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} h-auto max-h-[85vh] flex flex-col animate-scale-in overflow-hidden z-[10000]`}
                 onWheel={handleWheel}
+                onClick={(e) => e.stopPropagation()}
             >
                 {/* Header - Fixed at top */}
                 {title && (
                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0 bg-white">
                         <h2 className="text-xl font-bold font-display text-gray-900">{title}</h2>
                         <button
+                            type="button"
                             onClick={onClose}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         >
@@ -82,17 +84,22 @@ const Modal: React.FC<ModalProps> = ({
                 )}
                 {!title && (
                     <button
-                        onClick={onClose}
-                        className="absolute right-4 top-4 z-10 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onClose();
+                        }}
+                        className="absolute right-3 top-3 z-[10050] rounded-lg bg-white/90 p-2 shadow-sm ring-1 ring-gray-200/80 hover:bg-gray-100 transition-colors"
                         aria-label="Close"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 )}
 
-                {/* Body - Scrollable content */}
+                {/* Body - scroll layer stays below the absolute close control (Framer transforms can steal clicks at z-10). */}
                 <div
-                    className={`flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 overscroll-contain ${!title ? 'pt-12' : ''}`}
+                    className={`relative z-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 overscroll-contain ${!title ? 'pt-12' : ''}`}
                     style={{
                         WebkitOverflowScrolling: 'touch',
                         scrollBehavior: 'smooth'

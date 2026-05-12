@@ -96,7 +96,7 @@ const SchoolIntroSection = ({ schoolName, about }: SchoolIntroSectionProps) => {
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
                     >
-                        <h1 className="font-schoolbell text-[#ff5ca1] text-4xl md:text-5xl lg:text-6xl font-bold mb-4 drop-shadow-sm leading-tight">
+                        <h1 className="font-luckiest text-[#ff5ca1] text-4xl md:text-5xl lg:text-6xl font-bold mb-4 drop-shadow-sm leading-tight">
                             Welcome <br className="md:hidden" /> to T.I.M.E. Kids
                         </h1>
 
@@ -104,7 +104,7 @@ const SchoolIntroSection = ({ schoolName, about }: SchoolIntroSectionProps) => {
                             {schoolName}
                         </h2>
 
-                        <h3 className="font-outfit text-gray-800 text-lg md:text-xl font-bold mb-8 max-w-3xl mx-auto leading-relaxed">
+                        <h3 className="font-sans text-gray-800 text-lg md:text-xl font-bold mb-8 max-w-3xl mx-auto leading-relaxed">
                             A chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training.
                         </h3>
                     </motion.div>
@@ -129,20 +129,6 @@ const SchoolIntroSection = ({ schoolName, about }: SchoolIntroSectionProps) => {
                     <path d="M985.66,92.83C906.67,72,823.78,31,743.84,14.19c-82.26-17.34-168.06-16.33-250.45.39-57.84,11.73-114,31.07-172,41.86A600.21,600.21,0,0,1,0,27.35V120H1200V95.8C1132.19,118.92,1055.71,111.31,985.66,92.83Z" fill="#FFFFFF"></path>
                 </svg>
             </div>
-
-            <style jsx global>{`
-                @import url('https://fonts.googleapis.com/css2?family=Schoolbell&family=Fredoka:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
-                
-                .font-schoolbell {
-                    font-family: 'Schoolbell', cursive;
-                }
-                .font-fredoka {
-                    font-family: 'Fredoka', sans-serif;
-                }
-                .font-outfit {
-                    font-family: 'Outfit', sans-serif;
-                }
-            `}</style>
         </section>
     );
 };

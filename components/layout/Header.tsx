@@ -3,46 +3,83 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Home, Briefcase, Phone } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Home, Briefcase, Phone, Menu, X } from 'lucide-react';
 import AnimatedNavBar from './AnimatedNavBar';
+import { LENIS_READY_EVENT } from '@/components/shared/SmoothScroll';
 
 export default function Header() {
+    const pathname = usePathname();
     const [isSticky, setIsSticky] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        // Use Lenis scroll event if available for better performance
-        const lenis = (window as any).lenis;
-
         let rafId: number | null = null;
+
         const handleScroll = () => {
             if (rafId === null) {
                 rafId = requestAnimationFrame(() => {
-                    const scrollY = lenis ? lenis.scroll : window.scrollY;
+                    const lenisInstance = (window as unknown as { lenis?: { scroll: number } }).lenis;
+                    const scrollY = lenisInstance ? lenisInstance.scroll : window.scrollY;
                     setIsSticky(scrollY >= 35);
                     rafId = null;
                 });
             }
         };
 
-        if (lenis) {
-            lenis.on('scroll', handleScroll);
-            handleScroll(); // Initial call
-        } else {
-            window.addEventListener('scroll', handleScroll, { passive: true });
-            handleScroll(); // Initial call
-        }
-
-        return () => {
+        const detach = () => {
             if (rafId !== null) {
                 cancelAnimationFrame(rafId);
+                rafId = null;
             }
-            if (lenis) {
-                lenis.off('scroll', handleScroll);
+            const lenisInstance = (window as unknown as { lenis?: { off: (e: string, fn: () => void) => void } }).lenis;
+            if (lenisInstance) {
+                lenisInstance.off('scroll', handleScroll);
+            }
+            window.removeEventListener('scroll', handleScroll);
+        };
+
+        const attach = () => {
+            const lenisInstance = (window as unknown as { lenis?: { on: (e: string, fn: () => void) => void } }).lenis;
+            if (lenisInstance) {
+                lenisInstance.on('scroll', handleScroll);
             } else {
-                window.removeEventListener('scroll', handleScroll);
+                window.addEventListener('scroll', handleScroll, { passive: true });
             }
+            handleScroll();
+        };
+
+        attach();
+
+        const onLenisReady = () => {
+            detach();
+            attach();
+        };
+
+        window.addEventListener(LENIS_READY_EVENT, onLenisReady);
+
+        return () => {
+            window.removeEventListener(LENIS_READY_EVENT, onLenisReady);
+            detach();
         };
     }, []);
+
+    useEffect(() => {
+        setMobileMenuOpen(false);
+    }, [pathname]);
+
+    useEffect(() => {
+        if (!mobileMenuOpen) return;
+        document.body.style.overflow = 'hidden';
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setMobileMenuOpen(false);
+        };
+        window.addEventListener('keydown', onKey);
+        return () => {
+            document.body.style.overflow = '';
+            window.removeEventListener('keydown', onKey);
+        };
+    }, [mobileMenuOpen]);
 
     return (
         <>
@@ -81,15 +118,63 @@ export default function Header() {
                             </Link>
                         </div>
 
-                        {/* Navigation — always visible; scroll horizontally on narrow screens */}
-                        <div className="flex min-w-0 flex-1 items-center justify-end pl-2 sm:pl-4">
+                        {/* Desktop: horizontal nav */}
+                        <div className="hidden min-w-0 flex-1 items-center justify-end pl-2 sm:pl-4 lg:flex">
                             <div className="max-w-full min-w-0 overflow-x-auto overflow-y-visible [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                                 <AnimatedNavBar />
                             </div>
                         </div>
+
+                        {/* Mobile / tablet: hamburger + drawer (all links + login without horizontal scroll) */}
+                        <div className="flex flex-shrink-0 items-center gap-2 lg:hidden">
+                            <button
+                                type="button"
+                                onClick={() => setMobileMenuOpen(true)}
+                                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-800 shadow-sm transition hover:bg-gray-50 active:scale-95"
+                                aria-expanded={mobileMenuOpen}
+                                aria-controls="site-mobile-menu"
+                                aria-label="Open menu"
+                            >
+                                <Menu className="h-6 w-6" strokeWidth={2.25} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
+
+            {/* Mobile menu overlay */}
+            {mobileMenuOpen && (
+                <div
+                    id="site-mobile-menu"
+                    className="fixed inset-0 z-[2500] lg:hidden"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Site navigation"
+                >
+                    <button
+                        type="button"
+                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        aria-label="Close menu"
+                        onClick={() => setMobileMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-0 flex h-full w-[min(100%,22rem)] flex-col border-l-4 border-l-orange-400 bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-white to-orange-50/40 px-4 py-3.5">
+                            <span className="font-display text-base font-semibold tracking-tight text-slate-800">Menu</span>
+                            <button
+                                type="button"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                                aria-label="Close menu"
+                            >
+                                <X className="h-5 w-5" strokeWidth={2.25} />
+                            </button>
+                        </div>
+                        <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3">
+                            <AnimatedNavBar mobile onLinkClick={() => setMobileMenuOpen(false)} />
+                        </nav>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
                 /* HEADER TOP */

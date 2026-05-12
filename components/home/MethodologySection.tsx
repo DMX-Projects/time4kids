@@ -33,6 +33,9 @@ export default function MethodologySection() {
     const home = useHomePageContent();
     const methodologyItems = home.methodology.items;
     const methodologyTitle = home.methodology.title || 'Value-Based Learning Methodology';
+    const displayMethodologyTitle = methodologyTitle
+        .replace('Value based', 'Value-Based Learning')
+        .replace(/\bmethodology\b/gi, 'Methodology');
     const sectionRef = useRef<HTMLElement>(null);
     const glowRef = useRef<HTMLDivElement>(null);
 
@@ -87,8 +90,6 @@ export default function MethodologySection() {
     return (
         <section
             ref={sectionRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
             className="relative isolate overflow-hidden bg-[#fff8ed] py-20 font-sans md:py-24"
         >
             <div className="absolute inset-0 -z-30 bg-[radial-gradient(circle_at_16%_20%,rgba(45,212,191,0.28),transparent_32%),radial-gradient(circle_at_82%_16%,rgba(251,146,60,0.24),transparent_30%),linear-gradient(135deg,#fff8ed_0%,#eefcff_48%,#fff4d6_100%)]" />
@@ -120,7 +121,7 @@ export default function MethodologySection() {
                         className="methodology-reveal font-display text-4xl font-black leading-tight tracking-[-0.02em] text-slate-900 md:text-6xl"
                         style={{ fontFamily: "'Clash Display', 'Satoshi', 'Plus Jakarta Sans', var(--font-poppins), system-ui, sans-serif" }}
                     >
-                        <span className="methodology-gradient">{methodologyTitle.replace('Value based', 'Value-Based Learning')}</span>
+                        <span className="methodology-gradient">{displayMethodologyTitle}</span>
                     </h2>
 
                     <div className="methodology-reveal mx-auto mt-5 h-1 w-32 rounded-full bg-gradient-to-r from-orange-300 via-amber-100 to-sky-200 shadow-[0_0_24px_rgba(252,211,77,0.55)]" />

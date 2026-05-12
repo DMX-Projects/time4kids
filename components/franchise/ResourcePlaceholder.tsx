@@ -34,7 +34,7 @@ export default function ResourcePlaceholder({
 
             <div className="pt-2">
                 <Link href="/dashboard/franchise" className="text-sm font-semibold text-[#FF922B] hover:text-orange-600 underline">
-                    Back to Resource Hub
+                    Back to dashboard
                 </Link>
             </div>
         </div>

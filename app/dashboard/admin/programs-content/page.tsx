@@ -147,26 +147,14 @@ export default function AdminProgramsContentPage() {
         setMessage(null);
         setUploadingIndex(i);
         try {
-            const dims0 = await getImageDimensions(file);
-            setUploadInfo((prev) => ({ ...prev, [i]: `${file.name} • ${dims0.width}×${dims0.height}px • ${formatMb(file.size)}` }));
-
             if (file.size > MAX_UPLOAD_BYTES) {
                 throw new Error(`File is too large (${formatMb(file.size)}). Max allowed is 5MB.`);
             }
-
-            const { width, height } = dims0;
-            const minW = 800;
-            const minH = 600;
-            if (width < minW || height < minH) {
-                throw new Error(`Image is too small (${width}×${height}). Please upload at least ${minW}×${minH}px (recommended 1200×900).`);
-            }
-
-            // Cards are ~4:3 on desktop; accept near 4:3 to reduce awkward crop.
-            const aspect = width / Math.max(1, height);
-            const ideal = 4 / 3;
-            const tol = 0.28;
-            if (Math.abs(aspect - ideal) > tol) {
-                throw new Error(`Image ratio should be close to 4:3 (e.g. 1200×900). Your image is ${width}×${height} (${aspect.toFixed(2)}:1).`);
+            try {
+                const dims0 = await getImageDimensions(file);
+                setUploadInfo((prev) => ({ ...prev, [i]: `${file.name} • ${dims0.width}×${dims0.height}px • ${formatMb(file.size)}` }));
+            } catch {
+                setUploadInfo((prev) => ({ ...prev, [i]: `${file.name} • ${formatMb(file.size)}` }));
             }
 
             const title = programs[i]?.name || `Program ${i + 1}`;
@@ -288,7 +276,15 @@ export default function AdminProgramsContentPage() {
                                             <ImgThumb src={p.image} alt={p.name || `Program ${i + 1}`} />
                                         </div>
                                         <div className="mt-1 text-[11px] text-slate-500 space-y-1">
-                                            <div>Requirements: max <strong>5MB</strong>, minimum <strong>800×600</strong>, best is <strong>1200×900 (4:3)</strong>.</div>
+                                            <div className="space-y-0.5">
+                                                <div>
+                                                    <span className="font-semibold text-slate-700">Requirements (recommended):</span> max{" "}
+                                                    <strong>5MB</strong>, minimum <strong>800×600</strong>, best <strong>1200×900 (4:3)</strong>.
+                                                </div>
+                                                <div className="text-slate-500">
+                                                    <span className="font-semibold text-slate-600">Enforced:</span> file size ≤5MB only — smaller or non-4:3 images still upload.
+                                                </div>
+                                            </div>
                                             {uploadInfo[i] ? <div className="text-slate-600">Selected: {uploadInfo[i]}</div> : null}
                                         </div>
                                     </div>

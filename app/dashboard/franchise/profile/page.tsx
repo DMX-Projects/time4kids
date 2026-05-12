@@ -75,6 +75,9 @@ export default function FranchiseProfilePage() {
                             onChange={(e) => setForm({ ...form, longitude: e.target.value ? parseFloat(e.target.value) : null })}
                             placeholder="e.g. 78.4867"
                         />
+                        <p className="md:col-span-2 text-[11px] text-slate-500 leading-snug -mt-1">
+                            Optional. If both are set, your centre appears as a pin on the public <strong>Locate centre</strong> map. You can copy coordinates from Google Maps (right-click the place → coordinates).
+                        </p>
                     </div>
                     <Textarea label="Bio" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
                     <div className="flex gap-2">

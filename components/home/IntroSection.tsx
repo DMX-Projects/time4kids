@@ -130,8 +130,12 @@ const FeatureCard = ({ icon: Icon, title, desc, index }: { icon: LucideIcon; tit
                 <Icon size={22} />
             </motion.div>
             <div>
-                <h3 className="font-display text-sm font-black leading-snug text-slate-900 xl:text-base">{title}</h3>
-                <p className="mt-1.5 text-xs leading-5 text-slate-600 xl:text-sm xl:leading-6">{desc}</p>
+                <h3 className="font-display text-base font-black leading-snug text-slate-900 md:text-lg xl:text-xl">
+                    {title}
+                </h3>
+                <p className="mt-1.5 text-xs leading-5 text-slate-600 xl:mt-2 xl:text-sm xl:leading-6">
+                    {desc}
+                </p>
             </div>
         </div>
     </motion.div>
@@ -156,16 +160,6 @@ export default function IntroSection() {
                 ease: 'sine.inOut',
             });
 
-            gsap.to('.parallax-layer', {
-                y: (index) => -24 - index * 10,
-                ease: 'none',
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: 'top bottom',
-                    end: 'bottom top',
-                    scrub: 0.7,
-                },
-            });
         }, sectionRef);
 
         return () => ctx.revert();
@@ -214,8 +208,6 @@ export default function IntroSection() {
         <section
             id="about"
             ref={sectionRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
             className="relative isolate overflow-hidden bg-[#fff8ec] py-16 font-sans scroll-mt-20 md:py-20 lg:flex lg:min-h-screen lg:items-center lg:py-12"
         >
             <div
@@ -302,7 +294,7 @@ export default function IntroSection() {
                                     hidden: { opacity: 0, y: 36, filter: 'blur(10px)' },
                                     show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } },
                                 }}
-                                className="animated-gradient-text mt-2 block"
+                                className="mt-2 block font-display text-neutral-700"
                             >
                                 Beautiful Journey
                             </motion.span>
@@ -432,15 +424,6 @@ export default function IntroSection() {
                     transform: translateX(-120%);
                 }
 
-                .animated-gradient-text {
-                    background: linear-gradient(90deg, #475569, #64748b, #475569);
-                    background-size: 260% auto;
-                    -webkit-background-clip: text;
-                    background-clip: text;
-                    color: transparent;
-                    animation: textGradient 6s ease-in-out infinite;
-                }
-
                 .cta-sweep::before {
                     content: '';
                     position: absolute;
@@ -457,11 +440,6 @@ export default function IntroSection() {
                 @keyframes badgeSweep {
                     0%, 38% { transform: translateX(-120%); }
                     72%, 100% { transform: translateX(120%); }
-                }
-
-                @keyframes textGradient {
-                    0%, 100% { background-position: 0% center; }
-                    50% { background-position: 100% center; }
                 }
 
                 @keyframes buttonSweep {

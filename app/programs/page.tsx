@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import Button from '@/components/ui/Button';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Clock, BookOpen, Star, Heart, Music, Palette, Users, Sparkles, Sun, Cloud, Bird } from 'lucide-react';
@@ -245,11 +244,12 @@ export default function ProgramsPage() {
                                             ))}
                                         </ul>
 
-                                        <div className="pt-10">
-                                            <Link href={pageData.hero.cta_href || "/admission"}>
-                                                <Button className={`px-14 py-7 text-xl rounded-2xl font-bold shadow-2xl shadow-orange-200/50 hover:shadow-orange-300/60 hover:-translate-y-1 transition-all bg-gradient-to-r from-orange-500 to-red-500 text-white border-none uppercase tracking-wider`}>
-                                                    {pageData.hero.cta_label || "Enroll Your Child"}
-                                                </Button>
+                                        <div className="pt-8">
+                                            <Link
+                                                href={pageData.hero.cta_href || "/admission"}
+                                                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-8 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-orange-200/40 transition hover:-translate-y-0.5 hover:shadow-orange-300/50 sm:text-base"
+                                            >
+                                                {pageData.hero.cta_label || "Enroll Your Child"}
                                             </Link>
                                         </div>
                                     </div>

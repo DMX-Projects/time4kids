@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { apiUrl, jsonHeaders, mediaUrl, toApiError } from "@/lib/api-client";
 import {
@@ -280,12 +281,9 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     const [locations, setLocations] = useState<{ city_name: string; state: string }[]>([]);
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
     const [parentSchoolLoading, setParentSchoolLoading] = useState(false);
+    const pathname = usePathname() ?? "";
 
-    useEffect(() => {
-        loadLocations();
-    }, []);
-
-    const loadLocations = async () => {
+    const loadLocations = useCallback(async () => {
         try {
             const res = await fetch(apiUrl("/franchises/public/locations/"));
             if (res.ok) {
@@ -295,7 +293,15 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         } catch (err) {
             console.error("Failed to load public locations", err);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        const needsPublicLocations =
+            pathname.startsWith("/admission") ||
+            pathname.startsWith("/dashboard/admin/enquiries");
+        if (!needsPublicLocations) return;
+        void loadLocations();
+    }, [pathname, loadLocations]);
 
     const refreshAll = async () => {
         if (!user) return;
@@ -326,11 +332,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
 
     const loadParentEvents = async () => {
         try {
-            console.log("Loading parent events from /events/parent/");
             const data = await authFetch<unknown>("/events/parent/");
-            console.log("Events API response:", data);
             const list = normalizeApiList(data) as ApiEvent[];
-            console.log("Normalized events list:", list);
             ingestEvents(list);
         } catch (error) {
             console.error("Failed to load parent events:", error);

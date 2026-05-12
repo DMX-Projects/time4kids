@@ -1,18 +1,36 @@
 import type { Metadata } from "next";
-import Script from "next/script";
+import dynamic from "next/dynamic";
+import { Dosis, Schoolbell } from "next/font/google";
 // Rebuild trigger
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ScrollProgress from "@/components/animations/ScrollProgress";
 import SmoothScroll from "@/components/shared/SmoothScroll";
-import BlobBackground from "@/components/animations/BlobBackground";
 import ConditionalChrome from "@/components/layout/ConditionalChrome";
-import DiceCursor from "@/components/ui/DiceCursor";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
 import { GTM_ID } from "@/lib/tracking";
+
+const fontDosis = Dosis({
+    subsets: ["latin"],
+    weight: ["400", "500", "600", "700", "800"],
+    variable: "--font-dosis",
+    display: "swap",
+});
+
+const fontSchoolbell = Schoolbell({
+    subsets: ["latin"],
+    weight: "400",
+    variable: "--font-schoolbell",
+    display: "swap",
+});
+
+const BlobBackground = dynamic(() => import("@/components/animations/BlobBackground"), {
+    ssr: false,
+    loading: () => null,
+});
 
 export const metadata: Metadata = {
     title: "T.I.M.E. Kids - The Preschool That Cares | 17 Years of Legacy",
@@ -39,9 +57,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" className={`${fontDosis.variable} ${fontSchoolbell.variable}`}>
             <head>
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
                 {/* GTM Disabled to reduce cookie bloat and troubleshoot 400 errors */}
                 {/* {GTM_ID ? (
                     <>
@@ -78,9 +95,7 @@ export default function RootLayout({
                         <SchoolDataProvider>
                             <ConditionalChrome>
                                 <SmoothScroll />
-                                <BlobBackground />
                                 <ScrollProgress />
-                                <DiceCursor />
                                 <Header />
                             </ConditionalChrome>
 
