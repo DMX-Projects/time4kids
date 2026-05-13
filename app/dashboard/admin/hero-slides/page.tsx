@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { Images, Plus, Pencil, Trash2, Eye, EyeOff, Upload, X } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import Image from "next/image";
-import { mediaUrl, apiUrl } from "@/lib/api-client";
+import { mediaUrl } from "@/lib/api-client";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface HeroSlide {
     id: number;
@@ -55,6 +56,7 @@ function formatBytes(bytes: number): string {
 }
 
 export default function HeroSlidesPage() {
+    const { authFetch } = useAuth();
     const [slides, setSlides] = useState<HeroSlide[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -70,24 +72,22 @@ export default function HeroSlidesPage() {
     const { showToast } = useToast();
     const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
 
-    const fetchSlides = async () => {
+    const fetchSlides = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await fetch(apiUrl('/common/hero-slides/'));
-            if (response.ok) {
-                const data = await response.json();
-                setSlides(data);
-            }
+            const data = await authFetch<HeroSlide[] | { results: HeroSlide[] }>("/common/hero-slides/");
+            const list = Array.isArray(data) ? data : data?.results ?? [];
+            setSlides(list);
         } catch (err) {
             console.error("Failed to fetch slides", err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [authFetch]);
 
     useEffect(() => {
-        fetchSlides();
-    }, []);
+        void fetchSlides();
+    }, [fetchSlides]);
 
     const startCreate = () => {
         setEditingId(null);
@@ -162,17 +162,11 @@ export default function HeroSlidesPage() {
 
     const handleDelete = async (id: number) => {
         try {
-            const response = await fetch(apiUrl(`/common/hero-slides/${id}/`), {
-                method: 'DELETE',
-            });
-            if (response.ok) {
-                setSlides(slides.filter(s => s.id !== id));
-                showToast("Slide deleted successfully", "success");
-            } else {
-                showToast("Failed to delete slide", "error");
-            }
-        } catch (err) {
-            showToast("Error deleting slide", "error");
+            await authFetch(`/common/hero-slides/${id}/`, { method: "DELETE" });
+            setSlides(slides.filter((s) => s.id !== id));
+            showToast("Slide deleted successfully", "success");
+        } catch {
+            showToast("Failed to delete slide", "error");
         }
     };
 
@@ -194,13 +188,10 @@ export default function HeroSlidesPage() {
                     formData.append("image", imageFiles[0]); // Only take first file for edit
                 }
 
-                const response = await fetch(apiUrl(`/common/hero-slides/${editingId}/`), {
-                    method: 'PATCH',
+                await authFetch(`/common/hero-slides/${editingId}/`, {
+                    method: "PATCH",
                     body: formData,
                 });
-
-                if (!response.ok) throw new Error("Failed to update slide");
-
             } else {
                 // Create mode (Potential Bulk)
                 if (imageFiles.length === 0) {
@@ -210,29 +201,21 @@ export default function HeroSlidesPage() {
                 }
 
                 // Loop through all selected files and create a slide for each
-                const uploadPromises = imageFiles.map((file, index) => {
-                    const formData = new FormData();
-                    formData.append("image", file);
-                    // Append metadata (optional: could append index to order)
-                    formData.append("alt_text", form.alt_text || ""); // Use empty string if alt empty
-                    formData.append("link", form.link || "");
-                    formData.append("order", (form.order + index).toString());
-                    formData.append("is_active", form.is_active ? "true" : "false");
-
-                    return fetch(apiUrl('/common/hero-slides/'), {
-                        method: 'POST',
-                        body: formData,
-                    });
-                });
-
-                const responses = await Promise.all(uploadPromises);
-                const failed = responses.some(r => !r.ok);
-
-                if (failed) throw new Error("Some images failed to upload.");
+                await Promise.all(
+                    imageFiles.map((file, index) => {
+                        const formData = new FormData();
+                        formData.append("image", file);
+                        formData.append("alt_text", form.alt_text || "");
+                        formData.append("link", form.link || "");
+                        formData.append("order", (form.order + index).toString());
+                        formData.append("is_active", form.is_active ? "true" : "false");
+                        return authFetch("/common/hero-slides/", { method: "POST", body: formData });
+                    }),
+                );
             }
 
             setModalOpen(false);
-            fetchSlides();
+            void fetchSlides();
         } catch (err: any) {
             setError(err.message || "An error occurred while saving");
         } finally {
