@@ -42,6 +42,15 @@ const Footer = () => {
             <footer
                 className="relative overflow-hidden font-sans text-gray-800 bg-[url('/footer.jpg.jpeg')] bg-cover bg-no-repeat bg-[center_bottom] pb-[150px]"
             >
+                <Image
+                    src="/footer-img1.png"
+                    alt=""
+                    width={1398}
+                    height={121}
+                    className="block h-auto w-full select-none object-cover"
+                    priority={false}
+                />
+
                 {/* Main Footer Content */}
                 <div className="relative z-10 container mx-auto px-8 md:px-16 lg:px-24 py-12">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
