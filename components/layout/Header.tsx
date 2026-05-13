@@ -18,7 +18,7 @@ export default function Header() {
             if (rafId === null) {
                 rafId = requestAnimationFrame(() => {
                     const scrollY = lenis ? lenis.scroll : window.scrollY;
-                    setIsSticky(scrollY >= 35);
+                    setIsSticky(scrollY >= 40);
                     rafId = null;
                 });
             }
@@ -103,13 +103,14 @@ export default function Header() {
                     justify-content: space-between;
                     position: relative;
                     z-index: 999;
+                    padding: 3px 0;
                 }
 
                 .header-top p {
                     margin: 0;
                     padding: 0;
                     color: #fff;
-                    line-height: 28px;
+                    line-height: 30px;
                     font-size: 13px;
                 }
 
@@ -119,7 +120,7 @@ export default function Header() {
                     padding: 0;
                     display: flex;
                     align-items: center;
-                    line-height: 28px;
+                    line-height: 30px;
                 }
 
                 .header-top-nav li {
@@ -164,7 +165,7 @@ export default function Header() {
                     padding: 8px 0;
                     position: fixed;
                     width: 100%;
-                    top: 28px; /* Offset for header-top */
+                    top: 36px; /* Offset for header-top */
                     z-index: 1001;
                     transition: all 0.4s ease;
                 }

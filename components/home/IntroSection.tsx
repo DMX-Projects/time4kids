@@ -1,25 +1,22 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import Image from 'next/image';
+import React, { useEffect, useState } from 'react';
+import Slider from 'react-slick';
 import { motion } from 'framer-motion';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
     type LucideIcon,
-    ArrowRight,
-    BookOpen,
+    Bell,
+    CalendarDays,
+    ChevronRight,
     GraduationCap,
     Heart,
-    Paintbrush2,
     ShieldCheck,
-    Smile,
     Sparkles,
-    Star,
-    Users,
 } from 'lucide-react';
+import { apiUrl } from '@/lib/api-client';
+import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 
-gsap.registerPlugin(ScrollTrigger);
+type Slide = { id?: number; date: string; text: string };
 
 const headingWords = [
     { text: 'Where', className: 'text-slate-700' },
@@ -47,67 +44,33 @@ const features: Array<{ icon: LucideIcon; title: string; desc: string }> = [
     },
 ];
 
-const infoCards: Array<{ icon: LucideIcon; value: string; label: string; className: string; delay: number }> = [
+function formatSlideDate(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+}
+
+const FALLBACK_UPDATES: Slide[] = [
     {
-        icon: Users,
-        value: '350+',
-        label: 'Pre-Schools',
-        className: 'left-0 top-8 md:-left-5',
-        delay: 0,
-    },
-    {
-        icon: Star,
-        value: '27+',
-        label: 'Years Excellence',
-        className: 'right-0 top-24 md:-right-8',
-        delay: 0.7,
-    },
-    {
-        icon: ShieldCheck,
-        value: 'Safe',
-        label: 'Transport',
-        className: 'left-3 bottom-24 md:-left-10',
-        delay: 1.2,
-    },
-    {
-        icon: Paintbrush2,
-        value: 'Daily',
-        label: 'Interactive Activities',
-        className: 'right-4 bottom-6 md:-right-4',
-        delay: 1.7,
+        date: '28-12-2015',
+        text: 'T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. With 350+ pre-schools, T.I.M.E. Kids is poised for major expansion across the country.',
     },
 ];
 
-const decorItems = [
-    { text: 'A', className: 'left-[6%] top-[18%] bg-sky-100 text-sky-600 rotate-[-10deg]', delay: 0.2 },
-    { text: 'B', className: 'right-[15%] top-[4%] bg-orange-100 text-orange-600 rotate-[12deg]', delay: 0.8 },
-    { text: 'C', className: 'right-[4%] bottom-[35%] bg-emerald-100 text-emerald-600 rotate-[-8deg]', delay: 1.4 },
-];
-
-const FloatingInfoCard = ({ icon: Icon, value, label, className, delay }: (typeof infoCards)[number]) => (
-    <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.96 }}
-        whileInView={{ opacity: 1, y: 0, scale: 1 }}
-        viewport={{ once: true, margin: '-80px' }}
-        animate={{ y: [0, -10, 0] }}
-        transition={{
-            opacity: { duration: 0.5, delay },
-            y: { duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay },
-            scale: { duration: 0.5, delay },
-        }}
-        whileHover={{ y: -14, rotate: 1.5, scale: 1.03 }}
-        className={`parallax-layer absolute z-30 flex items-center gap-2 rounded-2xl border border-white/70 bg-white/70 px-3 py-2.5 shadow-[0_18px_50px_rgba(15,23,42,0.14)] backdrop-blur-xl md:gap-3 md:px-4 md:py-3 ${className}`}
-    >
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-amber-300 text-white shadow-lg shadow-orange-300/40 md:h-11 md:w-11">
-            <Icon size={21} />
+const UpdatesEmptyState = () => (
+    <div className="relative flex min-h-[280px] flex-col items-center justify-center px-5 text-center">
+        <p className="max-w-md text-lg font-semibold leading-8 text-white/90">
+            News updates and announcements will appear here.
+        </p>
+        <div className="mt-5 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-100/70">
+            <span className="h-2 w-2 rounded-full bg-emerald-300" />
+            Waiting for the next announcement
         </div>
-        <div>
-            <div className="font-display text-lg font-black leading-none text-slate-900 md:text-xl">{value}</div>
-            <div className="mt-1 max-w-[105px] text-[9px] font-black uppercase leading-tight tracking-[0.15em] text-slate-500 md:max-w-[110px] md:text-[10px]">
-                {label}
-            </div>
-        </div>
-    </motion.div>
+    </div>
 );
 
 const FeatureCard = ({ icon: Icon, title, desc, index }: { icon: LucideIcon; title: string; desc: string; index: number }) => (
@@ -142,93 +105,60 @@ const FeatureCard = ({ icon: Icon, title, desc, index }: { icon: LucideIcon; tit
 );
 
 export default function IntroSection() {
-    const sectionRef = useRef<HTMLDivElement>(null);
-    const visualRef = useRef<HTMLDivElement>(null);
-    const buttonRef = useRef<HTMLAnchorElement>(null);
-    const glowRef = useRef<HTMLDivElement>(null);
+    const home = useHomePageContent();
+    const [slides, setSlides] = useState<Slide[]>([]);
+    const [updatesReady, setUpdatesReady] = useState(false);
 
     useEffect(() => {
-        if (!sectionRef.current) return;
+        const fetchUpdates = async () => {
+            try {
+                const response = await fetch(apiUrl('/updates/?placement=intro'));
+                if (!response.ok) throw new Error('bad status');
+                const data = await response.json();
+                const items = Array.isArray(data) ? data : data.results || [];
+                const mapped: Slide[] = items.map((u: { id?: number; text?: string; start_date?: string | null }) => ({
+                    id: u.id,
+                    date: formatSlideDate(u.start_date),
+                    text: (u.text || '').trim(),
+                })).filter((u: Slide) => u.text.length > 0);
+                setSlides(
+                    mapped.length > 0
+                        ? mapped
+                        : [{ date: '', text: (home.updates_empty_message || '').trim() || 'New updates and announcements will appear here.' }],
+                );
+            } catch {
+                setSlides(FALLBACK_UPDATES);
+            } finally {
+                setUpdatesReady(true);
+            }
+        };
 
-        const ctx = gsap.context(() => {
-            gsap.to('.ambient-sweep', {
-                xPercent: 16,
-                yPercent: -10,
-                duration: 9,
-                repeat: -1,
-                yoyo: true,
-                ease: 'sine.inOut',
-            });
+        fetchUpdates();
+    }, [home.updates_empty_message]);
 
-        }, sectionRef);
-
-        return () => ctx.revert();
-    }, []);
-
-    const handleMouseMove = (event: React.MouseEvent<HTMLElement>) => {
-        if (!glowRef.current) return;
-
-        const rect = event.currentTarget.getBoundingClientRect();
-        gsap.to(glowRef.current, {
-            x: event.clientX - rect.left,
-            y: event.clientY - rect.top,
-            opacity: 1,
-            duration: 0.45,
-            ease: 'power3.out',
-        });
-    };
-
-    const handleMouseLeave = () => {
-        if (!glowRef.current) return;
-        gsap.to(glowRef.current, { opacity: 0, duration: 0.5, ease: 'power3.out' });
-    };
-
-    const handleButtonMove = (event: React.MouseEvent<HTMLAnchorElement>) => {
-        if (!buttonRef.current) return;
-
-        const rect = buttonRef.current.getBoundingClientRect();
-        const x = event.clientX - rect.left - rect.width / 2;
-        const y = event.clientY - rect.top - rect.height / 2;
-
-        gsap.to(buttonRef.current, {
-            x: x * 0.18,
-            y: y * 0.22,
-            scale: 1.035,
-            duration: 0.35,
-            ease: 'power3.out',
-        });
-    };
-
-    const resetButton = () => {
-        if (!buttonRef.current) return;
-        gsap.to(buttonRef.current, { x: 0, y: 0, scale: 1, duration: 0.55, ease: 'elastic.out(1, 0.45)' });
+    const hasUpdates = slides.some((slide) => slide.date || slide.text !== ((home.updates_empty_message || '').trim() || 'New updates and announcements will appear here.'));
+    const updatesSettings = {
+        dots: true,
+        infinite: slides.length > 1,
+        fade: false,
+        slidesToShow: 1,
+        slidesToScroll: 1,
+        autoplay: slides.length > 1,
+        autoplaySpeed: 4200,
+        arrows: false,
+        vertical: false,
+        verticalSwiping: false,
     };
 
     return (
         <section
             id="about"
-            ref={sectionRef}
             className="relative isolate overflow-hidden bg-[#fff8ec] py-16 font-sans scroll-mt-20 md:py-20 lg:flex lg:min-h-screen lg:items-center lg:py-12"
         >
-            <div
-                ref={glowRef}
-                className="pointer-events-none absolute left-0 top-0 z-0 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,186,91,0.32),rgba(125,211,252,0.14)_45%,transparent_72%)] opacity-0 blur-2xl"
-            />
-
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="ambient-sweep absolute inset-[-18%] bg-[linear-gradient(125deg,rgba(255,244,214,0.94)_0%,rgba(255,213,171,0.72)_25%,rgba(220,252,231,0.62)_50%,rgba(186,230,253,0.58)_72%,rgba(255,247,237,0.92)_100%)]" />
+                <div className="absolute inset-[-18%] bg-[linear-gradient(125deg,rgba(255,244,214,0.94)_0%,rgba(255,213,171,0.72)_25%,rgba(220,252,231,0.62)_50%,rgba(186,230,253,0.58)_72%,rgba(255,247,237,0.92)_100%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(251,146,60,0.28),transparent_28%),radial-gradient(circle_at_84%_18%,rgba(125,211,252,0.28),transparent_25%),radial-gradient(circle_at_72%_82%,rgba(134,239,172,0.22),transparent_28%)]" />
                 <div className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,0.55)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.55)_1px,transparent_1px)] [background-size:42px_42px]" />
-                <motion.div
-                    animate={{ x: [0, 18, 0], y: [0, -18, 0] }}
-                    transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute left-[8%] top-[20%] h-24 w-24 rounded-[36%_64%_45%_55%] border border-orange-200/70 bg-white/20 backdrop-blur-md"
-                />
-                <motion.div
-                    animate={{ x: [0, -20, 0], y: [0, 16, 0] }}
-                    transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute bottom-[16%] right-[12%] h-28 w-28 rounded-[62%_38%_60%_40%] border border-sky-200/70 bg-white/20 backdrop-blur-md"
-                />
             </div>
 
             <div className="container relative z-10 mx-auto px-4">
@@ -239,32 +169,15 @@ export default function IntroSection() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: '-80px' }}
                             transition={{ duration: 0.7 }}
-                            className="badge-shimmer relative inline-flex items-center gap-3 overflow-hidden rounded-full border border-white/80 bg-white/55 px-5 py-3 shadow-[0_16px_45px_rgba(251,146,60,0.16)] backdrop-blur-2xl"
+                            className="relative inline-flex items-center gap-3 rounded-full border border-white/80 bg-white/55 px-5 py-3 shadow-[0_16px_45px_rgba(251,146,60,0.16)] backdrop-blur-2xl"
                         >
-                            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/70 to-transparent opacity-70" />
                             <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg shadow-orange-400/40">
                                 <Sparkles size={16} />
                             </span>
                             <span className="relative text-xs font-black uppercase tracking-[0.2em] text-orange-700 md:text-sm">
                                 Trusted Preschool Since 2008
                             </span>
-                            {[0, 1, 2].map((item) => (
-                                <motion.span
-                                    key={item}
-                                    animate={{ scale: [0.8, 1.35, 0.8], opacity: [0.35, 1, 0.35] }}
-                                    transition={{ duration: 2.4, repeat: Infinity, delay: item * 0.45 }}
-                                    className="absolute h-1.5 w-1.5 rounded-full bg-amber-300"
-                                    style={{ right: 18 + item * 18, top: item % 2 ? 11 : 29 }}
-                                />
-                            ))}
                         </motion.div>
-
-                        <div className="pointer-events-none absolute -left-6 top-28 hidden h-12 w-12 rounded-2xl border border-white/80 bg-sky-100/70 text-sky-600 shadow-lg md:flex md:items-center md:justify-center">
-                            <Star size={22} />
-                        </div>
-                        <div className="pointer-events-none absolute right-8 top-20 hidden h-10 w-10 rotate-12 rounded-full border border-white/80 bg-amber-100/80 text-amber-500 shadow-lg md:flex md:items-center md:justify-center">
-                            <Sparkles size={18} />
-                        </div>
 
                         <motion.h2
                             initial="hidden"
@@ -318,139 +231,114 @@ export default function IntroSection() {
 
                     </div>
 
-                    <div ref={visualRef} className="relative mx-auto flex h-[540px] w-full max-w-[650px] flex-col md:h-[600px] lg:h-[min(74vh,620px)]">
-                        <motion.a
-                            ref={buttonRef}
-                            href="/programs"
-                            onMouseMove={handleButtonMove}
-                            onMouseLeave={resetButton}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.65, delay: 0.25 }}
-                            className="cta-sweep group relative z-40 mb-5 ml-auto inline-flex min-h-[54px] items-center justify-center overflow-hidden rounded-full bg-slate-700 px-7 text-base font-black text-white shadow-[0_22px_55px_rgba(15,23,42,0.22)] ring-1 ring-slate-500 transition-colors duration-300 hover:bg-orange-600"
-                        >
-                            <span className="particle-trail absolute left-7 top-1/2 h-1.5 w-1.5 rounded-full bg-amber-200 opacity-0" />
-                            <span className="relative z-10 whitespace-nowrap">Discover Our Programs</span>
-                            <motion.span
-                                animate={{ x: [0, 5, 0] }}
-                                transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-                                className="relative z-10 ml-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 transition-transform duration-300 group-hover:scale-110"
-                            >
-                                <ArrowRight size={18} />
-                            </motion.span>
-                        </motion.a>
-
-                        <div className="relative flex-1">
-                        <motion.div
-                            animate={{ rotate: [0, 4, 0], scale: [1, 1.02, 1] }}
-                            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-                            className="parallax-layer absolute left-[8%] top-[8%] h-[78%] w-[78%] rounded-[56px] border border-white/70 bg-white/28 shadow-[0_40px_120px_rgba(15,23,42,0.12)] backdrop-blur-xl"
-                        />
-
-                        <motion.div
-                            initial={{ opacity: 0, y: 42, rotate: -2 }}
-                            whileInView={{ opacity: 1, y: 0, rotate: -1 }}
-                            viewport={{ once: true, margin: '-100px' }}
-                            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-                            whileHover={{ rotate: 0, scale: 1.015 }}
-                            className="relative z-20 mx-auto h-[430px] w-[88%] overflow-hidden rounded-[42px] border-[10px] border-white bg-white shadow-[0_45px_100px_rgba(15,23,42,0.22)] md:h-[500px] lg:h-[calc(min(74vh,620px)-78px)]"
-                        >
-                            <Image
-                                src="/1.png"
-                                alt="Happy child enjoying creative preschool learning"
-                                fill
-                                priority={false}
-                                sizes="(min-width: 1024px) 560px, 90vw"
-                                className="object-cover object-[42%_center]"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 via-transparent to-white/10" />
-                            <div className="absolute bottom-5 left-5 right-5 rounded-3xl border border-white/50 bg-white/28 p-4 text-white shadow-2xl backdrop-blur-xl">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-orange-500">
-                                        <Smile size={22} />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-black uppercase tracking-[0.18em] text-white/75">Joyful Confidence</p>
-                                        <p className="mt-1 text-lg font-black leading-tight">Learning that feels like wonder.</p>
-                                    </div>
-                                </div>
+                    <motion.div
+                        initial={{ opacity: 0, x: 28, filter: 'blur(8px)' }}
+                        whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                        viewport={{ once: true, margin: '-80px' }}
+                        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+                        className="relative w-full"
+                    >
+                        <div className="mb-5">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-4 py-2 shadow-lg shadow-sky-200/20 backdrop-blur-xl">
+                                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                                <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-600">Live updates</span>
                             </div>
-                        </motion.div>
-
-                        {infoCards.map((card) => (
-                            <FloatingInfoCard key={card.label} {...card} />
-                        ))}
-
-                        {decorItems.map((item) => (
-                            <motion.div
-                                key={item.text}
-                                animate={{ y: [0, -16, 0], rotate: [0, 5, 0] }}
-                                transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: item.delay }}
-                                className={`parallax-layer absolute z-30 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/80 text-2xl font-black shadow-xl backdrop-blur-md ${item.className}`}
+                            <h3
+                                className="mt-3 font-display text-3xl font-black leading-tight text-[#253247] sm:text-4xl md:text-5xl"
+                                style={{ fontFamily: "'Clash Display', 'Satoshi', 'Plus Jakarta Sans', var(--font-poppins), system-ui, sans-serif" }}
                             >
-                                {item.text}
-                            </motion.div>
-                        ))}
-
-                        <motion.div
-                            animate={{ y: [0, -18, 0], rotate: [-6, 3, -6] }}
-                            transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
-                            className="parallax-layer absolute bottom-[18%] left-[26%] z-30 flex h-16 w-16 items-center justify-center rounded-[22px] border border-white/80 bg-white/70 text-emerald-600 shadow-xl backdrop-blur-xl"
-                        >
-                            <BookOpen size={28} />
-                        </motion.div>
-
-                        <motion.div
-                            animate={{ scale: [1, 1.08, 1], opacity: [0.45, 0.8, 0.45] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                            className="absolute left-[1%] top-[48%] z-10 h-36 w-36 rounded-[42px] border border-orange-200/70"
-                        />
-                        <motion.div
-                            animate={{ scale: [1.08, 1, 1.08], opacity: [0.35, 0.68, 0.35] }}
-                            transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}
-                            className="absolute right-[6%] top-[44%] z-10 h-44 w-44 rounded-full border border-sky-200/70"
-                        />
+                                Latest News & Updates
+                            </h3>
                         </div>
-                    </div>
+
+                        <div className="updates-panel relative overflow-visible rounded-[32px] border border-white/20 bg-[#3f4652] p-4 shadow-[0_30px_100px_rgba(63,70,82,0.22)]">
+                            <motion.div
+                                animate={{ rotate: [-7, 8, -7], y: [0, -5, 0] }}
+                                transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
+                                className="absolute -right-4 -top-5 z-30 flex h-16 w-16 items-center justify-center rounded-[24px] border border-white/15 bg-white/10 text-amber-200 shadow-[0_0_45px_rgba(251,191,36,0.2)] backdrop-blur-xl md:-right-5 md:-top-6"
+                            >
+                                <Bell size={25} />
+                                <span className="absolute right-3 top-3 h-3 w-3 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.9)]" />
+                            </motion.div>
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.25),transparent_30%),radial-gradient(circle_at_82%_20%,rgba(251,191,36,0.18),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_35%)]" />
+                            <div className="absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(255,255,255,0.35)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.35)_1px,transparent_1px)] [background-size:26px_26px]" />
+                            <div className="relative min-h-[350px] rounded-[26px] border border-white/12 bg-[#4b5563]/45 p-5 backdrop-blur-xl xl:min-h-[430px]">
+                                {!updatesReady ? (
+                                    <div className="flex min-h-[300px] items-center justify-center text-center text-sm font-semibold text-white/80">
+                                        Loading updates...
+                                    </div>
+                                ) : !hasUpdates ? (
+                                    <UpdatesEmptyState />
+                                ) : (
+                                    <Slider {...updatesSettings}>
+                                        {slides.map((update, index) => (
+                                            <div key={update.id ?? `slide-${index}`}>
+                                                <motion.article
+                                                    initial={{ opacity: 0, y: 18 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.5, delay: index * 0.08 }}
+                                                    className="group flex min-h-[300px] flex-col justify-center rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-white transition duration-300 hover:border-amber-200/40 hover:bg-white/[0.09] xl:min-h-[380px]"
+                                                >
+                                                    <div className="mb-5 flex items-center gap-3">
+                                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-300 text-slate-950 shadow-lg shadow-amber-300/25">
+                                                            <CalendarDays size={22} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-100/70">Announcement</p>
+                                                            {update.date ? (
+                                                                <p className="mt-1 font-display text-xl font-black text-amber-100">{update.date}</p>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-lg font-semibold leading-8 text-white/88">{update.text}</p>
+                                                    <div className="mt-7 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-sky-200">
+                                                        Read more <ChevronRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+                                                    </div>
+                                                </motion.article>
+                                            </div>
+                                        ))}
+                                    </Slider>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
                 </div>
             </div>
 
             <div className="pointer-events-none absolute bottom-0 left-0 h-24 w-full bg-gradient-to-t from-white to-transparent" />
 
-            <style jsx>{`
-                .badge-shimmer > span:first-child {
-                    animation: badgeSweep 3.4s ease-in-out infinite;
-                    transform: translateX(-120%);
+            <style jsx global>{`
+                .updates-panel .slick-dotted.slick-slider {
+                    margin: 0;
                 }
 
-                .cta-sweep::before {
+                .updates-panel .slick-dots {
+                    bottom: -28px;
+                }
+
+                .updates-panel .slick-dots li {
+                    margin: 0 4px;
+                    width: 22px;
+                    height: 6px;
+                }
+
+                .updates-panel .slick-dots li button {
+                    display: none;
+                }
+
+                .updates-panel .slick-dots li::before {
                     content: '';
-                    position: absolute;
-                    inset: 0;
-                    background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.22) 45%, transparent 65%);
-                    transform: translateX(-120%);
-                    animation: buttonSweep 2.8s ease-in-out infinite;
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 999px;
+                    background: rgba(255, 255, 255, 0.28);
+                    transition: all 0.25s ease;
                 }
 
-                .cta-sweep:hover .particle-trail {
-                    animation: particleTrail 0.9s ease-out infinite;
-                }
-
-                @keyframes badgeSweep {
-                    0%, 38% { transform: translateX(-120%); }
-                    72%, 100% { transform: translateX(120%); }
-                }
-
-                @keyframes buttonSweep {
-                    0%, 45% { transform: translateX(-120%); }
-                    80%, 100% { transform: translateX(120%); }
-                }
-
-                @keyframes particleTrail {
-                    0% { opacity: 0; transform: translate(0, -50%) scale(0.6); }
-                    35% { opacity: 1; }
-                    100% { opacity: 0; transform: translate(180px, -50%) scale(0.1); }
+                .updates-panel .slick-dots li.slick-active::before {
+                    background: #fcd34d;
+                    box-shadow: 0 0 18px rgba(252, 211, 77, 0.6);
                 }
             `}</style>
         </section>

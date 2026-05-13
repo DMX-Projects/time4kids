@@ -12,6 +12,7 @@ import { mediaUrl } from "@/lib/api-client";
 type UpdateItem = {
     id: number;
     text: string;
+    placement?: "intro" | "franchise";
     start_date: string | null;
     end_date: string | null;
     franchise?: number | null;
@@ -39,7 +40,7 @@ type SocialMediaUpload = {
 };
 
 /** Form state: single calendar day → sent as both `start_date` and `end_date` for the API. */
-const emptyUpdate = { text: "", date: "" };
+const emptyUpdate = { text: "", date: "", placement: "franchise" as "intro" | "franchise" };
 
 export default function AdminUpdatesPage() {
     const { authFetch } = useAuth();
@@ -97,7 +98,7 @@ export default function AdminUpdatesPage() {
     const startEdit = (item: UpdateItem) => {
         setEditingId(item.id);
         const day = item.start_date ? item.start_date.slice(0, 10) : "";
-        setForm({ text: item.text, date: day });
+        setForm({ text: item.text, date: day, placement: item.placement || "franchise" });
         setModalOpen(true);
         setError(null);
     };
@@ -108,6 +109,7 @@ export default function AdminUpdatesPage() {
         setSubmitting(true);
         const payload = {
             text: form.text.trim(),
+            placement: form.placement,
             start_date: form.date,
             end_date: form.date,
             is_active: true,
@@ -181,7 +183,7 @@ export default function AdminUpdatesPage() {
                 <div>
                     <h1 className="text-2xl font-semibold text-slate-900">Home page updates</h1>
                     <p className="text-sm text-slate-600">
-                        Rows with <strong>no centre</strong> (head-office) appear in the public &quot;T.I.M.E. Kids Updates&quot; carousel. Centre-specific rows are for school microsites only.
+                        Rows with <strong>no centre</strong> (head-office) appear on the selected home page updates board. Centre-specific rows are for school microsites only.
                     </p>
                 </div>
                 <Button size="sm" onClick={startCreate} className="inline-flex items-center gap-2">
@@ -201,6 +203,7 @@ export default function AdminUpdatesPage() {
                         <thead className="bg-slate-50 text-slate-900 text-xs uppercase tracking-wide">
                             <tr>
                                 <th className="px-4 py-3 font-semibold">Date</th>
+                                <th className="px-4 py-3 font-semibold">Board</th>
                                 <th className="px-4 py-3 font-semibold">Text</th>
                                 <th className="px-4 py-3 font-semibold text-right">Actions</th>
                             </tr>
@@ -208,7 +211,7 @@ export default function AdminUpdatesPage() {
                         <tbody className="text-slate-700">
                             {updates.length === 0 && !loading && (
                                 <tr>
-                                    <td className="px-4 py-6 text-sm text-slate-500" colSpan={3}>
+                                    <td className="px-4 py-6 text-sm text-slate-500" colSpan={4}>
                                         No updates found.
                                     </td>
                                 </tr>
@@ -216,6 +219,11 @@ export default function AdminUpdatesPage() {
                             {updates.map((item, idx) => (
                                 <tr key={item.id} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/60"}>
                                     <td className="px-4 py-3 whitespace-nowrap font-medium">{formatTableDate(item.start_date)}</td>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <span className="inline-flex rounded-full border border-orange-100 bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">
+                                            {(item.placement || "franchise") === "intro" ? "Intro board" : "Franchise board"}
+                                        </span>
+                                    </td>
                                     <td className="px-4 py-3 max-w-md truncate">{item.text}</td>
                                     <td className="px-4 py-3 text-right space-x-2">
                                         <button
@@ -240,6 +248,18 @@ export default function AdminUpdatesPage() {
 
             <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? "Edit Update" : "New Update"} size="md">
                 <form className="space-y-4" onSubmit={handleSubmit}>
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Board</label>
+                        <select
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                            value={form.placement}
+                            onChange={(e) => setForm({ ...form, placement: e.target.value as "intro" | "franchise" })}
+                            required
+                        >
+                            <option value="intro">Intro board</option>
+                            <option value="franchise">Franchise board</option>
+                        </select>
+                    </div>
                     <div>
                         <label className="block text-xs font-medium text-slate-600 mb-1">Date</label>
                         <input
