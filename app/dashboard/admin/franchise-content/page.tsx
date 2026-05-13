@@ -210,6 +210,86 @@ export default function AdminFranchiseContentPage() {
                                     onChange={(e) => setData({ ...data, hero: { ...data.hero, subtitle: e.target.value } })}
                                 />
                             </div>
+                            <div className="md:col-span-2">
+                                <label className={labelClass}>Intro paragraph 1 (below subtitle)</label>
+                                <textarea
+                                    className={`${inputClass} min-h-[80px]`}
+                                    value={data.hero.intro_paragraphs?.[0] ?? ""}
+                                    onChange={(e) => {
+                                        const second = data.hero.intro_paragraphs?.[1] ?? "";
+                                        setData({
+                                            ...data,
+                                            hero: { ...data.hero, intro_paragraphs: [e.target.value, second] },
+                                        });
+                                    }}
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className={labelClass}>Intro paragraph 2</label>
+                                <textarea
+                                    className={`${inputClass} min-h-[80px]`}
+                                    value={data.hero.intro_paragraphs?.[1] ?? ""}
+                                    onChange={(e) => {
+                                        const first = data.hero.intro_paragraphs?.[0] ?? "";
+                                        setData({
+                                            ...data,
+                                            hero: { ...data.hero, intro_paragraphs: [first, e.target.value] },
+                                        });
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </Section>
+
+                    <Section title="1b. Benefits section heading">
+                        <div className="grid md:grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelClass}>Heading (first part)</label>
+                                <input
+                                    className={inputClass}
+                                    value={data.benefits_section?.heading_prefix ?? ""}
+                                    onChange={(e) =>
+                                        setData({
+                                            ...data,
+                                            benefits_section: { ...data.benefits_section, heading_prefix: e.target.value, heading_accent: data.benefits_section?.heading_accent ?? "" },
+                                        })
+                                    }
+                                />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Heading (accent part)</label>
+                                <input
+                                    className={inputClass}
+                                    value={data.benefits_section?.heading_accent ?? ""}
+                                    onChange={(e) =>
+                                        setData({
+                                            ...data,
+                                            benefits_section: {
+                                                ...data.benefits_section,
+                                                heading_prefix: data.benefits_section?.heading_prefix ?? "",
+                                                heading_accent: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className={labelClass}>Blurb under heading (optional)</label>
+                                <input
+                                    className={inputClass}
+                                    value={data.benefits_section?.blurb ?? ""}
+                                    onChange={(e) =>
+                                        setData({
+                                            ...data,
+                                            benefits_section: {
+                                                heading_prefix: data.benefits_section?.heading_prefix ?? "",
+                                                heading_accent: data.benefits_section?.heading_accent ?? "",
+                                                blurb: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
                         </div>
                     </Section>
 
@@ -228,7 +308,7 @@ export default function AdminFranchiseContentPage() {
                                 <CardPreview icon={b.icon} title={b.title} description={b.description} />
                                 <div className="grid md:grid-cols-2 gap-3">
                                     <div>
-                                        <label className={labelClass}>Icon name (Award, DollarSign, BookOpen, Users, Headphones, TrendingUp)</label>
+                                        <label className={labelClass}>Icon name (Award, DollarSign, BookOpen, Users, Headphones, TrendingUp, Heart, Brain, Globe, …)</label>
                                         <input className={inputClass} value={b.icon} onChange={(e) => updateBenefit(i, { icon: e.target.value })} />
                                     </div>
                                     <div>
@@ -245,6 +325,62 @@ export default function AdminFranchiseContentPage() {
                         <Button type="button" size="sm" variant="outline" onClick={addBenefit} className="inline-flex items-center gap-2">
                             <Plus className="w-4 h-4" /> Add benefit card
                         </Button>
+                    </Section>
+
+                    <Section title="2b. Offerings section heading">
+                        <div className="grid md:grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelClass}>Heading (first part)</label>
+                                <input
+                                    className={inputClass}
+                                    value={data.offerings_section?.heading_prefix ?? ""}
+                                    onChange={(e) =>
+                                        setData({
+                                            ...data,
+                                            offerings_section: {
+                                                ...data.offerings_section,
+                                                heading_prefix: e.target.value,
+                                                heading_accent: data.offerings_section?.heading_accent ?? "",
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Heading (accent part)</label>
+                                <input
+                                    className={inputClass}
+                                    value={data.offerings_section?.heading_accent ?? ""}
+                                    onChange={(e) =>
+                                        setData({
+                                            ...data,
+                                            offerings_section: {
+                                                ...data.offerings_section,
+                                                heading_prefix: data.offerings_section?.heading_prefix ?? "",
+                                                heading_accent: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className={labelClass}>Intro above checklist (optional)</label>
+                                <textarea
+                                    className={`${inputClass} min-h-[72px]`}
+                                    value={data.offerings_section?.intro ?? ""}
+                                    onChange={(e) =>
+                                        setData({
+                                            ...data,
+                                            offerings_section: {
+                                                heading_prefix: data.offerings_section?.heading_prefix ?? "",
+                                                heading_accent: data.offerings_section?.heading_accent ?? "",
+                                                intro: e.target.value,
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
+                        </div>
                     </Section>
 
                     <Section title="3. What we offer (list)">

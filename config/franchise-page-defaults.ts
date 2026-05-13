@@ -3,14 +3,50 @@
 export type FranchiseBenefit = { icon: string; title: string; description: string };
 export type FranchiseTestimonial = { title: string; author: string; location: string; video_url?: string; thumbnail_url?: string };
 
+export type FranchiseSectionHeading = {
+    heading_prefix: string;
+    heading_accent: string;
+    /** Optional line under the split heading */
+    blurb?: string;
+};
+
+export type FranchiseGettingStartedItem = { title: string; description: string };
+
+export type FranchiseGettingStarted = {
+    heading: string;
+    intro: string;
+    items: FranchiseGettingStartedItem[];
+};
+
+export type FranchiseClosing = {
+    heading: string;
+    paragraphs: string[];
+};
+
+export type FranchiseQuickHighlights = {
+    heading: string;
+    items: string[];
+};
+
 export type FranchisePageData = {
     hero: {
         title_prefix: string;
         title_accent: string;
         subtitle: string;
+        /** Shown under the hero subtitle */
+        intro_paragraphs?: string[];
     };
+    /** Heading above the benefit cards */
+    benefits_section?: FranchiseSectionHeading;
     benefits: FranchiseBenefit[];
+    /** Heading above the offerings list */
+    offerings_section?: FranchiseSectionHeading & { intro?: string };
     offerings: string[];
+    /** Space, investment, etc. */
+    getting_started?: FranchiseGettingStarted;
+    /** Closing CTA block before highlights */
+    closing?: FranchiseClosing;
+    quick_highlights?: FranchiseQuickHighlights;
     testimonials: FranchiseTestimonial[];
     main_branch: {
         heading_prefix: string;
@@ -38,30 +74,100 @@ export type FranchisePageData = {
 
 export const DEFAULT_FRANCHISE_PAGE_DATA: FranchisePageData = {
     hero: {
-        title_prefix: "Franchise",
-        title_accent: "Opportunity",
-        subtitle: "Partner with India's trusted preschool brand and build a rewarding business",
+        title_prefix: "Why Partner with",
+        title_accent: "T.I.M.E. Kids Preschools?",
+        subtitle: "Join India's Most Trusted Preschool Franchise Network",
+        intro_paragraphs: [
+            "Build a meaningful and rewarding business with T.I.M.E. Kids Preschools — a preschool brand backed by the educational legacy of T.I.M.E., one of India's most respected names in learning and test preparation.",
+            "With decades of educational expertise, a strong nationwide presence, and a child-first philosophy, T.I.M.E. Kids offers aspiring entrepreneurs an opportunity to create both financial success and lasting social impact.",
+        ],
+    },
+    benefits_section: {
+        heading_prefix: "The T.I.M.E. Kids",
+        heading_accent: "Advantage",
+        blurb: "",
     },
     benefits: [
         {
             icon: "Award",
-            title: "Strong Brand Name",
-            description: "Leverage 17 years of T.I.M.E. Kids legacy and 30+ years of T.I.M.E. Group expertise",
+            title: "Proven Educational Legacy",
+            description:
+                "Leverage the strength of a trusted education group that has built a growing network of 250+ preschool centres across 60+ cities, creating a strong foundation of trust, quality, and educational excellence.",
         },
-        { icon: "DollarSign", title: "Low Investment, High Returns", description: "Profitable business model with quick ROI and sustainable growth" },
-        { icon: "BookOpen", title: "Complete Curriculum Support", description: "NEP 2020 updated curriculum, teaching materials, and activity plans" },
-        { icon: "Users", title: "Regular Staff Training", description: "Continuous training programs for teachers and staff development" },
-        { icon: "Headphones", title: "Operational Support", description: "End-to-end support in setup, marketing, and daily operations" },
-        { icon: "TrendingUp", title: "Marketing Assistance", description: "National and local marketing support to grow your centre" },
+        {
+            icon: "TrendingUp",
+            title: "Fast-Growing Preschool Industry",
+            description:
+                "India's preschool sector continues to witness rapid growth, making this the ideal time to invest in early childhood education — a segment driven by increasing awareness of quality foundational learning among parents.",
+        },
+        {
+            icon: "BookOpen",
+            title: "Research-Based Curriculum",
+            description:
+                "Gain access to a professionally designed and continuously evolving curriculum aligned with modern early learning methodologies and compatible with CBSE, ICSE, and SSC educational frameworks.\n\nThe curriculum follows a playway method of teaching focused on the holistic development of every child, preparing them confidently for primary schooling.",
+        },
+        {
+            icon: "Heart",
+            title: "Strong Brand Credibility",
+            description:
+                "Benefit from the reputation and trust associated with the T.I.M.E. brand — known nationwide for academic excellence, structured systems, and student success.",
+        },
+        {
+            icon: "Headphones",
+            title: "Comprehensive Franchise Support",
+            description:
+                "At T.I.M.E. Kids, franchisees receive end-to-end support at every stage — from setup and launch to operations and long-term growth.",
+        },
     ],
+    offerings_section: {
+        heading_prefix: "Comprehensive",
+        heading_accent: "Franchise Support",
+        intro: "At T.I.M.E. Kids, franchisees receive end-to-end support at every stage — from setup and launch to operations and long-term growth.",
+        blurb: "",
+    },
     offerings: [
-        "Proven business model with 250+ successful centres",
-        "Comprehensive training for franchisees and staff",
-        "Marketing and promotional materials",
-        "Technology platform for operations",
-        "Quality assurance and monitoring",
-        "Parent engagement programs",
+        "Infrastructure & Setup Guidance — Expert assistance in planning and establishing child-friendly infrastructure that meets preschool operational and safety standards.",
+        "Recruitment & Teacher Training — Support in recruiting qualified staff along with professional training programs for teachers and centre teams.",
+        "Marketing & Admissions Support — Guidance on local marketing initiatives, branding activities, parent outreach, and admissions strategies to help build strong enrolments.",
+        "Academic & Operational Training — Comprehensive training on curriculum delivery, classroom management, child engagement practices, and day-to-day centre operations.",
+        "Continuous Handholding — Ongoing academic and operational support designed to help centres achieve stability, sustained growth, and long-term profitability.",
     ],
+    getting_started: {
+        heading: "What You Need to Get Started",
+        intro: "We are looking for passionate individuals who believe in nurturing young learners while building a successful and impactful business.",
+        items: [
+            {
+                title: "Space Requirement",
+                description:
+                    "Minimum 1,800 sq. ft. constructed area. Independent building or house in a good residential locality preferred.",
+            },
+            {
+                title: "Investment",
+                description:
+                    "Approximate investment: ₹12–15 lakhs. Includes infrastructure setup and operational readiness for launching the preschool.",
+            },
+        ],
+    },
+    closing: {
+        heading: "Start Your Journey with T.I.M.E. Kids",
+        paragraphs: [
+            "Become part of a growing national preschool network committed to creating safe, engaging, and joyful learning environments for children across India.",
+            'Together, we can build centres that truly become a "second home" for every child.',
+        ],
+    },
+    quick_highlights: {
+        heading: "Quick Highlights",
+        items: [
+            "250+ Centres Across India",
+            "34+ Years of Educational Excellence",
+            "Child-Safe & Non-Toxic Infrastructure Standards",
+            "Low Investment with Strong Growth Potential",
+            "High Social-Impact Business Opportunity",
+            "End-to-End Academic & Operational Support",
+            "Proven Systems & Structured Processes",
+            "Trusted Brand with Nationwide Recognition",
+        ],
+    },
     testimonials: [
         { title: "Best business decision", author: "Franchise Partner", location: "Bangalore", video_url: "", thumbnail_url: "" },
         { title: "Complete support from day one", author: "Franchise Partner", location: "Chennai", video_url: "", thumbnail_url: "" },
@@ -108,16 +214,27 @@ function deepMerge<T extends Record<string, unknown>>(base: T, patch: Partial<T>
     return out;
 }
 
+function ensureFranchiseShape(merged: FranchisePageData): FranchisePageData {
+    const d = DEFAULT_FRANCHISE_PAGE_DATA;
+    if (!Array.isArray(merged.benefits)) merged.benefits = d.benefits;
+    if (!Array.isArray(merged.offerings)) merged.offerings = d.offerings;
+    if (!Array.isArray(merged.testimonials)) merged.testimonials = d.testimonials;
+    if (!merged.hero || typeof merged.hero !== "object") merged.hero = d.hero;
+    if (!Array.isArray(merged.hero.intro_paragraphs)) merged.hero.intro_paragraphs = d.hero.intro_paragraphs;
+    if (!merged.benefits_section) merged.benefits_section = d.benefits_section;
+    if (!merged.offerings_section) merged.offerings_section = d.offerings_section;
+    if (!merged.getting_started?.items || !Array.isArray(merged.getting_started.items)) merged.getting_started = d.getting_started;
+    if (!merged.closing?.paragraphs || !Array.isArray(merged.closing.paragraphs)) merged.closing = d.closing;
+    if (!merged.quick_highlights?.items || !Array.isArray(merged.quick_highlights.items)) merged.quick_highlights = d.quick_highlights;
+    return merged;
+}
+
 export function mergeFranchisePageData(raw: Partial<FranchisePageData> | null | undefined): FranchisePageData {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return DEFAULT_FRANCHISE_PAGE_DATA;
     try {
         const merged = deepMerge(DEFAULT_FRANCHISE_PAGE_DATA, raw as Partial<FranchisePageData>);
-        if (!Array.isArray(merged.benefits)) merged.benefits = DEFAULT_FRANCHISE_PAGE_DATA.benefits;
-        if (!Array.isArray(merged.offerings)) merged.offerings = DEFAULT_FRANCHISE_PAGE_DATA.offerings;
-        if (!Array.isArray(merged.testimonials)) merged.testimonials = DEFAULT_FRANCHISE_PAGE_DATA.testimonials;
-        return merged;
+        return ensureFranchiseShape(merged);
     } catch {
         return DEFAULT_FRANCHISE_PAGE_DATA;
     }
 }
-

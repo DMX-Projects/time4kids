@@ -2,22 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import FranchiseForm from '@/components/franchise/FranchiseForm';
+import FranchiseNarrativePanel from '@/components/franchise/FranchiseNarrativePanel';
 import TestimonialVideo from '@/components/shared/TestimonialVideo';
 import Card from '@/components/ui/Card';
 import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
 import TwinklingStars from '@/components/animations/TwinklingStars';
-import { TrendingUp, Users, BookOpen, Headphones, Award, DollarSign, Download, Brain, Heart, Palette, Music, Dumbbell, Globe } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { apiUrl } from '@/lib/api-client';
-import { DEFAULT_FRANCHISE_PAGE_DATA, mergeFranchisePageData } from '@/config/franchise-page-defaults';
-
-const IconMap: Record<string, any> = {
-    TrendingUp, Users, BookOpen, Headphones, Award, DollarSign, Brain, Heart, Palette, Music, Dumbbell, Globe
-};
+import { DEFAULT_FRANCHISE_PAGE_DATA, mergeFranchisePageData, type FranchisePageData } from '@/config/franchise-page-defaults';
 
 export default function FranchisePage() {
-    const [pageData, setPageData] = useState<any>(DEFAULT_FRANCHISE_PAGE_DATA);
+    const [pageData, setPageData] = useState<FranchisePageData>(DEFAULT_FRANCHISE_PAGE_DATA);
     const [assets, setAssets] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [playingIndex, setPlayingIndex] = useState<number | null>(null);
 
     useEffect(() => {
@@ -39,8 +35,6 @@ export default function FranchisePage() {
                 }
             } catch (err) {
                 console.error("Failed to fetch franchise opportunity content", err);
-            } finally {
-                setLoading(false);
             }
         };
         void fetchData();
@@ -48,8 +42,6 @@ export default function FranchisePage() {
 
     const franchiseBrochure = assets.find(a => a.slug === 'franchise-brochure');
 
-    const benefits = pageData?.benefits || DEFAULT_FRANCHISE_PAGE_DATA.benefits;
-    const offerings = pageData?.offerings || DEFAULT_FRANCHISE_PAGE_DATA.offerings;
     const hero = pageData?.hero || DEFAULT_FRANCHISE_PAGE_DATA.hero;
     const testimonials = pageData?.testimonials || DEFAULT_FRANCHISE_PAGE_DATA.testimonials;
     const mainBranch = pageData?.main_branch || DEFAULT_FRANCHISE_PAGE_DATA.main_branch;
@@ -74,71 +66,23 @@ export default function FranchisePage() {
                         <h1 className="font-luckiest text-5xl md:text-6xl mb-6 text-[#003366] tracking-wider">
                             <span className="text-[#E67E22]">{hero.title_prefix}</span> {hero.title_accent}
                         </h1>
-                        <p className="text-xl text-gray-700 leading-relaxed">
-                            {hero.subtitle}
-                        </p>
                     </div>
                 </div>
             </section>
 
-            {/* Franchise Form */}
+            {/* Franchise form + narrative */}
             <section className="section-gap bg-white">
-                <div className="container mx-auto px-4">
-                    <FranchiseForm />
-                </div>
-            </section>
-
-            {/* Why T.I.M.E. Kids Franchise */}
-            <section className="section-gap bg-gray-50">
-                <div className="container mx-auto px-4">
-                    <div className="text-center mb-16">
-                        <h2 className="font-bubblegum text-4xl mb-4 tracking-wide text-[#003366]">
-                            Why Choose <span className="text-[#ef5f5f]">T.I.M.E. Kids Franchise?</span>
-                        </h2>
-                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                            Join a proven business model backed by educational excellence
-                        </p>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        {benefits.map((benefit: any, index: number) => {
-                            const BenefitIcon = IconMap[benefit.icon] || Award;
-                            return (
-                                <Card key={index} className="group">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
-                                        <BenefitIcon className="w-8 h-8 text-white" />
-                                    </div>
-                                    <h3 className="font-bubblegum text-xl mb-3 text-gray-900 tracking-wide">{benefit.title}</h3>
-                                    <p className="text-gray-600 leading-relaxed">{benefit.description}</p>
-                                </Card>
-                            );
-                        })}
+                <div className="container mx-auto max-w-7xl px-4">
+                    <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
+                        <div className="min-w-0 lg:col-span-4 xl:col-span-3">
+                            <FranchiseForm compact className="lg:sticky lg:top-24 xl:top-28" />
+                        </div>
+                        <div className="min-h-0 min-w-0 lg:col-span-8 xl:col-span-9">
+                            <FranchiseNarrativePanel data={pageData} />
+                        </div>
                     </div>
                 </div>
             </section>
-
-            {/* What We Offer */}
-            <section className="section-gap bg-white">
-                <div className="container mx-auto px-4">
-                    <div className="max-w-4xl mx-auto">
-                        <h2 className="font-bubblegum text-4xl mb-8 text-center text-[#003366] tracking-wide">
-                            What We <span className="text-[#E67E22]">Offer You</span>
-                        </h2>
-                        <Card className="bg-gradient-to-br from-primary-500 to-primary-600 text-white">
-                            <ul className="grid md:grid-cols-2 gap-4">
-                                {offerings.map((offering: string, index: number) => (
-                                    <li key={index} className="flex items-start space-x-3">
-                                        <span className="mt-1 flex-shrink-0">✓</span>
-                                        <span className="text-white/90">{offering}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </Card>
-                    </div>
-                </div>
-            </section>
-
-            {/* Franchise Testimonials */}
             <section className="section-gap bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">
