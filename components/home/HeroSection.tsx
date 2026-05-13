@@ -20,24 +20,6 @@ interface HeroSlide {
     order: number;
 }
 
-/** Always-on hero banners (served from `/public`). Shown first, then CMS slides from the API. */
-const STATIC_HERO_SLIDES: HeroSlide[] = [
-    {
-        id: -1,
-        image: '/1.jpg.jpeg',
-        alt_text: 'Safe, smart & joyful early learning for every child — T.I.M.E. Kids',
-        link: '',
-        order: -2,
-    },
-    {
-        id: -2,
-        image: '/2.jpg.jpeg',
-        alt_text: 'Creative, caring early learning at T.I.M.E. Kids',
-        link: '',
-        order: -1,
-    },
-];
-
 export default function HeroSection() {
     const [showAdmissionModal, setShowAdmissionModal] = useState(false);
     // Define slides state
@@ -238,7 +220,8 @@ export default function HeroSection() {
     // Logic moved to JSX
 
 
-    const heroSlides = [...STATIC_HERO_SLIDES, ...slides];
+    /** Homepage banner images come only from `/api/common/hero-slides/` (admin CMS). */
+    const heroSlides = slides;
 
     return (
         <>
