@@ -1,20 +1,13 @@
 'use client';
 
-import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
-import { Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Quote, Star } from 'lucide-react';
 import { apiUrl } from '@/lib/api-client';
-
-// Use Isomorphic Layout Effect to avoid SSR mismatches with GSAP
-const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
-
-if (typeof window !== 'undefined') {
-    gsap.registerPlugin(ScrollTrigger);
-}
 
 export type TestimonialItem = {
     id: number;
+    category?: 'parent' | 'franchisee';
     text: string;
     author: string;
     relation: string;
@@ -22,94 +15,192 @@ export type TestimonialItem = {
     rating: number;
 };
 
-/** Used only if the API is unreachable */
-const FALLBACK_TESTIMONIALS: TestimonialItem[] = [
+const FALLBACK_PARENT_TESTIMONIALS: TestimonialItem[] = [
     {
         id: 1,
-        text: "A good school plays an important role in the development of a child. It's the light that helps us choose the right path. I am glad that I found T.I.M.E. Kids for my daughter. In just three months there has been a lot of development in Nandika.",
+        category: 'parent',
+        text: "A good school plays an important role in the development of a child. I am glad that I found T.I.M.E. Kids for my daughter. In just three months there has been a lot of development.",
         author: "Roma Majumdar",
         relation: "Mother of Nandika",
-        location: "HYDERABAD",
-        rating: 5
+        location: "Hyderabad",
+        rating: 5,
     },
     {
         id: 2,
-        text: "T.I.M.E. Kids is my son's second home. It is a completely safe environment. He is playing, learning and enjoying every minute he spends there. Mugil has become a keen learner and is learning new things every day.",
+        category: 'parent',
+        text: "T.I.M.E. Kids is my son's second home. It is a completely safe environment where he plays, learns, and enjoys every minute.",
         author: "Mother of Mugil",
         relation: "Parent",
-        location: "HYDERABAD",
-        rating: 5
+        location: "Hyderabad",
+        rating: 5,
     },
-    {
-        id: 3,
-        text: "T.I.M.E. Kids pre-schools, is one of the most friendly places for toddlers. My kid wants to go to school on Sunday too! The learning is done in such a fun way....",
-        author: "Deepa Bahukhandi",
-        relation: "Mother of Diya",
-        location: "HYDERABAD",
-        rating: 5
-    },
-    {
-        id: 4,
-        text: "We have seen amazing growth in our child's confidence. The activities are engaging and the staff is very caring. Highly recommended!",
-        author: "Priya Sharma",
-        relation: "Mother of Aarav",
-        location: "HYDERABAD",
-        rating: 5
-    }
 ];
 
-// 3D Tilt Card Component (Preserved)
-const TiltCard = ({ children }: { children: React.ReactNode }) => {
-    const cardRef = useRef<HTMLDivElement>(null);
-    const [transform, setTransform] = React.useState('');
+const FALLBACK_FRANCHISEE_TESTIMONIALS: TestimonialItem[] = [
+    {
+        id: 101,
+        category: 'franchisee',
+        text: "The support system, brand strength, and curriculum guidance gave us the confidence to build a preschool parents trust.",
+        author: "Franchise Partner",
+        relation: "Franchisee",
+        location: "T.I.M.E. Kids Network",
+        rating: 5,
+    },
+];
 
-    const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!cardRef.current) return;
+const slideVariants = {
+    enter: { opacity: 0, x: 34, scale: 0.98 },
+    center: { opacity: 1, x: 0, scale: 1 },
+    exit: { opacity: 0, x: -34, scale: 0.98 },
+};
 
-        const { left, top, width, height } = cardRef.current.getBoundingClientRect();
-        const x = (e.clientX - left) / width;
-        const y = (e.clientY - top) / height;
+function initials(name: string) {
+    const clean = name.trim();
+    if (!clean) return 'T';
+    return clean.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+}
 
-        // Calculate rotation (max 10 degrees)
-        const rotateX = (0.5 - y) * 20;
-        const rotateY = (x - 0.5) * 20;
+function TestimonialColumn({
+    title,
+    categoryLabel,
+    items,
+    emptyText,
+    accent,
+}: {
+    title: string;
+    categoryLabel: string;
+    items: TestimonialItem[];
+    emptyText: string;
+    accent: 'orange' | 'sky';
+}) {
+    const [index, setIndex] = useState(0);
+    const current = items[index];
+    const accentClass = accent === 'orange' ? 'from-orange-400 to-amber-300' : 'from-sky-400 to-cyan-300';
+    const dotClass = accent === 'orange' ? 'bg-amber-300' : 'bg-cyan-300';
+    const badgeClass = accent === 'orange'
+        ? 'border-amber-200/30 bg-amber-400/95 text-slate-950 shadow-amber-900/10'
+        : 'border-cyan-200/30 bg-cyan-400/95 text-slate-950 shadow-cyan-900/10';
 
-        setTransform(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`);
-    };
+    useEffect(() => {
+        setIndex(0);
+    }, [items.length]);
 
-    const handleLeave = () => {
-        setTransform('perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)');
+    useEffect(() => {
+        if (items.length <= 1) return;
+        const timer = window.setInterval(() => {
+            setIndex((currentIndex) => (currentIndex + 1) % items.length);
+        }, 4500);
+        return () => window.clearInterval(timer);
+    }, [items.length]);
+
+    const go = (direction: 1 | -1) => {
+        if (items.length <= 1) return;
+        setIndex((currentIndex) => (currentIndex + direction + items.length) % items.length);
     };
 
     return (
-        <div
-            ref={cardRef}
-            onMouseMove={handleMove}
-            onMouseLeave={handleLeave}
-            className="h-full transition-transform duration-100 ease-out"
-            style={{ transform }}
-        >
-            {children}
+        <div className="relative">
+            <div className="mb-5 flex items-end justify-between gap-4">
+                <div>
+                    <div className={`mb-3 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.18em] shadow-lg backdrop-blur-xl ${badgeClass}`}>
+                        <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} />
+                        {categoryLabel}
+                    </div>
+                    <h3 className="font-display text-3xl font-black leading-tight text-white md:text-4xl">
+                        {title}
+                    </h3>
+                </div>
+
+                {items.length > 1 && (
+                    <div className="hidden gap-2 sm:flex">
+                        <button
+                            type="button"
+                            aria-label={`Previous ${title}`}
+                            onClick={() => go(-1)}
+                            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/12 text-white backdrop-blur-xl transition hover:bg-white/20"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+                        <button
+                            type="button"
+                            aria-label={`Next ${title}`}
+                            onClick={() => go(1)}
+                            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/12 text-white backdrop-blur-xl transition hover:bg-white/20"
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            <div className="relative min-h-[360px] overflow-hidden rounded-[30px] border border-white/80 bg-white p-4 shadow-[0_28px_90px_rgba(15,23,42,0.2)]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(255,255,255,0.24),transparent_30%),radial-gradient(circle_at_85%_20%,rgba(251,211,103,0.2),transparent_26%)]" />
+                {current ? (
+                    <AnimatePresence mode="wait">
+                        <motion.article
+                            key={current.id}
+                            variants={slideVariants}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
+                            className="relative flex min-h-[330px] flex-col justify-between rounded-[24px] border border-slate-100 bg-white p-6 text-slate-800 shadow-xl md:p-7"
+                        >
+                            <Quote className="absolute right-5 top-5 h-14 w-14 rotate-6 text-slate-900/6" />
+                            <div>
+                                <div className="mb-5 flex gap-1 text-amber-400">
+                                    {[...Array(Math.min(5, Math.max(1, current.rating || 5)))].map((_, i) => (
+                                        <Star key={i} size={17} fill="currentColor" strokeWidth={0} />
+                                    ))}
+                                </div>
+                                <p className="relative text-base font-semibold leading-8 text-slate-700 md:text-lg">
+                                    &ldquo;{current.text}&rdquo;
+                                </p>
+                            </div>
+
+                            <div className="mt-8 flex items-center gap-4 border-t border-slate-200 pt-5">
+                                <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${accentClass} font-display text-lg font-black text-white shadow-lg`}>
+                                    {initials(current.author)}
+                                </div>
+                                <div className="min-w-0">
+                                    <h4 className="font-display text-xl font-black leading-tight text-slate-950">
+                                        {current.author || 'T.I.M.E. Kids Family'}
+                                    </h4>
+                                    <p className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                                        {current.relation || categoryLabel}
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.article>
+                    </AnimatePresence>
+                ) : (
+                    <div className="relative flex min-h-[330px] items-center justify-center rounded-[24px] border border-white/18 bg-white/20 px-6 text-center text-base font-semibold leading-7 text-white">
+                        {emptyText}
+                    </div>
+                )}
+            </div>
+
+            {items.length > 1 && (
+                <div className="mt-5 flex justify-center gap-2" role="tablist" aria-label={`${title} slides`}>
+                    {items.map((item, itemIndex) => (
+                        <button
+                            key={item.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={itemIndex === index}
+                            aria-label={`Show ${title} testimonial ${itemIndex + 1}`}
+                            onClick={() => setIndex(itemIndex)}
+                            className={`h-2 rounded-full transition-all duration-300 ${itemIndex === index ? `w-8 ${dotClass}` : 'w-2 bg-white/35 hover:bg-white/55'}`}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
-};
+}
 
-const TestimonialSlider = () => {
-    const sectionRef = useRef<HTMLElement>(null);
-    const viewportRef = useRef<HTMLDivElement>(null);
-    const wrapperRef = useRef<HTMLDivElement>(null);
-    const bgRef = useRef<HTMLDivElement>(null);
-    const headerRef = useRef<HTMLDivElement>(null);
-    const [isMounted, setIsMounted] = useState(false);
+export default function TestimonialSlider() {
     const [testimonials, setTestimonials] = useState<TestimonialItem[] | null>(null);
-    const [activeIndex, setActiveIndex] = useState(0);
-    const touchStartX = useRef<number | null>(null);
-    /** After the first snap, user-driven index changes use GSAP tween. */
-    const shouldAnimateCarousel = useRef(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
 
     useEffect(() => {
         const load = async () => {
@@ -119,8 +210,9 @@ const TestimonialSlider = () => {
                 const data = await res.json();
                 const items = Array.isArray(data) ? data : data.results || [];
                 const mapped: TestimonialItem[] = items
-                    .map((r: { id: number; text: string; author: string; relation?: string; location?: string; rating?: number }) => ({
+                    .map((r: { id: number; category?: 'parent' | 'franchisee'; text: string; author: string; relation?: string; location?: string; rating?: number }) => ({
                         id: r.id,
+                        category: r.category === 'franchisee' ? 'franchisee' : 'parent',
                         text: r.text || '',
                         author: r.author || '',
                         relation: r.relation || '',
@@ -128,311 +220,81 @@ const TestimonialSlider = () => {
                         rating: Math.min(5, Math.max(1, Number(r.rating) || 5)),
                     }))
                     .filter((r: TestimonialItem) => r.text.trim().length > 0);
-                setTestimonials(mapped.length > 0 ? mapped : []);
+                setTestimonials(mapped);
             } catch {
-                setTestimonials(FALLBACK_TESTIMONIALS);
+                setTestimonials([...FALLBACK_PARENT_TESTIMONIALS, ...FALLBACK_FRANCHISEE_TESTIMONIALS]);
             }
         };
         load();
     }, []);
 
-    const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
-
-    const count = testimonials?.length ?? 0;
-
-    const centerCarouselAtIndex = useCallback(
-        (index: number, animate: boolean) => {
-            const viewport = viewportRef.current;
-            const wrapper = wrapperRef.current;
-            const card = cardsRef.current[index];
-            if (!viewport || !wrapper || !card || count < 1) return;
-
-            const vx = viewport.clientWidth;
-            const targetX = vx / 2 - (card.offsetLeft + card.offsetWidth / 2);
-
-            if (animate) {
-                gsap.to(wrapper, {
-                    x: targetX,
-                    duration: 0.55,
-                    ease: 'power3.out',
-                    overwrite: 'auto',
-                });
-            } else {
-                gsap.set(wrapper, { x: targetX, force3D: true });
-            }
-        },
-        [count]
-    );
-
-    useEffect(() => {
-        if (!testimonials || testimonials.length === 0) return;
-        shouldAnimateCarousel.current = false;
-        setActiveIndex((i) => Math.min(i, Math.max(0, testimonials.length - 1)));
+    const parentTestimonials = useMemo(() => {
+        if (testimonials === null) return [];
+        const items = testimonials.filter((item) => (item.category || 'parent') === 'parent');
+        return items.length > 0 ? items : [];
     }, [testimonials]);
 
-    useEffect(() => {
-        const onResize = () => centerCarouselAtIndex(activeIndex, false);
-        window.addEventListener('resize', onResize);
-        return () => window.removeEventListener('resize', onResize);
-    }, [activeIndex, centerCarouselAtIndex]);
-
-    // Header intro only. Card movement is button/touch driven so normal page scroll stays native.
-    useIsomorphicLayoutEffect(() => {
-        if (!isMounted || !sectionRef.current) return;
-        if (testimonials === null || testimonials.length === 0) return;
-
-        const ctx = gsap.context(() => {
-            if (headerRef.current) {
-                gsap.from(headerRef.current.children, {
-                    y: 30,
-                    opacity: 0,
-                    duration: 1,
-                    stagger: 0.2,
-                    ease: 'power3.out',
-                    scrollTrigger: {
-                        trigger: sectionRef.current,
-                        start: 'top 80%',
-                        toggleActions: 'play none none reverse',
-                    },
-                });
-            }
-        }, sectionRef);
-
-        return () => ctx.revert();
-    }, [isMounted, testimonials]);
-
-    useEffect(() => {
-        if (!testimonials?.length) return;
-        const animated = shouldAnimateCarousel.current;
-        const id = requestAnimationFrame(() => {
-            centerCarouselAtIndex(activeIndex, animated);
-        });
-        return () => cancelAnimationFrame(id);
-    }, [activeIndex, testimonials, centerCarouselAtIndex]);
-
-    const goPrev = () => {
-        if (!testimonials?.length) return;
-        shouldAnimateCarousel.current = true;
-        setActiveIndex((i) => Math.max(0, i - 1));
-    };
-
-    const goNext = () => {
-        if (!testimonials?.length) return;
-        shouldAnimateCarousel.current = true;
-        setActiveIndex((i) => Math.min(testimonials.length - 1, i + 1));
-    };
+    const franchiseeTestimonials = useMemo(() => {
+        if (testimonials === null) return [];
+        return testimonials.filter((item) => item.category === 'franchisee');
+    }, [testimonials]);
 
     return (
-        <section
-            ref={sectionRef}
-            className="w-full relative section-gap bg-gradient-to-br from-[#6032a8] via-[#7c4dff] to-[#6032a8] overflow-hidden"
-        >
-
-            {/* Background Decorations */}
-            <div ref={bgRef} className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-25">
-                <div className="absolute top-10 left-10 w-64 h-64 bg-purple-400 rounded-full blur-[80px]"></div>
-                <div className="absolute bottom-10 right-10 w-80 h-80 bg-indigo-400 rounded-full blur-[100px]"></div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-96 h-48 bg-pink-400 rounded-full blur-[120px]"></div>
+        <section className="relative isolate overflow-hidden bg-gradient-to-br from-[#6032a8] via-[#7c4dff] to-[#6032a8] py-24 font-sans">
+            <div className="absolute inset-0 z-0 opacity-25 pointer-events-none">
+                <div className="absolute left-10 top-10 h-64 w-64 rounded-full bg-purple-400 blur-[80px]" />
+                <div className="absolute bottom-10 right-10 h-80 w-80 rounded-full bg-indigo-400 blur-[100px]" />
+                <div className="absolute left-1/2 top-1/2 h-48 w-96 -translate-x-1/2 rounded-full bg-pink-400 blur-[120px]" />
             </div>
 
-            {/* Animated Wavy Top Divider - Micro Ripples (Flipped) */}
-            <div className="absolute -top-[1px] left-0 w-full z-20 pointer-events-none rotate-180">
-                <svg className="w-full h-[8vh] min-h-[60px] max-h-[100px]" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
-                    viewBox="0 24 150 28" preserveAspectRatio="none" shapeRendering="auto" stroke="none">
-                    <defs>
-                        {/* Ultra High Frequency "Micro" Wave Path: ~60 repeats of width 20 */}
-                        <path id="gentle-wave-top" d="M-200 44 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 q 5 -3 10 0 t 10 0 v44 h-1200 z" />
-                    </defs>
-                    <g className="parallax">
-                        <use xlinkHref="#gentle-wave-top" x="48" y="0" fill="rgba(255, 255, 255, 0.7)" />
-                        <use xlinkHref="#gentle-wave-top" x="48" y="3" fill="rgba(255, 255, 255, 0.5)" />
-                        <use xlinkHref="#gentle-wave-top" x="48" y="5" fill="rgba(255, 255, 255, 0.3)" />
-                        <use xlinkHref="#gentle-wave-top" x="48" y="7" fill="#fff" />
-                    </g>
+            <div className="absolute -top-[1px] left-0 z-20 w-full rotate-180 pointer-events-none">
+                <svg className="h-[8vh] min-h-[60px] max-h-[100px] w-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
+                    <path d="M-160 44 q 15 -10 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 v44 h-520 z" fill="#fff" />
                 </svg>
             </div>
 
-            <div className="min-h-0 flex flex-col justify-center relative py-4">
-                <div ref={headerRef} className="container mx-auto px-4 relative z-10 mb-4">
-                    <div className="text-center max-w-3xl mx-auto">
-                        <h2 className="font-bubblegum font-bold text-5xl md:text-6xl text-white mb-2 drop-shadow-xl tracking-wide leading-tight">
-                            Parent <span className="text-[#fbd267] relative inline-block">
-                                Testimonials
-                                <svg className="absolute w-full h-3 -bottom-1 left-0 text-[#fbd267]/30" viewBox="0 0 100 10" preserveAspectRatio="none">
-                                    <path d="M0 5 Q 50 10 100 5 L 100 8 Q 50 13 0 8 Z" fill="currentColor" />
-                                </svg>
-                            </span>
-                        </h2>
-                        <p className="text-white/95 text-lg md:text-xl font-medium leading-relaxed drop-shadow-md">
-                            Hear from parents who have trusted us with their children&apos;s early education and witnessed their blooming journey.
-                        </p>
-                    </div>
-                </div>
-
-                <div
-                    ref={viewportRef}
-                    className="relative w-full overflow-hidden min-h-[320px] md:min-h-[340px] touch-pan-y"
-                    onTouchStart={(e) => {
-                        touchStartX.current = e.touches[0].clientX;
-                    }}
-                    onTouchEnd={(e) => {
-                        if (touchStartX.current === null || !testimonials || testimonials.length <= 1) return;
-                        const dx = e.changedTouches[0].clientX - touchStartX.current;
-                        touchStartX.current = null;
-                        if (Math.abs(dx) < 50) return;
-                        shouldAnimateCarousel.current = true;
-                        if (dx < 0) goNext();
-                        else goPrev();
-                    }}
-                >
-                    {testimonials && testimonials.length > 1 && (
-                        <>
-                            <button
-                                type="button"
-                                aria-label="Previous testimonial"
-                                onClick={goPrev}
-                                disabled={activeIndex <= 0}
-                                className="absolute left-1 md:left-4 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/30 bg-white/15 p-2 text-white shadow-lg backdrop-blur-md transition hover:bg-white/25 disabled:pointer-events-none disabled:opacity-30"
-                            >
-                                <ChevronLeft className="h-7 w-7" />
-                            </button>
-                            <button
-                                type="button"
-                                aria-label="Next testimonial"
-                                onClick={goNext}
-                                disabled={activeIndex >= testimonials.length - 1}
-                                className="absolute right-1 md:right-4 top-1/2 z-30 -translate-y-1/2 rounded-full border border-white/30 bg-white/15 p-2 text-white shadow-lg backdrop-blur-md transition hover:bg-white/25 disabled:pointer-events-none disabled:opacity-30"
-                            >
-                                <ChevronRight className="h-7 w-7" />
-                            </button>
-                        </>
-                    )}
-                    <div
-                        ref={wrapperRef}
-                        className="flex flex-nowrap items-center px-4 md:px-20 gap-8 md:gap-16 w-max pt-2 pb-2 will-change-transform"
+            <div className="container relative z-10 mx-auto px-4">
+                <div className="mx-auto mb-12 max-w-3xl text-center">
+                    <h2
+                        className="font-display text-5xl font-black leading-tight tracking-[-0.02em] text-white drop-shadow-xl md:text-6xl"
+                        style={{ fontFamily: "'Clash Display', 'Satoshi', 'Plus Jakarta Sans', var(--font-poppins), system-ui, sans-serif" }}
                     >
-                        {testimonials === null ? (
-                            <div className="flex-shrink-0 w-full max-w-xl mx-auto text-center text-white/90 py-12 px-4">
-                                Loading testimonials…
-                            </div>
-                        ) : testimonials.length === 0 ? (
-                            <div className="flex-shrink-0 w-full max-w-xl mx-auto text-center text-white/90 py-8 px-4">
-                                Testimonials will appear here once added in Admin → Testimonials.
-                            </div>
-                        ) : (
-                        testimonials.map((item, index) => (
-                            <div
-                                key={`${item.id}-${index}`}
-                                ref={el => { cardsRef.current[index] = el }}
-                                // width for 3 cards: ~30vw on desktop (assuming gaps)
-                                // On mobile kept high width. On desktop set to approx 400px but dynamic is better.
-                                // Let's try 30vw for desktop to ensure 3 fit.
-                                className="flex-shrink-0 w-[85vw] md:w-[28vw] h-full outline-none"
-                            >
-                                <TiltCard>
-                                    <div className="testimonial-card bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden h-full border border-white/20 flex flex-col justify-between min-h-[300px] transition-all duration-300 hover:-translate-y-2 group">
-                                        <Quote size={60} className="absolute -top-2 -right-2 text-white/5 rotate-12 transition-colors group-hover:text-white/10" />
-
-                                        <div className="relative z-10">
-                                            <div className="flex gap-1 mb-6 text-[#FFD700]">
-                                                {[...Array(Math.min(5, Math.max(1, item.rating || 5)))].map((_, i) => (
-                                                    <Star key={i} size={18} fill="currentColor" strokeWidth={0} />
-                                                ))}
-                                            </div>
-                                            <p className="text-white text-lg md:text-xl italic leading-relaxed mb-6 font-medium drop-shadow-sm opacity-95">
-                                                &ldquo;{item.text}&rdquo;
-                                            </p>
-                                        </div>
-
-                                        <div className="border-t border-white/10 pt-5 flex items-center gap-4 mt-auto">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-white/20 to-white/5 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-inner border border-white/10 flex-shrink-0 backdrop-blur-sm">
-                                                {item.author.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-white text-lg tracking-wide drop-shadow-md leading-tight">{item.author}</h4>
-                                                <p className="text-white/70 text-xs font-bold uppercase tracking-wider mt-0.5">{item.relation}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </TiltCard>
-                            </div>
-                        ))
-                        )}
-                    </div>
-                    {testimonials && testimonials.length > 1 && (
-                        <div className="flex justify-center gap-2 pb-6 pt-2" role="tablist" aria-label="Testimonial slides">
-                            {testimonials.map((_, i) => (
-                                <button
-                                    key={i}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={i === activeIndex}
-                                    aria-label={`Go to testimonial ${i + 1}`}
-                                    onClick={() => {
-                                        if (i === activeIndex) return;
-                                        shouldAnimateCarousel.current = true;
-                                        setActiveIndex(i);
-                                    }}
-                                    className={`h-2 rounded-full transition-all duration-300 ${i === activeIndex ? 'w-8 bg-[#fbd267]' : 'w-2 bg-white/35 hover:bg-white/50'}`}
-                                />
-                            ))}
-                        </div>
-                    )}
+                        Testimonials
+                    </h2>
+                    <p className="mt-4 text-lg font-semibold leading-8 text-white md:text-xl">
+                        Hear from families and partners who are part of the T.I.M.E. Kids journey.
+                    </p>
                 </div>
+
+                {testimonials === null ? (
+                    <div className="rounded-[30px] border border-white/20 bg-white/12 px-6 py-16 text-center text-lg font-semibold text-white backdrop-blur-xl">
+                        Loading testimonials...
+                    </div>
+                ) : (
+                    <div className="grid gap-8 lg:grid-cols-2 xl:gap-10">
+                        <TestimonialColumn
+                            title="Parent Testimonials"
+                            categoryLabel="Parent"
+                            items={parentTestimonials}
+                            emptyText="Parent testimonials will appear here once added in Admin -> Testimonials."
+                            accent="orange"
+                        />
+                        <TestimonialColumn
+                            title="Franchisee Testimonials"
+                            categoryLabel="Franchisee"
+                            items={franchiseeTestimonials}
+                            emptyText="Franchisee testimonials will appear here once added in Admin -> Testimonials."
+                            accent="sky"
+                        />
+                    </div>
+                )}
             </div>
 
-            {/* Animated Wavy Bottom Divider - Gentle Wave SVG */}
-            <div className="absolute -bottom-[1px] left-0 w-full z-20 pointer-events-none">
-                <svg className="w-full h-[8vh] min-h-[60px] max-h-[100px]" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink"
-                    viewBox="0 24 150 28" preserveAspectRatio="none" shapeRendering="auto" stroke="none">
-                    <defs>
-                        {/* Friendly "Cloud-like" Wave Path: ~15 repeats of width 30 */}
-                        <path id="gentle-wave" d="M-160 44 q 15 -10 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 v44 h-1200 z" />
-                    </defs>
-                    <g className="parallax">
-                        <use xlinkHref="#gentle-wave" x="48" y="0" fill="rgba(255, 255, 255, 0.7)" />
-                        <use xlinkHref="#gentle-wave" x="48" y="3" fill="rgba(255, 255, 255, 0.5)" />
-                        <use xlinkHref="#gentle-wave" x="48" y="5" fill="rgba(255, 255, 255, 0.3)" />
-                        <use xlinkHref="#gentle-wave" x="48" y="7" fill="#fff" />
-                    </g>
+            <div className="absolute -bottom-[1px] left-0 z-20 w-full pointer-events-none">
+                <svg className="h-[8vh] min-h-[60px] max-h-[100px] w-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none">
+                    <path d="M-160 44 q 15 -10 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 v44 h-520 z" fill="#fff" />
                 </svg>
             </div>
-
-            <style jsx global>{`
-                .testimonial-card {
-                     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-                }
-
-                .parallax > use {
-                    animation: move-forever 25s cubic-bezier(.55, .5, .45, .5) infinite;
-                }
-                .parallax > use:nth-child(1) {
-                    animation-delay: -2s;
-                    animation-duration: 7s;
-                }
-                .parallax > use:nth-child(2) {
-                    animation-delay: -3s;
-                    animation-duration: 10s;
-                }
-                .parallax > use:nth-child(3) {
-                    animation-delay: -4s;
-                    animation-duration: 13s;
-                }
-                .parallax > use:nth-child(4) {
-                    animation-delay: -5s;
-                    animation-duration: 20s;
-                }
-                @keyframes move-forever {
-                    0% {
-                        transform: translate3d(-90px, 0, 0);
-                    }
-                    100% {
-                        transform: translate3d(85px, 0, 0);
-                    }
-                }
-            `}</style>
-        </section >
+        </section>
     );
-};
-
-export default TestimonialSlider;
+}

@@ -56,7 +56,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
         { icon: "/icon-tour.png", alt: "Virtual Tour", href: "/gallery", label: "Virtual\nTour", nav_class: "nav-link1" },
         { icon: "/icon-gallery.png", alt: "Photo / Video Gallery", href: "/gallery", label: "Photo / Video Gallery", nav_class: "nav-link2" },
         { icon: "/icon-nearstcenter.png", alt: "Find your Nearest Centre", href: "/locate-centre", label: "Find your Nearest  Centre", nav_class: "nav-link3" },
-        { icon: "/icon-franchise.png", alt: "Become a Franchise", href: "/franchise", label: "Become a Franchise", nav_class: "nav-link1" },
+        { icon: "/icon-franchise.png", alt: "Become a Franchisee", href: "/franchise", label: "Become a Franchisee", nav_class: "nav-link1" },
         {
             icon: "/icon-brochure.png",
             alt: "Download Brochure",
@@ -65,7 +65,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             nav_class: "nav-link2",
             external: true,
         },
-        { icon: "/icon-television.png", alt: "TV Commercial", href: "/tv-commercial", label: "TV\nCommercial", nav_class: "nav-link3" },
+        { icon: "/icon-media.svg", alt: "Media", href: "/tv-commercial", label: "Media", nav_class: "nav-link3" },
     ],
     franchise_benefits: [
         "Low Investment High Returns",
@@ -136,7 +136,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             },
             {
                 image: "/images/landing-banner.jpg",
-                programName: "Day Care",
+                programName: "Summer Programs",
                 ageGroup: "2 - 10 years",
                 description: "Extended care with engaging activities throughout the day.",
                 color: "#ff9f43",

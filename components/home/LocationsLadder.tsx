@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useRouter } from 'next/navigation';
-import { MapPin } from 'lucide-react';
+import { MapPin, Sparkles } from 'lucide-react';
 import { apiUrl } from '@/lib/api-client';
 import { matchesHyderabadMetroCity, OUR_PRESENCE_HYDERABAD_CENTRE_LIMIT } from '@/lib/site-location-presence';
 
@@ -151,9 +151,21 @@ const LocationsLadder = () => {
             `}</style>
 
             <div className="container mx-auto px-4 relative z-10 w-full max-w-[1600px]">
-                <div className="text-center mb-12">
-                    <h2 className="font-display text-4xl font-black leading-tight tracking-[-0.02em] text-slate-800 md:text-6xl">
-                        Our Presence
+                <div className="mx-auto mb-12 max-w-4xl text-center">
+                    <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-sky-100 bg-white/80 px-5 py-2.5 shadow-[0_16px_45px_rgba(14,165,233,0.12)] backdrop-blur-xl">
+                        <Sparkles size={16} className="text-orange-500" />
+                        <span className="text-xs font-black uppercase tracking-[0.2em] text-sky-700">
+                            Centres Near You
+                        </span>
+                    </div>
+                    <h2
+                        className="font-display text-4xl font-black leading-tight tracking-[-0.02em] text-[#253247] md:text-6xl"
+                        style={{ fontFamily: "'Clash Display', 'Satoshi', 'Plus Jakarta Sans', var(--font-poppins), system-ui, sans-serif" }}
+                    >
+                        Our{' '}
+                        <span className="bg-gradient-to-r from-orange-500 via-amber-400 to-sky-400 bg-clip-text text-transparent">
+                            Presence
+                        </span>
                     </h2>
                     <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
                         T.I.M.E. Kids preschools in{' '}

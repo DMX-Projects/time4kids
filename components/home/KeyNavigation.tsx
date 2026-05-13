@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
@@ -23,14 +23,35 @@ const THEMES = [
     { primary: "#f59e0b", light: "#fcd34d" },
 ];
 
-const WAVE_SEQUENCE_SECONDS = 6;
 const WAVE_DURATION_SECONDS = 1.15;
 const WAVE_RING_GAP_SECONDS = 0.22;
 const WAVE_RING_DELAYS = [0, WAVE_RING_GAP_SECONDS, WAVE_RING_GAP_SECONDS * 2];
 
 const formatNavLabel = (label: string) => {
     if (/^virtual\s*tour$/i.test(label)) return "Virtual\nTour";
+    if (/^tv\s*commercial$/i.test(label.replace(/\n/g, ' '))) return "Media";
+    if (/^become\s+a\s+franchise$/i.test(label.replace(/\n/g, ' '))) return "Become a\nFranchisee";
     return label;
+};
+
+const getNavIcon = (item: NavItem) => {
+    if (/^tv\s*commercial$/i.test(item.label.replace(/\n/g, ' ')) || item.href === '/tv-commercial') {
+        return '/icon-media.svg';
+    }
+
+    return item.icon;
+};
+
+const getNavAlt = (item: NavItem) => {
+    if (/^tv\s*commercial$/i.test(item.label.replace(/\n/g, ' ')) || item.href === '/tv-commercial') {
+        return 'Media';
+    }
+
+    if (/^become\s+a\s+franchise$/i.test(item.label.replace(/\n/g, ' ')) || item.href === '/franchise') {
+        return 'Become a Franchisee';
+    }
+
+    return item.alt;
 };
 
 // --- Card Component ---
@@ -114,8 +135,8 @@ const NavigationCard = ({
                     {/* 4. Icon */}
                     <div className="relative z-20 w-16 h-16 md:w-20 md:h-20 flex items-center justify-center">
                         <Image 
-                            src={item.icon} 
-                            alt={item.alt} 
+                            src={getNavIcon(item)} 
+                            alt={getNavAlt(item)} 
                             width={75} 
                             height={75} 
                             className="object-contain invert brightness-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.2)]" 
@@ -168,18 +189,7 @@ const NavigationCard = ({
 export default function KeyNavigation() {
     const home = useHomePageContent();
     const items = home.key_navigation?.length ? home.key_navigation : [];
-    const [activeIndex, setActiveIndex] = useState(0);
-
-    useEffect(() => {
-        if (!items.length) return;
-
-        // Complete one smooth pass across all cards in about 6 seconds.
-        const interval = setInterval(() => {
-            setActiveIndex((prev) => (prev + 1) % items.length);
-        }, Math.max((WAVE_SEQUENCE_SECONDS * 1000) / items.length, 650));
-
-        return () => clearInterval(interval);
-    }, [items.length]);
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
     return (
         <section className="relative pt-9 md:pt-11 pb-5 overflow-hidden bg-white font-jakarta">
@@ -190,14 +200,23 @@ export default function KeyNavigation() {
             </div>
 
             <div className="container mx-auto px-4 relative z-10">
-                <div className="flex flex-nowrap lg:justify-center items-center gap-2 md:gap-6 overflow-x-auto no-scrollbar px-4 pt-6 pb-4">
+                <div
+                    className="flex flex-nowrap lg:justify-center items-center gap-2 md:gap-6 overflow-x-auto no-scrollbar px-4 pt-6 pb-4"
+                    onMouseLeave={() => setHoveredIndex(null)}
+                >
                     {items.map((item, index) => (
-                        <NavigationCard 
-                            key={`${item.href}-${index}`} 
-                            item={item} 
-                            index={index} 
-                            isActive={index === activeIndex}
-                        />
+                        <div
+                            key={`${item.href}-${index}`}
+                            onMouseEnter={() => setHoveredIndex(index)}
+                            onFocus={() => setHoveredIndex(index)}
+                            onBlur={() => setHoveredIndex(null)}
+                        >
+                            <NavigationCard
+                                item={item}
+                                index={index}
+                                isActive={index === hoveredIndex}
+                            />
+                        </div>
                     ))}
                 </div>
             </div>

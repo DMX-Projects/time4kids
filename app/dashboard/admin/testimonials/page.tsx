@@ -9,6 +9,7 @@ import { MessageSquareQuote, Plus, Pencil, Trash2 } from "lucide-react";
 
 type TestimonialRow = {
     id: number;
+    category: "parent" | "franchisee";
     text: string;
     author: string;
     relation: string;
@@ -19,6 +20,7 @@ type TestimonialRow = {
 };
 
 const emptyForm: Omit<TestimonialRow, "id"> = {
+    category: "parent",
     text: "",
     author: "",
     relation: "",
@@ -66,6 +68,7 @@ export default function AdminHomeTestimonialsPage() {
         setEditingId(row.id);
         setForm({
             text: row.text,
+            category: row.category || "parent",
             author: row.author,
             relation: row.relation,
             location: row.location,
@@ -83,6 +86,7 @@ export default function AdminHomeTestimonialsPage() {
         setSubmitting(true);
         const payload = {
             text: form.text.trim(),
+            category: form.category,
             author: form.author.trim(),
             relation: form.relation.trim(),
             location: form.location.trim(),
@@ -129,10 +133,10 @@ export default function AdminHomeTestimonialsPage() {
                 <div>
                     <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
                         <MessageSquareQuote className="w-7 h-7 text-orange-500" />
-                        Parent testimonials (home page)
+                        Home page testimonials
                     </h1>
                     <p className="text-sm text-slate-600 mt-1">
-                        Edit or remove quotes in the &quot;Parent Testimonials&quot; section on the main site. Inactive items are hidden from the public page.
+                        Edit parent and franchisee quotes shown in the home page testimonials section. Inactive items are hidden from the public page.
                     </p>
                 </div>
                 <Button size="sm" onClick={startCreate} className="inline-flex items-center gap-2 shrink-0">
@@ -147,6 +151,7 @@ export default function AdminHomeTestimonialsPage() {
                         <thead className="bg-slate-50 text-slate-900 text-xs uppercase tracking-wide">
                             <tr>
                                 <th className="px-4 py-3 font-semibold">Order</th>
+                                <th className="px-4 py-3 font-semibold">Category</th>
                                 <th className="px-4 py-3 font-semibold">Author</th>
                                 <th className="px-4 py-3 font-semibold">Relation</th>
                                 <th className="px-4 py-3 font-semibold">Quote</th>
@@ -157,13 +162,13 @@ export default function AdminHomeTestimonialsPage() {
                         <tbody className="text-slate-700">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
+                                    <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
                                         Loading…
                                     </td>
                                 </tr>
                             ) : rows.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
+                                    <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
                                         No testimonials yet. Add one to show on the home page.
                                     </td>
                                 </tr>
@@ -171,6 +176,11 @@ export default function AdminHomeTestimonialsPage() {
                                 rows.map((row, idx) => (
                                     <tr key={row.id} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/60"}>
                                         <td className="px-4 py-3 whitespace-nowrap">{row.order}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <span className="rounded-full border border-orange-100 bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">
+                                                {(row.category || "parent") === "franchisee" ? "Franchisee" : "Parent"}
+                                            </span>
+                                        </td>
                                         <td className="px-4 py-3 font-medium">{row.author}</td>
                                         <td className="px-4 py-3 text-slate-600">{row.relation || "—"}</td>
                                         <td className="px-4 py-3 max-w-md truncate">{row.text}</td>
@@ -202,6 +212,18 @@ export default function AdminHomeTestimonialsPage() {
             <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? "Edit testimonial" : "New testimonial"} size="lg">
                 <form className="space-y-4" onSubmit={handleSubmit}>
                     <div className="grid md:grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
+                            <select
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                value={form.category}
+                                onChange={(e) => setForm({ ...form, category: e.target.value as "parent" | "franchisee" })}
+                                required
+                            >
+                                <option value="parent">Parent</option>
+                                <option value="franchisee">Franchisee</option>
+                            </select>
+                        </div>
                         <div>
                             <label className="block text-xs font-medium text-slate-600 mb-1">Author name</label>
                             <input

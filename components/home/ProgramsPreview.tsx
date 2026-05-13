@@ -17,6 +17,10 @@ const ProgramsPreview = () => {
     const home = useHomePageContent();
     const programs = home.programs_preview.programs;
 
+    const formatProgramName = (name: string) => {
+        return name.trim().toLowerCase() === 'day care' ? 'Summer Programs' : name;
+    };
+
     useEffect(() => {
         const ctx = gsap.context(() => {
             // Parallax Wave Animation
@@ -170,7 +174,7 @@ const ProgramsPreview = () => {
                                     <div className="relative mx-auto h-36 w-36 shrink-0 overflow-hidden rounded-full border-[6px] border-white shadow-xl sm:h-44 sm:w-44 sm:border-[8px] lg:h-[10.5rem] lg:w-[10.5rem] lg:border-[10px] group-hover:scale-105 transition-transform duration-500">
                                         <Image
                                             src={program.image}
-                                            alt={program.programName.replace(/\n/g, ' ')}
+                                            alt={formatProgramName(program.programName).replace(/\n/g, ' ')}
                                             fill
                                             sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 168px"
                                             className="object-cover"
@@ -185,7 +189,7 @@ const ProgramsPreview = () => {
                                     </div>
                                 </div>
                                 <h3 className="font-display text-xl font-black leading-tight text-[#253247] sm:text-2xl lg:text-3xl mb-1 sm:mb-2 whitespace-pre-line">
-                                    {program.programName}
+                                    {formatProgramName(program.programName)}
                                 </h3>
                                 <p className="mb-3 px-0 text-xs font-medium leading-relaxed text-gray-500 sm:mb-4 sm:px-1 sm:text-sm">
                                     {program.description}

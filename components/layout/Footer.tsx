@@ -1,16 +1,44 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Facebook, Instagram, Youtube, MapPin, Phone, Mail } from 'lucide-react';
+import { gsap } from 'gsap';
 import QRCode from '@/components/ui/QRCode';
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
+    const footerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const ctx = gsap.context(() => {
+            // Same school bus drive animation used in ProgramsPreview.
+            gsap.fromTo(
+                '.footer-school-bus',
+                { x: 0 },
+                {
+                    x: '-150vw',
+                    duration: 15,
+                    repeat: -1,
+                    ease: 'none',
+                },
+            );
+
+            gsap.to('.footer-school-bus', {
+                y: -2,
+                duration: 0.6,
+                repeat: -1,
+                yoyo: true,
+                ease: 'sine.inOut',
+            });
+        }, footerRef);
+
+        return () => ctx.revert();
+    }, []);
 
     return (
-        <>
+        <div ref={footerRef}>
             <footer
                 className="relative overflow-hidden font-sans text-gray-800 bg-[url('/footer.jpg.jpeg')] bg-cover bg-no-repeat bg-[center_bottom] pb-[150px]"
             >
@@ -143,14 +171,24 @@ const Footer = () => {
             </footer>
 
             {/* Copyright — outside <footer> (sibling); wrapped in fragment for valid JSX */}
-            <div className="border-t border-gray-300 bg-gradient-to-r from-blue-50 to-green-50 py-4">
+            <div className="relative border-t border-gray-300 bg-gradient-to-r from-blue-50 to-green-50 py-4">
+                <Image
+                    src="/images/school-bus.png"
+                    alt=""
+                    width={90}
+                    height={90}
+                    className="footer-school-bus pointer-events-none absolute -top-[44px] opacity-100 saturate-200 brightness-100 contrast-110 drop-shadow-[0_10px_14px_rgba(120,72,20,0.35)]"
+                    style={{ left: '100%' }}
+                />
+                
                 <div className="container mx-auto px-8 text-center">
                     <p className="text-sm font-medium text-gray-800">
                         © {currentYear} All Rights Reserved. T.I.M.E. Kids Preschools.
                     </p>
                 </div>
             </div>
-        </>
+
+        </div>
     );
 };
 

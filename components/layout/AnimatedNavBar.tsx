@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Users, BookOpen, MapPin, Image as ImageIcon, GraduationCap, Briefcase, LogIn, HelpCircle } from 'lucide-react';
@@ -59,7 +58,7 @@ export default function AnimatedNavBar({
                                 onClick={() => handleNavClick(item.path)}
                                 className={`relative ${isLogin
                                     ? mobile
-                                        ? `mt-3 flex w-full items-stretch rounded-xl bg-gradient-to-r from-[#ff9933] to-[#ff6633] px-4 py-3.5 text-[15px] font-semibold text-white shadow-md shadow-orange-500/25 transition active:scale-[0.98] hover:from-[#ffa347] hover:to-[#ff7540] ring-2 ${isActive ? 'ring-white/70' : 'ring-white/20'}`
+                                        ? `mt-3 flex w-full items-stretch rounded-xl bg-[#e3f8d8] px-4 py-3.5 text-[15px] font-semibold text-[#234018] shadow-md shadow-green-500/15 transition active:scale-[0.98] hover:bg-[#d7f4c9] ring-2 ${isActive ? 'ring-white/80' : 'ring-[#b9e8a5]/70'}`
                                         : 'inline-flex items-center p-0 shrink-0'
                                     : mobile
                                         ? 'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] w-full font-semibold text-left text-slate-800 normal-case tracking-tight hover:bg-orange-50/90 active:bg-orange-100/80'
@@ -81,14 +80,9 @@ export default function AnimatedNavBar({
                                             <span>{label}</span>
                                         </span>
                                     ) : (
-                                        <span className="flex items-center">
-                                            <Image
-                                                src="/login-btn-new.png"
-                                                alt="Login"
-                                                width={88}
-                                                height={32}
-                                                className="h-8 w-auto max-h-8 object-contain object-center hover:opacity-95"
-                                            />
+                                        <span className="inline-flex items-center gap-2 rounded-full bg-[#e3f8d8] px-4 py-2 text-[13px] font-extrabold uppercase tracking-wide text-[#234018] shadow-sm ring-1 ring-[#b9e8a5]/70 hover:bg-[#d7f4c9]">
+                                            <LogIn className="h-4 w-4" strokeWidth={2.4} aria-hidden />
+                                            <span>Login</span>
                                         </span>
                                     )
                                 ) : (
