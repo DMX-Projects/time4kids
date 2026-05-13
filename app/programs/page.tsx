@@ -124,6 +124,25 @@ export default function ProgramsPage() {
         return themes[index % themes.length];
     };
 
+    const renderProgramDescription = (description: string, theme: ReturnType<typeof themeByIndex>) => {
+        const paragraphs = description.split(/\n{2,}/).map((text) => text.trim()).filter(Boolean);
+
+        return (
+            <div className="space-y-3">
+                {paragraphs.map((paragraph, idx) => (
+                    <p
+                        key={idx}
+                        className={`rounded-3xl border border-slate-100 bg-white/80 p-5 text-sm font-medium leading-7 text-slate-600 shadow-sm backdrop-blur md:text-[15px] md:leading-8 ${
+                            idx === 0 ? `border-l-4 ${theme.bg}` : ''
+                        }`}
+                    >
+                        {paragraph}
+                    </p>
+                ))}
+            </div>
+        );
+    };
+
     return (
         <div className="min-h-screen relative overflow-hidden bg-[#FDFBF7] font-sans selection:bg-yellow-200">
             {/* Background Animations */}
@@ -175,14 +194,15 @@ export default function ProgramsPage() {
                     <div className="flex flex-col gap-12 md:gap-16">
                         {pageData.programs.map((program: ProgramsPageProgram, index) => {
                             const theme = themeByIndex(index);
-                            const isDayCare = (program.name || '').trim().toLowerCase() === 'day care';
+                            const programName = (program.name || '').trim().toLowerCase();
+                            const isSummerPrograms = programName === 'summer programs' || programName === 'day care';
 
                             return (
                                 <React.Fragment key={index}>
-                                <div className={`flex flex-col md:flex-row items-center gap-16 lg:gap-32 ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} ${isDayCare ? 'py-16 md:py-24' : ''}`}>
+                                <div className={`flex flex-col md:flex-row items-center gap-16 lg:gap-32 ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} ${isSummerPrograms ? 'py-16 md:py-24' : ''}`}>
 
-                                    {/* Special Background for Day Care */}
-                                    {isDayCare && (
+                                    {/* Special Background for Summer Programs */}
+                                    {isSummerPrograms && (
                                         <div className="absolute left-0 right-0 w-full h-[500px] bg-gradient-to-r from-blue-50/50 to-cyan-50/50 -skew-y-3 -z-10 rounded-3xl"></div>
                                     )}
 
@@ -205,13 +225,14 @@ export default function ProgramsPage() {
                                             </div>
                                         </div>
 
-                                        {isDayCare && (
+                                        {isSummerPrograms && (
                                             <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
                                         )}
                                     </div>
 
                                     {/* Content Side */}
-                                    <div className="w-full md:w-1/2 text-center md:text-left space-y-10">
+                                    <div className="w-full md:w-1/2 text-center md:text-left">
+                                        <div className="rounded-[2rem] border border-slate-100 bg-white/70 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.07)] backdrop-blur-sm md:p-7 lg:p-8">
                                         <div className="space-y-6">
                                             <div className="inline-block">
                                                 <span className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-widest bg-white border ${theme.accent} border-current shadow-sm`}>
@@ -224,20 +245,20 @@ export default function ProgramsPage() {
                                             </h2>
                                         </div>
 
-                                        <div className="flex items-center justify-center md:justify-start gap-4 text-slate-500 font-bold text-lg">
+                                        <div className="mt-7 flex items-center justify-center md:justify-start gap-4 text-slate-500 font-bold text-lg">
                                             <div className={`p-3 rounded-full bg-slate-100 ${theme.accent}`}>
                                                 <Clock className="w-6 h-6" />
                                             </div>
                                             <span>{program.duration}</span>
                                         </div>
 
-                                        <p className="text-xl md:text-2xl text-slate-600 leading-relaxed font-medium max-w-xl mx-auto md:mx-0">
-                                            {program.description}
-                                        </p>
+                                        <div className="mt-7 max-w-2xl mx-auto md:mx-0">
+                                            {renderProgramDescription(program.description, theme)}
+                                        </div>
 
-                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4">
+                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-7">
                                             {program.features.map((feature, idx) => (
-                                                <li key={idx} className="flex items-center gap-4 text-slate-700 font-bold text-lg bg-white px-5 py-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all group cursor-default">
+                                                <li key={idx} className="flex items-center gap-4 text-slate-700 font-bold text-sm bg-white px-5 py-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all group cursor-default md:text-base">
                                                     <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${theme.colorStart} ${theme.colorEnd} group-hover:scale-150 transition-transform`}></div>
                                                     {feature}
                                                 </li>
@@ -251,6 +272,7 @@ export default function ProgramsPage() {
                                             >
                                                 {pageData.hero.cta_label || "Enroll Your Child"}
                                             </Link>
+                                        </div>
                                         </div>
                                     </div>
                                 </div>

@@ -23,7 +23,7 @@ const programs = [
         title: 'Play Group',
         icon: Music,
         age: '2 - 3 YEARS',
-        description: 'Sensory play, music, and social skills.',
+        description: 'A warm, safe, and joyful first step beyond home, with play, exploration, music, storytelling, sensory activities, social skills, communication, motor coordination, and caring support for emotional security.',
         themeColor: '#FF6F91',
         bgColor: 'bg-[#FFF0F3]',
         borderColor: 'border-[#FFB8C9]',
@@ -35,7 +35,7 @@ const programs = [
         title: 'Nursery',
         icon: Palette,
         age: '3 - 4 YEARS',
-        description: 'Curiosity, language, and creativity.',
+        description: 'Activity-based learning that builds curiosity, confidence, language, phonics, numbers, creative expression, pre-writing strokes, classroom participation, independence, and early communication skills.',
         themeColor: '#9B6BFF',
         bgColor: 'bg-[#F5F0FF]',
         borderColor: 'border-[#D8C4FF]',
@@ -44,10 +44,10 @@ const programs = [
     },
     {
         id: 3,
-        title: 'Pre-Primary',
+        title: 'PP-1 / Junior KG / LKG',
         icon: BookOpen,
         age: '4 - 5 YEARS',
-        description: 'Phonics, writing, and numbers.',
+        description: 'Interactive learning focused on pre-reading, pre-writing, phonics, number concepts, logical thinking, problem solving, creativity, teamwork, environmental awareness, and confidence for formal schooling.',
         themeColor: '#4ADE80',
         bgColor: 'bg-[#F0FFF4]',
         borderColor: 'border-[#B2F5C9]',
@@ -56,10 +56,10 @@ const programs = [
     },
     {
         id: 4,
-        title: 'Pre-Primary',
+        title: 'PP-2 / Senior KG / UKG',
         icon: Star,
         age: '5 - 6 YEARS',
-        description: 'Math, science, and school readiness.',
+        description: 'School-readiness program strengthening reading, writing, vocabulary, mathematics, reasoning, creativity, independence, communication, discipline, social maturity, and confidence for primary school.',
         themeColor: '#FDBA74',
         bgColor: 'bg-[#FFF7ED]',
         borderColor: 'border-[#FFD8B1]',
@@ -68,10 +68,10 @@ const programs = [
     },
     {
         id: 5,
-        title: 'Day Care',
+        title: 'Summer Programs',
         icon: Heart,
         age: '2 - 10 YEARS',
-        description: 'Safe, loving care with homework help.',
+        description: 'Includes Summer Camp and Refresher Course: supervised care, creative play, stories, music, games, healthy routines, social engagement, and writing-readiness support for confident learning after summer.',
         themeColor: '#60A5FA',
         bgColor: 'bg-[#EFF6FF]',
         borderColor: 'border-[#BEE3FF]',
@@ -79,6 +79,12 @@ const programs = [
         image: '/day care.png'
     }
 ];
+
+const programAliases: Record<number, string[]> = {
+    3: ['pre-primary', 'pp-1', 'junior kg', 'lkg'],
+    4: ['pre-primary', 'pp-2', 'senior kg', 'ukg'],
+    5: ['day care', 'summer programs', 'summer camp', 'refresher course'],
+};
 
 const FloatingElement = ({ children, delay = 0, duration = 4, className }: any) => (
     <motion.div
@@ -108,7 +114,10 @@ const SchoolProgramsSection = ({ selectedPrograms, programCards }: SchoolProgram
 
         if (!selectedPrograms) return merged;
         const selectedList = selectedPrograms.split(',').map(s => s.trim().toLowerCase());
-        const filtered = merged.filter(p => selectedList.includes(p.title.toLowerCase()));
+        const filtered = merged.filter((p) => {
+            const names = [p.title.toLowerCase(), ...(programAliases[p.id] || [])];
+            return names.some((name) => selectedList.includes(name));
+        });
         return filtered.length > 0 ? filtered : merged;
     }, [selectedPrograms, programCards]);
 

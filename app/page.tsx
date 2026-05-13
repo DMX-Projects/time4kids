@@ -2,7 +2,6 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import HeroSection from '@/components/home/HeroSection';
 import KeyNavigation from '@/components/home/KeyNavigation';
-import IntroSection from '@/components/home/IntroSection';
 import { HomePageContentProvider } from '@/components/home/HomePageContentProvider';
 
 // Lazy load below-the-fold components for faster initial page load
@@ -32,17 +31,14 @@ export default function Home() {
             {/* Key Navigation Icons */}
             <KeyNavigation />
 
-            {/* Introduction Section */}
-            <IntroSection />
+            {/* Programs Preview Section */}
+            <ProgramsPreview />
 
             {/* Benefits & Updates */}
             <BenefitsUpdates />
 
             {/* Why Choose Us Section */}
             <WhyChooseUs />
-
-            {/* Programs Preview Section */}
-            <ProgramsPreview />
 
             {/* Testimonials */}
             <TestimonialSlider />
