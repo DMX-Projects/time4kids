@@ -77,7 +77,7 @@ export default function AcademicDocumentsPage() {
             )}
 
             <p className="text-xs text-[#6B7280]">
-                These documents come from the Resource Hub document library.
+                Shared by HO for your centre.
             </p>
         </div>
     );

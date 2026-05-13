@@ -73,8 +73,13 @@ export default function HeroSection() {
 
         fetchSlides();
 
-        // Generate particles for magnetic button
-        const newParticles = Array.from({ length: 50 }).map(() => ({
+        const hasTouch =
+            typeof navigator !== 'undefined' &&
+            (navigator.maxTouchPoints > 0 ||
+                ((navigator as unknown as { msMaxTouchPoints?: number }).msMaxTouchPoints ?? 0) > 0 ||
+                'ontouchstart' in window);
+        const particleCount = hasTouch ? 0 : 28;
+        const newParticles = Array.from({ length: particleCount }).map(() => ({
             x: `${Math.random() * 200 - 100}px`,
             y: `${Math.random() * 200 - 100}px`,
             anim: `${1 + Math.random() * 2}s`,
@@ -91,8 +96,8 @@ export default function HeroSection() {
         slidesToShow: 1,
         slidesToScroll: 1,
         autoplay: true,
-        autoplaySpeed: 5000,
-        speed: 1500,
+        autoplaySpeed: 4500,
+        speed: 850,
         cssEase: "cubic-bezier(0.7, 0, 0.3, 1)",
         pauseOnHover: false,
         arrows: true,

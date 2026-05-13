@@ -20,7 +20,8 @@ interface EventGroup {
     media: MediaItem[];
 }
 
-export default function MediaPage() {
+/** Public photo/video gallery. Lives at `/gallery/` so `/media/` stays free for Django uploaded files (avoids nginx 403 on live). */
+export default function GalleryPage() {
     const [events, setEvents] = useState<EventGroup[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<EventGroup | null>(null);
     const [filterMediaType, setFilterMediaType] = useState<'all' | 'image' | 'video'>('all');

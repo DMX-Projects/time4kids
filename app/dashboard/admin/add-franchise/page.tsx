@@ -161,9 +161,17 @@ export default function AddFranchisePage() {
                                     onChange={(e) => setForm({ ...form, address: e.target.value })}
                                     placeholder="Full address..."
                                 />
+                                <p className="text-[11px] text-slate-500 normal-case tracking-normal leading-snug">
+                                    Shown on this centre’s public page under Contact → Visit us.
+                                </p>
                             </div>
                         </div>
-                        <Input label="Google Map Link" value={form.googleMapLink} onChange={(e) => setForm({ ...form, googleMapLink: e.target.value })} placeholder="https://maps.google.com/..." />
+                        <div className="flex flex-col gap-1">
+                            <Input label="Google Map Link" value={form.googleMapLink} onChange={(e) => setForm({ ...form, googleMapLink: e.target.value })} placeholder="https://maps.google.com/..." />
+                            <p className="text-[11px] text-slate-500 normal-case tracking-normal leading-snug -mt-1">
+                                Used on Locate centre (list/map) so visitors can open directions in Google Maps. Optional.
+                            </p>
+                        </div>
                     </div>
 
                     <div className="space-y-4 pt-4 border-t border-slate-100">

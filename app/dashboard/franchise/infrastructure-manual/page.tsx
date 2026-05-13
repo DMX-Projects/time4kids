@@ -75,7 +75,7 @@ export default function InfrastructureManualPage() {
             )}
 
             <p className="text-xs text-[#6B7280]">
-                These documents come from the Resource Hub document library. Uploads can be managed by your HO/admin.
+                Shared by HO for your centre. Uploads can be managed by your HO/admin.
             </p>
         </div>
     );

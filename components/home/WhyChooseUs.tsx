@@ -229,7 +229,16 @@ const WhyChooseUs = () => {
                         style={{ fontFamily: "'Clash Display', 'Satoshi', 'Plus Jakarta Sans', var(--font-poppins), system-ui, sans-serif" }}
                     >
                         <span className="why-heading-piece inline-block">Why Parents Love</span>{' '}
-                        <span className="why-heading-piece why-gradient-text inline-block">T.I.M.E. Kids</span>
+                        <span className="why-heading-piece inline-flex translate-y-1 items-center align-middle">
+                            <Image
+                                src="/time-kids-logo-new.png"
+                                alt="T.I.M.E. Kids"
+                                width={260}
+                                height={104}
+                                className="h-[58px] w-auto object-contain md:h-[76px]"
+                                priority={false}
+                            />
+                        </span>
                     </h2>
                     <p className="why-heading-piece mx-auto mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
                         A warm, safe, and forward-thinking preschool environment where children build confidence through care, creativity, and modern early learning.

@@ -2,25 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Dosis Font from Google Fonts (Req #12) */
-@import url('https://fonts.googleapis.com/css2?family=Dosis:wght@200;300;400;500;600;700;800&display=swap');
-
-/* Import Schoolbell Font for Playful Headings */
-@import url('https://fonts.googleapis.com/css2?family=Schoolbell&display=swap');
+/* Body / UI fonts: `next/font` in `app/layout.tsx` sets --font-dosis and --font-schoolbell on <html>. */
 
 :root {
-  /* Local-safe font variables (replace next/font variables in production) */
-  --font-inter: "Dosis", "Segoe UI", Roboto, Arial, sans-serif;
-  --font-poppins: "Dosis", "Segoe UI", Roboto, Arial, sans-serif;
-  --font-fredoka: "Dosis", "Trebuchet MS", "Segoe UI", sans-serif;
-  --font-baloo: "Dosis", "Trebuchet MS", "Segoe UI", sans-serif;
+  /* Semantic stacks (Dosis + Schoolbell via next/font CSS variables on html) */
+  --font-inter: var(--font-dosis), "Segoe UI", Roboto, Arial, sans-serif;
+  --font-poppins: var(--font-dosis), "Segoe UI", Roboto, Arial, sans-serif;
+  --font-fredoka: var(--font-dosis), "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-baloo: var(--font-dosis), "Trebuchet MS", "Segoe UI", sans-serif;
   --font-comic: "Comic Sans MS", "Trebuchet MS", "Segoe UI", sans-serif;
-  --font-chewy: "Schoolbell", "Comic Sans MS", "Trebuchet MS", sans-serif;
-  --font-bubblegum: "Schoolbell", "Comic Sans MS", "Trebuchet MS", sans-serif;
-  --font-luckiest: "Schoolbell", "Comic Sans MS", "Trebuchet MS", sans-serif;
-  --font-quicksand: "Dosis", "Segoe UI", Roboto, Arial, sans-serif;
-  --font-abeezee: "Dosis", "Segoe UI", Roboto, Arial, sans-serif;
-  --font-andika: "Dosis", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-chewy: var(--font-schoolbell), "Comic Sans MS", "Trebuchet MS", sans-serif;
+  --font-bubblegum: var(--font-schoolbell), "Comic Sans MS", "Trebuchet MS", sans-serif;
+  --font-luckiest: var(--font-schoolbell), "Comic Sans MS", "Trebuchet MS", sans-serif;
+  --font-quicksand: var(--font-dosis), "Segoe UI", Roboto, Arial, sans-serif;
+  --font-abeezee: var(--font-dosis), "Segoe UI", Roboto, Arial, sans-serif;
+  --font-andika: var(--font-dosis), "Segoe UI", Roboto, Arial, sans-serif;
 
   /* T.I.M.E. Kids Color Palette - Extracted from Reference Files */
   --primary-orange: #e6952e;
@@ -74,7 +70,7 @@ html {
 }
 
 body {
-  font-family: 'Dosis', var(--font-quicksand), var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-dosis), var(--font-quicksand), var(--font-inter), system-ui, sans-serif;
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;

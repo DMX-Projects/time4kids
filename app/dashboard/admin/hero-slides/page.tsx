@@ -20,13 +20,10 @@ interface HeroSlide {
 
 const emptySlide = { alt_text: "", link: "", order: 0, is_active: true };
 
-const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5MB
-// Public homepage hero: height is 600px desktop, 300px mobile (object-cover).
-// Recommended upload is a wide banner so it doesn't crop awkwardly.
+const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5MB — enforced; dimensions below are UI guidance only
 const HERO_RECOMMENDED = { w: 1920, h: 600 };
 const HERO_MIN = { w: 1600, h: 600 };
-const HERO_ASPECT = HERO_RECOMMENDED.w / HERO_RECOMMENDED.h; // 3.2
-const HERO_ASPECT_TOLERANCE = 0.25; // allow ~3.0 - 3.45
+const HERO_ASPECT = HERO_RECOMMENDED.w / HERO_RECOMMENDED.h;
 
 async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
     // Prefer createImageBitmap when available (fast, no DOM).
@@ -137,27 +134,12 @@ export default function HeroSlidesPage() {
             }
 
             try {
-                const { width, height } = await getImageDimensions(file);
-                const aspect = width / Math.max(1, height);
-                const aspectOk = Math.abs(aspect - HERO_ASPECT) <= HERO_ASPECT_TOLERANCE;
-                const minOk = width >= HERO_MIN.w && height >= HERO_MIN.h;
-
-                if (!minOk || !aspectOk) {
-                    const why = [
-                        !minOk ? `needs at least ${HERO_MIN.w}×${HERO_MIN.h}px (got ${width}×${height}px)` : null,
-                        !aspectOk ? `needs wide banner ratio ~${HERO_ASPECT.toFixed(2)}:1 (got ${(aspect).toFixed(2)}:1)` : null,
-                    ]
-                        .filter(Boolean)
-                        .join("; ");
-                    problems.push(`"${file.name}" ${why}. Recommended: ${HERO_RECOMMENDED.w}×${HERO_RECOMMENDED.h}px.`);
-                    continue;
-                }
-
-                accepted.push(file);
-                acceptedPreviews.push(URL.createObjectURL(file));
+                await getImageDimensions(file);
             } catch {
-                problems.push(`"${file.name}" could not be read. Please try a PNG/JPG/WebP image.`);
+                /* still allow upload if under size cap */
             }
+            accepted.push(file);
+            acceptedPreviews.push(URL.createObjectURL(file));
         }
 
         setImageFiles(accepted);
@@ -370,10 +352,21 @@ export default function HeroSlidesPage() {
                                 </p>
                             </div>
                         </div>
-                        <div className="mt-2 text-xs text-slate-600">
-                            <span className="font-semibold text-slate-700">Requirements:</span>{" "}
-                            Max <strong>5MB</strong>, at least <strong>{HERO_MIN.w}×{HERO_MIN.h}px</strong>, wide banner ratio ~
-                            <strong>{HERO_ASPECT.toFixed(1)}:1</strong>.
+                        <div className="mt-2 text-xs text-slate-600 space-y-1">
+                            <div>
+                                <span className="font-semibold text-slate-700">Requirements (recommended):</span> max{" "}
+                                <strong>5MB</strong>, at least <strong>
+                                    {HERO_MIN.w}×{HERO_MIN.h}px
+                                </strong>
+                                , wide banner ratio ~<strong>{HERO_ASPECT.toFixed(1)}:1</strong>. Best:{" "}
+                                <strong>
+                                    {HERO_RECOMMENDED.w}×{HERO_RECOMMENDED.h}px
+                                </strong>
+                                .
+                            </div>
+                            <div className="text-slate-500">
+                                <span className="font-semibold text-slate-600">Enforced:</span> file size ≤5MB only — smaller dimensions or other ratios still upload.
+                            </div>
                         </div>
 
                         {/* Image Previews */}

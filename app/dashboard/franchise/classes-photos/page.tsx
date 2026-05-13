@@ -13,9 +13,8 @@ type ApiFranchiseProfile = {
     school_program_cards?: ProgramCardOverride[] | null;
 };
 
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB
-const RECOMMENDED = { w: 1200, h: 900 }; // 4:3
-const MIN = { w: 800, h: 600 };
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB — only hard limit; dimensions below are optional guidance
+const RECOMMENDED = { w: 1200, h: 900 }; // 4:3 (recommended, not enforced)
 
 function formatMb(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
@@ -93,23 +92,17 @@ export default function FranchiseClassesPhotosPage() {
         setMessage(null);
         setUploadingId(id);
         try {
-            const dims = await getImageDimensions(file);
-            setSelectedInfo((prev) => ({
-                ...prev,
-                [id]: `${file.name} • ${dims.width}×${dims.height}px • ${formatMb(file.size)}`,
-            }));
-
             if (file.size > MAX_UPLOAD_BYTES) {
                 throw new Error(`File is too large (${formatMb(file.size)}). Max allowed is 5MB.`);
             }
-            if (dims.width < MIN.w || dims.height < MIN.h) {
-                throw new Error(`Image is too small (${dims.width}×${dims.height}). Minimum is ${MIN.w}×${MIN.h}. Recommended ${RECOMMENDED.w}×${RECOMMENDED.h} (4:3).`);
-            }
-            const aspect = dims.width / Math.max(1, dims.height);
-            const ideal = 4 / 3;
-            const tol = 0.25;
-            if (Math.abs(aspect - ideal) > tol) {
-                throw new Error(`Image ratio should be close to 4:3 (e.g. ${RECOMMENDED.w}×${RECOMMENDED.h}). Your image is ${dims.width}×${dims.height} (${aspect.toFixed(2)}:1).`);
+            try {
+                const dims = await getImageDimensions(file);
+                setSelectedInfo((prev) => ({
+                    ...prev,
+                    [id]: `${file.name} • ${dims.width}×${dims.height}px • ${formatMb(file.size)}`,
+                }));
+            } catch {
+                setSelectedInfo((prev) => ({ ...prev, [id]: `${file.name} • ${formatMb(file.size)}` }));
             }
 
             const formData = new FormData();
@@ -160,9 +153,13 @@ export default function FranchiseClassesPhotosPage() {
                     <p className="text-sm text-slate-600 mt-2">
                         These photos appear on your public centre page under <strong>Our Classes → Learning Pathways</strong>.
                     </p>
-                    <div className="mt-2 text-xs text-slate-600">
-                        <span className="font-semibold text-slate-700">Requirements:</span>{" "}
-                        Max <strong>5MB</strong>, minimum <strong>{MIN.w}×{MIN.h}</strong>, recommended <strong>{RECOMMENDED.w}×{RECOMMENDED.h} (4:3)</strong>.
+                    <div className="mt-2 text-xs text-slate-600 space-y-1">
+                        <div>
+                            <span className="font-semibold text-slate-700">Requirements (recommended):</span> max <strong>5MB</strong> per file, best ~{RECOMMENDED.w}×{RECOMMENDED.h}px <strong>(4:3)</strong> for card layout.
+                        </div>
+                        <div className="text-slate-500">
+                            <span className="font-semibold text-slate-600">Enforced:</span> file size ≤5MB only — smaller dimensions or other ratios still upload.
+                        </div>
                     </div>
                 </div>
                 <Button size="sm" onClick={save} disabled={saving || loading}>

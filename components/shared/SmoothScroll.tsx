@@ -5,21 +5,24 @@ import Lenis from '@studio-freight/lenis';
 
 const SmoothScroll = () => {
     useEffect(() => {
-        // Lenis has known touch-edge crashes on some mobile emulation / older Android UA.
-        // For touch-first devices, fall back to native scrolling.
         const hasTouch =
             typeof window !== 'undefined' &&
             (navigator.maxTouchPoints > 0 ||
-                (navigator as any).msMaxTouchPoints > 0 ||
+                ((navigator as unknown as { msMaxTouchPoints?: number }).msMaxTouchPoints ?? 0) > 0 ||
                 'ontouchstart' in window);
         if (hasTouch) {
             document.documentElement.style.scrollBehavior = 'smooth';
             return;
         }
 
-        // Disable CSS smooth scroll when Lenis is active
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            document.documentElement.style.scrollBehavior = 'smooth';
+            return;
+        }
+
         const html = document.documentElement;
         const originalScrollBehavior = html.style.scrollBehavior;
+        // Must override globals.css `scroll-behavior: smooth` while Lenis runs — mixing both causes wheel jitter.
         html.style.scrollBehavior = 'auto';
 
         const lenis = new Lenis({
@@ -29,7 +32,6 @@ const SmoothScroll = () => {
             gestureOrientation: 'vertical',
             smoothWheel: true,
             wheelMultiplier: 1.05,
-            // Touch disabled (we early-return on touch devices)
             touchMultiplier: 1.0,
             infinite: false,
         });
@@ -42,14 +44,13 @@ const SmoothScroll = () => {
 
         rafId = requestAnimationFrame(raf);
 
-        // Expose lenis instance globally for other components
-        (window as any).lenis = lenis;
+        (window as unknown as { lenis: typeof lenis }).lenis = lenis;
 
         return () => {
             cancelAnimationFrame(rafId);
             lenis.destroy();
             html.style.scrollBehavior = originalScrollBehavior;
-            delete (window as any).lenis;
+            delete (window as unknown as { lenis?: unknown }).lenis;
         };
     }, []);
 
