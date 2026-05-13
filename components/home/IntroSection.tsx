@@ -22,8 +22,6 @@ const headingWords = [
     { text: 'Where', className: 'text-slate-700' },
     { text: 'Every', className: 'text-[#ff8058]' },
     { text: 'Child', className: 'text-[#ffb347]' },
-    { text: 'Begins', className: 'text-slate-700' },
-    { text: 'Their', className: 'text-[#45c8e6]' },
 ];
 
 const features: Array<{ icon: LucideIcon; title: string; desc: string }> = [
@@ -202,6 +200,16 @@ export default function IntroSection() {
                                     {word.text}
                                 </motion.span>
                             ))}
+                            <motion.span
+                                variants={{
+                                    hidden: { opacity: 0, y: 36, filter: 'blur(10px)' },
+                                    show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.72, ease: [0.22, 1, 0.36, 1] } },
+                                }}
+                                className="mr-3 inline-block whitespace-nowrap md:mr-4"
+                            >
+                                <span className="text-slate-700">Begins</span>{' '}
+                                <span className="text-[#45c8e6]">Their</span>
+                            </motion.span>
                             <motion.span
                                 variants={{
                                     hidden: { opacity: 0, y: 36, filter: 'blur(10px)' },
