@@ -14,71 +14,102 @@ export const DEFAULT_FAQ_PAGE_DATA: FaqPageData = {
     banner_images: ["/faq-banner-new-1.png", "/faq-banner-new-2.png"],
     faqs: [
         {
-            question: "Why send your child to T.I.M.E. Kids?",
+            question: "Why send your child to T.I.M.E. Kids ?",
             answer: [
-                "Your child learns to make friends and important social skills like caring and sharing.",
-                "Our pre-schools provide a learning-through-play environment.",
-                "We help children start learning important life skills early.",
-                "Children feel comfortable among peers of the same age group.",
+                "Your child learns to make friends, learns the important social skills of caring, sharing etc.",
+                "Our pre-schools' provide an environment of learning through play.",
+                "Our pre-schools are the best place for your child to start learning the important skills in life.",
+                "Your child will feel comfortable in the presence of other children of the same age group.",
             ],
         },
         {
             question: "Do the children have an opportunity to be creative each day?",
-            answer: ["Children get ample opportunities for artistic expression.", "Activities include painting, clay modelling, role play, etc."],
+            answer: [
+                "Your child gets ample opportunity for his/her artistic expression at T.I.M.E. Kids pre-schools.",
+                "Children are involved in various activities throughout the day for e.g.: painting, claymodelling, role play, etc.",
+            ],
         },
         {
             question: "How does T.I.M.E. Kids pre-schools helps children acquire different skills?",
             answer: [
-                "Our curriculum involves a blend of structural learning and free play.",
-                "We focus on cognitive, physical, emotional, and social development through activities like puzzles, storytelling, group games, and interactive learning sessions.",
+                "At T.I.M.E. Kids pre-schools, we plan and provide child centered fun-filled activities according to the different levels of development, interest and need. They are planned and sequenced in ways to foster children's motor, cognitive, language and socio-emotional development. At our pre-schools there is a balance in the daily schedule of small and large activities, group as well as individual activities, indoor and outdoor activities, physical and mental activities. Children soon learn to accept and respond to instructions given by the teachers.",
             ],
         },
         {
             question: "Isn't it too early for a child of one-and-a-half year to be attending play school?",
             answer: [
-                "The first six years are critical for a child's brain development.",
-                "Our program for this age group acts as a bridge between home and school, providing a secure and stimulating environment that encourages exploration and social interaction.",
+                "Studies have proved that the first six years of an individual's life are critical since development/growth takes place at its most rapid during in this period. Our Play schools provides the necessary environment for the overall development of the child. Children get the opportunity to pick up good language, for self expression, experimentation and problem solving.",
             ],
         },
         {
             question: "Are basic maths, language and science concepts included in each day's program?",
-            answer: ["Yes, we introduce fundamental concepts of numeracy, language, and environmental science through age-appropriate, play-based activities that make learning fun and engaging."],
+            answer: [
+                "To understand better the world around them, Children's need to know maths and science concepts. They imbibe these at Play schools through activities and play.",
+            ],
         },
         {
             question: "What is the importance of experienced educationists?",
             answer: [
-                "Experienced educationists ensure that the curriculum is developmentally appropriate, safe, and effective.",
-                "They understand child psychology and can tailor learning experiences to meet the unique needs of every child.",
+                "Experienced educationists are essential because they understand the needs of every age group and are highly competent in their area of work.Teachers act mainly as facilitators and help children learn and apply concepts, Also they have a hands-on approach to teaching abstract concepts, solving problems and counselling children.",
             ],
         },
         {
             question: "Are manners and etiquette also important as studies?",
             answer: [
-                "Absolutely. We believe in holistic development.",
-                "Along with academics, we emphasize value education, teaching children essential social manners, table etiquette, and respect for others.",
+                "Etiquette and manners are important in today's world. They are developed in children as part of the curriculum at Play Schools.",
             ],
         },
         {
             question: "Are admissions to the programs open through out the year?",
-            answer: ["Yes, admissions are generally open throughout the year, subject to the availability of seats in the respective program."],
+            answer: [
+                "Admissions are open through out the year (space permitting) but we recommend that children be enrolled at the start of the academic session (June) or at the start of the 2nd term (October)",
+            ],
         },
         {
             question: "What is the procedure for enrolment to T.I.M.E. Kids pre-schools?",
             answer: [
-                "Parents can visit the nearest T.I.M.E. Kids centre to collect the admission kit.",
-                "The process involves filling out an application form and interacting with the centre head. You can also enquire online through our website.",
+                "Parents are welcome at any pre-school centers. We have an online form which can be downloaded and filled in. We require a copy of proof of date of birth, marks transcript (if the child has attended any school) and 2 recent passport size photographs of the child.",
             ],
         },
         {
-            question: "Why should we enrol in T.I.M.E. Kids?",
+            question: "Why should we enrol in T.I.M.E. Kids ?",
             answer: [
-                "T.I.M.E. Kids offers a proven curriculum, safe infrastructure, and trained facilitators.",
-                "We focus on the all-round development of your child in a nurturing environment, backed by the trusted T.I.M.E. brand.",
+                "We provide:",
+                "1.Exceptional Infrastructure",
+                "2.Dedicated Faculty",
+                "3.Safe, Secure and Clean environment",
+                "4.Activity based curriculum",
+                "5.Creative Teaching Philosophy",
+                "6.Parent Involvement",
             ],
         },
         {
             question: "Does T.I.M.E. Kids pre-schools offer transportation facilities?",
-            answer: ["Most of our centres offer safe and reliable transportation facilities with female attendants.", "Please check with your specific centre for route availability."],
+            answer: [
+                "Transport facilities are center specific and details can be had from the centre head at the time of admission.",
+            ],
+        },
+        {
+            question: "I have a transferable job, Can I get my child transferred to another T.I.M.E. Kids pre-school?",
+            answer: [
+                "Your child can be transferred to any of our centers for a nominal transfer fee.",
+            ],
+        },
+        {
+            question: "Where can I find information on the fee structure?",
+            answer: [
+                "Tuition fee is specific to each center. The Center head at our play school will provide all the information at the time of enrolment.",
+            ],
+        },
+        {
+            question: "What are the programs that T.I.M.E. Kids pre-schools offers?",
+            answer: [
+                "Our programs include:",
+                "1. Playgroup - 1.5-2.5 years",
+                "2. Nursery - 2.5-3.5 years",
+                "3. Pre Primary-1 - 3.5-4.5 years",
+                "4. Pre Primary-2 - 4.5-5.5 years",
+            ],
         },
     ],
 };

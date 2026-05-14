@@ -13,6 +13,7 @@ import {
     LifeBuoy,
     Settings,
     CalendarCheck,
+    FileText,
 } from "lucide-react";
 import { DashboardShell, DashboardNavItem } from "@/components/layout/DashboardShell";
 import { ParentDataProvider } from "@/components/dashboard/parent/ParentDataProvider";
@@ -20,6 +21,11 @@ import { ParentDataProvider } from "@/components/dashboard/parent/ParentDataProv
 /** Main menu: after My details — homework → settings (single column, aligned in sidebar). */
 const navItems: DashboardNavItem[] = [
     { label: "Dashboard", href: "/dashboard/parent", icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
+    {
+        label: "Important documents",
+        href: "/dashboard/parent#parent-important-documents",
+        icon: <FileText className="w-[18px] h-[18px]" />,
+    },
     { label: "My details", href: "/dashboard/parent/student-profile", icon: <User className="w-[18px] h-[18px]" /> },
     { label: "Homework", href: "/dashboard/parent/homework", icon: <BookOpen className="w-[18px] h-[18px]" /> },
     { label: "Notifications", href: "/dashboard/parent/notifications", icon: <Bell className="w-[18px] h-[18px]" /> },

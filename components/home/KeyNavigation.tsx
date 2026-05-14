@@ -71,8 +71,9 @@ const NavigationCard = ({
     const theme = THEMES[index % THEMES.length];
     const displayLabel = formatNavLabel(item.label);
     const external = isExternalHref(item);
+    const ariaLabel = `${getNavAlt(item)}${external ? ', opens in a new tab' : ''}`;
     const linkClass =
-        'relative flex shrink-0 flex-col items-center group no-underline text-inherit cursor-pointer min-w-[108px] xs:min-w-[118px] sm:min-w-[132px] md:min-w-[140px] lg:min-w-[148px] xl:min-w-[178px] px-1.5 pt-6 pb-2 sm:px-2 md:px-2.5 lg:px-2.5 xl:px-3 rounded-3xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400';
+        'relative flex shrink-0 flex-col items-center group no-underline text-inherit cursor-pointer min-w-[108px] xs:min-w-[118px] sm:min-w-[132px] md:min-w-[140px] lg:min-w-[148px] xl:min-w-[178px] px-1.5 pt-6 pb-2 sm:px-2 md:px-2.5 lg:px-2.5 xl:px-3 rounded-3xl transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400';
 
     const cardBody = (
         <>
@@ -190,11 +191,13 @@ const NavigationCard = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     className={linkClass}
+                    aria-label={ariaLabel}
+                    title={ariaLabel}
                 >
                     {cardBody}
                 </a>
             ) : (
-                <Link href={item.href} className={linkClass}>
+                <Link href={item.href} className={linkClass} aria-label={ariaLabel} title={ariaLabel}>
                     {cardBody}
                 </Link>
             )}
@@ -216,27 +219,29 @@ export default function KeyNavigation() {
                 <div className="absolute left-1/2 top-1/2 h-[300px] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-50/30 blur-[150px]" />
             </div>
 
-            {/* Full-width scroll strip: justify-start avoids end cards sitting half off-screen when row overflows */}
+            {/* Scroll when needed; `w-max min-w-full` + `justify-center` centers the row when it fits (no extra gap on the right). */}
             <div className="relative z-10 mx-auto w-full min-w-0 px-3 sm:px-4 md:container md:px-4">
                 <div
-                    className="no-scrollbar flex max-w-full min-w-0 flex-nowrap touch-pan-x items-center justify-start gap-1.5 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-px-3 pb-4 pe-8 pt-6 snap-x snap-proximity sm:gap-2 sm:scroll-px-4 sm:pe-10 md:gap-3 md:pe-12 lg:gap-4 xl:gap-5 xl:pe-10"
+                    className="no-scrollbar max-w-full min-w-0 touch-pan-x overflow-x-auto overflow-y-visible overscroll-x-contain pb-4 pt-6 snap-x snap-proximity"
                     onMouseLeave={() => setHoveredIndex(null)}
                 >
-                    {items.map((item, index) => (
-                        <div
-                            key={`${item.href}-${index}`}
-                            className="shrink-0 snap-start"
-                            onMouseEnter={() => setHoveredIndex(index)}
-                            onFocus={() => setHoveredIndex(index)}
-                            onBlur={() => setHoveredIndex(null)}
-                        >
-                            <NavigationCard
-                                item={item}
-                                index={index}
-                                isActive={index === hoveredIndex}
-                            />
-                        </div>
-                    ))}
+                    <div className="mx-auto flex min-w-full w-max flex-nowrap items-center justify-center gap-1.5 scroll-px-3 sm:gap-2 sm:scroll-px-4 md:gap-3 lg:gap-4 xl:gap-5">
+                        {items.map((item, index) => (
+                            <div
+                                key={`${item.href}-${index}`}
+                                className="shrink-0 snap-start"
+                                onMouseEnter={() => setHoveredIndex(index)}
+                                onFocus={() => setHoveredIndex(index)}
+                                onBlur={() => setHoveredIndex(null)}
+                            >
+                                <NavigationCard
+                                    item={item}
+                                    index={index}
+                                    isActive={index === hoveredIndex}
+                                />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 

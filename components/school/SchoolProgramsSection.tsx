@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import { mediaUrl } from '@/lib/api-client';
 import {
     Music,
     Palette,
@@ -101,6 +102,15 @@ interface SchoolProgramsSectionProps {
     programCards?: Array<{ id: number; image: string }> | null;
 }
 
+/** Uploaded card images are stored as `/media/...` or old dev URLs; resolve for prod (no Next dev rewrites). */
+function programImageSrc(raw: string): string {
+    const s = (raw || '').trim();
+    if (!s) return '';
+    const loopbackMedia = s.match(/^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(\/media\/.+)/i);
+    if (loopbackMedia) return mediaUrl(loopbackMedia[1]);
+    return mediaUrl(s);
+}
+
 const SchoolProgramsSection = ({ selectedPrograms, programCards }: SchoolProgramsSectionProps) => {
     const filteredPrograms = React.useMemo(() => {
         const overrides = new Map<number, string>(
@@ -191,10 +201,11 @@ const SchoolProgramsSection = ({ selectedPrograms, programCards }: SchoolProgram
                             {/* Center Image with Inset look */}
                             <div className="mx-4 mt-8 relative aspect-[4/3] rounded-[2.5rem] overflow-hidden border-[6px] border-white shadow-inner bg-gray-100">
                                 <Image
-                                    src={program.image}
+                                    src={programImageSrc(program.image)}
                                     alt={program.title}
                                     fill
                                     className="object-cover"
+                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
                                 />
                                 <div className="absolute inset-0 shadow-[inset_0_4px_12px_rgba(0,0,0,0.1)] pointer-events-none" />
                             </div>
