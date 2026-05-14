@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 
@@ -55,6 +56,9 @@ const getNavAlt = (item: NavItem) => {
 };
 
 // --- Card Component ---
+const isExternalHref = (item: NavItem) =>
+    Boolean(item.external) || /^https?:\/\//i.test(item.href);
+
 const NavigationCard = ({
     item,
     index,
@@ -66,12 +70,12 @@ const NavigationCard = ({
 }) => {
     const theme = THEMES[index % THEMES.length];
     const displayLabel = formatNavLabel(item.label);
-    
-    return (
-        <motion.div
-            layout
-            className="relative flex shrink-0 flex-col items-center group cursor-pointer min-w-[108px] xs:min-w-[118px] sm:min-w-[132px] md:min-w-[140px] lg:min-w-[148px] xl:min-w-[178px] px-1.5 pt-6 pb-2 sm:px-2 md:px-2.5 lg:px-2.5 xl:px-3"
-        >
+    const external = isExternalHref(item);
+    const linkClass =
+        'relative flex shrink-0 flex-col items-center group no-underline text-inherit cursor-pointer min-w-[108px] xs:min-w-[118px] sm:min-w-[132px] md:min-w-[140px] lg:min-w-[148px] xl:min-w-[178px] px-1.5 pt-6 pb-2 sm:px-2 md:px-2.5 lg:px-2.5 xl:px-3 rounded-3xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400';
+
+    const cardBody = (
+        <>
             {/* Main Visual Card Container */}
             <div className="relative z-10 flex h-[8.25rem] w-[8.25rem] shrink-0 items-center justify-center sm:h-36 sm:w-36 xl:h-44 xl:w-44">
                 {/* Outside card wave lines */}
@@ -150,37 +154,50 @@ const NavigationCard = ({
 
             {/* Text Content */}
             <div className="relative z-20 mt-8 max-w-[min(100%,10.5rem)] text-center sm:mt-9 sm:max-w-[12.5rem] md:mt-10 md:max-w-[11rem] xl:max-w-[170px]">
-                <a
-                    href={item.href}
-                    {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    className="block"
+                <motion.span
+                    animate={{
+                        color: isActive ? theme.primary : '#1e293b',
+                        scale: isActive ? 1.05 : 1,
+                    }}
+                    className="block text-sm md:text-base font-black uppercase tracking-[0.1em] leading-tight font-jakarta transition-all duration-500"
                 >
-                    <motion.span 
-                        animate={{ 
-                            color: isActive ? theme.primary : "#1e293b",
-                            scale: isActive ? 1.05 : 1
-                        }}
-                        className="block text-sm md:text-base font-black uppercase tracking-[0.1em] leading-tight font-jakarta transition-all duration-500"
-                    >
-                        {displayLabel.split('\n').map((line, i) => (
-                            <React.Fragment key={i}>
-                                {line}
-                                {i < displayLabel.split('\n').length - 1 && <br />}
-                            </React.Fragment>
-                        ))}
-                    </motion.span>
-                </a>
-                
+                    {displayLabel.split('\n').map((line, i) => (
+                        <React.Fragment key={i}>
+                            {line}
+                            {i < displayLabel.split('\n').length - 1 && <br />}
+                        </React.Fragment>
+                    ))}
+                </motion.span>
+
                 {/* Visual indicator of the energy passing */}
-                <motion.div 
-                    animate={{ 
-                        width: isActive ? "100%" : "0%",
-                        opacity: isActive ? 1 : 0
+                <motion.div
+                    animate={{
+                        width: isActive ? '100%' : '0%',
+                        opacity: isActive ? 1 : 0,
                     }}
                     transition={{ duration: 0.3 }}
                     className="h-1 bg-orange-500 mt-4 mx-auto rounded-full"
                 />
             </div>
+        </>
+    );
+
+    return (
+        <motion.div layout className="relative flex flex-col items-center group">
+            {external ? (
+                <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={linkClass}
+                >
+                    {cardBody}
+                </a>
+            ) : (
+                <Link href={item.href} className={linkClass}>
+                    {cardBody}
+                </Link>
+            )}
         </motion.div>
     );
 };

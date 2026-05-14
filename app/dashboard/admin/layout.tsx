@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, Building2, CalendarDays, Briefcase, UserCircle, Inbox, Images, MapPin, MessageSquareQuote, LayoutTemplate, LayoutList, BadgeDollarSign, GraduationCap, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Building2, CalendarDays, Briefcase, UserCircle, Inbox, Images, MapPin, MessageSquareQuote, LayoutTemplate, LayoutList, BadgeDollarSign, GraduationCap, HelpCircle, FileText } from "lucide-react";
 
 import { DashboardShell, DashboardNavItem } from "@/components/layout/DashboardShell";
 import { AdminDataProvider } from "@/components/dashboard/admin/AdminDataProvider";
@@ -9,6 +9,7 @@ const navItems: DashboardNavItem[] = [
     { label: "Dashboard", href: "/dashboard/admin", icon: <LayoutDashboard className="w-5 h-5" /> },
     { label: "Slider Images", href: "/dashboard/admin/hero-slides", icon: <Images className="w-5 h-5" /> },
     { label: "Media Files", href: "/dashboard/admin/media", icon: <Images className="w-5 h-5" /> },
+    { label: "Franchise resources", href: "/dashboard/admin/franchise-documents", icon: <FileText className="w-5 h-5" /> },
     { label: "Home page content", href: "/dashboard/admin/home-content", icon: <LayoutTemplate className="w-5 h-5" /> },
     { label: "Programs page content", href: "/dashboard/admin/programs-content", icon: <LayoutList className="w-5 h-5" /> },
     { label: "Franchise page content", href: "/dashboard/admin/franchise-content", icon: <BadgeDollarSign className="w-5 h-5" /> },

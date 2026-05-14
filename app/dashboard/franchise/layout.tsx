@@ -1,29 +1,8 @@
 "use client";
 
-import { LayoutDashboard, CalendarDays, CalendarRange, ClipboardList, UserCircle, Image as ImageIcon, MessageSquare, Images, Star, LayoutGrid, LifeBuoy, FileText } from "lucide-react";
-import { DashboardShell, DashboardNavItem } from "@/components/layout/DashboardShell";
+import { DashboardShell } from "@/components/layout/DashboardShell";
+import { FRANCHISE_SIDEBAR_NAV } from "@/config/franchise-sidebar-nav";
 import { FranchiseDataProvider, useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
-
-const navItems: DashboardNavItem[] = [
-    { label: "Dashboard", href: "/dashboard/franchise/", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { label: "Parent Records", href: "/dashboard/franchise/parents/", icon: <ClipboardList className="w-4 h-4" /> },
-    { label: "Students", href: "/dashboard/franchise/students/", icon: <UserCircle className="w-4 h-4" /> },
-    { label: "Attendance", href: "/dashboard/franchise/attendance/", icon: <CalendarDays className="w-4 h-4" /> },
-    { label: "Parent portal", href: "/dashboard/franchise/parent-portal/", icon: <LayoutGrid className="w-4 h-4" /> },
-    { label: "Parent documents", href: "/dashboard/franchise/parent-documents/", icon: <FileText className="w-4 h-4" /> },
-    { label: "Parent support tickets", href: "/dashboard/franchise/parent-tickets/", icon: <LifeBuoy className="w-4 h-4" /> },
-    { label: "Drivers", href: "/dashboard/franchise/drivers/", icon: <UserCircle className="w-4 h-4" /> },
-    { label: "Enquiries", href: "/dashboard/franchise/enquiries/", icon: <MessageSquare className="w-4 h-4" /> },
-    { label: "Events", href: "/dashboard/franchise/events/", icon: <CalendarRange className="w-4 h-4" /> },
-    { label: "Event Schedule", href: "/dashboard/franchise/event-schedule/", icon: <CalendarDays className="w-4 h-4" /> },
-    { label: "Add Grades", href: "/dashboard/franchise/add-grades/", icon: <ClipboardList className="w-4 h-4" /> },
-    { label: "Achievements", href: "/dashboard/franchise/student-achievements/", icon: <Star className="w-4 h-4" /> },
-    { label: "Home Page Photos", href: "/dashboard/franchise/hero-slider/", icon: <ImageIcon className="w-4 h-4" /> },
-    { label: "Classes Photos", href: "/dashboard/franchise/classes-photos/", icon: <Images className="w-4 h-4" /> },
-    { label: "Updates", href: "/dashboard/franchise/updates/", icon: <ClipboardList className="w-4 h-4" /> },
-    { label: "Centre Gallery", href: "/dashboard/franchise/gallery/", icon: <Images className="w-4 h-4" /> },
-    { label: "Profile", href: "/dashboard/franchise/profile/", icon: <UserCircle className="w-4 h-4" /> },
-];
 
 /** Sidebar/header: show which centre this login belongs to (from GET /franchises/franchise/profile/). */
 function FranchiseDashboardShell({ children }: { children: React.ReactNode }) {
@@ -37,7 +16,7 @@ function FranchiseDashboardShell({ children }: { children: React.ReactNode }) {
         <DashboardShell
             role="franchise"
             brand={{ initials: "FR", title, subtitle, accentClass: "bg-[#FFE066]" }}
-            navItems={navItems}
+            navItems={FRANCHISE_SIDEBAR_NAV}
             themeKey="orange"
         >
             {children}

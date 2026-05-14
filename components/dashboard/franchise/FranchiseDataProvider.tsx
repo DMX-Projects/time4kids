@@ -14,6 +14,9 @@ export type FranchiseProfile = {
     phone: string;
     centre: string;
     city: string;
+    state: string;
+    address: string;
+    googleMapLink: string;
     bio: string;
     photo: string;
     facebookUrl?: string;
@@ -72,6 +75,9 @@ type ApiProfile = {
     youtube_url?: string;
     latitude?: number | null;
     longitude?: number | null;
+    address?: string;
+    state?: string;
+    google_map_link?: string;
 };
 
 const mapParent = (parent: ApiParent): FranchiseParent => ({
@@ -97,6 +103,9 @@ const mapProfile = (profile: ApiProfile): FranchiseProfile => ({
     phone: profile.contact_phone || "",
     centre: profile.name,
     city: profile.city || "",
+    state: profile.state || "",
+    address: profile.address || "",
+    googleMapLink: profile.google_map_link || "",
     bio: profile.about || "",
     photo: mediaUrl(profile.hero_image),
     facebookUrl: profile.facebook_url || "",
@@ -118,6 +127,9 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
         phone: "",
         centre: "",
         city: "",
+        state: "",
+        address: "",
+        googleMapLink: "",
         bio: "",
         photo: "",
         facebookUrl: "",

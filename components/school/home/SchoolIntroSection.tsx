@@ -3,10 +3,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { franchisePublicLocationLine } from '@/lib/utils';
 
 interface SchoolIntroSectionProps {
     schoolName: string;
     about?: string;
+    city?: string | null;
+    state?: string | null;
+    /** Decoded `[city]` route segment when API city is empty */
+    urlCityFallback?: string | null;
 }
 
 const StarIcon = ({ className, fill = "currentColor" }: { className?: string, fill?: string }) => (
@@ -15,7 +20,8 @@ const StarIcon = ({ className, fill = "currentColor" }: { className?: string, fi
     </svg>
 );
 
-const SchoolIntroSection = ({ schoolName, about }: SchoolIntroSectionProps) => {
+const SchoolIntroSection = ({ schoolName, about, city, state, urlCityFallback }: SchoolIntroSectionProps) => {
+    const locationLine = franchisePublicLocationLine(schoolName, { city, state, urlCityFallback });
     const defaultText = (
         <>
             <p>
@@ -44,7 +50,7 @@ const SchoolIntroSection = ({ schoolName, about }: SchoolIntroSectionProps) => {
     };
 
     return (
-        <section className="relative bg-[#FFFBEB] py-24 md:py-32 overflow-hidden font-sans">
+        <section id="home" className="relative scroll-mt-24 bg-[#FFFBEB] py-24 md:py-32 overflow-hidden font-sans">
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-[0.03] text-black"
                 style={{
@@ -91,18 +97,22 @@ const SchoolIntroSection = ({ schoolName, about }: SchoolIntroSectionProps) => {
                 {/* Content */}
                 <div className="max-w-4xl mx-auto">
                     <motion.div
+                        id="about"
+                        className="scroll-mt-24"
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
                     >
-                        <h1 className="font-luckiest text-[#ff5ca1] text-4xl md:text-5xl lg:text-6xl font-bold mb-4 drop-shadow-sm leading-tight">
+                        <h1 className={`font-luckiest text-[#ff5ca1] text-4xl md:text-5xl lg:text-6xl font-bold drop-shadow-sm leading-tight ${locationLine ? "mb-4" : "mb-8"}`}>
                             Welcome <br className="md:hidden" /> to T.I.M.E. Kids
                         </h1>
 
-                        <h2 className="font-fredoka text-[#2D3142] text-2xl md:text-3xl lg:text-4xl font-bold mb-8">
-                            {schoolName}
-                        </h2>
+                        {locationLine && (
+                            <h2 className="font-fredoka text-[#2D3142] text-2xl md:text-3xl lg:text-4xl font-bold mb-8">
+                                {locationLine}
+                            </h2>
+                        )}
 
                         <h3 className="font-sans text-gray-800 text-lg md:text-xl font-bold mb-8 max-w-3xl mx-auto leading-relaxed">
                             A chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training.

@@ -22,7 +22,7 @@ const getBaseUrl = () => {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
 
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
         return `http://127.0.0.1:${port}`;
     }
 
@@ -55,7 +55,11 @@ function alignLoopbackDevOrigin(configured: string | undefined, fallback: string
     if (typeof window === "undefined") return resolved;
     try {
         const u = new URL(resolved);
-        const loopback = (h: string) => h === "localhost" || h === "127.0.0.1";
+        /** `window.location.hostname` for IPv6 loopback is `::1` (no brackets). */
+        const loopback = (h: string) => {
+            const x = (h || "").toLowerCase();
+            return x === "localhost" || x === "127.0.0.1" || x === "::1";
+        };
         const urlPort = u.port || (u.protocol === "https:" ? "443" : "80");
         const pagePort = window.location.port || (window.location.protocol === "https:" ? "443" : "80");
         if (!loopback(u.hostname) || !loopback(window.location.hostname)) return resolved;

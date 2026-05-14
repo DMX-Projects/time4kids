@@ -38,6 +38,28 @@ export function randomTempPassword(length = 12): string {
   return Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
 }
 
+/** Some DB rows use `Franchise_<id>` as name — never treat that as public-facing copy. */
+export function isInternalFranchisePlaceholder(name: string) {
+  return /^franchise_\d+$/i.test(name.trim());
+}
+
+/**
+ * Line under “Welcome to T.I.M.E. Kids” on centre pages: real franchise name, or city/state,
+ * or a URL-derived fallback when the API name is a placeholder.
+ */
+export function franchisePublicLocationLine(
+  name: string,
+  opts?: { city?: string | null; state?: string | null; urlCityFallback?: string | null }
+): string | null {
+  const n = (name ?? "").trim();
+  if (n && !isInternalFranchisePlaceholder(n)) return n;
+  const city = (opts?.city ?? "").trim();
+  const state = (opts?.state ?? "").trim();
+  if (city || state) return [city, state].filter(Boolean).join(", ");
+  const fromUrl = (opts?.urlCityFallback ?? "").trim();
+  return fromUrl ? fromUrl.replace(/-/g, " ") : null;
+}
+
 export function slugify(text: string) {
   return text
     .toString()

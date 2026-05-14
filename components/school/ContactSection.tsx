@@ -1,9 +1,24 @@
 import Image from 'next/image';
 import { Phone, Mail, MapPin } from 'lucide-react';
+import { franchisePublicLocationLine } from '@/lib/utils';
 import SchoolContactForm from './SchoolContactForm';
 
-export default function ContactSection({ school, franchiseSlug }: { school: any, franchiseSlug?: string }) {
+export default function ContactSection({
+    school,
+    franchiseSlug,
+    urlCityFallback,
+}: {
+    school: any;
+    franchiseSlug?: string;
+    urlCityFallback?: string | null;
+}) {
     if (!school) return null;
+
+    const centreLine = franchisePublicLocationLine(school.name ?? '', {
+        city: school.city,
+        state: school.state,
+        urlCityFallback,
+    });
 
     return (
         <section id="contact" className="relative py-20 lg:py-32 overflow-hidden font-fredoka scroll-mt-24">
@@ -40,6 +55,9 @@ export default function ContactSection({ school, franchiseSlug }: { school: any,
                             </div>
                             <div>
                                 <h4 className="text-orange-500 font-black mb-2 uppercase tracking-wide">VISIT US</h4>
+                                {centreLine && (
+                                    <p className="font-black text-gray-900 text-xl mb-2 leading-snug">{centreLine}</p>
+                                )}
                                 <p className="font-bold text-gray-700 text-lg leading-relaxed">{school.address}</p>
                             </div>
                         </div>
