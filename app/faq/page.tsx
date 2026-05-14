@@ -403,31 +403,21 @@ export default function FAQPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 1, ease: "backOut" }}
                         >
-                            <motion.h1
-                                className="logo-title flex flex-wrap items-center gap-x-2 gap-y-1"
+                            <motion.div
+                                className="faq-hero-logo"
                                 animate={{ y: [0, -5, 0] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                             >
-                                <span className="letter-t">T</span>
-                                <span className="dot dot-red">.</span>
-                                <span className="letter-i">I</span>
-                                <span className="dot dot-yellow">.</span>
-                                <span className="letter-m">M</span>
-                                <span className="dot dot-blue">.</span>
-                                <span className="letter-e">E</span>
-                                <span className="dot dot-purple">.</span>
-                                <span className="kids-text ml-3">Kids</span>
-                            </motion.h1>
-                            <motion.p
-                                className="logo-tagline italic mt-3 opacity-95 text-2xl font-semibold"
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.8, duration: 0.8 }}
-                            >
-                                <span className="mr-2 text-rose-400">❀</span>
-                                the pre-school that cares
-                                <span className="ml-2 text-sky-400">❀</span>
-                            </motion.p>
+                                <Image
+                                    src="/time-kids-logo-new.png"
+                                    alt="T.I.M.E. Kids Logo"
+                                    width={520}
+                                    height={208}
+                                    className="faq-hero-logo-image"
+                                    priority
+                                    unoptimized
+                                />
+                            </motion.div>
                         </motion.div>
                     </div>
 
@@ -592,7 +582,28 @@ export default function FAQPage() {
                     z-index: 11;
                 }
 
-                .logo-container { padding: 40px; }
+                .logo-container {
+                    flex: 1;
+                    min-height: 360px;
+                    padding: 40px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-start;
+                }
+
+                .faq-hero-logo {
+                    width: min(520px, 38vw);
+                    max-width: 100%;
+                    display: flex;
+                    align-items: center;
+                }
+
+                .faq-hero-logo-image {
+                    width: 100%;
+                    height: auto;
+                    object-fit: contain;
+                    filter: drop-shadow(0 10px 14px rgba(31, 79, 163, 0.12));
+                }
                  
                  /* Banner Text Styles */
                 .banner-text h1.logo-title {
@@ -1076,6 +1087,12 @@ export default function FAQPage() {
                 @media (max-width: 768px) {
                     .banner-inner { flex-direction: column; text-align: center; }
                     .banner-frame { width: 240px; height: 240px; }
+                    .logo-container {
+                        min-height: auto;
+                        padding: 24px 16px 10px;
+                        justify-content: center;
+                    }
+                    .faq-hero-logo { width: min(78vw, 340px); justify-content: center; }
                     .faq-item { border-radius: 20px; }
                     .faq-question { padding: 15px 20px; font-size: 1.1rem; }
                      /* Hide decorations on mobile */
