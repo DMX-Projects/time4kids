@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Play, Hand, Clock, ArrowLeft, Calendar, MapPin, AlertCircle, Image as ImageIcon, X, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { mediaUrl } from '@/lib/api-client';
+import { franchisePublicLocationLine } from '@/lib/utils';
 import Modal from '@/components/ui/Modal';
 
 interface MediaItem {
@@ -38,15 +39,27 @@ interface OldGalleryItem {
 interface GallerySectionProps {
     schoolName: string;
     city: string;
+    state?: string | null;
+    urlCityFallback?: string | null;
     galleryItems?: OldGalleryItem[];
     events?: EventItem[];
 }
 
-export default function GallerySection({ schoolName, city, galleryItems = [], events = [] }: GallerySectionProps) {
+export default function GallerySection({
+    schoolName,
+    city,
+    state,
+    urlCityFallback,
+    galleryItems = [],
+    events = [],
+}: GallerySectionProps) {
     const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
     const [filterYear, setFilterYear] = useState<string>('');
     const [filterMediaType, setFilterMediaType] = useState<'all' | 'IMAGE' | 'VIDEO'>('all');
     const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+
+    const lifeAtCentreName = franchisePublicLocationLine(schoolName ?? '', { city, state, urlCityFallback });
+    const lifeAtHeading = lifeAtCentreName ? `Life at ${lifeAtCentreName}` : 'Life at T.I.M.E. Kids';
 
     // Extract Years from Events
     const eventYears = useMemo(() => {
@@ -181,7 +194,7 @@ export default function GallerySection({ schoolName, city, galleryItems = [], ev
                     </div>
 
                     <h2 className="text-4xl md:text-6xl font-black text-[#2D3142] mb-10">
-                        {selectedEvent ? selectedEvent.title : `Life at ${schoolName}`}
+                        {selectedEvent ? selectedEvent.title : lifeAtHeading}
                     </h2>
 
                     {!selectedEvent && (

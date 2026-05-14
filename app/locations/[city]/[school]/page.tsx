@@ -1,9 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getFranchiseBySlug } from '@/lib/api/franchises';
-import SchoolHeroSection from '@/components/school/home/SchoolHeroSection';
 import SchoolIntroSection from '@/components/school/home/SchoolIntroSection';
 import SchoolProgramsSection from '@/components/school/SchoolProgramsSection';
-import AdmissionSection from '@/components/school/AdmissionSection';
 import GallerySection from '@/components/school/GallerySection';
 import ContactSection from '@/components/school/ContactSection';
 import SchoolUpdatesSection from '@/components/school/SchoolUpdatesSection';
@@ -16,7 +14,14 @@ interface PageProps {
 }
 
 export default async function SchoolPage({ params }: PageProps) {
-    const { school, city } = params;
+    const { school, city: cityParam } = params;
+
+    let urlCityFallback = cityParam;
+    try {
+        urlCityFallback = decodeURIComponent(cityParam.replace(/\+/g, " "));
+    } catch {
+        /* keep raw segment */
+    }
 
     // Fetch franchise data
     const franchise = await getFranchiseBySlug(school);
@@ -27,17 +32,29 @@ export default async function SchoolPage({ params }: PageProps) {
 
     return (
         <main className="min-h-screen bg-slate-50">
-            {/* Home / Hero Section */}
-            <div id="home" className="bg-white">
-                <SchoolHeroSection
+            {/* Welcome / About — first on load */}
+            <div className="bg-[#fffaf0]">
+                <SchoolIntroSection
                     schoolName={franchise.name}
-                    slides={franchise.hero_slides}
+                    about={franchise.about}
+                    city={franchise.city}
+                    state={franchise.state}
+                    urlCityFallback={urlCityFallback}
                 />
             </div>
 
-            {/* About Us Section */}
-            <div id="about" className="border-t border-slate-200/80 bg-[#fffaf0]">
-                <SchoolIntroSection schoolName={franchise.name} about={franchise.about} />
+            {/* Contact — second */}
+            <div className="border-t border-slate-200/80 bg-[#f7fcff]">
+                <ContactSection
+                    school={franchise}
+                    franchiseSlug={franchise.slug}
+                    urlCityFallback={urlCityFallback}
+                />
+            </div>
+
+            {/* Our Classes — third (internal id="programs") */}
+            <div className="border-t border-slate-200/80 bg-[#f9fff7]">
+                <SchoolProgramsSection selectedPrograms={franchise.programs} programCards={franchise.school_program_cards} />
             </div>
 
             {/* Updates Section */}
@@ -45,35 +62,15 @@ export default async function SchoolPage({ params }: PageProps) {
                 <SchoolUpdatesSection franchiseSlug={franchise.slug} />
             </div>
 
-            {/* Classes Section - Component has internal id="programs" */}
-            <div className="border-t border-slate-200/80 bg-[#f9fff7]">
-                <SchoolProgramsSection selectedPrograms={franchise.programs} programCards={franchise.school_program_cards} />
-            </div>
-
-            {/* Admissions Section - Component has internal id="admission" */}
-            <div className="border-t border-slate-200/80 bg-[#fff9f2]">
-                <AdmissionSection
-                    franchiseSlug={franchise.slug}
-                    city={franchise.city}
-                    contactPhone={franchise.contact_phone}
-                />
-            </div>
-
-            {/* Media / Gallery Section - Component has internal id="gallery" */}
+            {/* Last main section — “Life at [centre]” gallery */}
             <div className="border-t border-slate-200/80 bg-[#f8f7ff]">
                 <GallerySection
                     schoolName={franchise.name}
                     city={franchise.city}
+                    state={franchise.state}
+                    urlCityFallback={urlCityFallback}
                     events={franchise.events}
                     galleryItems={franchise.gallery_items}
-                />
-            </div>
-
-            {/* Contact Section - Component has internal id="contact" */}
-            <div className="border-t border-slate-200/80 bg-[#f7fcff]">
-                <ContactSection
-                    school={franchise}
-                    franchiseSlug={franchise.slug}
                 />
             </div>
         </main>

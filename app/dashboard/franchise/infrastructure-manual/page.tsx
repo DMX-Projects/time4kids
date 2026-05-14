@@ -1,25 +1,19 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { FileText, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { mediaUrl } from "@/lib/api-client";
-
-type FranchiseDoc = {
-    id: number;
-    title: string;
-    description: string;
-    file: string;
-    display_title?: string;
-    academic_year?: string;
-};
+import {
+    FranchiseResourceFileRow,
+    type FranchiseHubDoc,
+} from "@/components/dashboard/franchise/FranchiseResourceFileRow";
 
 export default function InfrastructureManualPage() {
     const { authFetch } = useAuth();
     const { showToast } = useToast();
 
-    const [docs, setDocs] = useState<FranchiseDoc[]>([]);
+    const [docs, setDocs] = useState<FranchiseHubDoc[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -55,21 +49,7 @@ export default function InfrastructureManualPage() {
             ) : (
                 <div className="space-y-3">
                     {docs.map((doc) => (
-                        <div key={doc.id} className="flex items-start justify-between gap-4 border border-[#E5E7EB] rounded-2xl p-4 bg-white">
-                            <div>
-                                <p className="text-sm font-semibold text-[#111827]">{doc.display_title || doc.title}</p>
-                                {doc.description ? <p className="text-xs text-[#6B7280] mt-1">{doc.description}</p> : null}
-                            </div>
-                            <a
-                                href={mediaUrl(doc.file)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md bg-[#FF922B] text-white hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#74C0FC] focus-visible:ring-offset-2"
-                            >
-                                Download
-                                <FileText className="w-4 h-4" />
-                            </a>
-                        </div>
+                        <FranchiseResourceFileRow key={doc.id} doc={doc} />
                     ))}
                 </div>
             )}

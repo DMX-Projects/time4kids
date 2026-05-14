@@ -155,7 +155,6 @@ const SchoolFooter = ({ homeUrl, facebookUrl, instagramUrl, twitterUrl, contactP
                                     { name: 'Home', href: '#home' },
                                     { name: 'About Us', href: '#about' },
                                     { name: 'Classes', href: '#programs' },
-                                    { name: 'Admission', href: '#admission' },
                                     { name: 'Gallery', href: '#gallery' },
                                 ].map((link) => (
                                     <li key={link.name}>
