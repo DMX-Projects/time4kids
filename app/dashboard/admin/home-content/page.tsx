@@ -8,6 +8,7 @@ import { LayoutTemplate, Plus, Trash2, ChevronDown } from "lucide-react";
 import {
     DEFAULT_HOME_PAGE_DATA,
     mergeHomePageData,
+    type FranchiseAdvantageVideoItem,
     type HomePageData,
     type KeyNavItem,
 } from "@/config/home-page-defaults";
@@ -227,6 +228,7 @@ export default function AdminHomeContentPage() {
     const [message, setMessage] = useState<string | null>(null);
     const [uploadingProgramIndex, setUploadingProgramIndex] = useState<number | null>(null);
     const [uploadingWhyIndex, setUploadingWhyIndex] = useState<number | null>(null);
+    const [uploadingSpotlight, setUploadingSpotlight] = useState<number | null>(null);
     const [programUploadInfo, setProgramUploadInfo] = useState<Record<number, string>>({});
     const [whyUploadInfo, setWhyUploadInfo] = useState<Record<number, string>>({});
 
@@ -326,6 +328,54 @@ export default function AdminHomeContentPage() {
     const removeBenefit = (i: number) => {
         const base = Array.isArray(data.franchise_benefits) ? data.franchise_benefits : [];
         setData({ ...data, franchise_benefits: base.filter((_, j) => j !== i) });
+    };
+
+    const updateFranchiseVideo = (i: number, patch: Partial<FranchiseAdvantageVideoItem>) => {
+        const next = [...data.franchise_advantage_videos];
+        next[i] = { ...next[i], ...patch };
+        setData({ ...data, franchise_advantage_videos: next });
+    };
+
+    const addFranchiseVideo = () => {
+        setData({
+            ...data,
+            franchise_advantage_videos: [...data.franchise_advantage_videos, { poster: "", src: "", alt: "" }],
+        });
+    };
+
+    const removeFranchiseVideo = (i: number) => {
+        setData({
+            ...data,
+            franchise_advantage_videos: data.franchise_advantage_videos.filter((_, j) => j !== i),
+        });
+    };
+
+    const uploadFranchiseVideoPoster = async (index: number, file: File) => {
+        setError(null);
+        setMessage(null);
+        setUploadingSpotlight(index);
+        try {
+            if (file.size > MAX_UPLOAD_BYTES) {
+                throw new Error(`File is too large (${formatMb(file.size)}). Max allowed is ${formatMb(MAX_UPLOAD_BYTES)}.`);
+            }
+            const formData = new FormData();
+            formData.append("title", `Home franchise video poster ${index + 1}`);
+            formData.append("category", "Banner");
+            formData.append("media_type", "image");
+            formData.append("file", file);
+
+            const created = (await authFetch("/media/", { method: "POST", body: formData })) as { file?: string };
+            const filePath = created?.file;
+            if (!filePath || typeof filePath !== "string") {
+                throw new Error("Upload succeeded but server did not return a file path.");
+            }
+            updateFranchiseVideo(index, { poster: filePath });
+            setMessage("Image uploaded. Don’t forget to Save changes.");
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Image upload failed");
+        } finally {
+            setUploadingSpotlight(null);
+        }
     };
 
     const uploadProgramsPreviewImage = async (programIndex: number, file: File) => {
@@ -522,6 +572,69 @@ export default function AdminHomeContentPage() {
                         ))}
                         <Button type="button" variant="outline" size="sm" onClick={addBenefit} className="inline-flex items-center gap-2">
                             <Plus className="w-4 h-4" /> Add benefit
+                        </Button>
+                    </Section>
+
+                    <Section title="2b. Franchise advantage videos (home — carousel)" defaultOpen={false}>
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                            <strong>Where it shows:</strong> Home page → “Why Partner with …” right column — one larger blob at a time; arrows and dots move between videos. Each row: poster image (circle thumbnail), video URL (YouTube or MP4), optional alt. Slides without poster and src are skipped on the site.
+                        </div>
+                        {data.franchise_advantage_videos.map((row, i) => (
+                            <div key={i} className="rounded-xl border border-slate-100 p-3 space-y-2 bg-white">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-semibold text-slate-800">Video {i + 1}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFranchiseVideo(i)}
+                                        className="text-red-600 hover:bg-red-50 p-1 rounded"
+                                        aria-label="Remove"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Poster image URL</label>
+                                    <input
+                                        className={inputClass}
+                                        value={row.poster}
+                                        onChange={(e) => updateFranchiseVideo(i, { poster: e.target.value })}
+                                    />
+                                </div>
+                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        disabled={uploadingSpotlight === i}
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            e.target.value = "";
+                                            if (f) void uploadFranchiseVideoPoster(i, f);
+                                        }}
+                                    />
+                                    {uploadingSpotlight === i ? "Uploading…" : "Upload poster"}
+                                </label>
+                                <div>
+                                    <label className={labelClass}>Video URL (MP4 or YouTube)</label>
+                                    <input
+                                        className={inputClass}
+                                        placeholder="https://www.youtube.com/watch?v=… or https://…/file.mp4"
+                                        value={row.src}
+                                        onChange={(e) => updateFranchiseVideo(i, { src: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Alt text</label>
+                                    <input
+                                        className={inputClass}
+                                        value={row.alt ?? ""}
+                                        onChange={(e) => updateFranchiseVideo(i, { alt: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={addFranchiseVideo} className="inline-flex items-center gap-2">
+                            <Plus className="w-4 h-4" /> Add video slide
                         </Button>
                     </Section>
 

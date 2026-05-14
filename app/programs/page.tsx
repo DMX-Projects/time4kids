@@ -93,6 +93,63 @@ const CloudDivider = ({ flip = false }) => (
     </div>
 );
 
+type ProgramDescriptionTheme = {
+    accent: string;
+    bg: string;
+};
+
+function descriptionBoxClass(lead: boolean, theme: ProgramDescriptionTheme, size: 'compact' | 'expanded') {
+    const sizeCls =
+        size === 'expanded'
+            ? 'text-lg font-medium leading-relaxed text-slate-700 md:text-xl md:leading-[1.6]'
+            : 'text-base font-medium leading-relaxed text-slate-600 md:text-lg md:leading-[1.7]';
+    return `rounded-2xl border border-slate-100/90 bg-white/90 px-4 py-3.5 shadow-sm backdrop-blur md:px-5 md:py-4 ${sizeCls} ${lead ? `border-l-4 ${theme.bg}` : ''}`;
+}
+
+/** First paragraph + Know more → full text with larger type. */
+function ExpandableProgramDescription({
+    paragraphs,
+    theme,
+    buttonRowClass,
+}: {
+    paragraphs: string[];
+    theme: ProgramDescriptionTheme;
+    buttonRowClass: string;
+}) {
+    const [expanded, setExpanded] = useState(false);
+    if (!paragraphs.length) return null;
+
+    if (paragraphs.length === 1) {
+        return <p className={descriptionBoxClass(true, theme, 'compact')}>{paragraphs[0]}</p>;
+    }
+
+    return (
+        <div className="space-y-3">
+            {!expanded ? (
+                <p className={descriptionBoxClass(true, theme, 'compact')}>{paragraphs[0]}</p>
+            ) : (
+                <div className="space-y-2.5 md:space-y-3">
+                    {paragraphs.map((paragraph, idx) => (
+                        <p key={idx} className={descriptionBoxClass(idx === 0, theme, 'expanded')}>
+                            {paragraph}
+                        </p>
+                    ))}
+                </div>
+            )}
+            <div className={buttonRowClass}>
+                <button
+                    type="button"
+                    onClick={() => setExpanded((v) => !v)}
+                    className={`inline-flex items-center gap-1 text-sm font-bold uppercase tracking-wide underline-offset-4 transition hover:underline ${theme.accent}`}
+                    aria-expanded={expanded}
+                >
+                    {expanded ? 'Show less' : 'Know more'}
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function ProgramsPage() {
     const [pageData, setPageData] = useState(() => DEFAULT_PROGRAMS_PAGE_DATA);
 
@@ -124,23 +181,13 @@ export default function ProgramsPage() {
         return themes[index % themes.length];
     };
 
-    const renderProgramDescription = (description: string, theme: ReturnType<typeof themeByIndex>) => {
-        const paragraphs = description.split(/\n{2,}/).map((text) => text.trim()).filter(Boolean);
-
-        return (
-            <div className="space-y-3">
-                {paragraphs.map((paragraph, idx) => (
-                    <p
-                        key={idx}
-                        className={`rounded-3xl border border-slate-100 bg-white/80 p-5 text-sm font-medium leading-7 text-slate-600 shadow-sm backdrop-blur md:text-[15px] md:leading-8 ${
-                            idx === 0 ? `border-l-4 ${theme.bg}` : ''
-                        }`}
-                    >
-                        {paragraph}
-                    </p>
-                ))}
-            </div>
-        );
+    /** Summer / day care: last two description blocks sit under the image column; rest stay in the main card. */
+    const splitSummerDescription = (description: string, isSummer: boolean) => {
+        const all = description.split(/\n{2,}/).map((t) => t.trim()).filter(Boolean);
+        if (isSummer && all.length >= 4) {
+            return { mainParagraphs: all.slice(0, -2), asideParagraphs: all.slice(-2) };
+        }
+        return { mainParagraphs: all, asideParagraphs: [] as string[] };
     };
 
     return (
@@ -189,17 +236,36 @@ export default function ProgramsPage() {
             </div>
 
             {/* Content Section - The Program Cards */}
-            <section className="relative bg-white section-gap z-10">
-                <div className="container mx-auto px-4">
-                    <div className="flex flex-col gap-12 md:gap-16">
+            <section className="relative z-10 bg-white pb-12 pt-6 md:pb-16 md:pt-8">
+                <div className="container mx-auto max-w-6xl px-4 sm:px-6">
+                    <div className="flex flex-col gap-10 md:gap-12">
                         {pageData.programs.map((program: ProgramsPageProgram, index) => {
                             const theme = themeByIndex(index);
                             const programName = (program.name || '').trim().toLowerCase();
                             const isSummerPrograms = programName === 'summer programs' || programName === 'day care';
+                            const { mainParagraphs, asideParagraphs } = splitSummerDescription(
+                                program.description,
+                                isSummerPrograms,
+                            );
 
                             return (
                                 <React.Fragment key={index}>
-                                <div className={`flex flex-col md:flex-row items-center gap-16 lg:gap-32 ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} ${isSummerPrograms ? 'py-16 md:py-24' : ''}`}>
+                                <header className={`mb-6 w-full text-center md:mb-8 lg:mb-10 ${index % 2 === 0 ? 'md:text-left' : 'md:text-right'}`}>
+                                    <p className={`text-xs font-bold uppercase tracking-widest text-slate-500 sm:text-sm ${theme.accent}`}>
+                                        {program.ageGroup}
+                                    </p>
+                                    <h2 className="mt-2 font-display font-black text-4xl leading-tight tracking-tight text-slate-800 drop-shadow-sm sm:text-5xl md:text-6xl lg:text-7xl">
+                                        {program.name}
+                                    </h2>
+                                    <div className={`mt-3 flex items-center justify-center gap-2 text-base font-bold text-slate-500 sm:text-lg md:gap-3 ${index % 2 === 0 ? 'md:justify-start' : 'md:justify-end'}`}>
+                                        <div className={`rounded-full bg-slate-100/90 p-2.5 ${theme.accent}`}>
+                                            <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
+                                        </div>
+                                        <span>{program.duration}</span>
+                                    </div>
+                                </header>
+
+                                <div className={`relative flex flex-col items-center gap-10 md:flex-row md:items-stretch md:gap-12 lg:gap-16 xl:gap-20 ${index % 2 !== 0 ? 'md:flex-row-reverse' : ''} ${isSummerPrograms ? 'py-10 md:py-14' : ''}`}>
 
                                     {/* Special Background for Summer Programs */}
                                     {isSummerPrograms && (
@@ -207,78 +273,81 @@ export default function ProgramsPage() {
                                     )}
 
                                     {/* Image Side */}
-                                    <div className="w-full md:w-1/2 relative group perspective-1000">
-                                        <div className={`absolute inset-0 bg-gradient-to-br ${theme.colorStart} ${theme.colorEnd} opacity-30 blur-2xl transform scale-90 group-hover:scale-105 transition-all duration-700 rounded-full`}></div>
+                                    <div className="relative flex w-full flex-col gap-5 md:w-1/2">
+                                        <div className="relative group perspective-1000">
+                                            <div className={`absolute inset-0 bg-gradient-to-br ${theme.colorStart} ${theme.colorEnd} opacity-30 blur-2xl transform scale-90 group-hover:scale-105 transition-all duration-700 rounded-full`}></div>
 
-                                        <div className={`relative w-full aspect-square md:aspect-[4/3] overflow-hidden shadow-2xl transition-all duration-500 transform group-hover:rotate-1 group-hover:-translate-y-2 border-4 border-white`} style={{ borderRadius: index % 2 === 0 ? '60% 40% 30% 70% / 60% 30% 70% 40%' : '30% 70% 70% 30% / 30% 30% 70% 70%' }}>
-                                            <div className="absolute inset-0 bg-black/5 z-10 group-hover:bg-transparent transition-colors duration-500"></div>
-                                            <Image
-                                                src={program.image}
-                                                alt={program.name}
-                                                fill
-                                                className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                            />
+                                            <div className={`relative w-full aspect-square md:aspect-[4/3] overflow-hidden shadow-2xl transition-all duration-500 transform group-hover:rotate-1 group-hover:-translate-y-2 border-4 border-white`} style={{ borderRadius: index % 2 === 0 ? '60% 40% 30% 70% / 60% 30% 70% 40%' : '30% 70% 70% 30% / 30% 30% 70% 70%' }}>
+                                                <div className="absolute inset-0 bg-black/5 z-10 group-hover:bg-transparent transition-colors duration-500"></div>
+                                                <Image
+                                                    src={program.image}
+                                                    alt={program.name}
+                                                    fill
+                                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                                />
 
-                                            {/* Floating Badge - Enhanced */}
-                                            <div className={`absolute bottom-8 ${index % 2 === 0 ? 'right-8' : 'left-8'} z-20 bg-white/90 backdrop-blur-md p-5 rounded-full shadow-2xl animate-float border border-white/60 ring-4 ring-black/5`}>
-                                                <theme.icon className={`w-10 h-10 ${theme.accent}`} />
+                                                <div className={`absolute bottom-8 ${index % 2 === 0 ? 'right-8' : 'left-8'} z-20 bg-white/90 backdrop-blur-md p-5 rounded-full shadow-2xl animate-float border border-white/60 ring-4 ring-black/5`}>
+                                                    <theme.icon className={`w-10 h-10 ${theme.accent}`} />
+                                                </div>
                                             </div>
                                         </div>
 
                                         {isSummerPrograms && (
-                                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+                                            <div className="absolute -top-10 -right-10 z-0 h-32 w-32 rounded-full bg-yellow-300 opacity-70 mix-blend-multiply blur-xl filter animate-blob" />
+                                        )}
+
+                                        <div className="relative z-10 w-full rounded-2xl border border-slate-100/90 bg-white/85 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm md:p-5">
+                                            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2" aria-label="Program highlights">
+                                                {program.features.map((feature, idx) => (
+                                                    <li
+                                                        key={idx}
+                                                        className="flex items-start gap-2 rounded-xl border border-slate-100 bg-white/90 px-3 py-2.5 text-left text-xs font-bold leading-snug text-slate-700 shadow-sm md:text-sm"
+                                                    >
+                                                        <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-to-r ${theme.colorStart} ${theme.colorEnd}`} aria-hidden />
+                                                        <span>{feature}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        {asideParagraphs.length > 0 && (
+                                            <div className="relative z-10 w-full">
+                                                <ExpandableProgramDescription
+                                                    paragraphs={asideParagraphs}
+                                                    theme={theme}
+                                                    buttonRowClass="flex justify-start pt-0.5"
+                                                />
+                                            </div>
                                         )}
                                     </div>
 
                                     {/* Content Side */}
-                                    <div className="w-full md:w-1/2 text-center md:text-left">
-                                        <div className="rounded-[2rem] border border-slate-100 bg-white/70 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.07)] backdrop-blur-sm md:p-7 lg:p-8">
-                                        <div className="space-y-6">
-                                            <div className="inline-block">
-                                                <span className={`px-6 py-2.5 rounded-full text-sm font-bold uppercase tracking-widest bg-white border ${theme.accent} border-current shadow-sm`}>
-                                                    {program.ageGroup}
-                                                </span>
+                                    <div className="flex w-full md:w-1/2 md:min-h-0 md:max-w-none">
+                                        <div className="flex w-full flex-col rounded-[2rem] border border-slate-100/90 bg-white/80 p-6 text-center shadow-[0_16px_48px_rgba(15,23,42,0.06)] backdrop-blur-sm md:h-full md:p-7 md:text-left lg:p-8">
+                                            <div className="flex flex-col gap-5 md:gap-6">
+                                                <div className="mx-auto w-full max-w-2xl md:mx-0">
+                                                    <ExpandableProgramDescription
+                                                        paragraphs={mainParagraphs}
+                                                        theme={theme}
+                                                        buttonRowClass={`flex pt-0.5 ${index % 2 === 0 ? 'justify-center md:justify-start' : 'justify-center md:justify-end'}`}
+                                                    />
+                                                </div>
+
+                                                <div className={`flex justify-center pt-1 md:pt-2 ${index % 2 === 0 ? 'md:justify-start' : 'md:justify-end'}`}>
+                                                    <Link
+                                                        href={pageData.hero.cta_href || "/admission"}
+                                                        className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-8 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-orange-200/40 transition hover:-translate-y-0.5 hover:shadow-orange-300/50 sm:text-base"
+                                                    >
+                                                        {pageData.hero.cta_label || "Enroll Your Child"}
+                                                    </Link>
+                                                </div>
                                             </div>
-
-                                            <h2 className="font-display font-black text-5xl md:text-7xl text-slate-800 leading-tight tracking-tight drop-shadow-sm">
-                                                {program.name}
-                                            </h2>
-                                        </div>
-
-                                        <div className="mt-7 flex items-center justify-center md:justify-start gap-4 text-slate-500 font-bold text-lg">
-                                            <div className={`p-3 rounded-full bg-slate-100 ${theme.accent}`}>
-                                                <Clock className="w-6 h-6" />
-                                            </div>
-                                            <span>{program.duration}</span>
-                                        </div>
-
-                                        <div className="mt-7 max-w-2xl mx-auto md:mx-0">
-                                            {renderProgramDescription(program.description, theme)}
-                                        </div>
-
-                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-7">
-                                            {program.features.map((feature, idx) => (
-                                                <li key={idx} className="flex items-center gap-4 text-slate-700 font-bold text-sm bg-white px-5 py-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all group cursor-default md:text-base">
-                                                    <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${theme.colorStart} ${theme.colorEnd} group-hover:scale-150 transition-transform`}></div>
-                                                    {feature}
-                                                </li>
-                                            ))}
-                                        </ul>
-
-                                        <div className="pt-8">
-                                            <Link
-                                                href={pageData.hero.cta_href || "/admission"}
-                                                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-8 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-orange-200/40 transition hover:-translate-y-0.5 hover:shadow-orange-300/50 sm:text-base"
-                                            >
-                                                {pageData.hero.cta_label || "Enroll Your Child"}
-                                            </Link>
-                                        </div>
                                         </div>
                                     </div>
                                 </div>
                                 {index < pageData.programs.length - 1 && (
                                     <hr
-                                        className="w-full max-w-5xl mx-auto border-0 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent my-2 md:my-4"
+                                        className="mx-auto my-1 h-px w-full max-w-5xl border-0 bg-gradient-to-r from-transparent via-slate-200 to-transparent md:my-3"
                                         aria-hidden
                                     />
                                 )}

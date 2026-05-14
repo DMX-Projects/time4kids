@@ -24,7 +24,7 @@ const LocationsLadder = dynamic(() => import('@/components/home/LocationsLadder'
 export default function Home() {
     return (
         <HomePageContentProvider>
-        <div className="overflow-hidden">
+        <div className="min-w-0">
             {/* Hero Section - Banner Slider */}
             <HeroSection />
 

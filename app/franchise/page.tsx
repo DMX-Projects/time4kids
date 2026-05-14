@@ -2,7 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import FranchiseForm from '@/components/franchise/FranchiseForm';
-import FranchiseNarrativePanel from '@/components/franchise/FranchiseNarrativePanel';
+import {
+    FranchiseNarrativeLeftAside,
+    FranchiseNarrativeMain,
+    FranchiseQuickHighlightsSection,
+} from '@/components/franchise/FranchiseNarrativePanel';
 import TestimonialVideo from '@/components/shared/TestimonialVideo';
 import Card from '@/components/ui/Card';
 import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
@@ -70,19 +74,29 @@ export default function FranchisePage() {
                 </div>
             </section>
 
-            {/* Franchise form + narrative */}
+            {/* Franchise form + narrative: equal halves on large screens */}
             <section className="section-gap bg-white">
-                <div className="container mx-auto max-w-7xl px-4">
-                    <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
-                        <div className="min-w-0 lg:col-span-4 xl:col-span-3">
+                <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 xl:max-w-[90rem]">
+                    <div className="grid items-start gap-8 md:gap-10 lg:grid-cols-2 lg:gap-10 xl:gap-12">
+                        <div className="min-w-0 space-y-8 lg:space-y-10">
                             <FranchiseForm compact className="lg:sticky lg:top-24 xl:top-28" />
+                            <FranchiseNarrativeLeftAside data={pageData} />
                         </div>
-                        <div className="min-h-0 min-w-0 lg:col-span-8 xl:col-span-9">
-                            <FranchiseNarrativePanel data={pageData} />
+                        <div className="min-h-0 min-w-0">
+                            <FranchiseNarrativeMain data={pageData} />
                         </div>
                     </div>
                 </div>
             </section>
+
+            <section className="border-t border-slate-200/80 bg-gradient-to-b from-slate-50 to-white py-12 md:py-16">
+                <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 xl:max-w-[90rem]">
+                    <div className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur-sm md:p-10">
+                        <FranchiseQuickHighlightsSection data={pageData} />
+                    </div>
+                </div>
+            </section>
+
             <section className="section-gap bg-gray-50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">

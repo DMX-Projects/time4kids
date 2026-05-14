@@ -55,39 +55,6 @@ async function fetchHyderabadMetroCentres(): Promise<PresenceCentreItem[]> {
         .slice(0, OUR_PRESENCE_HYDERABAD_CENTRE_LIMIT);
 }
 
-interface LadderColumnProps {
-    items: PresenceCentreItem[];
-    columnIndex: number;
-    onSelect: (item: PresenceCentreItem) => void;
-}
-
-const LadderColumn = ({ items, columnIndex, onSelect }: LadderColumnProps) => {
-    return (
-        <div className="relative mx-auto w-full">
-            <div className="relative z-10 flex flex-col gap-4 items-center">
-                {items.map((data, idx) => {
-                    const colorClass = slatColors[(idx + columnIndex * 3) % slatColors.length];
-
-                    return (
-                        <button
-                            key={data.id}
-                            type="button"
-                            onClick={() => onSelect(data)}
-                            className={`${colorClass} max-w-full rounded-full border border-white/60 px-6 py-3 shadow-[0_16px_34px_rgba(15,23,42,0.10)] transform transition-all duration-200
-                            cursor-pointer text-center backdrop-blur-sm
-                            hover:brightness-105 hover:-translate-y-1 active:scale-95 group`}
-                        >
-                            <span className="block truncate font-display text-sm font-black leading-tight text-slate-900 transition-colors group-hover:text-white">
-                                {data.name}
-                            </span>
-                        </button>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
 const LocationsLadder = () => {
     const router = useRouter();
     const [centres, setCentres] = useState<PresenceCentreItem[]>([]);
@@ -113,12 +80,6 @@ const LocationsLadder = () => {
         load();
     }, [load]);
 
-    const columnsCount = 5;
-    const itemsPerColumn = Math.ceil(Math.max(centres.length, 1) / columnsCount);
-    const columns = Array.from({ length: columnsCount }, (_, i) =>
-        centres.slice(i * itemsPerColumn, (i + 1) * itemsPerColumn)
-    );
-
     const handleSelect = (item: PresenceCentreItem) => {
         router.push(`/locations/${encodeURIComponent(item.city)}/${encodeURIComponent(item.slug)}`);
     };
@@ -130,9 +91,7 @@ const LocationsLadder = () => {
                     position: relative;
                     overflow: hidden;
                     padding: 0;
-                    float: left;
                     width: 100%;
-                    clear: both;
                 }
             `}</style>
 
@@ -187,15 +146,29 @@ const LocationsLadder = () => {
                 )}
 
                 {!loading && centres.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 md:gap-4 justify-items-center">
-                        {columns.map((colItems, idx) => (
-                            <LadderColumn
-                                key={idx}
-                                items={colItems}
-                                columnIndex={idx}
-                                onSelect={handleSelect}
-                            />
-                        ))}
+                    <div className="w-full min-w-0">
+                        <div
+                            role="list"
+                            aria-label="Hyderabad and Secunderabad centres"
+                            className="flex w-full min-w-0 flex-nowrap items-center justify-start gap-2 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-px-3 pb-3 pt-1 touch-pan-x [-ms-overflow-style:none] [scrollbar-width:thin] sm:gap-2.5 sm:scroll-px-4 md:gap-3 md:pb-4 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-sky-300/80 [&::-webkit-scrollbar-track]:bg-sky-100/50"
+                        >
+                            {centres.map((data, idx) => {
+                                const colorClass = slatColors[idx % slatColors.length];
+                                return (
+                                    <button
+                                        key={data.id}
+                                        type="button"
+                                        role="listitem"
+                                        onClick={() => handleSelect(data)}
+                                        className={`${colorClass} shrink-0 rounded-full border border-white/60 px-3 py-2 shadow-[0_12px_28px_rgba(15,23,42,0.10)] backdrop-blur-sm transition-all duration-200 hover:brightness-105 hover:-translate-y-0.5 active:scale-95 group sm:px-4 sm:py-2.5 md:px-5 md:py-3`}
+                                    >
+                                        <span className="block max-w-[10.5rem] truncate font-display text-xs font-black leading-tight text-slate-900 transition-colors group-hover:text-white sm:max-w-[12rem] sm:text-sm md:max-w-[14rem]">
+                                            {data.name}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
             </div>

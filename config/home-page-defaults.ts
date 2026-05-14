@@ -9,9 +9,18 @@ export type KeyNavItem = {
     external?: boolean;
 };
 
+export type FranchiseAdvantageVideoItem = {
+    /** Thumbnail inside the blob (path, /media/…, or full URL). */
+    poster: string;
+    /** MP4, `/media/…`, or YouTube watch / embed / shorts URL. */
+    src: string;
+    alt?: string;
+};
+
 export type HomePageData = {
     key_navigation: KeyNavItem[];
     franchise_benefits?: string[];
+    franchise_advantage_videos: FranchiseAdvantageVideoItem[];
     updates_empty_message?: string;
     intro: {
         title: string;
@@ -73,6 +82,11 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
         "Complete Curriculum Support",
         "Regular Staff Training",
         "Operational Support",
+    ],
+    franchise_advantage_videos: [
+        { poster: "/1.png", src: "", alt: "Franchise highlight 1" },
+        { poster: "/16.png", src: "", alt: "Franchise highlight 2" },
+        { poster: "/11.png", src: "", alt: "Franchise highlight 3" },
     ],
     updates_empty_message: "New updates will appear here once they are added under Admin → Updates.",
     intro: {
@@ -207,6 +221,128 @@ export function normalizeProgramsPreviewPrograms(
     return out;
 }
 
+/** Coerce API items; migrate legacy `franchise_advantage_spotlight` when `franchise_advantage_videos` is absent. */
+export function normalizeFranchiseAdvantageVideos(merged: HomePageData, raw: Record<string, unknown>): void {
+    const defaults = DEFAULT_HOME_PAGE_DATA.franchise_advantage_videos;
+    const rawVideos = raw.franchise_advantage_videos;
+    if (Array.isArray(rawVideos) && rawVideos.length > 0) {
+        const cleaned: FranchiseAdvantageVideoItem[] = [];
+        for (const row of rawVideos) {
+            if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+            const o = row as Record<string, unknown>;
+            const poster = String(o.poster ?? "").trim();
+            const src = String(o.src ?? "").trim();
+            const alt = typeof o.alt === "string" ? o.alt : undefined;
+            if (!poster && !src) continue;
+            cleaned.push({ poster: poster || "/icon-media.svg", src, alt });
+        }
+        merged.franchise_advantage_videos = cleaned.length > 0 ? cleaned : [...defaults];
+        return;
+    }
+    const legacy = raw.franchise_advantage_spotlight;
+    if (legacy && typeof legacy === "object" && !Array.isArray(legacy)) {
+        const o = legacy as Record<string, unknown>;
+        const poster = String(o.video_poster ?? "").trim();
+        const src = String(o.video_src ?? "").trim();
+        const alt = typeof o.video_alt === "string" ? o.video_alt : undefined;
+        if (poster || src) {
+            merged.franchise_advantage_videos = [{ poster: poster || "/16.png", src, alt }];
+            return;
+        }
+    }
+    merged.franchise_advantage_videos = [...defaults];
+}
+
+/** Stable href key so `/Gallery` matches `/gallery` for dedupe. */
+function keyNavHrefKey(href: string): string {
+    const t = href.trim();
+    if (!t) return "";
+    if (/^https?:\/\//i.test(t)) {
+        try {
+            const u = new URL(t);
+            return u.href.replace(/\/$/, "");
+        } catch {
+            return t.toLowerCase();
+        }
+    }
+    const p = t.startsWith("/") ? t : `/${t}`;
+    const lower = p.toLowerCase();
+    return lower.length > 1 && lower.endsWith("/") ? lower.slice(0, -1) : lower;
+}
+
+/**
+ * One logical slot per home key-nav tile (Virtual tour, Gallery, etc.).
+ * Icon + label checked before href so two defaults both using `/gallery` stay distinct.
+ */
+function keyNavSlot(x: KeyNavItem): string {
+    const icon = (x.icon || "").trim().toLowerCase();
+    const lab = (x.label || "").replace(/\s+/g, " ").trim().toLowerCase();
+    const alt = (x.alt || "").trim().toLowerCase();
+    const h = keyNavHrefKey(x.href);
+
+    if (icon.endsWith("icon-tour.png") || /^virtual\s*tour\b/i.test(lab) || alt.includes("virtual tour")) return "tour";
+    if (icon.endsWith("icon-gallery.png") || /photo\s*\/\s*video\s*gallery/i.test(lab) || /photo.*video.*gallery/i.test(lab))
+        return "gallery";
+    if (icon.includes("nearstcenter") || h.includes("locate-centre") || /find\s*your\s*nearest/i.test(lab) || /nearest\s*centre/i.test(lab))
+        return "locate";
+    if (icon.includes("icon-franchise") || h.endsWith("/franchise") || /become\s*a?\s*franchise/i.test(lab)) return "franchise";
+    if (icon.includes("brochure") || /\.pdf(\b|[?#])/i.test(h) || /download\s*brochure/i.test(lab)) return "brochure";
+    if (
+        icon.endsWith("icon-media.svg") ||
+        icon.includes("icon-television") ||
+        h.includes("tv-commercial") ||
+        /^media$/i.test(lab) ||
+        /tv\s*commercial/i.test(lab)
+    )
+        return "media";
+
+    if (h) return `other:${h}`;
+    return `other:icon:${icon || "none"}:${lab.slice(0, 48)}`;
+}
+
+/** Keep the first row per slot so CMS + merged defaults never show duplicate tiles. */
+function dedupeKeyNavBySlot(rows: KeyNavItem[]): KeyNavItem[] {
+    const seen = new Set<string>();
+    const out: KeyNavItem[] = [];
+    for (const r of rows) {
+        const slot = keyNavSlot(r);
+        if (seen.has(slot)) continue;
+        seen.add(slot);
+        out.push(r);
+    }
+    return out;
+}
+
+/** CMS often drops the last quick-link (e.g. Media / TV commercial). Append defaults only for empty slots. */
+export function normalizeKeyNavigation(rows: unknown): KeyNavItem[] {
+    const defaults = DEFAULT_HOME_PAGE_DATA.key_navigation;
+    if (!Array.isArray(rows) || rows.length === 0) {
+        return [...defaults];
+    }
+    const out: KeyNavItem[] = [];
+    for (const r of rows) {
+        if (!r || typeof r !== "object" || Array.isArray(r)) continue;
+        const o = r as Record<string, unknown>;
+        out.push({
+            icon: String(o.icon ?? ""),
+            alt: String(o.alt ?? ""),
+            href: String(o.href ?? ""),
+            label: String(o.label ?? ""),
+            nav_class: String(o.nav_class ?? "nav-link1"),
+            external: Boolean(o.external),
+        });
+    }
+    let merged = dedupeKeyNavBySlot(out);
+    const seenSlots = new Set(merged.map(keyNavSlot));
+    for (const d of defaults) {
+        const slot = keyNavSlot(d);
+        if (seenSlots.has(slot)) continue;
+        merged.push(d);
+        seenSlots.add(slot);
+    }
+    return dedupeKeyNavBySlot(merged);
+}
+
 /** Merge API payload over defaults so missing keys still work. */
 export function mergeHomePageData(raw: Partial<HomePageData> | null | undefined): HomePageData {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
@@ -224,6 +360,8 @@ export function mergeHomePageData(raw: Partial<HomePageData> | null | undefined)
             ...pp,
             programs: normalizeProgramsPreviewPrograms(programs),
         };
+        normalizeFranchiseAdvantageVideos(merged, raw as Record<string, unknown>);
+        merged.key_navigation = normalizeKeyNavigation(merged.key_navigation);
         return merged;
     } catch {
         return DEFAULT_HOME_PAGE_DATA;

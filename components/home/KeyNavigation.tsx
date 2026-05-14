@@ -70,10 +70,10 @@ const NavigationCard = ({
     return (
         <motion.div
             layout
-            className="relative flex flex-col items-center group cursor-pointer min-w-[180px] md:min-w-[220px] px-4 pt-6 pb-2"
+            className="relative flex shrink-0 flex-col items-center group cursor-pointer min-w-[108px] xs:min-w-[118px] sm:min-w-[132px] md:min-w-[140px] lg:min-w-[148px] xl:min-w-[178px] px-1.5 pt-6 pb-2 sm:px-2 md:px-2.5 lg:px-2.5 xl:px-3"
         >
             {/* Main Visual Card Container */}
-            <div className="relative w-40 h-40 md:w-48 md:h-48 flex items-center justify-center z-10">
+            <div className="relative z-10 flex h-[8.25rem] w-[8.25rem] shrink-0 items-center justify-center sm:h-36 sm:w-36 xl:h-44 xl:w-44">
                 {/* Outside card wave lines */}
                 <div className="absolute inset-0 z-0 pointer-events-none flex items-center justify-center">
                     {WAVE_RING_DELAYS.map((delay, i) => (
@@ -133,7 +133,7 @@ const NavigationCard = ({
 
 
                     {/* 4. Icon */}
-                    <div className="relative z-20 w-16 h-16 md:w-20 md:h-20 flex items-center justify-center">
+                    <div className="relative z-20 flex h-16 w-16 items-center justify-center xl:h-20 xl:w-20">
                         <Image 
                             src={getNavIcon(item)} 
                             alt={getNavAlt(item)} 
@@ -149,7 +149,7 @@ const NavigationCard = ({
             </div>
 
             {/* Text Content */}
-            <div className="mt-10 text-center relative z-20 max-w-[170px]">
+            <div className="relative z-20 mt-8 max-w-[min(100%,10.5rem)] text-center sm:mt-9 sm:max-w-[12.5rem] md:mt-10 md:max-w-[11rem] xl:max-w-[170px]">
                 <a
                     href={item.href}
                     {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
@@ -192,21 +192,23 @@ export default function KeyNavigation() {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
     return (
-        <section className="relative pt-9 md:pt-11 pb-5 overflow-hidden bg-white font-jakarta">
+        <section className="relative bg-white pb-5 pt-9 font-jakarta md:pt-11">
             {/* Background Architecture */}
-            <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-slate-50/80 to-white" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[300px] bg-blue-50/30 blur-[150px] rounded-full" />
+            <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
+                <div className="absolute left-0 top-0 h-full w-full bg-gradient-to-b from-slate-50/80 to-white" />
+                <div className="absolute left-1/2 top-1/2 h-[300px] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-50/30 blur-[150px]" />
             </div>
 
-            <div className="container mx-auto px-4 relative z-10">
+            {/* Full-width scroll strip: justify-start avoids end cards sitting half off-screen when row overflows */}
+            <div className="relative z-10 mx-auto w-full min-w-0 px-3 sm:px-4 md:container md:px-4">
                 <div
-                    className="flex flex-nowrap lg:justify-center items-center gap-2 md:gap-6 overflow-x-auto no-scrollbar px-4 pt-6 pb-4"
+                    className="no-scrollbar flex max-w-full min-w-0 flex-nowrap touch-pan-x items-center justify-start gap-1.5 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-px-3 pb-4 pe-8 pt-6 snap-x snap-proximity sm:gap-2 sm:scroll-px-4 sm:pe-10 md:gap-3 md:pe-12 lg:gap-4 xl:gap-5 xl:pe-10"
                     onMouseLeave={() => setHoveredIndex(null)}
                 >
                     {items.map((item, index) => (
                         <div
                             key={`${item.href}-${index}`}
+                            className="shrink-0 snap-start"
                             onMouseEnter={() => setHoveredIndex(index)}
                             onFocus={() => setHoveredIndex(index)}
                             onBlur={() => setHoveredIndex(null)}

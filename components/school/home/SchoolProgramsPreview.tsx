@@ -58,15 +58,19 @@ const SchoolProgramsPreview = () => {
                                 className="flex min-w-0 flex-col items-center px-1 text-center sm:px-2"
                                 style={{ transform: `translateY(${program.yOffset})` }}
                             >
-                                <div className="group relative mb-4 mx-auto w-full max-w-[12rem] sm:mb-6 sm:max-w-[13rem] lg:max-w-[11rem]">
+                                <Link
+                                    href="/programs"
+                                    className="group relative mb-4 mx-auto block w-full max-w-[12rem] rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFAF5] sm:mb-6 sm:max-w-[13rem] lg:max-w-[11rem]"
+                                    aria-label={`${program.programName.replace(/\n/g, ' ')} — view programs`}
+                                >
                                     <div
                                         className="pointer-events-none absolute inset-0 rounded-full blur-2xl opacity-10"
                                         style={{ backgroundColor: program.color }}
                                     />
-                                    <div className="relative mx-auto h-36 w-36 shrink-0 overflow-hidden rounded-full border-[6px] border-white shadow-xl sm:h-44 sm:w-44 sm:border-[8px] lg:h-[10.5rem] lg:w-[10.5rem] lg:border-[10px] group-hover:scale-105 transition-transform duration-500">
+                                    <div className="relative mx-auto h-36 w-36 shrink-0 overflow-hidden rounded-full border-[6px] border-white shadow-xl transition-transform duration-500 group-hover:scale-105 sm:h-44 sm:w-44 sm:border-[8px] lg:h-[10.5rem] lg:w-[10.5rem] lg:border-[10px]">
                                         <Image
                                             src={program.image}
-                                            alt={program.programName.replace(/\n/g, ' ')}
+                                            alt=""
                                             fill
                                             sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 168px"
                                             className="object-cover"
@@ -78,7 +82,7 @@ const SchoolProgramsPreview = () => {
                                     >
                                         {program.ageGroup}
                                     </div>
-                                </div>
+                                </Link>
                                 <h3 className="font-bubblegum text-xl leading-tight text-[#003366] sm:text-2xl lg:text-3xl mb-1 sm:mb-2 whitespace-pre-line">
                                     {program.programName}
                                 </h3>

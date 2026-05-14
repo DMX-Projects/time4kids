@@ -1,22 +1,28 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
-    type LucideIcon,
     BookOpen,
     Briefcase,
+    ChevronLeft,
+    ChevronRight,
     GraduationCap,
+    Play,
     ShieldCheck,
     Sparkles,
     Star,
     TrendingUp,
+    type LucideIcon,
 } from 'lucide-react';
-import { apiUrl } from '@/lib/api-client';
+import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
+import Modal from '@/components/ui/Modal';
+import { DEFAULT_HOME_PAGE_DATA } from '@/config/home-page-defaults';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -48,7 +54,101 @@ const BrandLogoText = () => (
     </span>
 );
 
-const FRANCHISE_ENQUIRY_URL = 'https://timekids1.t4e.in/franchise/';
+/** Colourful child-style handprint for franchise CTA (matches brand hand motif). */
+function FranchiseHandprintIcon({ className }: { className?: string }) {
+    return (
+        <svg className={className} viewBox="0 0 64 52" aria-hidden="true">
+            <ellipse cx="32" cy="36" rx="13" ry="11" fill="#fde047" />
+            <rect x="4" y="16" width="7" height="20" rx="3.5" fill="#f472b6" transform="rotate(-18 7.5 26)" />
+            <rect x="16" y="6" width="8" height="26" rx="4" fill="#60a5fa" />
+            <rect x="28" y="2" width="9" height="30" rx="4.5" fill="#86efac" />
+            <rect x="42" y="6" width="8" height="26" rx="4" fill="#c084fc" />
+            <rect x="54" y="18" width="7" height="18" rx="3.5" fill="#4ade80" transform="rotate(16 57.5 27)" />
+        </svg>
+    );
+}
+
+/** YouTube watch / embed / shorts / youtu.be → embed URL, or null for direct video/file URLs. */
+function getYoutubeEmbedSrc(raw: string): string | null {
+    const u = raw.trim();
+    if (!u) return null;
+    try {
+        const url = new URL(/^https?:\/\//i.test(u) ? u : `https://${u}`);
+        const h = url.hostname.replace(/^www\./i, '');
+        if (h === 'youtu.be') {
+            const id = url.pathname.replace(/^\//, '').split('/')[0];
+            return id ? `https://www.youtube.com/embed/${id}` : null;
+        }
+        if (h.includes('youtube.com')) {
+            const v = url.searchParams.get('v');
+            if (v) return `https://www.youtube.com/embed/${v}`;
+            const m = url.pathname.match(/\/(?:embed|shorts|live)\/([^/?]+)/);
+            if (m?.[1]) return `https://www.youtube.com/embed/${m[1]}`;
+        }
+    } catch {
+        /* ignore */
+    }
+    return null;
+}
+
+function FranchiseVideoBlob({
+    variant,
+    surfaceSrc,
+    surfaceAlt,
+    onOpen,
+    videoReady,
+}: {
+    variant: number;
+    surfaceSrc: string;
+    surfaceAlt: string;
+    onOpen: () => void;
+    videoReady: boolean;
+}) {
+    const borderRadius =
+        variant % 2 === 0
+            ? '60% 40% 30% 70% / 60% 30% 70% 40%'
+            : '30% 70% 70% 30% / 30% 30% 70% 70%';
+    const glow =
+        variant % 2 === 0
+            ? 'from-orange-300 via-amber-300 to-orange-400'
+            : 'from-sky-300 via-cyan-300 to-teal-400';
+
+    return (
+        <button
+            type="button"
+            onClick={onOpen}
+            disabled={!videoReady}
+            className="group relative mx-auto w-full max-w-[min(100%,20rem)] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8ec] disabled:pointer-events-none disabled:opacity-55 sm:max-w-[22rem] lg:max-w-[24rem]"
+            aria-label={videoReady ? 'Play franchise video' : 'Video not configured yet'}
+        >
+            <div
+                className={`pointer-events-none absolute inset-0 scale-[0.92] rounded-full bg-gradient-to-br ${glow} opacity-30 blur-2xl transition-opacity duration-500 group-hover:opacity-40 group-disabled:opacity-20`}
+                aria-hidden
+            />
+            <div
+                className="relative aspect-square w-full overflow-hidden border-[7px] border-white shadow-[0_24px_56px_rgba(15,23,42,0.16)] transition-transform duration-500 group-hover:scale-[1.02] group-disabled:group-hover:scale-100 sm:border-[8px] lg:border-[9px]"
+                style={{ borderRadius }}
+            >
+                <Image
+                    src={surfaceSrc}
+                    alt={surfaceAlt}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 90vw, 360px"
+                    unoptimized={/^https?:\/\//i.test(surfaceSrc)}
+                />
+                <span
+                    className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/30"
+                    aria-hidden
+                >
+                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-orange-600 shadow-lg ring-2 ring-white/80 sm:h-[4.25rem] sm:w-[4.25rem]">
+                        <Play className="h-9 w-9 sm:h-10 sm:w-10" strokeWidth={2} fill="currentColor" />
+                    </span>
+                </span>
+            </div>
+        </button>
+    );
+}
 
 const FRANCHISE_SECTION_HIGHLIGHTS = [
     'The T.I.M.E. Kids Advantage',
@@ -113,6 +213,25 @@ export default function BenefitsUpdates() {
     const sectionRef = useRef<HTMLDivElement>(null);
     const [slides, setSlides] = useState<Slide[]>([]);
     const [updatesReady, setUpdatesReady] = useState(false);
+    const [modalVideoIndex, setModalVideoIndex] = useState<number | null>(null);
+    const [carouselIndex, setCarouselIndex] = useState(0);
+
+    const franchiseVideos = useMemo(() => {
+        const raw =
+            home.franchise_advantage_videos?.length > 0
+                ? home.franchise_advantage_videos
+                : DEFAULT_HOME_PAGE_DATA.franchise_advantage_videos;
+        const filtered = raw.filter((v) => (v.poster || '').trim() || (v.src || '').trim());
+        return filtered.length > 0
+            ? filtered
+            : DEFAULT_HOME_PAGE_DATA.franchise_advantage_videos.filter(
+                  (v) => (v.poster || '').trim() || (v.src || '').trim(),
+              );
+    }, [home.franchise_advantage_videos]);
+
+    useEffect(() => {
+        setCarouselIndex((i) => Math.min(Math.max(0, i), Math.max(0, franchiseVideos.length - 1)));
+    }, [franchiseVideos.length]);
 
     const benefits = [...FRANCHISE_SECTION_HIGHLIGHTS];
 
@@ -264,25 +383,152 @@ export default function BenefitsUpdates() {
                         </div>
                     </motion.div>
 
-                    {/* Top-right (desktop): franchise enquiry */}
+                    {/* Top-right: enquiry + franchise video carousel (CMS) */}
                     <motion.div
                         initial={{ opacity: 0, x: 28, filter: 'blur(8px)' }}
                         whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                         viewport={{ once: true, margin: '-80px' }}
                         transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-                        className="order-1 flex items-start justify-end lg:order-2 lg:col-span-4 lg:self-start lg:pt-1"
+                        className="order-1 flex w-full flex-col items-stretch gap-8 lg:order-2 lg:col-span-4 lg:items-end lg:self-start lg:gap-10 lg:pt-1"
                     >
-                        <a
-                            href={FRANCHISE_ENQUIRY_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center rounded-full border border-orange-400/40 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 px-5 py-3 text-center text-xs font-black uppercase tracking-[0.14em] text-white shadow-[0_14px_40px_rgba(234,88,12,0.35)] transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 sm:px-7 sm:text-sm"
-                        >
-                            Franchisee enquiry
-                        </a>
+                        <div className="flex justify-center lg:justify-end">
+                            <Link
+                                href="/franchise/"
+                                className="inline-flex max-w-full items-center gap-3 rounded-lg bg-[#2b7fd4] px-4 py-3 text-left shadow-[0_10px_28px_rgba(30,100,180,0.35)] transition hover:bg-[#2570bd] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-300 sm:gap-4 sm:px-5 sm:py-3.5"
+                            >
+                                <FranchiseHandprintIcon className="h-10 w-10 shrink-0 drop-shadow sm:h-11 sm:w-11" />
+                                <span className="font-display text-xs font-black uppercase leading-tight tracking-[0.1em] text-[#ffe94d] sm:text-sm md:text-base">
+                                    Franchise enquiry
+                                </span>
+                            </Link>
+                        </div>
+                        <div className="relative w-full max-w-[min(100%,24rem)] sm:mx-auto lg:mx-0 lg:max-w-[26rem]">
+                            {franchiseVideos.length > 0 ? (
+                                <>
+                                    <div className="relative overflow-hidden pb-2">
+                                        <div
+                                            className="flex transition-transform duration-500 ease-out will-change-transform"
+                                            style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+                                        >
+                                            {franchiseVideos.map((item, i) => {
+                                                const posterRaw = (item.poster || '').trim();
+                                                const posterSrc =
+                                                    mediaUrl(posterRaw || (item.src.trim() ? '/icon-media.svg' : '')) ||
+                                                    posterRaw ||
+                                                    '/icon-media.svg';
+                                                const openable = Boolean(item.src.trim());
+                                                return (
+                                                    <div key={`${item.poster}-${item.src}-${i}`} className="min-w-full shrink-0 px-1 sm:px-2">
+                                                        <FranchiseVideoBlob
+                                                            variant={i}
+                                                            surfaceSrc={posterSrc}
+                                                            surfaceAlt={item.alt || `Franchise video ${i + 1}`}
+                                                            videoReady={openable}
+                                                            onOpen={() => openable && setModalVideoIndex(i)}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        {franchiseVideos.length > 1 ? (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setCarouselIndex((idx) => {
+                                                            const n = franchiseVideos.length;
+                                                            return (idx - 1 + n) % n;
+                                                        })
+                                                    }
+                                                    className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-800 shadow-md transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-11 sm:w-11"
+                                                    aria-label="Previous video"
+                                                >
+                                                    <ChevronLeft className="h-6 w-6" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setCarouselIndex((idx) => {
+                                                            const n = franchiseVideos.length;
+                                                            return (idx + 1) % n;
+                                                        })
+                                                    }
+                                                    className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-800 shadow-md transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-11 sm:w-11"
+                                                    aria-label="Next video"
+                                                >
+                                                    <ChevronRight className="h-6 w-6" />
+                                                </button>
+                                            </>
+                                        ) : null}
+                                    </div>
+                                    {franchiseVideos.length > 1 ? (
+                                        <div className="mt-2 flex justify-center gap-2" role="tablist" aria-label="Video slides">
+                                            {franchiseVideos.map((_, i) => (
+                                                <button
+                                                    key={i}
+                                                    type="button"
+                                                    role="tab"
+                                                    aria-selected={i === carouselIndex}
+                                                    onClick={() => setCarouselIndex(i)}
+                                                    className={`h-2.5 rounded-full transition-all ${
+                                                        i === carouselIndex ? 'w-8 bg-orange-500' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                                                    }`}
+                                                    aria-label={`Show video ${i + 1}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    ) : null}
+                                </>
+                            ) : null}
+                        </div>
                     </motion.div>
                 </div>
             </div>
+
+            <Modal
+                isOpen={modalVideoIndex !== null}
+                onClose={() => setModalVideoIndex(null)}
+                title="Franchise video"
+                size="xl"
+            >
+                {modalVideoIndex !== null && franchiseVideos[modalVideoIndex] ? (
+                    (() => {
+                        const item = franchiseVideos[modalVideoIndex];
+                        const srcRaw = item.src.trim();
+                        if (!srcRaw) {
+                            return (
+                                <p className="text-center text-sm text-slate-600">
+                                    Add a video URL (MP4 or YouTube) for this slide in Admin → Home content → Franchise videos.
+                                </p>
+                            );
+                        }
+                        const resolved = mediaUrl(srcRaw) || srcRaw;
+                        const yt = getYoutubeEmbedSrc(srcRaw);
+                        if (yt) {
+                            return (
+                                <div className="aspect-video w-full overflow-hidden rounded-xl bg-black shadow-lg">
+                                    <iframe
+                                        src={`${yt}?rel=0`}
+                                        title={item.alt || 'Franchise video'}
+                                        className="h-full w-full"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowFullScreen
+                                    />
+                                </div>
+                            );
+                        }
+                        return (
+                            <video
+                                key={resolved}
+                                src={resolved}
+                                controls
+                                playsInline
+                                className="mx-auto max-h-[75vh] w-full rounded-xl bg-black shadow-lg"
+                            />
+                        );
+                    })()
+                ) : null}
+            </Modal>
 
             <style jsx global>{`
                 @keyframes benefits-news-marquee {
