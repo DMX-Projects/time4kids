@@ -2,6 +2,7 @@
 
 import { CalendarDays, ClipboardList, Sparkles, User } from "lucide-react";
 import { ParentImportantDocumentsAccordion } from "@/components/dashboard/parent/ParentImportantDocumentsAccordion";
+import { ParentDashboardQuickLinks } from "@/components/dashboard/parent/ParentDashboardQuickLinks";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -39,7 +40,8 @@ export default function ParentDashboardPage() {
     }, []);
 
     return (
-        <div className="space-y-8 relative">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+            <div className="relative min-w-0 flex-1 space-y-8">
             <section className="relative overflow-hidden rounded-3xl bg-white shadow-sm p-6 md:p-8 animate-fade-up">
                 <div className="pointer-events-none absolute -top-6 right-4 text-4xl opacity-70 animate-float-slow-vertical" aria-hidden>🎈</div>
                 <div className="pointer-events-none absolute -bottom-8 left-3 text-4xl opacity-60 animate-float-slow-vertical" aria-hidden>☁️</div>
@@ -158,6 +160,11 @@ export default function ParentDashboardPage() {
                     {achievements.length} achievement{achievements.length === 1 ? "" : "s"} on the Achievements page.
                 </p>
             )}
+            </div>
+
+            <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:z-[5] lg:w-[280px] xl:w-[300px]">
+                <ParentDashboardQuickLinks />
+            </aside>
         </div>
     );
 }
