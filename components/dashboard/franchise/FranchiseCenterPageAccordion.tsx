@@ -38,15 +38,15 @@ function accordionSetsReducer(
     case "toggleTop": {
       const { id } = action;
       if (state.openTop.has(id)) {
-        const nextTop = new Set(state.openTop);
+        const nextTop = new Set(Array.from(state.openTop));
         nextTop.delete(id);
         return {
           openTop: nextTop,
           openSub: new Set(
-            [...state.openSub].filter((k) => !k.startsWith(`${id}::`)),
+            Array.from(state.openSub).filter((k) => !k.startsWith(`${id}::`)),
           ),
           openNested: new Set(
-            [...state.openNested].filter((k) => !k.startsWith(`${id}::`)),
+            Array.from(state.openNested).filter((k) => !k.startsWith(`${id}::`)),
           ),
         };
       }
@@ -59,13 +59,13 @@ function accordionSetsReducer(
     case "toggleSub": {
       const { key } = action;
       if (state.openSub.has(key)) {
-        const nextSub = new Set(state.openSub);
+        const nextSub = new Set(Array.from(state.openSub));
         nextSub.delete(key);
         return {
           ...state,
           openSub: nextSub,
           openNested: new Set(
-            [...state.openNested].filter((nk) => !nk.startsWith(`${key}::`)),
+            Array.from(state.openNested).filter((nk) => !nk.startsWith(`${key}::`)),
           ),
         };
       }
@@ -78,7 +78,7 @@ function accordionSetsReducer(
     case "toggleNested": {
       const { key } = action;
       if (state.openNested.has(key)) {
-        const next = new Set(state.openNested);
+        const next = new Set(Array.from(state.openNested));
         next.delete(key);
         return { ...state, openNested: next };
       }
