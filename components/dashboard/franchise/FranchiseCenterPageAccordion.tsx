@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { useCallback, useId, useState } from "react";
+import { useCallback, useId, useReducer } from "react";
 
 import { ChevronDown, ChevronRight } from "lucide-react";
 
@@ -14,6 +14,80 @@ import type {
 } from "@/config/franchise-center-page-nav";
 
 type Mode = "franchise" | "admin";
+
+type AccordionSetsState = {
+  openTop: Set<string>;
+  openSub: Set<string>;
+  openNested: Set<string>;
+};
+
+const emptyAccordionSets: AccordionSetsState = {
+  openTop: new Set(),
+  openSub: new Set(),
+  openNested: new Set(),
+};
+
+function accordionSetsReducer(
+  state: AccordionSetsState,
+  action:
+    | { type: "toggleTop"; id: string }
+    | { type: "toggleSub"; key: string }
+    | { type: "toggleNested"; key: string },
+): AccordionSetsState {
+  switch (action.type) {
+    case "toggleTop": {
+      const { id } = action;
+      if (state.openTop.has(id)) {
+        const nextTop = new Set(state.openTop);
+        nextTop.delete(id);
+        return {
+          openTop: nextTop,
+          openSub: new Set(
+            [...state.openSub].filter((k) => !k.startsWith(`${id}::`)),
+          ),
+          openNested: new Set(
+            [...state.openNested].filter((k) => !k.startsWith(`${id}::`)),
+          ),
+        };
+      }
+      return {
+        openTop: new Set([id]),
+        openSub: new Set(),
+        openNested: new Set(),
+      };
+    }
+    case "toggleSub": {
+      const { key } = action;
+      if (state.openSub.has(key)) {
+        const nextSub = new Set(state.openSub);
+        nextSub.delete(key);
+        return {
+          ...state,
+          openSub: nextSub,
+          openNested: new Set(
+            [...state.openNested].filter((nk) => !nk.startsWith(`${key}::`)),
+          ),
+        };
+      }
+      return {
+        ...state,
+        openSub: new Set([key]),
+        openNested: new Set(),
+      };
+    }
+    case "toggleNested": {
+      const { key } = action;
+      if (state.openNested.has(key)) {
+        const next = new Set(state.openNested);
+        next.delete(key);
+        return { ...state, openNested: next };
+      }
+      return { ...state, openNested: new Set([key]) };
+    }
+    default:
+      return state;
+  }
+}
 
 function isNestedGroup(
   group: CenterPageSubsection,
@@ -61,7 +135,7 @@ function HandprintBullet({ className }: { className?: string }) {
   );
 }
 
-/** Yellow bar with notched left/right ends (reference: brush / torn paper feel). */
+/** Orange bar (same `#FF922B` as dashboard Logout) with notched ends. */
 
 function ZigzagBar({
   children,
@@ -76,13 +150,11 @@ function ZigzagBar({
   return (
     <div
       className={[
-        "relative flex min-h-[3rem] w-full items-center gap-2.5 px-4 py-2.5 text-left shadow-sm transition",
-
-        "bg-[#FFEB3B] text-black font-serif",
+        "relative flex min-h-[3rem] w-full items-center gap-2.5 bg-[#FF922B] px-4 py-2.5 text-left font-serif text-black shadow-sm transition hover:brightness-105",
 
         emphasize ? "font-bold" : "font-semibold",
 
-        "border border-amber-400/45",
+        "border border-orange-600/25",
       ].join(" ")}
       style={{ clipPath: edge }}
     >
@@ -178,6 +250,27 @@ function LinkRows({
   );
 }
 
+/** Smooth height open/close (grid `0fr` → `1fr`); respects `prefers-reduced-motion`. */
+function AccordionCollapse({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={[
+        "grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out",
+        "motion-reduce:transition-none motion-reduce:duration-0",
+        open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+      ].join(" ")}
+    >
+      <div className="min-h-0 overflow-hidden">{children}</div>
+    </div>
+  );
+}
+
 function BlockItems({
   blocks,
 
@@ -236,18 +329,18 @@ function BlockItems({
               aria-expanded={expanded}
               aria-controls={panelId}
               onClick={() => toggleTop(item.id)}
-              className="group w-full rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+              className="group w-full rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
             >
               <ZigzagBar emphasize={item.emphasize}>
                 {expanded ? (
                   <ChevronDown
-                    className="h-5 w-5 shrink-0 text-[#1e3a5f]"
+                    className="h-5 w-5 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
                     strokeWidth={2.25}
                     aria-hidden
                   />
                 ) : (
                   <ChevronRight
-                    className="h-5 w-5 shrink-0 text-[#1e3a5f]"
+                    className="h-5 w-5 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
                     strokeWidth={2.25}
                     aria-hidden
                   />
@@ -259,12 +352,13 @@ function BlockItems({
               </ZigzagBar>
             </button>
 
-            {expanded ? (
+            <AccordionCollapse open={expanded}>
               <div
                 id={panelId}
                 role="region"
                 aria-labelledby={btnId}
-                className="ml-0 space-y-2 border-l-2 border-amber-200/90 pl-3 sm:ml-1 sm:pl-4"
+                aria-hidden={!expanded}
+                className="ml-0 space-y-2 border-l-2 border-orange-200/90 pl-3 sm:ml-1 sm:pl-4"
               >
                 {item.directLinks && item.directLinks.length > 0 ? (
                   <div className="border-l border-dashed border-slate-300/80 py-1 pl-3 sm:pl-4">
@@ -298,13 +392,13 @@ function BlockItems({
                             <GrayPillRow>
                               {subOpen ? (
                                 <ChevronDown
-                                  className="h-4 w-4 shrink-0 text-[#1e3a5f]"
+                                  className="h-4 w-4 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
                                   strokeWidth={2.25}
                                   aria-hidden
                                 />
                               ) : (
                                 <ChevronRight
-                                  className="h-4 w-4 shrink-0 text-[#1e3a5f]"
+                                  className="h-4 w-4 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
                                   strokeWidth={2.25}
                                   aria-hidden
                                 />
@@ -314,11 +408,12 @@ function BlockItems({
                             </GrayPillRow>
                           </button>
 
-                          {subOpen ? (
+                          <AccordionCollapse open={subOpen}>
                             <div
                               id={subPanelId}
                               role="region"
                               aria-labelledby={subBtnId}
+                              aria-hidden={!subOpen}
                               className="ml-3 space-y-2 border-l border-dashed border-slate-300/90 pl-3 sm:ml-5 sm:pl-4"
                             >
                               {group.nested.map((block) => {
@@ -343,13 +438,13 @@ function BlockItems({
                                       <GrayPillRow>
                                         {nestOpen ? (
                                           <ChevronDown
-                                            className="h-4 w-4 shrink-0 text-[#1e3a5f]"
+                                            className="h-4 w-4 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
                                             strokeWidth={2.25}
                                             aria-hidden
                                           />
                                         ) : (
                                           <ChevronRight
-                                            className="h-4 w-4 shrink-0 text-[#1e3a5f]"
+                                            className="h-4 w-4 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
                                             strokeWidth={2.25}
                                             aria-hidden
                                           />
@@ -359,11 +454,12 @@ function BlockItems({
                                       </GrayPillRow>
                                     </button>
 
-                                    {nestOpen ? (
+                                    <AccordionCollapse open={nestOpen}>
                                       <div
                                         id={nestPanelId}
                                         role="region"
                                         aria-labelledby={nestBtnId}
+                                        aria-hidden={!nestOpen}
                                         className="ml-3 border-l border-dashed border-slate-300/80 py-1 pl-3 sm:ml-4 sm:pl-4"
                                       >
                                         <LinkRows
@@ -374,12 +470,12 @@ function BlockItems({
                                           }
                                         />
                                       </div>
-                                    ) : null}
+                                    </AccordionCollapse>
                                   </div>
                                 );
                               })}
                             </div>
-                          ) : null}
+                          </AccordionCollapse>
                         </div>
                       );
                     }
@@ -397,13 +493,13 @@ function BlockItems({
                           <GrayPillRow>
                             {subOpen ? (
                               <ChevronDown
-                                className="h-4 w-4 shrink-0 text-[#1e3a5f]"
+                                className="h-4 w-4 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
                                 strokeWidth={2.25}
                                 aria-hidden
                               />
                             ) : (
                               <ChevronRight
-                                className="h-4 w-4 shrink-0 text-[#1e3a5f]"
+                                className="h-4 w-4 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
                                 strokeWidth={2.25}
                                 aria-hidden
                               />
@@ -413,11 +509,12 @@ function BlockItems({
                           </GrayPillRow>
                         </button>
 
-                        {subOpen ? (
+                        <AccordionCollapse open={subOpen}>
                           <div
                             id={subPanelId}
                             role="region"
                             aria-labelledby={subBtnId}
+                            aria-hidden={!subOpen}
                             className="ml-3 border-l border-dashed border-slate-300/80 py-1.5 pl-3 sm:ml-4 sm:pl-4"
                           >
                             <LinkRows
@@ -426,13 +523,13 @@ function BlockItems({
                               onAdminPickCategory={onAdminPickCategory}
                             />
                           </div>
-                        ) : null}
+                        </AccordionCollapse>
                       </div>
                     );
                   })
                 )}
               </div>
-            ) : null}
+            </AccordionCollapse>
           </div>
         );
       })}
@@ -455,43 +552,21 @@ export function FranchiseCenterPageAccordion({
 }) {
   const baseId = useId();
 
-  const [openTop, setOpenTop] = useState<Set<string>>(() => new Set());
-
-  const [openSub, setOpenSub] = useState<Set<string>>(() => new Set());
-
-  const [openNested, setOpenNested] = useState<Set<string>>(() => new Set());
+  const [{ openTop, openSub, openNested }, dispatch] = useReducer(
+    accordionSetsReducer,
+    emptyAccordionSets,
+  );
 
   const toggleTop = useCallback((id: string) => {
-    setOpenTop((prev) => {
-      const next = new Set(prev);
-
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-
-      return next;
-    });
+    dispatch({ type: "toggleTop", id });
   }, []);
 
   const toggleSub = useCallback((key: string) => {
-    setOpenSub((prev) => {
-      const next = new Set(prev);
-
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-
-      return next;
-    });
+    dispatch({ type: "toggleSub", key });
   }, []);
 
   const toggleNested = useCallback((key: string) => {
-    setOpenNested((prev) => {
-      const next = new Set(prev);
-
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-
-      return next;
-    });
+    dispatch({ type: "toggleNested", key });
   }, []);
 
   return (
@@ -502,8 +577,9 @@ export function FranchiseCenterPageAccordion({
         </h2>
 
         <p className="mt-0.5 text-xs text-blue-100/90 sm:text-sm">
-          Open each yellow bar, then grey sub-headings (and any inner blocks) to
-          reach links. Same checklist order as head office.
+          Only one orange section stays open at a time; grey sub-headings and inner
+          blocks work the same way (opening one closes the others). Same checklist
+          order as head office.
         </p>
       </div>
 

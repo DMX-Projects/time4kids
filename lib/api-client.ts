@@ -84,6 +84,8 @@ function resolvedMediaBase(): string {
         const fallback = `${window.location.origin.replace(/\/$/, "")}/media`;
         return alignLoopbackDevOrigin(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, fallback);
     }
+    const envMedia = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || "").trim().replace(/\/$/, "");
+    if (envMedia) return envMedia;
     return `${djangoOriginForServer()}/media`;
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDays, ClipboardList, Sparkles, User } from "lucide-react";
+import { ParentImportantDocumentsAccordion } from "@/components/dashboard/parent/ParentImportantDocumentsAccordion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -149,6 +150,8 @@ export default function ParentDashboardPage() {
                     delay={160}
                 />
             </div>
+
+            <ParentImportantDocumentsAccordion />
 
             {achievements.length > 0 && (
                 <p className="text-xs text-[#6B7280] text-center">

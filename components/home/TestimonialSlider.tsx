@@ -15,22 +15,32 @@ export type TestimonialItem = {
     rating: number;
 };
 
+/** Legacy homepage copy (Parent's Speak / Franchisee's Speak) — http://103.65.21.245:8080/index.php */
 const FALLBACK_PARENT_TESTIMONIALS: TestimonialItem[] = [
     {
         id: 1,
         category: 'parent',
-        text: "A good school plays an important role in the development of a child. I am glad that I found T.I.M.E. Kids for my daughter. In just three months there has been a lot of development.",
-        author: "Roma Majumdar",
-        relation: "Mother of Nandika",
+        text: "T.I.M.E. Kids is my son's second home. It is a completely safe environment. He is playing, learning and enjoying every minute he spends there. Nowadays he is showing a lot of interest in colouring and painting and is creating new pictures of his own. Thanks to the innovative teaching methods and caring teachers, Mugil has become a keen learner and is learning new things every day.",
+        author: "Mother of Mugil",
+        relation: "Parent",
         location: "Hyderabad",
         rating: 5,
     },
     {
         id: 2,
         category: 'parent',
-        text: "T.I.M.E. Kids is my son's second home. It is a completely safe environment where he plays, learns, and enjoys every minute.",
-        author: "Mother of Mugil",
-        relation: "Parent",
+        text: "A good school plays an important role in the development of a child. It's the light that helps us choose the right path in the various walks of life. I am glad that I found T.I.M.E. Kids for my daughter. In just three months there has been a lot of development in Nandika, especially with respect to her linguistic skills and social skills. I like the way kids are handled and education is imparted at T.I.M.E. Kids. Thanks to all the wonderful teachers for enabling such remarkable change in my child.",
+        author: "Roma Majumdar",
+        relation: "Mother of Nandika",
+        location: "Hyderabad",
+        rating: 5,
+    },
+    {
+        id: 3,
+        category: 'parent',
+        text: "T.I.M.E. Kids pre-schools, is one of the most friendly places for toddlers. My kid wants to go to school on Sunday too! The learning is done in such a fun way....",
+        author: "Deepa Bahukhandi",
+        relation: "Mother of Diya",
         location: "Hyderabad",
         rating: 5,
     },
@@ -40,10 +50,28 @@ const FALLBACK_FRANCHISEE_TESTIMONIALS: TestimonialItem[] = [
     {
         id: 101,
         category: 'franchisee',
-        text: "The support system, brand strength, and curriculum guidance gave us the confidence to build a preschool parents trust.",
-        author: "Franchise Partner",
+        text: "I have been a franchise of T.I.M.E. Kids for last 6 years. Apart from their amazing curriculum, innovation and values, the most motivating thing is the constant support from HO with clear goals. Their continuous support to the day to day running of preschool right from providing artworks for promotions and various celebrations, suggesting vendors for printing brochures, giving innovative marketing ideas are definitely an easy path to success. T.I.M.E. Kids make us feel we are all part of the same family. T.I.M.E. Kids family is constantly growing and being a part of this growth has been a great decision.",
+        author: "Rachna",
         relation: "Franchisee",
-        location: "T.I.M.E. Kids Network",
+        location: "T.I.M.E. Kids Domalguda — Hyderabad",
+        rating: 5,
+    },
+    {
+        id: 102,
+        category: 'franchisee',
+        text: "I always wanted to do something on my own and yet not compromise on quality time with my family. T.I.M.E. Kids franchise opportunity offered me one of the best business ventures. As a woman and also a mother, I possessed the inherent qualities and skills required to nurture little minds. Now, I have a safe, comfortable working environment and flexible working hours. A partnership with a credible preschool brand has definitely fulfilled my entrepreneurial aspirations!!",
+        author: "Shibani",
+        relation: "Woman entrepreneur",
+        location: "T.I.M.E. Kids HSR Layout — Bengaluru",
+        rating: 5,
+    },
+    {
+        id: 103,
+        category: 'franchisee',
+        text: "Giving up an IT career to realize my big dream of becoming an entrepreneur was the best decision taken by me. The organizational support from T.I.M.E. Kids helped me tremendously in establishing my own business venture. The training given to the franchisee is exhaustive and their easy to understand manuals covering all aspects of operations are so helpful for a new entrant in this field. Academic training sessions are so helpful in understanding the study material and its implementation. Their experts are also available to help out for the smallest doubt that we may have. For me, definitely there has been no looking back!",
+        author: "Akanksha",
+        relation: "IT professional",
+        location: "T.I.M.E. Kids Kundhanhalli — Bengaluru",
         rating: 5,
     },
 ];
@@ -236,7 +264,9 @@ export default function TestimonialSlider() {
 
     const franchiseeTestimonials = useMemo(() => {
         if (testimonials === null) return [];
-        return testimonials.filter((item) => item.category === 'franchisee');
+        const fromApi = testimonials.filter((item) => item.category === 'franchisee');
+        // Same idea as parent seed data: show franchisee quotes when CMS has none yet.
+        return fromApi.length > 0 ? fromApi : FALLBACK_FRANCHISEE_TESTIMONIALS;
     }, [testimonials]);
 
     return (
