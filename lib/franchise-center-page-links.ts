@@ -33,6 +33,20 @@ export const FRANCHISE_CATEGORY_HUB_PATH: Record<string, string> = {
 
 const LEGACY_UPLOAD_HOSTS = ["103.65.21.245", "www.timekidspreschools.in", "timekidspreschools.in"];
 
+const FILE_EXT =
+    /\.(pdf|zip|rar|7z|docx?|pptx?|xlsx?|png|jpe?g|gif|webp|bmp|svg|htm|html?|mp4|mov)(\?|#|$)/i;
+
+/** Open in a new tab — never route PDFs/images through Next.js client navigation. */
+export function shouldOpenFranchiseLinkInNewTab(href: string): boolean {
+    const h = href.trim();
+    if (!h) return false;
+    if (/^https?:\/\//i.test(h)) return true;
+    if (h.startsWith("/media/")) return true;
+    if (h.startsWith("/franchise-artworks/") || h.startsWith("/franchise-gallery/")) return true;
+    if (FILE_EXT.test(h)) return true;
+    return false;
+}
+
 /** Path under `pc/` folder, e.g. `holidayslist-2026-27/AP Holiday List 2026-2027.pdf` */
 export function extractLegacyPcRelativePath(href: string): string | null {
     const trimmed = href.trim();
@@ -106,6 +120,17 @@ function normalizeSourcePathKey(path: string): string {
     return path.replace(/\\/g, "/").trim().replace(/^\/+/, "").toLowerCase();
 }
 
+/** e.g. `/franchise-artworks/.../file.png` → `franchise-artworks/.../file.png` (matches DB source_path). */
+function extractPublicFranchiseRelativePath(href: string): string | null {
+    const trimmed = href.trim();
+    if (!trimmed.startsWith("/")) return null;
+    const path = trimmed.split("?")[0]?.split("#")[0] ?? trimmed;
+    if (path.startsWith("/franchise-artworks/") || path.startsWith("/franchise-gallery/")) {
+        return path.replace(/^\/+/, "");
+    }
+    return null;
+}
+
 export function groupFranchiseHubDocsByCategory(
     docs: FranchiseHubDoc[],
 ): Map<string, FranchiseHubDoc[]> {
@@ -131,12 +156,21 @@ export function groupFranchiseHubDocsBySourcePath(
     return map;
 }
 
-/** Prefer PostgreSQL FranchiseDocument (by source_path or title), then local pc folder fallback. */
+/**
+ * Resolve centre-page links for live franchise dashboard.
+ * PostgreSQL `FranchiseDocument` rows win first; pc folder / static files are fallbacks only.
+ */
 export function resolveCenterPageLinkHref(
     link: CenterPageLink,
     docsByCategory: Map<string, FranchiseHubDoc[]>,
     docsBySourcePath?: Map<string, FranchiseHubDoc>,
 ): string {
+    const publicRel = extractPublicFranchiseRelativePath(link.href);
+    if (publicRel && docsBySourcePath) {
+        const byPublic = docsBySourcePath.get(normalizeSourcePathKey(publicRel));
+        if (byPublic?.file) return mediaUrl(byPublic.file);
+    }
+
     const legacyRel = extractLegacyPcRelativePath(link.href);
     if (legacyRel && docsBySourcePath) {
         const byPath = docsBySourcePath.get(normalizeSourcePathKey(legacyRel));
@@ -149,15 +183,16 @@ export function resolveCenterPageLinkHref(
         if (match?.file) return mediaUrl(match.file);
     }
 
-    if (isLegacyFranchiseUploadUrl(link.href)) {
-        const fromPcFolder = legacyPcHrefToMediaUrl(link.href);
-        if (fromPcFolder) return fromPcFolder;
+    const fromPcFolder = legacyPcHrefToMediaUrl(link.href);
+    if (fromPcFolder) return fromPcFolder;
 
-        if (link.adminCategory) {
-            const hubPath = FRANCHISE_CATEGORY_HUB_PATH[link.adminCategory];
-            const docs = docsByCategory.get(link.adminCategory) ?? [];
-            if (hubPath && docs.length > 0) return hubPath;
-        }
+    if (isLegacyFranchiseUploadUrl(link.href)) {
+        return link.href;
+    }
+
+    const trimmed = link.href.trim();
+    if (trimmed.startsWith("/media/")) {
+        return mediaUrl(trimmed.replace(/^\/media\/?/, ""));
     }
 
     return link.href;

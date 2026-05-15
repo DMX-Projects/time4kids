@@ -373,8 +373,14 @@ export default function KeyNavigation() {
     const [virtualTourOpen, setVirtualTourOpen] = useState(false);
     const [brochureMenuOpen, setBrochureMenuOpen] = useState(false);
     const [brochureHrefs, setBrochureHrefs] = useState<BrochureLinks>(DEFAULT_BROCHURE_HREFS);
+    const [marketingTourUrl, setMarketingTourUrl] = useState<string | null>(null);
     const tourItem = items.find((item) => isVirtualTourNavItem(item));
     const brochureIndex = items.findIndex((item) => isBrochureNavItem(item));
+    const tourEmbedUrl = (() => {
+        const cms = (tourItem?.href || "").trim();
+        const marketing = (marketingTourUrl || "").trim();
+        return marketing || cms || null;
+    })();
 
     useEffect(() => {
         let cancelled = false;
@@ -396,6 +402,9 @@ export default function KeyNavigation() {
                     admission: admission !== '#' ? admission : DEFAULT_BROCHURE_HREFS.admission,
                     franchise: franchise !== '#' ? franchise : DEFAULT_BROCHURE_HREFS.franchise,
                 });
+                const tourAsset = findMarketingAsset(assets, 'virtual-tour');
+                const tourLink = (tourAsset?.link || "").trim();
+                if (tourLink) setMarketingTourUrl(tourLink);
             } catch {
                 // keep defaults
             }
@@ -462,7 +471,7 @@ export default function KeyNavigation() {
             <VirtualTourModal
                 isOpen={virtualTourOpen}
                 onClose={() => setVirtualTourOpen(false)}
-                embedUrl={tourItem?.href}
+                embedUrl={tourEmbedUrl}
             />
         </section>
     );

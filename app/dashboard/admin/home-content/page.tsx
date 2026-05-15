@@ -3,8 +3,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { jsonHeaders } from "@/lib/api-client";
-import { LayoutTemplate, Plus, Trash2, ChevronDown } from "lucide-react";
+import { jsonHeaders, mediaUrl, publicAssetUrl } from "@/lib/api-client";
+import Link from "next/link";
+import { LayoutTemplate, Plus, Trash2, ChevronDown, Upload, ImageIcon, Film } from "lucide-react";
 import {
     DEFAULT_HOME_PAGE_DATA,
     mergeHomePageData,
@@ -13,6 +14,7 @@ import {
     type HomePageData,
     type KeyNavItem,
 } from "@/config/home-page-defaults";
+import { isVirtualTourNavItem } from "@/lib/virtual-tour";
 
 const NAV_CLASS_OPTIONS = [
     { value: "nav-link1", label: "Orange bubble (Style 1)", swatch: "from-[#ECB248] to-[#DD6705]" },
@@ -86,15 +88,33 @@ async function getImageDimensions(file: File): Promise<{ width: number; height: 
 }
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_VIDEO_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB
+
+function previewMediaUrl(path: string): string {
+    const t = (path || "").trim();
+    if (!t) return "";
+    if (/^https?:\/\//i.test(t)) return t;
+    return mediaUrl(t) || publicAssetUrl(t) || t;
+}
+
+function BlobMediaPreview({ src, alt }: { src: string; alt: string }) {
+    const [ok, setOk] = useState(true);
+    const url = previewMediaUrl(src);
+    if (!url || !ok) return null;
+    return (
+        <div className="mt-2 h-36 w-28 shrink-0 overflow-hidden rounded-2xl border-2 border-orange-200 bg-slate-100 shadow-inner">
+            <img
+                src={url}
+                alt={alt}
+                className="h-full w-full object-contain"
+                onError={() => setOk(false)}
+            />
+        </div>
+    );
+}
 
 function formatMb(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
-}
-
-function colorForMethodologyClass(cls: string): string {
-    if (cls === "nav-item2" || cls === "nav-item5") return "#94b64f";
-    if (cls === "nav-item3" || cls === "nav-item6") return "#c94a36";
-    return "#e6952e";
 }
 
 function MiniPreviewKeyNav({ items }: { items: HomePageData["key_navigation"] }) {
@@ -114,47 +134,6 @@ function MiniPreviewKeyNav({ items }: { items: HomePageData["key_navigation"] })
                         </div>
                     );
                 })}
-            </div>
-        </div>
-    );
-}
-
-function MiniPreviewBenefits({ items }: { items: string[] | undefined }) {
-    const list = (items ?? []).map((x) => String(x || "").trim()).filter(Boolean);
-    return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <div className="text-sm font-semibold text-slate-900">
-                    Benefits of Becoming <br />
-                    a T.I.M.E. Kids Franchise
-                </div>
-                <ul className="mt-3 space-y-2">
-                    {(list.length > 0 ? list : ["—"]).slice(0, 6).map((t, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold">
-                                {i + 1}
-                            </span>
-                            <span className="text-sm text-slate-800">{t}</span>
-                        </li>
-                    ))}
-                </ul>
-                {list.length > 6 ? <div className="mt-2 text-[11px] text-slate-500">+ {list.length - 6} more</div> : null}
-            </div>
-        </div>
-    );
-}
-
-function MiniPreviewIntro({ intro }: { intro: HomePageData["intro"] }) {
-    return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <div className="text-sm font-semibold text-slate-900">{intro.title || "—"}</div>
-                <div className="text-xs text-slate-600 mt-1 whitespace-pre-wrap">{intro.subtitle || "—"}</div>
-                <div className="text-xs text-slate-700 mt-2 line-clamp-3 whitespace-pre-wrap">
-                    {(intro.paragraphs?.[0] ?? "").trim() ? intro.paragraphs[0] : "—"}
-                </div>
             </div>
         </div>
     );
@@ -204,22 +183,6 @@ function MiniPreviewPrograms({ programs }: { programs: HomePageData["programs_pr
     );
 }
 
-function MiniPreviewMethodology({ meth }: { meth: HomePageData["methodology"] }) {
-    return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
-            <div className="text-sm font-semibold text-slate-900">{meth.title || "—"}</div>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-                {(meth.items ?? []).slice(0, 6).map((it, i) => (
-                    <div key={i} className="rounded-xl border border-slate-100 p-2 text-white" style={{ background: colorForMethodologyClass(it.class) }}>
-                        <div className="text-[11px] font-semibold leading-snug line-clamp-2">{it.label || "—"}</div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
 export default function AdminHomeContentPage() {
     const { authFetch } = useAuth();
     const [data, setData] = useState<HomePageData>(DEFAULT_HOME_PAGE_DATA);
@@ -231,9 +194,9 @@ export default function AdminHomeContentPage() {
     const [uploadingWhyIndex, setUploadingWhyIndex] = useState<number | null>(null);
     const [uploadingSpotlight, setUploadingSpotlight] = useState<number | null>(null);
     const [uploadingFranchisePhoto, setUploadingFranchisePhoto] = useState<number | null>(null);
+    const [uploadingFranchiseVideo, setUploadingFranchiseVideo] = useState<number | null>(null);
     const [programUploadInfo, setProgramUploadInfo] = useState<Record<number, string>>({});
     const [whyUploadInfo, setWhyUploadInfo] = useState<Record<number, string>>({});
-
     const load = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -315,23 +278,6 @@ export default function AdminHomeContentPage() {
         });
     };
 
-    const updateBenefit = (i: number, text: string) => {
-        const base = Array.isArray(data.franchise_benefits) ? data.franchise_benefits : [];
-        const next = [...base];
-        next[i] = text;
-        setData({ ...data, franchise_benefits: next });
-    };
-
-    const addBenefit = () => {
-        const base = Array.isArray(data.franchise_benefits) ? data.franchise_benefits : [];
-        setData({ ...data, franchise_benefits: [...base, "New benefit"] });
-    };
-
-    const removeBenefit = (i: number) => {
-        const base = Array.isArray(data.franchise_benefits) ? data.franchise_benefits : [];
-        setData({ ...data, franchise_benefits: base.filter((_, j) => j !== i) });
-    };
-
     const updateFranchiseVideo = (i: number, patch: Partial<FranchiseAdvantageVideoItem>) => {
         const next = [...data.franchise_advantage_videos];
         next[i] = { ...next[i], ...patch };
@@ -399,6 +345,34 @@ export default function AdminHomeContentPage() {
             setError(e instanceof Error ? e.message : "Image upload failed");
         } finally {
             setUploadingFranchisePhoto(null);
+        }
+    };
+
+    const uploadFranchiseVideoFile = async (index: number, file: File) => {
+        setError(null);
+        setMessage(null);
+        setUploadingFranchiseVideo(index);
+        try {
+            if (file.size > MAX_VIDEO_UPLOAD_BYTES) {
+                throw new Error(`File is too large (${formatMb(file.size)}). Max allowed is ${formatMb(MAX_VIDEO_UPLOAD_BYTES)}.`);
+            }
+            const formData = new FormData();
+            formData.append("title", `Home franchise video ${index + 1}`);
+            formData.append("category", "Banner");
+            formData.append("media_type", "video");
+            formData.append("file", file);
+
+            const created = (await authFetch("/media/", { method: "POST", body: formData })) as { file?: string };
+            const filePath = created?.file;
+            if (!filePath || typeof filePath !== "string") {
+                throw new Error("Upload succeeded but server did not return a file path.");
+            }
+            updateFranchiseVideo(index, { src: filePath });
+            setMessage("Video uploaded. Don’t forget to Save changes.");
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Video upload failed");
+        } finally {
+            setUploadingFranchiseVideo(null);
         }
     };
 
@@ -566,8 +540,28 @@ export default function AdminHomeContentPage() {
                                         <input className={inputClass} value={row.alt} onChange={(e) => updateKeyNav(i, { alt: e.target.value })} />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Link URL</label>
-                                        <input className={inputClass} value={row.href} onChange={(e) => updateKeyNav(i, { href: e.target.value })} />
+                                        <label className={labelClass}>
+                                            {isVirtualTourNavItem(row) ? "Virtual tour iframe URL" : "Link URL"}
+                                        </label>
+                                        <input
+                                            className={inputClass}
+                                            value={row.href}
+                                            onChange={(e) => updateKeyNav(i, { href: e.target.value })}
+                                            placeholder={
+                                                isVirtualTourNavItem(row)
+                                                    ? "https://iframe.mediadelivery.net/embed/…"
+                                                    : undefined
+                                            }
+                                        />
+                                        {isVirtualTourNavItem(row) ? (
+                                            <p className="mt-1 text-xs text-amber-900/90">
+                                                Paste the <strong>embed URL</strong> from your server (or full{" "}
+                                                <code className="rounded bg-amber-50 px-1">&lt;iframe src=&quot;…&quot;&gt;</code>
+                                                ). Opens in the Virtual Tour popup on the homepage. Also check Django admin{" "}
+                                                <strong>Marketing assets</strong> → slug <code className="rounded bg-amber-50 px-1">virtual-tour</code>{" "}
+                                                if you set the link there instead.
+                                            </p>
+                                        ) : null}
                                     </div>
                                     <div>
                                         <label className={labelClass}>Link text (use Enter for a new line)</label>
@@ -594,224 +588,104 @@ export default function AdminHomeContentPage() {
                             <Plus className="w-4 h-4" /> Add navigation item
                         </Button>
                     </Section>
-
-                    <div id="benefits" className="scroll-mt-24" />
-                    <Section title="2. Franchise benefits (list on the home page)">
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                            <strong>Where it shows:</strong> Home page → “Benefits of Becoming a T.I.M.E. Kids Franchise”.
-                        </div>
-                        <MiniPreviewBenefits items={data.franchise_benefits} />
-                        <p className="text-xs text-slate-500">Add, edit, or remove list items. They will show as items 1, 2, 3… on the site.</p>
-
-                        {(Array.isArray(data.franchise_benefits) ? data.franchise_benefits : []).map((t, i) => (
-                            <div key={i} className="rounded-xl border border-slate-100 p-3 space-y-2 bg-slate-50/80">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-slate-700">Benefit {i + 1}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeBenefit(i)}
-                                        className="text-red-600 hover:bg-red-50 p-1 rounded"
-                                        aria-label="Remove"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div>
-                                    <label className={labelClass}>Text</label>
-                                    <input className={inputClass} value={t} onChange={(e) => updateBenefit(i, e.target.value)} />
-                                </div>
-                            </div>
-                        ))}
-                        <Button type="button" variant="outline" size="sm" onClick={addBenefit} className="inline-flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Add benefit
-                        </Button>
-                    </Section>
-
-                    <Section title="2b. Franchise advantage videos (home — carousel)" defaultOpen={false}>
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                            <strong>Where it shows:</strong> Home page → “Why Partner with …” right column — one larger blob at a time; arrows and dots move between videos. Each row: poster image (circle thumbnail), video URL (YouTube or MP4), optional alt. Slides without poster and src are skipped on the site.
+                    <Section title="2. Oval blob — video (top right)" defaultOpen>
+                        <div className="rounded-xl border border-orange-200 bg-orange-50/60 px-3 py-2 text-xs text-slate-700">
+                            <strong>On the homepage:</strong> Top orange oval — thumbnail before play; video inside blob. Delete slide removes it. Save changes when done.
                         </div>
                         {data.franchise_advantage_videos.map((row, i) => (
-                            <div key={i} className="rounded-xl border border-slate-100 p-3 space-y-2 bg-white">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-semibold text-slate-800">Video {i + 1}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeFranchiseVideo(i)}
-                                        className="text-red-600 hover:bg-red-50 p-1 rounded"
-                                        aria-label="Remove"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
+                            <div key={i} className="rounded-xl border border-slate-200 p-4 space-y-3 bg-white shadow-sm">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <Film className="h-5 w-5 text-orange-500" />
+                                        <span className="text-sm font-semibold text-slate-900">Video slide {i + 1}</span>
+                                    </div>
+                                    <button type="button" onClick={() => removeFranchiseVideo(i)} className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-100">
+                                        <Trash2 className="h-3.5 w-3.5" /> Delete slide
                                     </button>
                                 </div>
-                                <div>
-                                    <label className={labelClass}>Poster image URL</label>
-                                    <input
-                                        className={inputClass}
-                                        value={row.poster}
-                                        onChange={(e) => updateFranchiseVideo(i, { poster: e.target.value })}
-                                    />
-                                </div>
-                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        disabled={uploadingSpotlight === i}
-                                        onChange={(e) => {
-                                            const f = e.target.files?.[0];
-                                            e.target.value = "";
-                                            if (f) void uploadFranchiseVideoPoster(i, f);
-                                        }}
-                                    />
-                                    {uploadingSpotlight === i ? "Uploading…" : "Upload poster"}
-                                </label>
-                                <div>
-                                    <label className={labelClass}>Video URL (MP4 or YouTube)</label>
-                                    <input
-                                        className={inputClass}
-                                        placeholder="https://www.youtube.com/watch?v=… or https://…/file.mp4"
-                                        value={row.src}
-                                        onChange={(e) => updateFranchiseVideo(i, { src: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={labelClass}>Alt text</label>
-                                    <input
-                                        className={inputClass}
-                                        value={row.alt ?? ""}
-                                        onChange={(e) => updateFranchiseVideo(i, { alt: e.target.value })}
-                                    />
+                                <div className="flex flex-wrap gap-4">
+                                    <div className="min-w-0 flex-1 space-y-3">
+                                        <div>
+                                            <label className={labelClass}>Thumbnail (poster)</label>
+                                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                <input className={inputClass} value={row.poster} onChange={(e) => updateFranchiseVideo(i, { poster: e.target.value })} placeholder="/media/…" />
+                                                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                                    <input type="file" accept="image/*" className="hidden" disabled={uploadingSpotlight === i} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void uploadFranchiseVideoPoster(i, f); }} />
+                                                    <Upload className="h-3.5 w-3.5" /> {uploadingSpotlight === i ? "Uploading…" : "Upload"}
+                                                </label>
+                                                <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" onClick={() => updateFranchiseVideo(i, { poster: "" })}>Clear</button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Video URL (MediaDelivery / YouTube / MP4)</label>
+                                            <input className={inputClass} placeholder="https://iframe.mediadelivery.net/embed/…" value={row.src} onChange={(e) => updateFranchiseVideo(i, { src: e.target.value })} />
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                                    <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" disabled={uploadingFranchiseVideo === i} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void uploadFranchiseVideoFile(i, f); }} />
+                                                    <Film className="h-3.5 w-3.5" /> {uploadingFranchiseVideo === i ? "Uploading…" : "Upload MP4"}
+                                                </label>
+                                                <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" onClick={() => updateFranchiseVideo(i, { src: "" })}>Clear video</button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Alt text</label>
+                                            <input className={inputClass} value={row.alt ?? ""} onChange={(e) => updateFranchiseVideo(i, { alt: e.target.value })} />
+                                        </div>
+                                    </div>
+                                    {(row.poster || "").trim() ? <BlobMediaPreview src={row.poster} alt={row.alt || `Video ${i + 1}`} /> : null}
                                 </div>
                             </div>
                         ))}
-                        <Button type="button" variant="outline" size="sm" onClick={addFranchiseVideo} className="inline-flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Add video slide
-                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={addFranchiseVideo} className="inline-flex items-center gap-2"><Plus className="w-4 h-4" /> Add video slide</Button>
                     </Section>
 
-                    <Section title="2c. Franchise advantage photos (home — carousel below videos)" defaultOpen={false}>
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                            <strong>Where it shows:</strong> Home page → “Why Partner with …” right column, directly under the video blob carousel. Same slide arrows and dots. Each row: image URL and optional alt. Slides without an image URL are skipped on the site.
+                    <Section title="3. Oval blob — promotion photos (below video)" defaultOpen>
+                        <div className="rounded-xl border border-orange-200 bg-orange-50/60 px-3 py-2 text-xs text-slate-700">
+                            <strong>On the homepage:</strong> Lower oval carousel (NEP, brochure, promos).
                         </div>
                         {(data.franchise_advantage_photos ?? []).map((row, i) => (
-                            <div key={i} className="rounded-xl border border-slate-100 p-3 space-y-2 bg-white">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-semibold text-slate-800">Photo {i + 1}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeFranchisePhoto(i)}
-                                        className="text-red-600 hover:bg-red-50 p-1 rounded"
-                                        aria-label="Remove"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
+                            <div key={i} className="rounded-xl border border-slate-200 p-4 space-y-3 bg-white shadow-sm">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <ImageIcon className="h-5 w-5 text-orange-500" />
+                                        <span className="text-sm font-semibold text-slate-900">Photo slide {i + 1}</span>
+                                    </div>
+                                    <button type="button" onClick={() => removeFranchisePhoto(i)} className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-100">
+                                        <Trash2 className="h-3.5 w-3.5" /> Delete slide
                                     </button>
                                 </div>
-                                <div>
-                                    <label className={labelClass}>Image URL</label>
-                                    <input
-                                        className={inputClass}
-                                        value={row.src}
-                                        onChange={(e) => updateFranchisePhoto(i, { src: e.target.value })}
-                                    />
-                                </div>
-                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        disabled={uploadingFranchisePhoto === i}
-                                        onChange={(e) => {
-                                            const f = e.target.files?.[0];
-                                            e.target.value = "";
-                                            if (f) void uploadFranchisePhoto(i, f);
-                                        }}
-                                    />
-                                    {uploadingFranchisePhoto === i ? "Uploading…" : "Upload image"}
-                                </label>
-                                <div>
-                                    <label className={labelClass}>Alt text</label>
-                                    <input
-                                        className={inputClass}
-                                        value={row.alt ?? ""}
-                                        onChange={(e) => updateFranchisePhoto(i, { alt: e.target.value })}
-                                    />
+                                <div className="flex flex-wrap gap-4">
+                                    <div className="min-w-0 flex-1 space-y-3">
+                                        <div>
+                                            <label className={labelClass}>Image URL</label>
+                                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                <input className={inputClass} value={row.src} onChange={(e) => updateFranchisePhoto(i, { src: e.target.value })} placeholder="/franchise-gallery/…" />
+                                                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                                    <input type="file" accept="image/*" className="hidden" disabled={uploadingFranchisePhoto === i} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void uploadFranchisePhoto(i, f); }} />
+                                                    <Upload className="h-3.5 w-3.5" /> {uploadingFranchisePhoto === i ? "Uploading…" : "Upload"}
+                                                </label>
+                                                <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" onClick={() => updateFranchisePhoto(i, { src: "" })}>Clear</button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className={labelClass}>Alt text</label>
+                                            <input className={inputClass} value={row.alt ?? ""} onChange={(e) => updateFranchisePhoto(i, { alt: e.target.value })} />
+                                        </div>
+                                    </div>
+                                    {(row.src || "").trim() ? <BlobMediaPreview src={row.src} alt={row.alt || `Photo ${i + 1}`} /> : null}
                                 </div>
                             </div>
                         ))}
-                        <Button type="button" variant="outline" size="sm" onClick={addFranchisePhoto} className="inline-flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Add photo slide
-                        </Button>
-                    </Section>
-
-                    <div id="intro" className="scroll-mt-24" />
-                    <Section title="4. Welcome / intro (heading and paragraphs)">
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                            <strong>Where it shows:</strong> Home page → the “Welcome” text section.
+                        <Button type="button" variant="outline" size="sm" onClick={addFranchisePhoto} className="inline-flex items-center gap-2"><Plus className="w-4 h-4" /> Add photo slide</Button>
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-2">
+                            <label className={labelClass}>News box — when no updates</label>
+                            <input className={inputClass} value={data.updates_empty_message ?? ""} onChange={(e) => setData({ ...data, updates_empty_message: e.target.value })} />
+                            <p className="text-xs text-slate-500">Live news: <Link href="/dashboard/admin/updates" className="text-orange-600 underline">Admin → Updates</Link></p>
                         </div>
-                        <MiniPreviewIntro intro={data.intro} />
-                        <div>
-                            <label className={labelClass}>Main heading</label>
-                            <input
-                                className={inputClass}
-                                value={data.intro.title}
-                                onChange={(e) => setData({ ...data, intro: { ...data.intro, title: e.target.value } })}
-                            />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Subheading</label>
-                            <textarea
-                                className={`${inputClass} min-h-[72px]`}
-                                value={data.intro.subtitle}
-                                onChange={(e) => setData({ ...data, intro: { ...data.intro, subtitle: e.target.value } })}
-                            />
-                        </div>
-                        <p className="text-xs font-medium text-slate-600">Paragraphs</p>
-                        {data.intro.paragraphs.map((p, i) => (
-                            <div key={i} className="flex gap-2 items-start">
-                                <textarea
-                                    className={`${inputClass} flex-1 min-h-[80px]`}
-                                    value={p}
-                                    onChange={(e) => {
-                                        const next = [...data.intro.paragraphs];
-                                        next[i] = e.target.value;
-                                        setData({ ...data, intro: { ...data.intro, paragraphs: next } });
-                                    }}
-                                />
-                                <button
-                                    type="button"
-                                    className="mt-2 text-red-600 p-1"
-                                    onClick={() =>
-                                        setData({
-                                            ...data,
-                                            intro: {
-                                                ...data.intro,
-                                                paragraphs: data.intro.paragraphs.filter((_, j) => j !== i),
-                                            },
-                                        })
-                                    }
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                                setData({
-                                    ...data,
-                                    intro: { ...data.intro, paragraphs: [...data.intro.paragraphs, ""] },
-                                })
-                            }
-                        >
-                            <Plus className="w-4 h-4 inline mr-1" /> Add paragraph
-                        </Button>
                     </Section>
 
                     <div id="why" className="scroll-mt-24" />
-                    <Section title='5. Why Choose Us (cards with photos)'>
+                    <Section title='4. Why Choose Us (cards with photos)'>
                         <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                             <strong>Where it shows:</strong> Home page → “Why Choose T.I.M.E. Kids?” cards section.
                         </div>
@@ -980,7 +854,7 @@ export default function AdminHomeContentPage() {
                     </Section>
 
                     <div id="programs" className="scroll-mt-24" />
-                    <Section title="6. Programs preview (circles on the home page)">
+                    <Section title="5. Programs preview (circles on the home page)">
                         <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                             <strong>Where it shows:</strong> Home page → “Our Programs” circle row.
                         </div>
@@ -1158,97 +1032,6 @@ export default function AdminHomeContentPage() {
                             }
                         >
                             <Plus className="w-4 h-4 inline mr-1" /> Add program
-                        </Button>
-                    </Section>
-
-                    <div id="methodology" className="scroll-mt-24" />
-                    <Section title="7. Value based methodology (icon row)">
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                            <strong>Where it shows:</strong> Home page → the methodology icon row.
-                        </div>
-                        <MiniPreviewMethodology meth={data.methodology} />
-                        <p className="text-xs text-slate-500">
-                            Icons and tile colours follow bundled presets; edit section title, item label, and link below.
-                        </p>
-                        <div>
-                            <label className={labelClass}>Section title</label>
-                            <input
-                                className={inputClass}
-                                value={data.methodology.title}
-                                onChange={(e) => setData({ ...data, methodology: { ...data.methodology, title: e.target.value } })}
-                            />
-                        </div>
-                        {data.methodology.items.map((item, i) => (
-                            <div key={i} className="rounded-xl border border-slate-100 p-3 grid sm:grid-cols-2 gap-2 bg-slate-50/80">
-                                <div className="sm:col-span-2 flex justify-between items-center">
-                                    <span className="text-sm font-medium">Item {i + 1}</span>
-                                    <button
-                                        type="button"
-                                        className="text-red-600 p-1"
-                                        onClick={() =>
-                                            setData({
-                                                ...data,
-                                                methodology: {
-                                                    ...data.methodology,
-                                                    items: data.methodology.items.filter((_, j) => j !== i),
-                                                },
-                                            })
-                                        }
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
-                                    <div>
-                                        <label className={labelClass}>Label</label>
-                                        <input
-                                            className={inputClass}
-                                            value={item.label}
-                                            onChange={(e) => {
-                                                const next = [...data.methodology.items];
-                                                next[i] = { ...next[i], label: e.target.value };
-                                                setData({ ...data, methodology: { ...data.methodology, items: next } });
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Link</label>
-                                        <input
-                                            className={inputClass}
-                                            value={item.href}
-                                            onChange={(e) => {
-                                                const next = [...data.methodology.items];
-                                                next[i] = { ...next[i], href: e.target.value };
-                                                setData({ ...data, methodology: { ...data.methodology, items: next } });
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                                setData({
-                                    ...data,
-                                    methodology: {
-                                        ...data.methodology,
-                                        items: [
-                                            ...data.methodology.items,
-                                            {
-                                                icon: "/methodology-icon1.png",
-                                                label: "New item",
-                                                class: "nav-item1",
-                                                href: "/programs",
-                                            },
-                                        ],
-                                    },
-                                })
-                            }
-                        >
-                            <Plus className="w-4 h-4 inline mr-1" /> Add item
                         </Button>
                     </Section>
                     </div>
