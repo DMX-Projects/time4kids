@@ -281,25 +281,14 @@ const FRANCHISE_SECTION_HIGHLIGHTS = [
     'Start Your Journey with T.I.M.E. Kids',
 ] as const;
 
-/** Split one update message into two lines inside the news card. */
-function splitMessageTwoLines(text: string): [string, string] {
-    const t = text.trim();
-    if (!t) return ['', ''];
-    const words = t.split(/\s+/).filter(Boolean);
-    if (words.length <= 1) return [t, ''];
-    const mid = Math.ceil(words.length / 2);
-    return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
-}
-
-function NewsUpdateSlide({ text, date }: { text: string; date: string }) {
-    const [line1, line2] = splitMessageTwoLines(text);
+function NewsUpdateSlide({ text }: { text: string }) {
+    const message = text.trim();
     return (
-        <div className="flex min-h-[5.5rem] flex-col justify-center px-8 py-5 pb-6 sm:min-h-[6.25rem] sm:px-10 sm:py-6 sm:pb-7">
-            {date ? (
-                <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-orange-600">{date}</p>
-            ) : null}
-            <p className="text-base font-semibold leading-relaxed text-slate-700 md:text-lg">{line1}</p>
-            {line2 ? <p className="mt-1.5 text-base font-semibold leading-relaxed text-slate-700 md:text-lg">{line2}</p> : null}
+        <div className="flex min-h-[5.5rem] items-center gap-3 px-8 py-5 pb-6 sm:min-h-[6.25rem] sm:gap-4 sm:px-10 sm:py-6 sm:pb-7">
+            <span className="shrink-0 text-2xl font-bold leading-none text-orange-500 md:text-3xl" aria-hidden>
+                →
+            </span>
+            <p className="min-w-0 flex-1 text-base font-semibold leading-relaxed text-slate-800 md:text-lg">{message}</p>
         </div>
     );
 }
@@ -578,7 +567,7 @@ export default function BenefitsUpdates() {
                                             key={item.id ?? `${item.text.slice(0, 24)}-${i}`}
                                             className="min-w-full shrink-0"
                                         >
-                                            <NewsUpdateSlide text={item.text} date={item.date} />
+                                            <NewsUpdateSlide text={item.text} />
                                         </div>
                                     ))}
                                 </FranchiseAdvantageCarousel>
