@@ -12,6 +12,7 @@ import {
   groupFranchiseHubDocsByCategory,
   groupFranchiseHubDocsBySourcePath,
   resolveCenterPageLinks,
+  shouldOpenFranchiseLinkInNewTab,
 } from "@/lib/franchise-center-page-links";
 
 import type {
@@ -181,10 +182,6 @@ function GrayPillRow({ children }: { children: React.ReactNode }) {
   );
 }
 
-function isExternalHref(href: string) {
-  return /^https?:\/\//i.test(href.trim());
-}
-
 function LinkRows({
   links,
 
@@ -211,22 +208,25 @@ function LinkRows({
       ? resolveCenterPageLinks(links, hubDocsByCategory, hubDocsBySourcePath)
       : links;
   const franchiseRowClass =
-    "group/link flex items-start gap-2.5 font-serif text-sm leading-snug text-slate-600 hover:text-slate-900";
+    "group/link flex min-w-0 items-start gap-2.5 font-serif text-sm leading-snug text-slate-600 hover:text-slate-900";
 
   return (
     <ul role="list" className="list-none space-y-2 py-1">
       {displayLinks.map((link, index) => {
         const franchiseLabelClass = link.emphasize
-          ? "font-semibold text-slate-900 underline decoration-slate-700 decoration-2 underline-offset-[3px]"
-          : "text-slate-700 underline-offset-[3px] decoration-slate-400/60 group-hover/link:underline group-hover/link:decoration-slate-500";
+          ? "min-w-0 break-words font-semibold text-slate-900 underline decoration-slate-700 decoration-2 underline-offset-[3px]"
+          : "min-w-0 break-words text-slate-700 underline-offset-[3px] decoration-slate-400/60 group-hover/link:underline group-hover/link:decoration-slate-500";
         const adminLabelClass = link.emphasize
           ? "font-semibold text-slate-900 underline decoration-slate-600"
           : "";
 
+        const openInNewTab =
+          mode === "franchise" && shouldOpenFranchiseLinkInNewTab(link.href);
+
         return (
-          <li key={link.rowKey ?? `link-${index}-${link.label}`}>
+          <li key={link.rowKey ?? `link-${index}-${link.label}`} className="min-w-0">
             {mode === "franchise" ? (
-              isExternalHref(link.href) ? (
+              openInNewTab ? (
                 <a
                   href={link.href}
                   target="_blank"

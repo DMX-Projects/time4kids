@@ -15,7 +15,7 @@ import {
 } from "@/config/franchise-center-page-nav";
 import { FranchiseCenterPageAccordion } from "@/components/dashboard/franchise/FranchiseCenterPageAccordion";
 import { getFranchiseResourceFileMeta } from "@/lib/franchise-resource-file-meta";
-import { Plus, Pencil, Trash2, ExternalLink, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, Download, RefreshCw, Info } from "lucide-react";
 
 export type FranchiseDocCategorySummary = {
     category: string;
@@ -122,6 +122,7 @@ export default function AdminFranchiseDocumentsPage() {
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [syncingPc, setSyncingPc] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -312,7 +313,7 @@ export default function AdminFranchiseDocumentsPage() {
                     method: "POST",
                     body: fd,
                 });
-                showToast("Document added.", "success");
+                showToast("Document saved to database.", "success");
             }
             closeModal();
             void load();
@@ -322,6 +323,28 @@ export default function AdminFranchiseDocumentsPage() {
             showToast(msg, "error");
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const syncFromPcFolder = async () => {
+        setSyncingPc(true);
+        try {
+            const res = await authFetch<{ detail: string; total_documents?: number }>(
+                "/documents/admin/franchise-documents/sync-pc/",
+                { method: "POST" },
+            );
+            const extra =
+                typeof res.total_documents === "number"
+                    ? ` (${res.total_documents} documents in database.)`
+                    : "";
+            showToast((res.detail || "Synced from pc folder.") + extra, "success");
+            void load();
+            void loadSummary();
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Sync failed.";
+            showToast(msg, "error");
+        } finally {
+            setSyncingPc(false);
         }
     };
 
@@ -343,15 +366,26 @@ export default function AdminFranchiseDocumentsPage() {
         <div className="space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold text-orange-900">Franchise resource documents</h1>
+                    <h1 className="text-2xl font-semibold text-orange-900">Centre page documents</h1>
                     <p className="text-sm text-orange-800/90 mt-1 max-w-2xl">
-                        Upload PDFs, zip packs, spreadsheets, audio, or video for the franchise resource hub. Leave{" "}
-                        <strong>Centre</strong> empty for <strong>global</strong> documents (all centres). The coverage
-                        table below reads directly from the database so you can see which categories already have rows
-                        and which are still empty.
+                        Upload, edit, or delete PDFs, images, ZIPs, and other files for the franchise{" "}
+                        <strong>Center Page</strong>. Every upload is saved in the{" "}
+                        <strong>PostgreSQL database</strong> (<code className="text-[11px]">FranchiseDocument</code>)
+                        and the file is stored under <code className="text-[11px]">media/franchise_documents/</code>.
+                        Leave <strong>Centre</strong> empty for all centres.
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2 shrink-0">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void syncFromPcFolder()}
+                        disabled={syncingPc}
+                    >
+                        <RefreshCw className={`w-4 h-4 mr-1 inline ${syncingPc ? "animate-spin" : ""}`} />
+                        {syncingPc ? "Syncing…" : "Sync all to database"}
+                    </Button>
                     <Button type="button" variant="outline" size="sm" onClick={exportFullTableCsv} disabled={exportingCsv}>
                         <Download className="w-4 h-4 mr-1 inline" />
                         {exportingCsv ? "Exporting…" : "Export CSV (full table)"}
@@ -360,6 +394,37 @@ export default function AdminFranchiseDocumentsPage() {
                         <Plus className="w-4 h-4 mr-1 inline" />
                         Add document
                     </Button>
+                </div>
+            </div>
+
+            <div className="rounded-xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-slate-800">
+                <div className="flex gap-2">
+                    <Info className="w-5 h-5 shrink-0 text-blue-700 mt-0.5" aria-hidden />
+                    <div className="space-y-2 min-w-0">
+                        <p className="font-semibold text-blue-900">How uploads connect to the Centre Page</p>
+                        <ul className="list-disc pl-5 space-y-1 text-slate-700">
+                            <li>
+                                <strong>Add document</strong> — saves a database row + file. Set <strong>Title</strong>{" "}
+                                to match the Centre Page link label (e.g. same as the checklist text).
+                            </li>
+                            <li>
+                                <strong>Edit</strong> — change title, category, replace file, or turn off{" "}
+                                <strong>Active</strong> to hide from franchises.
+                            </li>
+                            <li>
+                                <strong>Delete</strong> — removes the file from the hub.
+                            </li>
+                            <li>
+                                <strong>Sync all to database</strong> — imports <code className="text-xs bg-white/80 px-1 rounded">pc/</code> PDFs{" "}
+                                and <code className="text-xs bg-white/80 px-1 rounded">public/franchise-*</code> images into PostgreSQL.
+                            </li>
+                            <li>
+                                <strong>Artworks</strong> — use category <strong>Artworks &amp; Marketing</strong> for
+                                promotion images, or keep PNGs in{" "}
+                                <code className="text-xs bg-white/80 px-1 rounded">public/franchise-artworks/</code>.
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 
@@ -586,10 +651,10 @@ export default function AdminFranchiseDocumentsPage() {
                         />
                     </label>
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        Centre Page path (optional)
+                        Centre Page path (optional — saved in database)
                         <input
                             className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono text-xs"
-                            placeholder="e.g. holidayslist-2026-27/AP Holiday List 2026-2027.pdf"
+                            placeholder="e.g. holidayslist-2026-27/AP Holiday List 2026-2027.pdf (auto-filled from filename if empty)"
                             value={form.source_path}
                             onChange={(e) => setForm({ ...form, source_path: e.target.value })}
                         />
@@ -656,10 +721,11 @@ export default function AdminFranchiseDocumentsPage() {
                             File {editing ? "(optional — leave empty to keep current)" : "(required)"}
                         </span>
                         <span className="font-normal text-slate-500">
-                            PDF, zip, audio, video, and Office formats are fine; centres see Watch / Listen / Download from the file extension.
+                            PDF, images (PNG/JPG), ZIP, audio, video, and Office formats are supported.
                         </span>
                         <input
                             type="file"
+                            accept=".pdf,.zip,.rar,.7z,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.mp3,.mp4,.wav,.htm,.html"
                             className="text-sm"
                             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                         />

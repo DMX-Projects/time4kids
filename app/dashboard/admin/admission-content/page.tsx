@@ -170,7 +170,11 @@ export default function AdminAdmissionContentPage() {
                     Admission page content
                 </h1>
                 <p className="text-sm text-slate-600">
-                    Edit the lists shown on the public <strong>/admission</strong> page. Use <strong>Save</strong> when finished.
+                    Edit CMS content on <strong>/admission</strong>. Use <strong>Save</strong> when finished.
+                </p>
+                <p className="text-xs text-slate-500 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    Not editable here (fixed in the page layout): top hero headline, enquiry form, infrastructure cards, NEP block, and download corner (brochure / virtual tour use{" "}
+                    <strong>Marketing assets</strong> in Django admin).
                 </p>
             </div>
 

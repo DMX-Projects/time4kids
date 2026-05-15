@@ -23,18 +23,11 @@ function formatMb(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
 }
 
-function CardPreview({ icon, title, description }: { icon: string; title: string; description: string }) {
+function CardPreview({ title, description }: { title: string; description: string }) {
     return (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-            <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-bold shrink-0">
-                    {String(icon || "A").slice(0, 1).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900 truncate">{title || "—"}</div>
-                    <div className="text-xs text-slate-600 mt-1 line-clamp-2">{description || "—"}</div>
-                </div>
-            </div>
+            <div className="text-sm font-semibold text-slate-900">{title || "—"}</div>
+            <div className="text-xs text-slate-600 mt-1 line-clamp-3 whitespace-pre-wrap">{description || "—"}</div>
         </div>
     );
 }
@@ -176,7 +169,7 @@ export default function AdminFranchiseContentPage() {
                     Franchise page content
                 </h1>
                 <p className="text-sm text-slate-600">
-                    Edit the public <strong>/franchise</strong> page sections. Use <strong>Save</strong> when finished.
+                    Edit CMS content on <strong>/franchise</strong>. The enquiry form is embedded separately (Nopaper). Use <strong>Save</strong> when finished.
                 </p>
             </div>
 
@@ -299,18 +292,13 @@ export default function AdminFranchiseContentPage() {
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="text-sm font-semibold text-slate-800 truncate">
                                         {b.title?.trim() ? b.title : `Benefit card ${i + 1}`}
-                                        <span className="ml-2 text-xs font-normal text-slate-500">({b.icon || "Icon"})</span>
                                     </div>
                                     <button type="button" className="text-red-600 hover:bg-red-50 p-1 rounded" onClick={() => removeBenefit(i)}>
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
-                                <CardPreview icon={b.icon} title={b.title} description={b.description} />
+                                <CardPreview title={b.title} description={b.description} />
                                 <div className="grid md:grid-cols-2 gap-3">
-                                    <div>
-                                        <label className={labelClass}>Icon name (Award, DollarSign, BookOpen, Users, Headphones, TrendingUp, Heart, Brain, Globe, …)</label>
-                                        <input className={inputClass} value={b.icon} onChange={(e) => updateBenefit(i, { icon: e.target.value })} />
-                                    </div>
                                     <div>
                                         <label className={labelClass}>Title</label>
                                         <input className={inputClass} value={b.title} onChange={(e) => updateBenefit(i, { title: e.target.value })} />
@@ -403,7 +391,273 @@ export default function AdminFranchiseContentPage() {
                         </Button>
                     </Section>
 
-                    <Section title="4. Success stories (3 cards)">
+                    <Section title="4. What you need to get started (left column)">
+                        <p className="text-xs text-slate-500">Shown under the enquiry form on /franchise.</p>
+                        <div className="grid gap-3">
+                            <div>
+                                <label className={labelClass}>Section heading</label>
+                                <input
+                                    className={inputClass}
+                                    value={data.getting_started?.heading ?? ""}
+                                    onChange={(e) =>
+                                        setData({
+                                            ...data,
+                                            getting_started: {
+                                                heading: e.target.value,
+                                                intro: data.getting_started?.intro ?? "",
+                                                items: data.getting_started?.items ?? [],
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Intro</label>
+                                <textarea
+                                    className={`${inputClass} min-h-[72px]`}
+                                    value={data.getting_started?.intro ?? ""}
+                                    onChange={(e) =>
+                                        setData({
+                                            ...data,
+                                            getting_started: {
+                                                heading: data.getting_started?.heading ?? "",
+                                                intro: e.target.value,
+                                                items: data.getting_started?.items ?? [],
+                                            },
+                                        })
+                                    }
+                                />
+                            </div>
+                        </div>
+                        {(data.getting_started?.items ?? []).map((item, i) => (
+                            <div key={i} className="rounded-xl border border-slate-100 p-3 bg-slate-50/80 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="text-sm font-semibold text-slate-800">{item.title || `Item ${i + 1}`}</div>
+                                    <button
+                                        type="button"
+                                        className="text-red-600 hover:bg-red-50 p-1 rounded"
+                                        onClick={() => {
+                                            const items = (data.getting_started?.items ?? []).filter((_, j) => j !== i);
+                                            setData({
+                                                ...data,
+                                                getting_started: {
+                                                    heading: data.getting_started?.heading ?? "",
+                                                    intro: data.getting_started?.intro ?? "",
+                                                    items,
+                                                },
+                                            });
+                                        }}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Title</label>
+                                    <input
+                                        className={inputClass}
+                                        value={item.title}
+                                        onChange={(e) => {
+                                            const items = [...(data.getting_started?.items ?? [])];
+                                            items[i] = { ...items[i], title: e.target.value };
+                                            setData({
+                                                ...data,
+                                                getting_started: {
+                                                    heading: data.getting_started?.heading ?? "",
+                                                    intro: data.getting_started?.intro ?? "",
+                                                    items,
+                                                },
+                                            });
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Description</label>
+                                    <textarea
+                                        className={`${inputClass} min-h-[72px]`}
+                                        value={item.description}
+                                        onChange={(e) => {
+                                            const items = [...(data.getting_started?.items ?? [])];
+                                            items[i] = { ...items[i], description: e.target.value };
+                                            setData({
+                                                ...data,
+                                                getting_started: {
+                                                    heading: data.getting_started?.heading ?? "",
+                                                    intro: data.getting_started?.intro ?? "",
+                                                    items,
+                                                },
+                                            });
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                                setData({
+                                    ...data,
+                                    getting_started: {
+                                        heading: data.getting_started?.heading ?? "What You Need to Get Started",
+                                        intro: data.getting_started?.intro ?? "",
+                                        items: [
+                                            ...(data.getting_started?.items ?? []),
+                                            { title: "New requirement", description: "" },
+                                        ],
+                                    },
+                                })
+                            }
+                            className="inline-flex items-center gap-2"
+                        >
+                            <Plus className="w-4 h-4" /> Add requirement
+                        </Button>
+                    </Section>
+
+                    <Section title="5. Closing block (orange box, main column)">
+                        <p className="text-xs text-slate-500">Shown at the bottom of the main story column on /franchise.</p>
+                        <div>
+                            <label className={labelClass}>Heading</label>
+                            <input
+                                className={inputClass}
+                                value={data.closing?.heading ?? ""}
+                                onChange={(e) =>
+                                    setData({
+                                        ...data,
+                                        closing: {
+                                            heading: e.target.value,
+                                            paragraphs: data.closing?.paragraphs ?? [""],
+                                        },
+                                    })
+                                }
+                            />
+                        </div>
+                        {(data.closing?.paragraphs ?? [""]).map((p, i) => (
+                            <div key={i} className="flex gap-2 items-start">
+                                <textarea
+                                    className={`${inputClass} flex-1 min-h-[72px]`}
+                                    value={p}
+                                    onChange={(e) => {
+                                        const paragraphs = [...(data.closing?.paragraphs ?? [""])];
+                                        paragraphs[i] = e.target.value;
+                                        setData({
+                                            ...data,
+                                            closing: {
+                                                heading: data.closing?.heading ?? "",
+                                                paragraphs,
+                                            },
+                                        });
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    className="mt-2 text-red-600 p-1"
+                                    onClick={() => {
+                                        const paragraphs = (data.closing?.paragraphs ?? []).filter((_, j) => j !== i);
+                                        setData({
+                                            ...data,
+                                            closing: {
+                                                heading: data.closing?.heading ?? "",
+                                                paragraphs: paragraphs.length ? paragraphs : [""],
+                                            },
+                                        });
+                                    }}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                                setData({
+                                    ...data,
+                                    closing: {
+                                        heading: data.closing?.heading ?? "",
+                                        paragraphs: [...(data.closing?.paragraphs ?? []), ""],
+                                    },
+                                })
+                            }
+                        >
+                            <Plus className="w-4 h-4 inline mr-1" /> Add paragraph
+                        </Button>
+                    </Section>
+
+                    <Section title="6. Quick highlights (grid below form)">
+                        <p className="text-xs text-slate-500">Full-width band under the form + story columns on /franchise.</p>
+                        <div>
+                            <label className={labelClass}>Section heading</label>
+                            <input
+                                className={inputClass}
+                                value={data.quick_highlights?.heading ?? ""}
+                                onChange={(e) =>
+                                    setData({
+                                        ...data,
+                                        quick_highlights: {
+                                            heading: e.target.value,
+                                            items: data.quick_highlights?.items ?? [],
+                                        },
+                                    })
+                                }
+                            />
+                        </div>
+                        {(data.quick_highlights?.items ?? []).map((line, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <input
+                                    className={inputClass}
+                                    value={line}
+                                    onChange={(e) => {
+                                        const items = [...(data.quick_highlights?.items ?? [])];
+                                        items[i] = e.target.value;
+                                        setData({
+                                            ...data,
+                                            quick_highlights: {
+                                                heading: data.quick_highlights?.heading ?? "",
+                                                items,
+                                            },
+                                        });
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    className="text-red-600 p-1"
+                                    onClick={() => {
+                                        const items = (data.quick_highlights?.items ?? []).filter((_, j) => j !== i);
+                                        setData({
+                                            ...data,
+                                            quick_highlights: {
+                                                heading: data.quick_highlights?.heading ?? "",
+                                                items,
+                                            },
+                                        });
+                                    }}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                                setData({
+                                    ...data,
+                                    quick_highlights: {
+                                        heading: data.quick_highlights?.heading ?? "Quick Highlights",
+                                        items: [...(data.quick_highlights?.items ?? []), "New highlight"],
+                                    },
+                                })
+                            }
+                            className="inline-flex items-center gap-2"
+                        >
+                            <Plus className="w-4 h-4" /> Add highlight
+                        </Button>
+                    </Section>
+
+                    <Section title="7. Success stories (videos)">
                         {testimonials.map((t, i) => (
                             <div key={i} className="rounded-xl border border-slate-100 p-3 bg-slate-50/80 space-y-2">
                                 <div className="flex items-center justify-between gap-2">
@@ -517,7 +771,7 @@ export default function AdminFranchiseContentPage() {
                         </Button>
                     </Section>
 
-                    <Section title="5. Main branch (map + contact)">
+                    <Section title="8. Main branch (map + contact)">
                         <div className="grid md:grid-cols-2 gap-3">
                             <div>
                                 <label className={labelClass}>Heading prefix</label>
@@ -574,7 +828,7 @@ export default function AdminFranchiseContentPage() {
                         </div>
                     </Section>
 
-                    <Section title="6. Brochure (bottom section)">
+                    <Section title="9. Brochure (bottom section)">
                         <div className="grid md:grid-cols-2 gap-3">
                             <div className="md:col-span-2">
                                 <label className={labelClass}>Heading</label>

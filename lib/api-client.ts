@@ -99,6 +99,15 @@ export function getServerUrl(): string {
     return normalizeBase(process.env.NEXT_PUBLIC_SERVER_URL, djangoOriginForServer());
 }
 
+/** Public static file on the Next site (`public/`), e.g. `/franchise-artworks/...png`. */
+export function publicAssetUrl(path: string): string {
+    const raw = path.trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw)) return raw;
+    const pathname = raw.startsWith("/") ? raw : `/${raw}`;
+    return `${getServerUrl()}${pathname}`;
+}
+
 /** Django-style paths with trailing slash before `?` (fewer redirect/proxy mismatches). */
 export function normalizeApiPath(path: string): string {
     const trimmed = path.trim();

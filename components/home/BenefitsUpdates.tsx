@@ -6,18 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import {
-    BookOpen,
-    Briefcase,
-    ChevronLeft,
-    ChevronRight,
-    GraduationCap,
-    ShieldCheck,
-    Sparkles,
-    Star,
-    TrendingUp,
-    type LucideIcon,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 import FranchiseVideoBlob, {
@@ -31,16 +20,6 @@ import { DEFAULT_HOME_PAGE_DATA } from '@/config/home-page-defaults';
 gsap.registerPlugin(ScrollTrigger);
 
 type Slide = { id?: number; date: string; text: string };
-
-const benefitIcons: LucideIcon[] = [TrendingUp, Star, BookOpen, GraduationCap, ShieldCheck, Briefcase];
-const benefitGradients = [
-    'from-emerald-400 to-lime-400',
-    'from-sky-400 to-blue-500',
-    'from-fuchsia-400 to-pink-500',
-    'from-amber-300 to-orange-500',
-    'from-cyan-400 to-teal-500',
-    'from-violet-400 to-indigo-500',
-];
 
 /** Clean horizontal mark from `public` (no screenshot / checkerboard). Replace file if you export a new PNG with alpha. */
 const FRANCHISE_HEADING_LOGO = '/time-kids-logo-new.png';
@@ -196,13 +175,6 @@ function FranchiseAdvantageCarousel({
     );
 }
 
-const FRANCHISE_SECTION_HIGHLIGHTS = [
-    'The T.I.M.E. Kids Advantage',
-    'Comprehensive Franchise Support',
-    'What You Need to Get Started',
-    'Start Your Journey with T.I.M.E. Kids',
-] as const;
-
 function NewsUpdateSlide({ text }: { text: string }) {
     const message = text.trim();
     return (
@@ -275,40 +247,6 @@ const FALLBACK_UPDATES: Slide[] = [
     },
 ];
 
-const BenefitCard = ({ text, number, index }: { text: string; number: number; index: number }) => {
-    const Icon = benefitIcons[index % benefitIcons.length];
-    const gradient = benefitGradients[index % benefitGradients.length];
-
-    return (
-        <motion.li
-            initial={{ opacity: 0, y: 26, filter: 'blur(8px)' }}
-            whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            viewport={{ once: true, margin: '-70px' }}
-            transition={{ duration: 0.65, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ y: -8, scale: 1.02, rotate: -0.6 }}
-            className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/62 p-3 shadow-[0_18px_45px_rgba(15,23,42,0.08)] backdrop-blur-xl"
-        >
-            <div className="absolute inset-px rounded-2xl bg-gradient-to-br from-white/70 via-white/25 to-orange-100/45" />
-            <div className={`absolute -right-10 -top-12 h-28 w-28 rounded-full bg-gradient-to-br ${gradient} opacity-15 blur-2xl transition-opacity duration-500 group-hover:opacity-30`} />
-            <div className="relative flex items-center gap-3">
-                <motion.div
-                    animate={{ y: [0, -4, 0], rotate: [0, 2, 0] }}
-                    transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', delay: index * 0.25 }}
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white shadow-[0_14px_34px_rgba(15,23,42,0.18)]`}
-                >
-                    <span className="font-display text-lg font-black">{number}</span>
-                </motion.div>
-                <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                        <Icon size={17} className="text-orange-500 transition-transform duration-300 group-hover:rotate-6" />
-                        <p className="font-display text-sm font-black leading-snug text-slate-900 xl:text-base">{text}</p>
-                    </div>
-                </div>
-            </div>
-        </motion.li>
-    );
-};
-
 export default function BenefitsUpdates() {
     const home = useHomePageContent();
     const sectionRef = useRef<HTMLDivElement>(null);
@@ -353,8 +291,6 @@ export default function BenefitsUpdates() {
     useEffect(() => {
         setPlayingVideoIndex(null);
     }, [videoCarouselIndex]);
-
-    const benefits = [...FRANCHISE_SECTION_HIGHLIGHTS];
 
     const emptyMessage = (home.updates_empty_message || '').trim() || 'News updates and announcements will appear here.';
 
@@ -461,12 +397,6 @@ export default function BenefitsUpdates() {
                             <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
                                 Join India&apos;s Most Trusted Preschool Franchise Network — build a meaningful business backed by the educational legacy of T.I.M.E.
                             </p>
-
-                            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-                                {benefits.map((text, index) => (
-                                    <BenefitCard key={`${text}-${index}`} text={text} number={index + 1} index={index} />
-                                ))}
-                            </ul>
                         </div>
 
                         <div className="w-full space-y-4 border-t border-white/40 pt-10">
