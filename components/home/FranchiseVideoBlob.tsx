@@ -1,8 +1,9 @@
 'use client';
 
-import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Play } from 'lucide-react';
+import { resolveHomeMediaAssetUrl } from '@/lib/api-client';
 import { FranchiseBlobShell } from '@/components/home/franchise-blob';
 
 export const FRANCHISE_ADVANTAGE_VIDEO_EMBED =
@@ -55,19 +56,47 @@ const franchiseVideoPosterImageClass =
 type FranchiseBlobThumbnailProps = {
     src: string;
     alt: string;
+    fallbackSrc?: string;
 };
 
-export function FranchiseBlobThumbnail({ src, alt }: FranchiseBlobThumbnailProps) {
+function BlobFillImage({
+    src,
+    alt,
+    className,
+    fallbackSrc = '/icon-media.svg',
+}: {
+    src: string;
+    alt: string;
+    className: string;
+    fallbackSrc?: string;
+}) {
+    const primary = resolveHomeMediaAssetUrl(src);
+    const fallback = resolveHomeMediaAssetUrl(fallbackSrc);
+    const [activeSrc, setActiveSrc] = useState(primary || fallback);
+
+    useEffect(() => {
+        setActiveSrc(primary || fallback);
+    }, [primary, fallback]);
+
+    if (!activeSrc) return null;
+
+    return (
+        <img
+            src={activeSrc}
+            alt={alt}
+            className={`absolute inset-0 h-full w-full ${className}`}
+            decoding="async"
+            onError={() => {
+                if (fallback && activeSrc !== fallback) setActiveSrc(fallback);
+            }}
+        />
+    );
+}
+
+export function FranchiseBlobThumbnail({ src, alt, fallbackSrc }: FranchiseBlobThumbnailProps) {
     return (
         <span className="absolute inset-0 overflow-hidden bg-[#f3ebe0] [border-radius:inherit]">
-            <Image
-                src={src}
-                alt={alt}
-                fill
-                className={franchiseBlobThumbnailImageClass}
-                sizes="(max-width: 640px) 90vw, 360px"
-                unoptimized={/^https?:\/\//i.test(src)}
-            />
+            <BlobFillImage src={src} alt={alt} fallbackSrc={fallbackSrc} className={franchiseBlobThumbnailImageClass} />
         </span>
     );
 }
@@ -142,13 +171,10 @@ export default function FranchiseVideoBlob({
                         aria-label={videoReady ? 'Play franchise video' : 'Video not configured yet'}
                     >
                         <span className="absolute inset-0 overflow-hidden bg-[#f3ebe0] [border-radius:inherit]">
-                            <Image
+                            <BlobFillImage
                                 src={surfaceSrc}
                                 alt={surfaceAlt}
-                                fill
                                 className={franchiseVideoPosterImageClass}
-                                sizes="(max-width: 640px) 90vw, 360px"
-                                unoptimized={/^https?:\/\//i.test(surfaceSrc)}
                             />
                         </span>
                         {showPlayOverlay ? (

@@ -155,9 +155,30 @@ export const mediaUrl = (path?: string | null) => {
     }
     if (path.startsWith(mediaBase)) return path;
     if (path.startsWith("/media")) return `${mediaBase}${path.replace(/^\/media/, "")}`;
-    if (path.startsWith("/")) return path;
+    if (path.startsWith("/")) {
+        if (typeof window !== "undefined") {
+            return `${window.location.origin.replace(/\/$/, "")}${path}`;
+        }
+        const site = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || process.env.NEXT_PUBLIC_SERVER_URL || "").replace(/\/media\/?$/, "").replace(/\/$/, "");
+        if (site) return `${site}${path}`;
+        return path;
+    }
     return `${mediaBase}/${path.replace(/^\/+/g, "")}`;
 };
+
+/** CMS uploads (`/media/...`) and static blobs (`/franchise-gallery/...`) — always absolute for <img>. */
+export function resolveHomeMediaAssetUrl(path?: string | null): string {
+    let t = (path || "").trim();
+    if (!t) return "";
+    if (/^media\//i.test(t)) t = `/${t}`;
+    if (t.startsWith("/media") || /^https?:\/\//i.test(t)) {
+        return mediaUrl(t) || t;
+    }
+    if (t.startsWith("/")) {
+        return publicAssetUrl(t) || mediaUrl(t) || t;
+    }
+    return mediaUrl(t) || publicAssetUrl(t) || t;
+}
 
 export type ApiError = Error & { status?: number; details?: unknown };
 
