@@ -1,9 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from "next/image";
+import VirtualTourModal from '@/components/home/VirtualTourModal';
 
 export default function SchoolKeyNavigation() {
+    const [virtualTourOpen, setVirtualTourOpen] = useState(false);
+
     return (
         <section className="key-nav-section">
             <div className="container mx-auto px-4">
@@ -14,9 +17,13 @@ export default function SchoolKeyNavigation() {
                                 <Image src="/icon-tour.png" alt="Virtual Tour" width={38} height={38} className="key-nav-icon" />
                             </span>
                         </figure>
-                        <a href="/gallery">
+                        <button
+                            type="button"
+                            className="virtual-tour-trigger"
+                            onClick={() => setVirtualTourOpen(true)}
+                        >
                             Virtual <br />Tour
-                        </a>
+                        </button>
                     </li>
                     <li className="nav-link2">
                         <figure>
@@ -63,8 +70,7 @@ export default function SchoolKeyNavigation() {
                 </ul>
             </div>
 
-            {/* Wave divider below icons */}
-
+            <VirtualTourModal isOpen={virtualTourOpen} onClose={() => setVirtualTourOpen(false)} />
 
             <style jsx>{`
                 .key-nav-section {
@@ -73,8 +79,15 @@ export default function SchoolKeyNavigation() {
                     position: relative;
                     z-index: 10;
                 }
-
-
+                .virtual-tour-trigger {
+                    background: none;
+                    border: none;
+                    padding: 0;
+                    font: inherit;
+                    color: inherit;
+                    cursor: pointer;
+                    text-align: inherit;
+                }
             `}</style>
         </section>
     );

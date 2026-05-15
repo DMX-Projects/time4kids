@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 
-import { useCallback, useId, useReducer } from "react";
+import { useCallback, useEffect, useId, useMemo, useReducer, useState } from "react";
 
 import { ChevronDown, ChevronRight } from "lucide-react";
+
+import { useAuth } from "@/components/auth/AuthProvider";
+import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
+import {
+  groupFranchiseHubDocsByCategory,
+  groupFranchiseHubDocsBySourcePath,
+  resolveCenterPageLinks,
+} from "@/lib/franchise-center-page-links";
 
 import type {
   CenterPageLink,
@@ -91,8 +99,8 @@ function accordionSetsReducer(
 
 function isNestedGroup(
   group: CenterPageSubsection,
-): group is { title: string; nested: CenterPageNestedBlock[] } {
-  return "nested" in group && Array.isArray(group.nested);
+): group is CenterPageSubsection & { nested: CenterPageNestedBlock[] } {
+  return Array.isArray(group.nested) && group.nested.length > 0;
 }
 
 /** Small filled handprint for nested link rows (reference: green child handprint). */
@@ -182,20 +190,32 @@ function LinkRows({
 
   mode,
 
+  hubDocsByCategory,
+
+  hubDocsBySourcePath,
+
   onAdminPickCategory,
 }: {
   links: CenterPageLink[];
 
   mode: Mode;
 
+  hubDocsByCategory?: Map<string, FranchiseHubDoc[]>;
+
+  hubDocsBySourcePath?: Map<string, FranchiseHubDoc>;
+
   onAdminPickCategory?: (category: string) => void;
 }) {
+  const displayLinks =
+    mode === "franchise" && hubDocsByCategory
+      ? resolveCenterPageLinks(links, hubDocsByCategory, hubDocsBySourcePath)
+      : links;
   const franchiseRowClass =
     "group/link flex items-start gap-2.5 font-serif text-sm leading-snug text-slate-600 hover:text-slate-900";
 
   return (
     <ul role="list" className="list-none space-y-2 py-1">
-      {links.map((link, index) => {
+      {displayLinks.map((link, index) => {
         const franchiseLabelClass = link.emphasize
           ? "font-semibold text-slate-900 underline decoration-slate-700 decoration-2 underline-offset-[3px]"
           : "text-slate-700 underline-offset-[3px] decoration-slate-400/60 group-hover/link:underline group-hover/link:decoration-slate-500";
@@ -290,11 +310,19 @@ function BlockItems({
 
   toggleNested,
 
+  hubDocsByCategory,
+
+  hubDocsBySourcePath,
+
   onAdminPickCategory,
 }: {
   blocks: CenterPageTopItem[];
 
   mode: Mode;
+
+  hubDocsByCategory?: Map<string, FranchiseHubDoc[]>;
+
+  hubDocsBySourcePath?: Map<string, FranchiseHubDoc>;
 
   baseId: string;
 
@@ -365,6 +393,8 @@ function BlockItems({
                     <LinkRows
                       links={item.directLinks}
                       mode={mode}
+                      hubDocsByCategory={hubDocsByCategory}
+                      hubDocsBySourcePath={hubDocsBySourcePath}
                       onAdminPickCategory={onAdminPickCategory}
                     />
                   </div>
@@ -465,6 +495,8 @@ function BlockItems({
                                         <LinkRows
                                           links={block.links}
                                           mode={mode}
+                                          hubDocsByCategory={hubDocsByCategory}
+                                          hubDocsBySourcePath={hubDocsBySourcePath}
                                           onAdminPickCategory={
                                             onAdminPickCategory
                                           }
@@ -474,6 +506,17 @@ function BlockItems({
                                   </div>
                                 );
                               })}
+                              {group.links && group.links.length > 0 ? (
+                                <div className="mt-3 border-t border-dashed border-slate-300/80 pt-3">
+                                  <LinkRows
+                                    links={group.links}
+                                    mode={mode}
+                                    hubDocsByCategory={hubDocsByCategory}
+                                    hubDocsBySourcePath={hubDocsBySourcePath}
+                                    onAdminPickCategory={onAdminPickCategory}
+                                  />
+                                </div>
+                              ) : null}
                             </div>
                           </AccordionCollapse>
                         </div>
@@ -518,8 +561,10 @@ function BlockItems({
                             className="ml-3 border-l border-dashed border-slate-300/80 py-1.5 pl-3 sm:ml-4 sm:pl-4"
                           >
                             <LinkRows
-                              links={group.links}
+                              links={group.links ?? []}
                               mode={mode}
+                              hubDocsByCategory={hubDocsByCategory}
+                              hubDocsBySourcePath={hubDocsBySourcePath}
                               onAdminPickCategory={onAdminPickCategory}
                             />
                           </div>
@@ -550,7 +595,38 @@ export function FranchiseCenterPageAccordion({
 
   onAdminPickCategory?: (category: string) => void;
 }) {
+  const { authFetch } = useAuth();
   const baseId = useId();
+  const [hubDocs, setHubDocs] = useState<FranchiseHubDoc[]>([]);
+
+  useEffect(() => {
+    if (mode !== "franchise") return;
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const data = await authFetch<FranchiseHubDoc[]>("/documents/franchise/documents/");
+        if (!cancelled) setHubDocs(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancelled) setHubDocs([]);
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [authFetch, mode]);
+
+  const hubDocsByCategory = useMemo(
+    () => (mode === "franchise" ? groupFranchiseHubDocsByCategory(hubDocs) : undefined),
+    [hubDocs, mode],
+  );
+
+  const hubDocsBySourcePath = useMemo(
+    () => (mode === "franchise" ? groupFranchiseHubDocsBySourcePath(hubDocs) : undefined),
+    [hubDocs, mode],
+  );
 
   const [{ openTop, openSub, openNested }, dispatch] = useReducer(
     accordionSetsReducer,
@@ -589,6 +665,8 @@ export function FranchiseCenterPageAccordion({
             <BlockItems
               blocks={chunk}
               mode={mode}
+              hubDocsByCategory={hubDocsByCategory}
+              hubDocsBySourcePath={hubDocsBySourcePath}
               baseId={baseId}
               openTop={openTop}
               openSub={openSub}

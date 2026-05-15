@@ -208,8 +208,7 @@ const TestimonialsSection = () => {
         },
         {
             title: "Annual Day Celebrations",
-            author: "T.I.M.E. Kids Kilpauk",
-            location: "Chennai",
+            author: "T.I.M.E. Kids",
             videoUrl: "/chaninai kilpauk-AnnualDay-Video-2018-19.mp4",
             thumbnailUrl: "/feature-annual-day-celebrations.png",
             type: 'video'
@@ -230,8 +229,7 @@ const TestimonialsSection = () => {
         },
         {
             title: "Fun Time at School",
-            author: "T.I.M.E. Kids Chennai",
-            location: "Chennai",
+            author: "T.I.M.E. Kids",
             videoUrl: "/chennai2.mp4",
             thumbnailUrl: "/event-2.jpg",
             type: 'video'

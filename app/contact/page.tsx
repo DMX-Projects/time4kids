@@ -8,7 +8,8 @@ import AnimatedLetters from '@/components/animations/AnimatedLetters';
 import TwinklingStars from '@/components/animations/TwinklingStars';
 import Link from 'next/link';
 
-import { Mail, Phone, MapPin, Facebook, Instagram, Youtube, Send, Briefcase } from 'lucide-react';
+import { Phone, MapPin, Facebook, Instagram, Youtube, Send, Briefcase, Building2 } from 'lucide-react';
+import { SITE_CORPORATE_CONTACT, SITE_SOCIAL_LINKS } from '@/config/site-contact';
 import { useForm } from 'react-hook-form';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 import { useToast } from '@/components/ui/Toast';
@@ -61,12 +62,9 @@ export default function ContactPage() {
 
     return (
         <div className="min-h-screen">
-            {/* Hero Section - Pencil/Creative Theme */}
             <section className="bg-gradient-to-br from-primary-50 to-secondary-50 section-gap relative overflow-hidden">
-                {/* Kid-Friendly Animations - Creative Communication */}
                 <AnimatedLetters />
                 <TwinklingStars count={18} />
-
 
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
@@ -80,61 +78,95 @@ export default function ContactPage() {
                 </div>
             </section>
 
-            {/* Contact Information & Form */}
             <section className="section-gap bg-white">
                 <div className="container mx-auto px-4">
                     <div className="grid lg:grid-cols-3 gap-12 max-w-6xl mx-auto">
-                        {/* Contact Info */}
                         <div className="lg:col-span-1 space-y-6">
                             <Card>
-                                <div className="flex items-start space-x-4">
+                                <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <Mail className="w-6 h-6 text-white" />
+                                        <Building2 className="w-6 h-6 text-white" />
                                     </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">Email Us</h3>
-                                        <a href="mailto:info@timekids.com" className="text-primary-600 hover:underline">
-                                            info@timekids.com
-                                        </a>
-                                    </div>
-                                </div>
-                            </Card>
-
-                            <Card>
-                                <div className="flex items-start space-x-4">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <Phone className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">Call Us</h3>
-                                        <a href="tel:+911234567890" className="text-primary-600 hover:underline">
-                                            +91 123 456 7890
-                                        </a>
-                                    </div>
-                                </div>
-                            </Card>
-
-                            <Card>
-                                <div className="flex items-start space-x-4">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <MapPin className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">Head Office</h3>
-                                        <p className="text-gray-600 text-sm">
-                                            Hyderabad, Telangana<br />
-                                            India
+                                    <div className="min-w-0 space-y-3 text-sm">
+                                        <h3 className="font-semibold text-primary-700 text-base">Corporate Office</h3>
+                                        <p className="font-medium text-gray-900">{SITE_CORPORATE_CONTACT.companyName}</p>
+                                        <address className="not-italic text-gray-600 leading-relaxed">
+                                            {SITE_CORPORATE_CONTACT.addressLines.map((line) => (
+                                                <span key={line} className="block">
+                                                    {line}
+                                                </span>
+                                            ))}
+                                        </address>
+                                        <p className="text-gray-700">
+                                            <span className="font-medium text-gray-900">Ph:</span>{' '}
+                                            <a href={SITE_CORPORATE_CONTACT.phoneTel} className="text-primary-600 hover:underline">
+                                                {SITE_CORPORATE_CONTACT.phone}
+                                            </a>
+                                        </p>
+                                        <p className="text-gray-700">
+                                            <span className="font-medium text-gray-900">Fax:</span> {SITE_CORPORATE_CONTACT.fax}
+                                        </p>
+                                        <p className="text-gray-700">
+                                            <span className="font-medium text-gray-900">Email-id:</span>{' '}
+                                            <a
+                                                href={`mailto:${SITE_CORPORATE_CONTACT.email}`}
+                                                className="text-primary-600 hover:underline break-all"
+                                            >
+                                                {SITE_CORPORATE_CONTACT.email}
+                                            </a>
                                         </p>
                                     </div>
                                 </div>
                             </Card>
 
-                            {/* Social Media */}
+                            <Card>
+                                <div className="flex items-start gap-4">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <Phone className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="min-w-0 space-y-2 text-sm">
+                                        <h3 className="font-semibold text-primary-700 text-base">For Franchise enquiries contact</h3>
+                                        <p className="text-gray-700">
+                                            <span className="font-medium text-gray-900">Cell:</span>{' '}
+                                            <a
+                                                href={SITE_CORPORATE_CONTACT.franchiseCellTel}
+                                                className="text-primary-600 hover:underline"
+                                            >
+                                                {SITE_CORPORATE_CONTACT.franchiseCell}
+                                            </a>
+                                        </p>
+                                        <p className="text-gray-700">
+                                            <span className="font-medium text-gray-900">Email-id:</span>{' '}
+                                            <a
+                                                href={`mailto:${SITE_CORPORATE_CONTACT.franchiseEmail}`}
+                                                className="text-primary-600 hover:underline break-all"
+                                            >
+                                                {SITE_CORPORATE_CONTACT.franchiseEmail}
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+                            </Card>
+
+                            <Card>
+                                <div className="flex items-start gap-4">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <MapPin className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-gray-900 mb-1">Head Office</h3>
+                                        <p className="text-gray-600 text-sm leading-relaxed">
+                                            {SITE_CORPORATE_CONTACT.locationLabel}
+                                        </p>
+                                    </div>
+                                </div>
+                            </Card>
+
                             <Card>
                                 <h3 className="font-semibold text-gray-900 mb-4">Connect With Us</h3>
                                 <div className="flex space-x-4 mb-6">
                                     <a
-                                        href="https://www.facebook.com/pages/TIME-Kids/187099544682886"
+                                        href={SITE_SOCIAL_LINKS.facebook}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center hover:scale-110 transition-transform"
@@ -142,7 +174,7 @@ export default function ContactPage() {
                                         <Facebook className="w-6 h-6 text-white" />
                                     </a>
                                     <a
-                                        href="https://www.instagram.com/timekidspreschools"
+                                        href={SITE_SOCIAL_LINKS.instagram}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center hover:scale-110 transition-transform"
@@ -150,7 +182,7 @@ export default function ContactPage() {
                                         <Instagram className="w-6 h-6 text-white" />
                                     </a>
                                     <a
-                                        href="https://www.youtube.com/@t.i.m.e.kidspreschoolstkps9493"
+                                        href={SITE_SOCIAL_LINKS.youtube}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center hover:scale-110 transition-transform"
@@ -167,7 +199,6 @@ export default function ContactPage() {
                             </Card>
                         </div>
 
-                        {/* Contact Form */}
                         <div className="lg:col-span-2">
                             <Card>
                                 <h3 className="font-bubblegum text-2xl mb-6 text-gray-900 tracking-wide">Send Us a Message</h3>
@@ -286,10 +317,9 @@ export default function ContactPage() {
                         </div>
                     </div>
                 </div>
-            </section >
+            </section>
 
-            {/* Careers Section */}
-            < section id="careers" className="section-gap bg-gradient-to-br from-primary-500 to-primary-600 text-white" >
+            <section id="careers" className="section-gap bg-gradient-to-br from-primary-500 to-primary-600 text-white">
                 <div className="container mx-auto px-4">
                     <div className="max-w-4xl mx-auto text-center">
                         <Briefcase className="w-16 h-16 mx-auto mb-6" />
@@ -304,7 +334,7 @@ export default function ContactPage() {
                         </Link>
                     </div>
                 </div>
-            </section >
-        </div >
+            </section>
+        </div>
     );
 }

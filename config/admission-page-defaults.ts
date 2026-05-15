@@ -24,6 +24,8 @@ export type AdmissionVideoCard = {
     author: string;
     location?: string;
     video_url: string;
+    /** Multiple embeds in one card (e.g. Parents Testimonials carousel). */
+    video_urls?: string[];
     thumbnail_url?: string;
 };
 
@@ -105,27 +107,65 @@ export const DEFAULT_ADMISSION_PAGE_DATA: AdmissionPageData = {
     happy_parents_videos: [
         {
             title: "Annual Day Fun",
-            author: "T.I.M.E. Kids Kilpauk",
-            location: "Chennai",
-            video_url: "/chaninai kilpauk-AnnualDay-Video-2018-19.mp4",
+            author: "T.I.M.E. Kids",
+            video_url:
+                "https://iframe.mediadelivery.net/embed/117208/05fa5317-8993-4f3e-b24b-a9b7f61175ef?autoplay=true",
             thumbnail_url: "/feature-annual-day-celebrations.png",
         },
         {
             title: "School Activities",
-            author: "T.I.M.E. Kids Chennai",
-            location: "Chennai",
-            video_url: "/chennai2.mp4",
+            author: "T.I.M.E. Kids",
+            video_url:
+                "https://iframe.mediadelivery.net/embed/117208/76ca3eeb-db55-4472-8a3d-dd9bc1ac7f62?autoplay=true",
             thumbnail_url: "/feature-safe-infrastructure.png",
         },
         {
             title: "Happy Moments",
-            author: "T.I.M.E. Kids Trichy",
-            location: "Trichy",
-            video_url: "/trichy-rajacolony.mp4",
+            author: "Parents Testimonials",
+            video_url:
+                "https://iframe.mediadelivery.net/embed/117208/61fb5949-de73-42f7-8c27-f4918ff9b9ff?autoplay=true",
             thumbnail_url: "/5.jpeg",
         },
     ],
 };
+
+function normalizeHappyParentVideoCard(v: Record<string, unknown>): AdmissionVideoCard {
+    const title = String(v?.title || "").trim();
+    let author = String(v?.author || "");
+    let location = v?.location != null ? String(v.location) : undefined;
+
+    if (title === "Annual Day Fun" || title === "School Activities") {
+        author = "T.I.M.E. Kids";
+        location = undefined;
+    }
+    const happyMomentsEmbed =
+        "https://iframe.mediadelivery.net/embed/117208/61fb5949-de73-42f7-8c27-f4918ff9b9ff?autoplay=true";
+
+    if (title === "Happy Moments") {
+        if (/trichy/i.test(author) || author === "T.I.M.E. Kids Trichy") {
+            author = "Parents Testimonials";
+        }
+        location = undefined;
+        return {
+            title,
+            author,
+            location,
+            video_url: happyMomentsEmbed,
+            thumbnail_url: v?.thumbnail_url != null ? String(v.thumbnail_url) : undefined,
+        };
+    }
+
+    return {
+        title,
+        author,
+        location,
+        video_url: String(v?.video_url || ""),
+        video_urls: Array.isArray(v?.video_urls)
+            ? (v.video_urls as unknown[]).map((u) => String(u || "")).filter(Boolean)
+            : undefined,
+        thumbnail_url: v?.thumbnail_url != null ? String(v.thumbnail_url) : undefined,
+    };
+}
 
 function deepMerge<T extends Record<string, unknown>>(base: T, patch: Partial<T> | null | undefined): T {
     if (!patch || typeof patch !== "object") return base;
@@ -167,13 +207,7 @@ export function mergeAdmissionPageData(raw: Partial<AdmissionPageData> | null | 
             answer: String(f?.answer || ""),
         })) : DEFAULT_ADMISSION_PAGE_DATA.faqs;
         merged.happy_parents_videos = Array.isArray((merged as any).happy_parents_videos)
-            ? (merged as any).happy_parents_videos.map((v: any) => ({
-                  title: String(v?.title || ""),
-                  author: String(v?.author || ""),
-                  location: v?.location != null ? String(v.location) : undefined,
-                  video_url: String(v?.video_url || ""),
-                  thumbnail_url: v?.thumbnail_url != null ? String(v.thumbnail_url) : undefined,
-              }))
+            ? (merged as any).happy_parents_videos.map((v: any) => normalizeHappyParentVideoCard(v))
             : DEFAULT_ADMISSION_PAGE_DATA.happy_parents_videos;
         return merged;
     } catch {

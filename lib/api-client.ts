@@ -1,3 +1,5 @@
+import { toCanonicalPublicHref } from "@/config/site-public";
+
 const normalizeBase = (value: string | undefined, fallback: string) => {
     const base = (value && value.trim()) || fallback;
     return base.endsWith("/") ? base.slice(0, -1) : base;
@@ -130,7 +132,18 @@ export const apiUrl = (path: string) => `${resolvedApiBase()}${normalizeApiPath(
 export const mediaUrl = (path?: string | null) => {
     const mediaBase = resolvedMediaBase();
     if (!path) return "";
-    if (/^https?:\/\//i.test(path)) return path;
+    if (/^https?:\/\//i.test(path)) {
+        const canonical = toCanonicalPublicHref(path);
+        try {
+            const u = new URL(canonical);
+            if (u.pathname.startsWith("/media/")) {
+                return `${mediaBase}${u.pathname.replace(/^\/media/, "")}`;
+            }
+        } catch {
+            /* ignore */
+        }
+        return canonical;
+    }
     if (path.startsWith(mediaBase)) return path;
     if (path.startsWith("/media")) return `${mediaBase}${path.replace(/^\/media/, "")}`;
     if (path.startsWith("/")) return path;

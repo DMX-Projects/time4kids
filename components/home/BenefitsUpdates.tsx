@@ -12,7 +12,6 @@ import {
     ChevronLeft,
     ChevronRight,
     GraduationCap,
-    Play,
     ShieldCheck,
     Sparkles,
     Star,
@@ -21,7 +20,12 @@ import {
 } from 'lucide-react';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
-import Modal from '@/components/ui/Modal';
+import FranchiseVideoBlob, {
+    FranchiseBlobThumbnail,
+    getFranchiseVideoEmbedSrc,
+} from '@/components/home/FranchiseVideoBlob';
+import { FranchiseBlobShell } from '@/components/home/franchise-blob';
+import FranchisePhotoGalleryModal from '@/components/home/FranchisePhotoGalleryModal';
 import { DEFAULT_HOME_PAGE_DATA } from '@/config/home-page-defaults';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -68,93 +72,6 @@ function FranchiseHandprintIcon({ className }: { className?: string }) {
     );
 }
 
-/** YouTube watch / embed / shorts / youtu.be → embed URL, or null for direct video/file URLs. */
-function getYoutubeEmbedSrc(raw: string): string | null {
-    const u = raw.trim();
-    if (!u) return null;
-    try {
-        const url = new URL(/^https?:\/\//i.test(u) ? u : `https://${u}`);
-        const h = url.hostname.replace(/^www\./i, '');
-        if (h === 'youtu.be') {
-            const id = url.pathname.replace(/^\//, '').split('/')[0];
-            return id ? `https://www.youtube.com/embed/${id}` : null;
-        }
-        if (h.includes('youtube.com')) {
-            const v = url.searchParams.get('v');
-            if (v) return `https://www.youtube.com/embed/${v}`;
-            const m = url.pathname.match(/\/(?:embed|shorts|live)\/([^/?]+)/);
-            if (m?.[1]) return `https://www.youtube.com/embed/${m[1]}`;
-        }
-    } catch {
-        /* ignore */
-    }
-    return null;
-}
-
-function blobShape(variant: number) {
-    const borderRadius =
-        variant % 2 === 0
-            ? '60% 40% 30% 70% / 60% 30% 70% 40%'
-            : '30% 70% 70% 30% / 30% 30% 70% 70%';
-    const glow =
-        variant % 2 === 0
-            ? 'from-orange-300 via-amber-300 to-orange-400'
-            : 'from-sky-300 via-cyan-300 to-teal-400';
-    return { borderRadius, glow };
-}
-
-function FranchiseVideoBlob({
-    variant,
-    surfaceSrc,
-    surfaceAlt,
-    onOpen,
-    videoReady,
-}: {
-    variant: number;
-    surfaceSrc: string;
-    surfaceAlt: string;
-    onOpen: () => void;
-    videoReady: boolean;
-}) {
-    const { borderRadius, glow } = blobShape(variant);
-
-    return (
-        <button
-            type="button"
-            onClick={onOpen}
-            disabled={!videoReady}
-            className="group relative mx-auto w-full max-w-[min(100%,20rem)] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8ec] disabled:pointer-events-none disabled:opacity-55 sm:max-w-[22rem] lg:max-w-[24rem]"
-            aria-label={videoReady ? 'Play franchise video' : 'Video not configured yet'}
-        >
-            <div
-                className={`pointer-events-none absolute inset-0 scale-[0.92] rounded-full bg-gradient-to-br ${glow} opacity-30 blur-2xl transition-opacity duration-500 group-hover:opacity-40 group-disabled:opacity-20`}
-                aria-hidden
-            />
-            <div
-                className="relative aspect-square w-full overflow-hidden border-[7px] border-white shadow-[0_24px_56px_rgba(15,23,42,0.16)] transition-transform duration-500 group-hover:scale-[1.02] group-disabled:group-hover:scale-100 sm:border-[8px] lg:border-[9px]"
-                style={{ borderRadius }}
-            >
-                <Image
-                    src={surfaceSrc}
-                    alt={surfaceAlt}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 90vw, 360px"
-                    unoptimized={/^https?:\/\//i.test(surfaceSrc)}
-                />
-                <span
-                    className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/30"
-                    aria-hidden
-                >
-                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 text-orange-600 shadow-lg ring-2 ring-white/80 sm:h-[4.25rem] sm:w-[4.25rem]">
-                        <Play className="h-9 w-9 sm:h-10 sm:w-10" strokeWidth={2} fill="currentColor" />
-                    </span>
-                </span>
-            </div>
-        </button>
-    );
-}
-
 function FranchisePhotoBlob({
     variant,
     surfaceSrc,
@@ -166,36 +83,20 @@ function FranchisePhotoBlob({
     surfaceAlt: string;
     onOpen: () => void;
 }) {
-    const { borderRadius, glow } = blobShape(variant + 1);
-
     return (
         <button
             type="button"
             onClick={onOpen}
-            className="group relative mx-auto w-full max-w-[min(100%,20rem)] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8ec] sm:max-w-[22rem] lg:max-w-[24rem]"
+            className="group relative mx-auto w-full text-left transition-transform duration-500 hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8ec]"
             aria-label={`View ${surfaceAlt}`}
         >
-            <motion.div
-                className={`pointer-events-none absolute inset-0 scale-[0.92] rounded-full bg-gradient-to-br ${glow} opacity-30 blur-2xl transition-opacity duration-500 group-hover:opacity-40`}
-                aria-hidden
-            />
-            <motion.div
-                className="relative aspect-square w-full overflow-hidden border-[7px] border-white shadow-[0_24px_56px_rgba(15,23,42,0.16)] transition-transform duration-500 group-hover:scale-[1.02] sm:border-[8px] lg:border-[9px]"
-                style={{ borderRadius }}
-            >
-                <Image
-                    src={surfaceSrc}
-                    alt={surfaceAlt}
-                    fill
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                    sizes="(max-width: 640px) 90vw, 360px"
-                    unoptimized={/^https?:\/\//i.test(surfaceSrc)}
-                />
+            <FranchiseBlobShell variant={variant}>
+                <FranchiseBlobThumbnail src={surfaceSrc} alt={surfaceAlt} />
                 <span
-                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-80 transition group-hover:opacity-100"
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-70 transition group-hover:opacity-90 [border-radius:inherit]"
                     aria-hidden
                 />
-            </motion.div>
+            </FranchiseBlobShell>
         </button>
     );
 }
@@ -209,6 +110,7 @@ function FranchiseAdvantageCarousel({
     prevLabel,
     nextLabel,
     dotsLabel,
+    controlsOutside = false,
     children,
 }: {
     slideCount: number;
@@ -219,40 +121,60 @@ function FranchiseAdvantageCarousel({
     prevLabel: string;
     nextLabel: string;
     dotsLabel: string;
+    controlsOutside?: boolean;
     children: React.ReactNode;
 }) {
     if (slideCount === 0) return null;
 
+    const sideNavClass =
+        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200/90 bg-white/95 text-slate-700 shadow-md transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-10 sm:w-10';
+
+    const slideTrack = (
+        <motion.div className={`relative min-w-0 flex-1 overflow-hidden ${controlsOutside ? '' : 'pb-2'}`}>
+            <motion.div
+                className="flex w-full transition-transform duration-500 ease-out will-change-transform"
+                style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+            >
+                {children}
+            </motion.div>
+            {slideCount > 1 && !controlsOutside ? (
+                <>
+                    <button
+                        type="button"
+                        onClick={onPrev}
+                        className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-800 shadow-md transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-11 sm:w-11"
+                        aria-label={prevLabel}
+                    >
+                        <ChevronLeft className="h-6 w-6" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onNext}
+                        className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-800 shadow-md transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-11 sm:w-11"
+                        aria-label={nextLabel}
+                    >
+                        <ChevronRight className="h-6 w-6" />
+                    </button>
+                </>
+            ) : null}
+        </motion.div>
+    );
+
     return (
         <>
-            <div className="relative overflow-hidden pb-2">
-                <motion.div
-                    className="flex transition-transform duration-500 ease-out will-change-transform"
-                    style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-                >
-                    {children}
+            {controlsOutside && slideCount > 1 ? (
+                <motion.div className="flex items-center gap-2 sm:gap-3">
+                    <button type="button" onClick={onPrev} className={sideNavClass} aria-label={prevLabel}>
+                        <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                    </button>
+                    {slideTrack}
+                    <button type="button" onClick={onNext} className={sideNavClass} aria-label={nextLabel}>
+                        <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+                    </button>
                 </motion.div>
-                {slideCount > 1 ? (
-                    <>
-                        <button
-                            type="button"
-                            onClick={onPrev}
-                            className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-800 shadow-md transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-11 sm:w-11"
-                            aria-label={prevLabel}
-                        >
-                            <ChevronLeft className="h-6 w-6" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={onNext}
-                            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-800 shadow-md transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-11 sm:w-11"
-                            aria-label={nextLabel}
-                        >
-                            <ChevronRight className="h-6 w-6" />
-                        </button>
-                    </>
-                ) : null}
-            </div>
+            ) : (
+                slideTrack
+            )}
             {slideCount > 1 ? (
                 <div className="mt-2 flex justify-center gap-2" role="tablist" aria-label={dotsLabel}>
                     {Array.from({ length: slideCount }, (_, i) => (
@@ -293,7 +215,14 @@ function NewsUpdateSlide({ text }: { text: string }) {
     );
 }
 
-const FRANCHISE_PHOTO_TARGET_COUNT = 10;
+/** Franchise advantage photo slider — CMS supports up to 8 oval slides. */
+const FRANCHISE_PHOTO_TARGET_COUNT = 8;
+
+/** Always shown first in the oval franchise photo carousel. */
+const PRIORITY_FRANCHISE_PHOTOS: { src: string; alt?: string }[] = [
+    { src: '/franchise-gallery/franchise-nep-compliant.png', alt: 'NEP 2020 compliant — T.I.M.E. Kids' },
+    { src: '/franchise-gallery/franchise-brochure-cover.png', alt: 'Become a franchisee of T.I.M.E. Kids pre-schools' },
+];
 
 function buildFranchisePhotoSlides(
     raw: { src: string; alt?: string }[] | undefined,
@@ -301,11 +230,23 @@ function buildFranchisePhotoSlides(
 ): { src: string; alt?: string }[] {
     const base = raw?.length ? raw : defaults;
     const filtered = base.filter((p) => (p.src || '').trim());
-    if (filtered.length >= FRANCHISE_PHOTO_TARGET_COUNT) {
-        return filtered.slice(0, FRANCHISE_PHOTO_TARGET_COUNT);
+    const out: { src: string; alt?: string }[] = [];
+    const used = new Set<string>();
+
+    for (const p of PRIORITY_FRANCHISE_PHOTOS) {
+        const s = p.src.trim();
+        if (!s || used.has(s)) continue;
+        out.push(p);
+        used.add(s);
     }
-    const out = [...filtered];
-    const used = new Set(out.map((p) => p.src.trim()));
+    for (const p of filtered) {
+        if (out.length >= FRANCHISE_PHOTO_TARGET_COUNT) break;
+        const s = p.src.trim();
+        if (s && !used.has(s)) {
+            out.push(p);
+            used.add(s);
+        }
+    }
     for (const d of defaults) {
         if (out.length >= FRANCHISE_PHOTO_TARGET_COUNT) break;
         const s = d.src.trim();
@@ -373,11 +314,11 @@ export default function BenefitsUpdates() {
     const sectionRef = useRef<HTMLDivElement>(null);
     const [slides, setSlides] = useState<Slide[]>([]);
     const [updatesReady, setUpdatesReady] = useState(false);
-    const [modalVideoIndex, setModalVideoIndex] = useState<number | null>(null);
     const [modalPhotoIndex, setModalPhotoIndex] = useState<number | null>(null);
     const [videoCarouselIndex, setVideoCarouselIndex] = useState(0);
     const [photoCarouselIndex, setPhotoCarouselIndex] = useState(0);
     const [newsIndex, setNewsIndex] = useState(0);
+    const [playingVideoIndex, setPlayingVideoIndex] = useState<number | null>(null);
 
     const franchiseVideos = useMemo(() => {
         const raw =
@@ -408,6 +349,10 @@ export default function BenefitsUpdates() {
     useEffect(() => {
         setPhotoCarouselIndex((i) => Math.min(Math.max(0, i), Math.max(0, franchisePhotos.length - 1)));
     }, [franchisePhotos.length]);
+
+    useEffect(() => {
+        setPlayingVideoIndex(null);
+    }, [videoCarouselIndex]);
 
     const benefits = [...FRANCHISE_SECTION_HIGHLIGHTS];
 
@@ -596,81 +541,94 @@ export default function BenefitsUpdates() {
                         </div>
                         <div className="relative w-full max-w-[min(100%,24rem)] sm:mx-auto lg:mx-0 lg:max-w-[26rem]">
                             {franchiseVideos.length > 0 ? (
-                                <>
-                                    <div className="relative overflow-hidden pb-2">
-                                        <div
-                                            className="flex transition-transform duration-500 ease-out will-change-transform"
-                                            style={{ transform: `translateX(-${videoCarouselIndex * 100}%)` }}
+                                (() => {
+                                    const item = franchiseVideos[videoCarouselIndex] ?? franchiseVideos[0];
+                                    const i = videoCarouselIndex;
+                                    const posterRaw = (item.poster || '').trim();
+                                    const posterSrc =
+                                        mediaUrl(posterRaw || (item.src.trim() ? '/icon-media.svg' : '')) ||
+                                        posterRaw ||
+                                        '/franchise-gallery/franchise-video-poster.png';
+                                    const srcRaw = item.src.trim();
+                                    const embedSrc = getFranchiseVideoEmbedSrc(srcRaw);
+                                    const fileSrc = embedSrc ? null : (srcRaw ? mediaUrl(srcRaw) || srcRaw : null);
+                                    const openable = Boolean(embedSrc || fileSrc);
+
+                                    if (franchiseVideos.length === 1) {
+                                        return (
+                                            <FranchiseVideoBlob
+                                                variant={0}
+                                                surfaceSrc={posterSrc}
+                                                surfaceAlt={item.alt || 'T.I.M.E. Kids franchise advantage'}
+                                                embedSrc={embedSrc}
+                                                fileSrc={fileSrc}
+                                                isPlaying={playingVideoIndex === 0}
+                                                videoReady={openable}
+                                                showPlayOverlay={playingVideoIndex !== 0}
+                                                onPlay={() => openable && setPlayingVideoIndex(0)}
+                                                onStop={() => setPlayingVideoIndex(null)}
+                                            />
+                                        );
+                                    }
+
+                                    return (
+                                        <FranchiseAdvantageCarousel
+                                            slideCount={franchiseVideos.length}
+                                            activeIndex={videoCarouselIndex}
+                                            onPrev={() => {
+                                                setPlayingVideoIndex(null);
+                                                setVideoCarouselIndex((idx) => {
+                                                    const n = franchiseVideos.length;
+                                                    return (idx - 1 + n) % n;
+                                                });
+                                            }}
+                                            onNext={() => {
+                                                setPlayingVideoIndex(null);
+                                                setVideoCarouselIndex((idx) => {
+                                                    const n = franchiseVideos.length;
+                                                    return (idx + 1) % n;
+                                                });
+                                            }}
+                                            onSelect={(next) => {
+                                                setPlayingVideoIndex(null);
+                                                setVideoCarouselIndex(next);
+                                            }}
+                                            prevLabel="Previous video"
+                                            nextLabel="Next video"
+                                            dotsLabel="Video slides"
+                                            controlsOutside
                                         >
-                                            {franchiseVideos.map((item, i) => {
-                                                const posterRaw = (item.poster || '').trim();
-                                                const posterSrc =
-                                                    mediaUrl(posterRaw || (item.src.trim() ? '/icon-media.svg' : '')) ||
-                                                    posterRaw ||
+                                            {franchiseVideos.map((v, vi) => {
+                                                const pr = (v.poster || '').trim();
+                                                const ps =
+                                                    mediaUrl(pr || (v.src.trim() ? '/icon-media.svg' : '')) ||
+                                                    pr ||
                                                     '/icon-media.svg';
-                                                const openable = Boolean(item.src.trim());
+                                                const sr = v.src.trim();
+                                                const es = getFranchiseVideoEmbedSrc(sr);
+                                                const fs2 = es ? null : (sr ? mediaUrl(sr) || sr : null);
+                                                const canOpen = Boolean(es || fs2);
+                                                const active = vi === videoCarouselIndex;
                                                 return (
-                                                    <div key={`${item.poster}-${item.src}-${i}`} className="min-w-full shrink-0 px-1 sm:px-2">
+                                                    <div key={`${v.poster}-${v.src}-${vi}`} className="w-full shrink-0 basis-full">
                                                         <FranchiseVideoBlob
-                                                            variant={i}
-                                                            surfaceSrc={posterSrc}
-                                                            surfaceAlt={item.alt || `Franchise video ${i + 1}`}
-                                                            videoReady={openable}
-                                                            onOpen={() => openable && setModalVideoIndex(i)}
+                                                            variant={vi}
+                                                            surfaceSrc={ps}
+                                                            surfaceAlt={v.alt || `Franchise video ${vi + 1}`}
+                                                            embedSrc={es}
+                                                            fileSrc={fs2}
+                                                            isPlaying={playingVideoIndex === vi && active}
+                                                            videoReady={canOpen}
+                                                            showPlayOverlay={active && playingVideoIndex !== vi}
+                                                            onPlay={() => canOpen && setPlayingVideoIndex(vi)}
+                                                            onStop={() => setPlayingVideoIndex(null)}
                                                         />
                                                     </div>
                                                 );
                                             })}
-                                        </div>
-                                        {franchiseVideos.length > 1 ? (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setVideoCarouselIndex((idx) => {
-                                                            const n = franchiseVideos.length;
-                                                            return (idx - 1 + n) % n;
-                                                        })
-                                                    }
-                                                    className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-800 shadow-md transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-11 sm:w-11"
-                                                    aria-label="Previous video"
-                                                >
-                                                    <ChevronLeft className="h-6 w-6" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setVideoCarouselIndex((idx) => {
-                                                            const n = franchiseVideos.length;
-                                                            return (idx + 1) % n;
-                                                        })
-                                                    }
-                                                    className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-800 shadow-md transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-11 sm:w-11"
-                                                    aria-label="Next video"
-                                                >
-                                                    <ChevronRight className="h-6 w-6" />
-                                                </button>
-                                            </>
-                                        ) : null}
-                                    </div>
-                                    {franchiseVideos.length > 1 ? (
-                                        <div className="mt-2 flex justify-center gap-2" role="tablist" aria-label="Video slides">
-                                            {franchiseVideos.map((_, i) => (
-                                                <button
-                                                    key={i}
-                                                    type="button"
-                                                    role="tab"
-                                                    aria-selected={i === videoCarouselIndex}
-                                                    onClick={() => setVideoCarouselIndex(i)}
-                                                    className={`h-2.5 rounded-full transition-all ${
-                                                        i === videoCarouselIndex ? 'w-8 bg-orange-500' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
-                                                    }`}
-                                                    aria-label={`Show video ${i + 1}`}
-                                                />
-                                            ))}
-                                        </div>
-                                    ) : null}
-                                </>
+                                        </FranchiseAdvantageCarousel>
+                                    );
+                                })()
                             ) : null}
                         </div>
                         {franchisePhotos.length > 0 ? (
@@ -694,6 +652,7 @@ export default function BenefitsUpdates() {
                                     prevLabel="Previous photo"
                                     nextLabel="Next photo"
                                     dotsLabel="Photo slides"
+                                    controlsOutside
                                 >
                                     {franchisePhotos.map((item, i) => {
                                         const srcRaw = (item.src || '').trim();
@@ -704,7 +663,10 @@ export default function BenefitsUpdates() {
                                                     variant={i}
                                                     surfaceSrc={imageSrc}
                                                     surfaceAlt={item.alt || `Franchise photo ${i + 1}`}
-                                                    onOpen={() => setModalPhotoIndex(i)}
+                                                    onOpen={() => {
+                                                        setPhotoCarouselIndex(i);
+                                                        setModalPhotoIndex(i);
+                                                    }}
                                                 />
                                             </div>
                                         );
@@ -716,77 +678,16 @@ export default function BenefitsUpdates() {
                 </div>
             </div>
 
-            <Modal
-                isOpen={modalVideoIndex !== null}
-                onClose={() => setModalVideoIndex(null)}
-                title="Franchise video"
-                size="xl"
-            >
-                {modalVideoIndex !== null && franchiseVideos[modalVideoIndex] ? (
-                    (() => {
-                        const item = franchiseVideos[modalVideoIndex];
-                        const srcRaw = item.src.trim();
-                        if (!srcRaw) {
-                            return (
-                                <p className="text-center text-sm text-slate-600">
-                                    Add a video URL (MP4 or YouTube) for this slide in Admin → Home content → Franchise videos.
-                                </p>
-                            );
-                        }
-                        const resolved = mediaUrl(srcRaw) || srcRaw;
-                        const yt = getYoutubeEmbedSrc(srcRaw);
-                        if (yt) {
-                            return (
-                                <div className="aspect-video w-full overflow-hidden rounded-xl bg-black shadow-lg">
-                                    <iframe
-                                        src={`${yt}?rel=0`}
-                                        title={item.alt || 'Franchise video'}
-                                        className="h-full w-full"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        allowFullScreen
-                                    />
-                                </div>
-                            );
-                        }
-                        return (
-                            <video
-                                key={resolved}
-                                src={resolved}
-                                controls
-                                playsInline
-                                className="mx-auto max-h-[75vh] w-full rounded-xl bg-black shadow-lg"
-                            />
-                        );
-                    })()
-                ) : null}
-            </Modal>
 
-            <Modal
-                isOpen={modalPhotoIndex !== null}
+            <FranchisePhotoGalleryModal
+                photos={franchisePhotos}
+                activeIndex={modalPhotoIndex}
                 onClose={() => setModalPhotoIndex(null)}
-                title="Franchise photo"
-                size="xl"
-            >
-                {modalPhotoIndex !== null && franchisePhotos[modalPhotoIndex] ? (
-                    (() => {
-                        const item = franchisePhotos[modalPhotoIndex];
-                        const srcRaw = (item.src || '').trim();
-                        const resolved = mediaUrl(srcRaw) || srcRaw;
-                        return (
-                            <div className="relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-xl bg-slate-100 shadow-lg">
-                                <Image
-                                    src={resolved}
-                                    alt={item.alt || 'Franchise photo'}
-                                    fill
-                                    className="object-cover"
-                                    sizes="(max-width: 768px) 90vw, 512px"
-                                    unoptimized={/^https?:\/\//i.test(resolved)}
-                                />
-                            </div>
-                        );
-                    })()
-                ) : null}
-            </Modal>
+                onIndexChange={(i) => {
+                    setModalPhotoIndex(i);
+                    setPhotoCarouselIndex(i);
+                }}
+            />
 
         </section>
     );

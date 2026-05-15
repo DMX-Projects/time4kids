@@ -70,6 +70,7 @@ export type FranchiseResourceDoc = {
     category: string;
     category_display?: string;
     title: string;
+    source_path?: string | null;
     description?: string;
     file: string | null;
     franchise: number | null;
@@ -97,6 +98,7 @@ function sortDocsByCategoryOrder(list: FranchiseResourceDoc[]): FranchiseResourc
 const emptyForm = {
     category: "ACADEMIC_DOCUMENTS",
     title: "",
+    source_path: "",
     description: "",
     academic_year: "",
     order: 0,
@@ -235,6 +237,7 @@ export default function AdminFranchiseDocumentsPage() {
         setForm({
             category: row.category,
             title: row.title,
+            source_path: row.source_path ?? "",
             description: row.description ?? "",
             academic_year: row.academic_year ?? "",
             order: row.order ?? 0,
@@ -263,6 +266,7 @@ export default function AdminFranchiseDocumentsPage() {
                 const metaBody = {
                     category: form.category,
                     title: form.title.trim(),
+                    source_path: form.source_path.trim() || null,
                     description: form.description,
                     academic_year: form.academic_year || "",
                     order: form.order,
@@ -295,6 +299,7 @@ export default function AdminFranchiseDocumentsPage() {
                 const fd = new FormData();
                 fd.append("category", form.category);
                 fd.append("title", form.title.trim());
+                if (form.source_path.trim()) fd.append("source_path", form.source_path.trim());
                 fd.append("description", form.description);
                 fd.append("academic_year", form.academic_year);
                 fd.append("order", String(form.order));
@@ -578,6 +583,15 @@ export default function AdminFranchiseDocumentsPage() {
                             value={form.title}
                             onChange={(e) => setForm({ ...form, title: e.target.value })}
                             required
+                        />
+                    </label>
+                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+                        Centre Page path (optional)
+                        <input
+                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono text-xs"
+                            placeholder="e.g. holidayslist-2026-27/AP Holiday List 2026-2027.pdf"
+                            value={form.source_path}
+                            onChange={(e) => setForm({ ...form, source_path: e.target.value })}
                         />
                     </label>
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
