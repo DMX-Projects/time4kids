@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import ScrollProgress from "@/components/animations/ScrollProgress";
 import SmoothScroll from "@/components/shared/SmoothScroll";
 import ConditionalChrome from "@/components/layout/ConditionalChrome";
+import FloatingSideTabs from "@/components/layout/FloatingSideTabs";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { SchoolDataProvider } from "@/components/dashboard/shared/SchoolDataProvider";
@@ -105,6 +106,10 @@ export default function RootLayout({
 
                             <ConditionalChrome>
                                 <Footer />
+                            </ConditionalChrome>
+
+                            <ConditionalChrome>
+                                <FloatingSideTabs />
                             </ConditionalChrome>
                         </SchoolDataProvider>
                     </ToastProvider>
