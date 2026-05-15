@@ -104,7 +104,7 @@ export default function HeroSection() {
             subtitle: "for your Child",
             stats: [
                 { val: "250+", label: "Pre-schools" },
-                { val: "50,000+", label: "Students Trained" }
+                { val: "1 Lakh+", label: "Happy Kids" }
             ],
             cta: "Admissions Open"
         },
@@ -113,7 +113,7 @@ export default function HeroSection() {
             subtitle: "of your Child",
             stats: [
                 { val: "250+", label: "Pre-schools" },
-                { val: "50,000+", label: "Students Trained" }
+                { val: "1 Lakh+", label: "Happy Kids" }
             ]
         }
     ];

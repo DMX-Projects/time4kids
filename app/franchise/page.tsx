@@ -13,6 +13,8 @@ import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
 import TwinklingStars from '@/components/animations/TwinklingStars';
 import { Download } from 'lucide-react';
 import { apiUrl } from '@/lib/api-client';
+import { findMarketingAsset, marketingAssetHref } from '@/lib/marketing-assets';
+import { mediaUrl } from '@/lib/api-client';
 import { DEFAULT_FRANCHISE_PAGE_DATA, mergeFranchisePageData, type FranchisePageData } from '@/config/franchise-page-defaults';
 
 export default function FranchisePage() {
@@ -44,7 +46,7 @@ export default function FranchisePage() {
         void fetchData();
     }, []);
 
-    const franchiseBrochure = assets.find(a => a.slug === 'franchise-brochure');
+    const franchiseBrochure = findMarketingAsset(assets, 'franchise-brochure');
 
     const hero = pageData?.hero || DEFAULT_FRANCHISE_PAGE_DATA.hero;
     const testimonials = pageData?.testimonials || DEFAULT_FRANCHISE_PAGE_DATA.testimonials;
@@ -52,8 +54,11 @@ export default function FranchisePage() {
     const brochure = pageData?.brochure || DEFAULT_FRANCHISE_PAGE_DATA.brochure;
 
     const brochureAssetSlug = (brochure?.marketing_asset_slug || 'franchise-brochure').trim();
-    const brochureAsset = assets.find((a) => a.slug === brochureAssetSlug);
-    const brochureHref = brochureAsset?.file || brochure?.fallback_url || franchiseBrochure?.file || "https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf";
+    const brochureAsset = findMarketingAsset(assets, brochureAssetSlug);
+    const brochureHref = marketingAssetHref(
+        brochureAsset || franchiseBrochure,
+        brochure?.fallback_url || mediaUrl('pc/franchise-brochure/franchise-brochure.pdf'),
+    );
     const brochureLabel = brochureAsset?.title || brochure?.button_label || franchiseBrochure?.title || "Download Brochure (PDF)";
 
     return (
@@ -117,6 +122,7 @@ export default function FranchisePage() {
                                 thumbnailUrl={(t.thumbnail_url || "").trim() || undefined}
                                 isPlaying={playingIndex === idx}
                                 onPlay={() => setPlayingIndex(idx)}
+                                onStop={() => setPlayingIndex(null)}
                             />
                         ))}
                     </div>
@@ -232,7 +238,6 @@ export default function FranchisePage() {
                             href={brochureHref}
                             target="_blank"
                             rel="noopener noreferrer"
-                            download
                             className="inline-block bg-white text-primary-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-xl hover:shadow-2xl"
                         >
                             {brochureLabel}

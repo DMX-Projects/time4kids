@@ -3,11 +3,22 @@
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { Facebook, Instagram, Youtube, MapPin, Phone, Mail } from 'lucide-react';
 import { gsap } from 'gsap';
 import QRCode from '@/components/ui/QRCode';
+import {
+    SITE_CORPORATE_CONTACT,
+    SITE_HOMEPAGE_FOOTER_PHONE,
+    SITE_HOMEPAGE_FOOTER_PHONE_TEL,
+    SITE_SOCIAL_LINKS,
+} from '@/config/site-contact';
 
 const Footer = () => {
+    const pathname = usePathname();
+    const isHomePage = pathname === '/';
+    const footerPhone = isHomePage ? SITE_HOMEPAGE_FOOTER_PHONE : SITE_CORPORATE_CONTACT.phone;
+    const footerPhoneTel = isHomePage ? SITE_HOMEPAGE_FOOTER_PHONE_TEL : SITE_CORPORATE_CONTACT.phoneTel;
     const currentYear = new Date().getFullYear();
     const footerRef = useRef<HTMLDivElement>(null);
 
@@ -118,20 +129,26 @@ const Footer = () => {
                         <ul className="space-y-4">
                             <li className="flex items-start space-x-3">
                                 <Mail className="w-5 h-5 text-gray-900 mt-0.5 flex-shrink-0" />
-                                <a href="mailto:info@timekids.com" className="text-gray-800 hover:text-blue-600 transition-colors text-sm font-medium">
-                                    info@timekids.com
+                                <a
+                                    href={`mailto:${SITE_CORPORATE_CONTACT.email}`}
+                                    className="text-gray-800 hover:text-blue-600 transition-colors text-sm font-medium"
+                                >
+                                    {SITE_CORPORATE_CONTACT.email}
                                 </a>
                             </li>
                             <li className="flex items-start space-x-3">
                                 <Phone className="w-5 h-5 text-gray-900 mt-0.5 flex-shrink-0" />
-                                <a href="tel:+917019124852" className="text-gray-800 hover:text-blue-600 transition-colors text-sm font-medium">
-                                    +91 7019124852
+                                <a
+                                    href={footerPhoneTel}
+                                    className="text-gray-800 hover:text-blue-600 transition-colors text-sm font-medium"
+                                >
+                                    {footerPhone}
                                 </a>
                             </li>
                             <li className="flex items-start space-x-3">
                                 <MapPin className="w-5 h-5 text-gray-900 mt-0.5 flex-shrink-0" />
                                 <span className="text-gray-800 text-sm font-medium">
-                                    Hyderabad, India
+                                    {SITE_CORPORATE_CONTACT.locationLabel}
                                 </span>
                             </li>
                         </ul>
@@ -142,7 +159,7 @@ const Footer = () => {
                         <h3 className="font-bold text-lg mb-6 text-gray-900">Connect With Us</h3>
                         <div className="flex space-x-3 mb-6">
                             <a
-                                href="https://www.facebook.com/pages/TIME-Kids/187099544682886"
+                                href={SITE_SOCIAL_LINKS.facebook}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-8 h-8 bg-gray-600 hover:bg-blue-600 text-white rounded flex items-center justify-center transition-all hover:scale-110"
@@ -150,7 +167,7 @@ const Footer = () => {
                                 <Facebook className="w-4 h-4" />
                             </a>
                             <a
-                                href="https://www.instagram.com/timekidspreschools"
+                                href={SITE_SOCIAL_LINKS.instagram}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-8 h-8 bg-gray-600 hover:bg-pink-600 text-white rounded flex items-center justify-center transition-all hover:scale-110"
@@ -158,7 +175,7 @@ const Footer = () => {
                                 <Instagram className="w-4 h-4" />
                             </a>
                             <a
-                                href="https://www.youtube.com/@t.i.m.e.kidspreschoolstkps9493"
+                                href={SITE_SOCIAL_LINKS.youtube}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-8 h-8 bg-gray-600 hover:bg-red-600 text-white rounded flex items-center justify-center transition-all hover:scale-110"

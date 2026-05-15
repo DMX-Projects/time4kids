@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 import { useToast } from '@/components/ui/Toast';
 import { trackLeadSubmission } from '@/lib/tracking';
-import { apiUrl } from '@/lib/api-client';
+import { fetchCentersByCity, fetchCities, type CentreOption } from '@/lib/api/franchise-lookup';
 
 interface AdmissionFormData {
     parentName: string;
@@ -28,18 +28,15 @@ interface AdmissionFormProps {
     contactPhone?: string;
 }
 
-interface Center {
-    id: number;
-    name: string;
-    slug: string;
-    city: string;
-}
-
 const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const [centers, setCenters] = useState<Center[]>([]);
+    const [cities, setCities] = useState<string[]>([]);
+    const [loadingCities, setLoadingCities] = useState(true);
+    const [citiesError, setCitiesError] = useState<string | null>(null);
+    const [centers, setCenters] = useState<CentreOption[]>([]);
     const [loadingCenters, setLoadingCenters] = useState(false);
+    const [centersError, setCentersError] = useState<string | null>(null);
     
     const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<AdmissionFormData>({
         defaultValues: {
@@ -48,33 +45,64 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
     });
     
     const selectedCity = watch('city');
-    const { addEnquiry, locations } = useSchoolData();
+    const { addEnquiry } = useSchoolData();
     const { showToast } = useToast();
 
-    // Fetch centers when city changes
     useEffect(() => {
+        let cancelled = false;
+        const loadCities = async () => {
+            setLoadingCities(true);
+            setCitiesError(null);
+            try {
+                const rows = await fetchCities();
+                if (cancelled) return;
+                setCities(rows.map((r) => r.name).filter(Boolean));
+            } catch (err: unknown) {
+                if (cancelled) return;
+                const message = err instanceof Error ? err.message : "Could not load cities.";
+                setCitiesError(message);
+                setCities([]);
+            } finally {
+                if (!cancelled) setLoadingCities(false);
+            }
+        };
+        void loadCities();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    useEffect(() => {
+        setValue('center', '');
         if (!selectedCity) {
             setCenters([]);
+            setCentersError(null);
             return;
         }
 
-        const fetchCenters = async () => {
+        let cancelled = false;
+        const loadCenters = async () => {
             setLoadingCenters(true);
+            setCentersError(null);
             try {
-                const res = await fetch(`${apiUrl('/franchises/public/list/')}?city=${encodeURIComponent(selectedCity)}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setCenters(Array.isArray(data) ? data : data.results || []);
-                }
-            } catch (err) {
-                console.error("Failed to fetch centers:", err);
+                const rows = await fetchCentersByCity(selectedCity);
+                if (cancelled) return;
+                setCenters(rows);
+            } catch (err: unknown) {
+                if (cancelled) return;
+                const message = err instanceof Error ? err.message : "Could not load centers.";
+                setCentersError(message);
+                setCenters([]);
             } finally {
-                setLoadingCenters(false);
+                if (!cancelled) setLoadingCenters(false);
             }
         };
 
-        void fetchCenters();
-    }, [selectedCity]);
+        void loadCenters();
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedCity, setValue]);
 
     const onSubmit = async (data: AdmissionFormData) => {
         setSubmitError(null);
@@ -138,18 +166,31 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                             ))}
 
                             <div className="space-y-2">
-                                <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1">
-                                    Your City <span className="text-red-500">*</span>
+                                <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1 flex items-center justify-between">
+                                    <span>
+                                        Your City <span className="text-red-500">*</span>
+                                    </span>
+                                    {loadingCities && <Loader2 className="w-4 h-4 animate-spin text-orange-500" />}
                                 </label>
                                 <select
                                     {...register('city', { required: true })}
-                                    className="w-full px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl appearance-none font-medium text-[#2D2D52] focus:ring-4 focus:ring-yellow-100 outline-none"
+                                    disabled={loadingCities}
+                                    className="w-full px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl appearance-none font-medium text-[#2D2D52] focus:ring-4 focus:ring-yellow-100 outline-none disabled:opacity-50"
                                 >
-                                    <option value="">Select your city</option>
-                                    {locations.map((loc) => (
-                                        <option key={loc.city_name} value={loc.city_name}>{loc.city_name}</option>
+                                    <option value="">
+                                        {loadingCities ? 'Loading cities...' : 'Select your city'}
+                                    </option>
+                                    {cities.map((name) => (
+                                        <option key={name} value={name}>
+                                            {name}
+                                        </option>
                                     ))}
                                 </select>
+                                {citiesError && (
+                                    <p className="text-xs text-red-600" role="alert">
+                                        {citiesError}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -173,6 +214,11 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                                         </>
                                     )}
                                 </select>
+                                {centersError && (
+                                    <p className="text-xs text-red-600" role="alert">
+                                        {centersError}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -220,12 +266,18 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                                         placeholder="Any specific questions or requirements..."
                                     />
                                 </div>
-                                <div className="flex justify-center md:justify-start pt-1">
+                                <div className="flex flex-col items-center gap-2 pt-1 md:items-start">
+                                    {submitError && (
+                                        <p className="text-sm text-red-600" role="alert">
+                                            {submitError}
+                                        </p>
+                                    )}
                                     <motion.button
                                         whileHover={{ scale: 1.03, y: -2 }}
                                         whileTap={{ scale: 0.97 }}
                                         type="submit"
-                                        className="bg-[#FF7A2F] text-white px-8 py-2.5 rounded-xl font-fredoka font-bold text-base md:text-lg shadow-[0_5px_0_#D35400] border border-white/90 transition-all whitespace-nowrap"
+                                        disabled={loadingCities}
+                                        className="bg-[#FF7A2F] text-white px-8 py-2.5 rounded-xl font-fredoka font-bold text-base md:text-lg shadow-[0_5px_0_#D35400] border border-white/90 transition-all whitespace-nowrap disabled:opacity-60"
                                     >
                                         Submit Enquiry
                                     </motion.button>

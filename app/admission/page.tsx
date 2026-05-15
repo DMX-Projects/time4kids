@@ -12,7 +12,10 @@ import AdmissionForm from '@/components/admission/AdmissionForm';
 import FAQAccordion from '@/components/admission/FAQAccordion';
 import TestimonialVideo from '@/components/shared/TestimonialVideo';
 import { apiUrl } from '@/lib/api-client';
+import { findMarketingAsset, marketingAssetHref } from '@/lib/marketing-assets';
+import { mediaUrl } from '@/lib/api-client';
 import { DEFAULT_ADMISSION_PAGE_DATA, mergeAdmissionPageData } from '@/config/admission-page-defaults';
+import VirtualTourModal from '@/components/home/VirtualTourModal';
 
 const IconMap: Record<string, any> = {
     Brain, Heart, Users, Palette, Music, Dumbbell, BookOpen, Globe, Award, DollarSign, Headphones, TrendingUp
@@ -76,6 +79,8 @@ export default function AdmissionPage() {
     const [pageData, setPageData] = useState<any>(DEFAULT_ADMISSION_PAGE_DATA);
     const [assets, setAssets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [virtualTourOpen, setVirtualTourOpen] = useState(false);
+    const [playingParentVideo, setPlayingParentVideo] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -103,8 +108,12 @@ export default function AdmissionPage() {
         void fetchData();
     }, []);
 
-    const admissionBrochure = assets.find(a => a.slug === 'admission-brochure');
-    const virtualTour = assets.find(a => a.slug === 'virtual-tour');
+    const admissionBrochure = findMarketingAsset(assets, 'admission-brochure');
+    const virtualTour = findMarketingAsset(assets, 'virtual-tour');
+    const admissionBrochureHref = marketingAssetHref(
+        admissionBrochure,
+        mediaUrl('pc/admission-brochure/admission-brochure.pdf'),
+    );
 
     const faqSection = pageData?.faq_section || DEFAULT_ADMISSION_PAGE_DATA.faq_section;
     const whyPreschool = pageData?.why_preschool || DEFAULT_ADMISSION_PAGE_DATA.why_preschool;
@@ -286,17 +295,20 @@ export default function AdmissionPage() {
             <section className="py-24 bg-blue-50/50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16"><h2 className="font-display font-black text-4xl md:text-6xl mb-4 text-slate-800">Happy <span className="text-orange-500 underline decoration-wavy decoration-yellow-400">Parents</span></h2></div>
-                    <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                    <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-3">
                         {(pageData?.happy_parents_videos || DEFAULT_ADMISSION_PAGE_DATA.happy_parents_videos || []).slice(0, 6).map((v: any, i: number) => (
-                            <div key={i} className={`transform transition-transform duration-300 ${i === 1 ? "hover:-rotate-1 md:-mt-8" : "hover:rotate-1"}`}>
-                                <TestimonialVideo
-                                    title={v.title}
-                                    author={v.author}
-                                    location={v.location}
-                                    videoUrl={v.video_url}
-                                    thumbnailUrl={v.thumbnail_url}
-                                />
-                            </div>
+                            <TestimonialVideo
+                                key={i}
+                                title={v.title}
+                                author={v.author}
+                                location={v.location}
+                                videoUrl={v.video_url}
+                                videoUrls={Array.isArray(v.video_urls) ? v.video_urls : undefined}
+                                thumbnailUrl={v.thumbnail_url}
+                                isPlaying={playingParentVideo === i}
+                                onPlay={() => setPlayingParentVideo(i)}
+                                onStop={() => setPlayingParentVideo(null)}
+                            />
                         ))}
                     </div>
                 </div>
@@ -328,30 +340,34 @@ export default function AdmissionPage() {
                         <h2 className="font-display font-black text-4xl mb-12 text-slate-800">Download Corner</h2>
                         <div className="grid md:grid-cols-2 gap-10">
                             <a 
-                                href={admissionBrochure?.file || "https://www.timekidspreschools.in/uploads/pc/TIME-KIDS-BROCHURE.pdf"} 
+                                href={admissionBrochureHref}
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                download 
                                 className="group relative bg-pink-50 rounded-[50%_50%_50%_50%_/_40%_40%_60%_60%] p-12 border-4 border-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 flex flex-col items-center"
                             >
                                 <div className="w-16 h-16 bg-pink-500 rounded-full flex items-center justify-center mb-4 text-white shadow-lg group-hover:rotate-12 transition-transform"><Download className="w-8 h-8" /></div>
                                 <h3 className="font-display font-bold text-2xl mb-2 text-slate-800">{admissionBrochure?.title || "Brochure"}</h3>
                                 <p className="text-slate-600 font-medium">Get all the details</p>
                             </a>
-                            <a 
-                                href={virtualTour?.link || "#"} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="group relative bg-purple-50 rounded-[50%_50%_50%_50%_/_60%_60%_40%_40%] p-12 border-4 border-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 flex flex-col items-center text-center"
+                            <button
+                                type="button"
+                                onClick={() => setVirtualTourOpen(true)}
+                                className="group relative bg-purple-50 rounded-[50%_50%_50%_50%_/_60%_60%_40%_40%] p-12 border-4 border-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 flex flex-col items-center text-center w-full"
                             >
                                 <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mb-4 text-white shadow-lg group-hover:-rotate-12 transition-transform"><Video className="w-8 h-8" /></div>
                                 <h3 className="font-display font-bold text-2xl mb-2 text-slate-800">{virtualTour?.title || "Virtual Tour"}</h3>
                                 <p className="text-slate-600 font-medium">Watch the magic</p>
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
             </section>
+
+            <VirtualTourModal
+                isOpen={virtualTourOpen}
+                onClose={() => setVirtualTourOpen(false)}
+                embedUrl={virtualTour?.link}
+            />
         </div>
     );
 }

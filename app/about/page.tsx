@@ -244,7 +244,7 @@ export default function AboutPage() {
                                 <div className="text-sm md:text-base text-gray-600 font-medium">Years in ECE</div>
                             </li>
 
-                            {/* 1000s Happy Kids */}
+                            {/* 1 Lakh+ Happy Kids */}
                             <li className="text-center flex flex-col items-center">
                                 <figure className="w-32 h-20 md:w-40 md:h-24 flex items-center justify-center mb-3 transition-all duration-400 hover:rotate-[20deg] hover:rounded-2xl"
                                     style={{
@@ -256,7 +256,7 @@ export default function AboutPage() {
                                         <Users className="w-12 h-12 md:w-14 md:h-14 text-white" />
                                     </span>
                                 </figure>
-                                <div className="font-bold text-2xl md:text-3xl text-purple-600 mb-1">1000s</div>
+                                <div className="font-bold text-2xl md:text-3xl text-purple-600 mb-1">1 Lakh+</div>
                                 <div className="text-sm md:text-base text-gray-600 font-medium">Happy Kids</div>
                             </li>
                         </ul>

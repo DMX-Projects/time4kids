@@ -3,7 +3,8 @@
  * Each top item opens to grey pill sub-headings, unless `directLinks` is set (links only under yellow).
  * A subsection may list `links` directly, or use `nested` for an extra pill level (e.g. Block Material → Block-1).
  *
- * `adminCategory`: when set, admin "Franchise resources" page can jump the category filter to match.
+ * `adminCategory`: maps to `FranchiseDocument` in the documents app. Centre dashboard resolves
+ * links to uploaded files when titles match; otherwise falls back to legacy URLs or the category hub page.
  */
 
 export type CenterPageLink = {
@@ -25,11 +26,13 @@ export type CenterPageNestedBlock = {
 
 /**
  * Second level under a yellow top row.
- * Use `links` for a flat list, or `nested` for an extra accordion level (grey pills).
+ * Use `links` for a flat list, `nested` for an extra accordion level (grey pills), or both.
  */
-export type CenterPageSubsection =
-    | { title: string; links: CenterPageLink[]; nested?: never }
-    | { title: string; nested: CenterPageNestedBlock[]; links?: never };
+export type CenterPageSubsection = {
+    title: string;
+    links?: CenterPageLink[];
+    nested?: CenterPageNestedBlock[];
+};
 
 export type CenterPageTopItem = {
     id: string;
@@ -111,66 +114,148 @@ export const FRANCHISE_CENTER_PAGE_BLOCK_A: CenterPageTopItem[] = [
             },
             {
                 title: "Holiday Lists (AY 2026-27)",
-                links: [
+                nested: [
                     {
-                        label: "AP Holiday List 2026-27",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/AP%20Holiday%20List%202026-2027.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
+                        title: "Regular Holiday Lists AY 2026-27",
+                        links: [
+                            {
+                                label: "AP Holiday List 2026-27",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/AP%20Holiday%20List%202026-2027.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "Bihar holiday list 2026-2027",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Bihar%20holiday%20list%202026-2027.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "Gujarat Holiday List 2026-27",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Gujarat%20Holiday%20List%202026-27.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "Karnataka Holiday List 2026-27",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Karnataka%20Holiday%20List%202026-27.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "Kerala Holiday List 2026-27",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Kerala%20Holiday%20List%202026-27.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "Madhya Pradesh Holiday List 2026-27",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Madhya%20Pradesh%20Holiday%20List%202026-27.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "Maharashtra Holiday List 2026-27",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Maharashtra%20Holiday%20List%202026-27.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "Odisha Holiday List 2026-27",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Odisha%20Holiday%20List%202026-27.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "Punjab Holiday List 2026-27",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Punjab%20Holiday%20List%202026-27.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "Telangana Holiday List 2026- 2027",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Telangana%20Holiday%20List%202026-%202027.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "Tamil Nadu Holiday 2026-27",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/TamilNadu%20Holiday%202026-27.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                            {
+                                label: "West Bengal Holiday List 2026-27",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/West%20Bengal%20Holiday%20List%202026-27.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                            },
+                        ],
                     },
                     {
-                        label: "Bihar holiday list 2026-2027",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Bihar%20holiday%20list%202026-2027.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
-                    },
-                    {
-                        label: "Gujarat Holiday List 2026-27",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Gujarat%20Holiday%20List%202026-27.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
-                    },
-                    {
-                        label: "Karnataka Holiday List 2026-27",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Karnataka%20Holiday%20List%202026-27.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
-                    },
-                    {
-                        label: "Kerala Holiday List 2026-27",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Kerala%20Holiday%20List%202026-27.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
-                    },
-                    {
-                        label: "Madhya Pradesh Holiday List 2026-27",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Madhya%20Pradesh%20Holiday%20List%202026-27.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
-                    },
-                    {
-                        label: "Maharashtra Holiday List 2026-27",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Maharashtra%20Holiday%20List%202026-27.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
-                    },
-                    {
-                        label: "Odisha Holiday List 2026-27",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Odisha%20Holiday%20List%202026-27.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
-                    },
-                    {
-                        label: "Punjab Holiday List 2026-27",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Punjab%20Holiday%20List%202026-27.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
-                    },
-                    {
-                        label: "Telangana Holiday List 2026- 2027",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Telangana%20Holiday%20List%202026-%202027.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
-                    },
-                    {
-                        label: "Tamil Nadu Holiday 2026-27",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/TamilNadu%20Holiday%202026-27.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
-                    },
-                    {
-                        label: "West Bengal Holiday List 2026-27",
-                        href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/West%20Bengal%20Holiday%20List%202026-27.pdf",
-                        adminCategory: "ACADEMIC_DOCUMENTS",
+                        title: "Holiday Lists for Student Diary AY 2026-27",
+                        links: [
+                            {
+                                label: "Andhra Pradesh — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Andhra-Pradesh.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-ap-2026-27",
+                            },
+                            {
+                                label: "Bihar — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Bihar.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-bihar-2026-27",
+                            },
+                            {
+                                label: "Gujarat — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Gujarat.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-gujarat-2026-27",
+                            },
+                            {
+                                label: "Karnataka — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Karnataka.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-karnataka-2026-27",
+                            },
+                            {
+                                label: "Kerala — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Kerala.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-kerala-2026-27",
+                            },
+                            {
+                                label: "Madhya Pradesh — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Madhya-Pradesh.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-mp-2026-27",
+                            },
+                            {
+                                label: "Maharashtra — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Maharashtra.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-maharashtra-2026-27",
+                            },
+                            {
+                                label: "Odisha — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Odisha.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-odisha-2026-27",
+                            },
+                            {
+                                label: "Punjab — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Punjab.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-punjab-2026-27",
+                            },
+                            {
+                                label: "Telangana — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Telangana.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-telangana-2026-27",
+                            },
+                            {
+                                label: "Tamil Nadu — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-Tamilnadu.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-tn-2026-27",
+                            },
+                            {
+                                label: "West Bengal — Student Diary",
+                                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2026-27/Holiday%20Lists%20for%20student%20Diary%20AY%202026-27/TK-dairy-for-2026-West-Bengal.pdf",
+                                adminCategory: "HOLIDAY_LISTS",
+                                rowKey: "holiday-diary-wb-2026-27",
+                            },
+                        ],
                     },
                 ],
             },
@@ -722,142 +807,59 @@ export const FRANCHISE_CENTER_PAGE_BLOCK_B: CenterPageTopItem[] = [
         id: "artworks",
         title: "Artworks",
         emphasize: true,
-        groups: [],
-        directLinks: [
+        groups: [
             {
-                label: "Admissions",
-                href: "http://103.65.21.245:8080/uploads/pc/Admissions.html",
-                rowKey: "artworks-admissions",
-            },
-            {
-                label: "ConceptBoards DisplayBoards",
-                href: "http://103.65.21.245:8080/uploads/pc/ConceptBoards%20DisplayBoards.htm",
-                rowKey: "artworks-concept-boards",
-            },
-            {
-                label: "SummerCamp",
-                href: "http://103.65.21.245:8080/uploads/pc/SummerCamp.htm",
-                rowKey: "artworks-summer-camp",
-            },
-            {
-                label: "SmartCourse",
-                href: "http://103.65.21.245:8080/uploads/pc/SmartCourse.htm",
-                rowKey: "artworks-smart-course",
-            },
-            {
-                label: "SignageBoards",
-                href: "http://103.65.21.245:8080/uploads/pc/SignageBoards.htm",
-                rowKey: "artworks-signage-boards",
-            },
-            {
-                label: "Others",
-                href: "http://103.65.21.245:8080/uploads/pc/Others.htm",
-                rowKey: "artworks-others",
-            },
-            {
-                label: "LeadTimeforCollateralDesigns",
-                href: "http://103.65.21.245:8080/uploads/pc/LeadTimeforCollateralDesigns.htm",
-                rowKey: "artworks-lead-time-collateral",
-            },
-            {
-                label: "DayCare",
-                href: "http://103.65.21.245:8080/uploads/pc/DayCare.htm",
-                rowKey: "artworks-day-care",
-            },
-            {
-                label: "artwork for ballon decoration",
-                href: "http://103.65.21.245:8080/uploads/pc/artwork%20for%20ballon%20decoration.jpg",
-                rowKey: "artworks-balloon-decoration",
-            },
-            {
-                label: "baby on board",
-                href: "http://103.65.21.245:8080/uploads/pc/baby%20on%20board.jpg",
-                rowKey: "artworks-baby-on-board",
-            },
-            {
-                label: "complimentary freebe",
-                href: "http://103.65.21.245:8080/uploads/pc/complimentary%20freebe.jpg",
-                rowKey: "artworks-complimentary-freebe-1",
-            },
-            {
-                label: "complimentary freebe",
-                href: "http://103.65.21.245:8080/uploads/pc/complimentary%20freebe.jpg",
-                rowKey: "artworks-complimentary-freebe-2",
-            },
-            {
-                label: "mobile marketing",
-                href: "http://103.65.21.245:8080/uploads/pc/mobile%20marketing.jpg",
-                rowKey: "artworks-mobile-marketing",
-            },
-            {
-                label: "plastic cover artwork",
-                href: "http://103.65.21.245:8080/uploads/pc/plastic%20cover%20artwork.jpg",
-                rowKey: "artworks-plastic-cover",
-            },
-            {
-                label: "mobile marketing2",
-                href: "http://103.65.21.245:8080/uploads/pc/mobile%20marketing2.jpg",
-                rowKey: "artworks-mobile-marketing-2",
-            },
-            {
-                label: "mobile marketing1",
-                href: "http://103.65.21.245:8080/uploads/pc/mobile%20marketing1.jpg",
-                rowKey: "artworks-mobile-marketing-1",
-            },
-            {
-                label: "Baby on board_1",
-                href: "http://103.65.21.245:8080/uploads/pc/Baby%20on%20board_1.jpg",
-                rowKey: "artworks-baby-on-board-1",
-            },
-            {
-                label: "Summer Camp 2017",
-                href: "http://103.65.21.245:8080/uploads/pc/Summer%20Camp%202017.jpg",
-                rowKey: "artworks-summer-camp-2017",
-            },
-            {
-                label: "Festival and Celebration Greetings",
-                href: "http://103.65.21.245:8080/uploads/pc/Festival%20and%20Celebration%20Greetings.htm",
-                rowKey: "artworks-festival-greetings",
-            },
-            {
-                label: "Aksharabhyasam-Admissions-Open",
-                href: "http://103.65.21.245:8080/uploads/pc/Aksharabhyasam-Admissions-Open.jpeg",
-                rowKey: "artworks-aksharabhyasam-open",
-            },
-            {
-                label: "Vijayadhasami-Admissions-open",
-                href: "http://103.65.21.245:8080/uploads/pc/Vijayadhasami-Admissions-open.jpeg",
-                rowKey: "artworks-vijayadhasami-open",
-            },
-            {
-                label: "Vijayadhasami-Aksharabhyasam-Face book -Bannner1",
-                href: "http://103.65.21.245:8080/uploads/pc/Vijayadhasami-Aksharabhyasam-Face%20book%20-Bannner1.jpeg",
-                rowKey: "artworks-vijayadhasami-banner-1",
-            },
-            {
-                label: "Vijayadhasami-Aksharabhyasam-Face book -Bannner2",
-                href: "http://103.65.21.245:8080/uploads/pc/Vijayadhasami-Aksharabhyasam-Face%20book%20-Bannner2.jpeg",
-                rowKey: "artworks-vijayadhasami-banner-2",
-            },
-            {
-                label: "Kottiyam-Admissions-301",
-                href: "http://103.65.21.245:8080/uploads/pc/Kottiyam-Admissions-301.pdf",
-                rowKey: "artworks-kottiyam-301",
-            },
-            {
-                label: "Admissions-2023-24",
-                href: "http://103.65.21.245:8080/uploads/pc/Admissions-2023-24.html",
-                rowKey: "artworks-admissions-2023-24",
-            },
-            {
-                label: "E-Banner artwork for admissions",
-                href: "http://103.65.21.245:8080/uploads/pc/E-Banner%20artwork%20for%20admissions.html",
-                rowKey: "artworks-e-banner-admissions",
-            },
-            {
-                label: "2024 New Marketing collaterals",
-                href: "http://103.65.21.245:8080/uploads/pc/2024%20New%20Marketing%20collaterals.html",
-                rowKey: "artworks-2024-marketing-collaterals",
+                title: "Social Media Promotions-Admissions-AY 2026-27",
+                links: [
+                    {
+                        label: "Admissions Open — Limited Seats",
+                        href: "/franchise-artworks/social-media-promotions-ay-2026-27/social-media-promotion-1.png",
+                        adminCategory: "ARTWORKS_MARKETING",
+                        rowKey: "artworks-sm-admissions-1",
+                    },
+                    {
+                        label: "Dedicated Teaching Staff — Admissions AY 2026-27",
+                        href: "/franchise-artworks/social-media-promotions-ay-2026-27/social-media-promotion-2.png",
+                        adminCategory: "ARTWORKS_MARKETING",
+                        rowKey: "artworks-sm-admissions-2",
+                    },
+                    {
+                        label: "Where Learning Begins with Joy",
+                        href: "/franchise-artworks/social-media-promotions-ay-2026-27/social-media-promotion-3.png",
+                        adminCategory: "ARTWORKS_MARKETING",
+                        rowKey: "artworks-sm-admissions-3",
+                    },
+                    {
+                        label: "Admissions Open — Call / Visit Today",
+                        href: "/franchise-artworks/social-media-promotions-ay-2026-27/social-media-promotion-4.png",
+                        adminCategory: "ARTWORKS_MARKETING",
+                        rowKey: "artworks-sm-admissions-4",
+                    },
+                    {
+                        label: "Give Your Child the Right Start",
+                        href: "/franchise-artworks/social-media-promotions-ay-2026-27/social-media-promotion-5.png",
+                        adminCategory: "ARTWORKS_MARKETING",
+                        rowKey: "artworks-sm-admissions-5",
+                    },
+                    {
+                        label: "Care and Safety — Admissions AY 2026-27",
+                        href: "/franchise-artworks/social-media-promotions-ay-2026-27/social-media-promotion-6.png",
+                        adminCategory: "ARTWORKS_MARKETING",
+                        rowKey: "artworks-sm-admissions-6",
+                    },
+                    {
+                        label: "A Safe & Nurturing Start",
+                        href: "/franchise-artworks/social-media-promotions-ay-2026-27/social-media-promotion-7.png",
+                        adminCategory: "ARTWORKS_MARKETING",
+                        rowKey: "artworks-sm-admissions-7",
+                    },
+                    {
+                        label: "The Best Pre-school for Your Child",
+                        href: "/franchise-artworks/social-media-promotions-ay-2026-27/social-media-promotion-8.png",
+                        adminCategory: "ARTWORKS_MARKETING",
+                        rowKey: "artworks-sm-admissions-8",
+                    },
+                ],
             },
         ],
     },

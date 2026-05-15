@@ -17,6 +17,12 @@ export type FranchiseAdvantageVideoItem = {
     alt?: string;
 };
 
+export type FranchiseAdvantagePhotoItem = {
+    /** Image inside the blob (path, /media/…, or full URL). */
+    src: string;
+    alt?: string;
+};
+
 /** Google Street View / Maps embed used as the public “Virtual Tour” destination. */
 export const VIRTUAL_TOUR_MAPS_URL =
     "https://www.google.com/maps/embed?pb=!1m0!3m2!1sen!2s!4v1456003231726!6m8!1m7!1sUEc7Ta_OzQcAAAQq3Rq0gw!2m2!1d17.40666583994208!2d78.48091207922675!3f90!4f0!5f0.4000000000000002";
@@ -25,6 +31,7 @@ export type HomePageData = {
     key_navigation: KeyNavItem[];
     franchise_benefits?: string[];
     franchise_advantage_videos: FranchiseAdvantageVideoItem[];
+    franchise_advantage_photos: FranchiseAdvantagePhotoItem[];
     updates_empty_message?: string;
     intro: {
         title: string;
@@ -72,7 +79,6 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             href: VIRTUAL_TOUR_MAPS_URL,
             label: "Virtual\nTour",
             nav_class: "nav-link1",
-            external: true,
         },
         { icon: "/icon-gallery.png", alt: "Photo / Video Gallery", href: "/gallery", label: "Photo / Video Gallery", nav_class: "nav-link2" },
         { icon: "/icon-nearstcenter.png", alt: "Find your Nearest Centre", href: "/locate-centre", label: "Find your Nearest  Centre", nav_class: "nav-link3" },
@@ -95,9 +101,22 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
         "Operational Support",
     ],
     franchise_advantage_videos: [
-        { poster: "/1.png", src: "", alt: "Franchise highlight 1" },
-        { poster: "/16.png", src: "", alt: "Franchise highlight 2" },
-        { poster: "/11.png", src: "", alt: "Franchise highlight 3" },
+        {
+            poster: "/franchise-gallery/franchise-video-poster.png",
+            src: "https://iframe.mediadelivery.net/embed/117208/9005f10d-a5c3-4cd7-831e-fac0c2b5334f?autoplay=true",
+            alt: "T.I.M.E. Kids franchise advantage",
+        },
+    ],
+    franchise_advantage_photos: [
+        { src: "/franchise-gallery/franchise-nep-compliant.png", alt: "NEP 2020 compliant — T.I.M.E. Kids" },
+        { src: "/franchise-gallery/franchise-brochure-cover.png", alt: "Become a franchisee of T.I.M.E. Kids pre-schools" },
+        { src: "/franchise-gallery/franchise-promo-1.png", alt: "Start your own preschool with T.I.M.E. Kids" },
+        { src: "/franchise-gallery/franchise-promo-2.png", alt: "Partner with India's trusted preschool network" },
+        { src: "/franchise-gallery/franchise-promo-3.png", alt: "Franchise opportunity — T.I.M.E. Kids" },
+        { src: "/franchise-gallery/franchise-promo-4.png", alt: "Start your preschool franchise today" },
+        { src: "/franchise-gallery/franchise-promo-5.png", alt: "Preschool franchise with T.I.M.E. Kids" },
+        { src: "/franchise-gallery/franchise-promo-6.png", alt: "Launch a preschool with T.I.M.E. Kids" },
+        { src: "/franchise-gallery/franchise-promo-7.png", alt: "Franchise opportunity — invest in preschool" },
     ],
     updates_empty_message: "New updates will appear here once they are added under Admin → Updates.",
     intro: {
@@ -116,7 +135,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
         features: [
             { image: "/feature-safe-infrastructure.png", title: "Safe Infrastructure", desc: "Secure premises for complete peace of mind.", color: "#FEE2E2", accent: "#EF4444" },
             { image: "/feature-trained-teachers.png", title: "Trained Teachers", desc: "Experienced educators nurturing your child.", color: "#E0F2FE", accent: "#0EA5E9" },
-            { image: "/4.png", title: "NEP 2020 Curriculum", desc: "Modern curriculum for holistic growth.", color: "#FFEDD5", accent: "#F97316" },
+            { image: "/nep-2020-curriculum.png", title: "NEP 2020 Curriculum", desc: "Modern curriculum for holistic growth.", color: "#FFEDD5", accent: "#F97316" },
             { image: "/17.png", title: "17 Years Legacy", desc: "Educational expertise since 2005.", color: "#DCFCE7", accent: "#22C55E" },
             { image: "/18.png", title: "Caring Environment", desc: "A second home for your little one.", color: "#FDF2F8", accent: "#EC4899" },
             { image: "/12.png", title: "Fun Learning", desc: "Hands-on activities and play.", color: "#F5F3FF", accent: "#8B5CF6" },
@@ -264,6 +283,26 @@ export function normalizeFranchiseAdvantageVideos(merged: HomePageData, raw: Rec
     merged.franchise_advantage_videos = [...defaults];
 }
 
+/** Coerce franchise advantage photo slides for the home carousel. */
+export function normalizeFranchiseAdvantagePhotos(merged: HomePageData, raw: Record<string, unknown>): void {
+    const defaults = DEFAULT_HOME_PAGE_DATA.franchise_advantage_photos;
+    const rawPhotos = raw.franchise_advantage_photos;
+    if (Array.isArray(rawPhotos) && rawPhotos.length > 0) {
+        const cleaned: FranchiseAdvantagePhotoItem[] = [];
+        for (const row of rawPhotos) {
+            if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+            const o = row as Record<string, unknown>;
+            const src = String(o.src ?? "").trim();
+            if (!src) continue;
+            const alt = typeof o.alt === "string" ? o.alt : undefined;
+            cleaned.push({ src, alt });
+        }
+        merged.franchise_advantage_photos = cleaned.length > 0 ? cleaned : [...defaults];
+        return;
+    }
+    merged.franchise_advantage_photos = [...defaults];
+}
+
 /** Stable href key so `/Gallery` matches `/gallery` for dedupe. */
 function keyNavHrefKey(href: string): string {
     const t = href.trim();
@@ -372,6 +411,7 @@ export function mergeHomePageData(raw: Partial<HomePageData> | null | undefined)
             programs: normalizeProgramsPreviewPrograms(programs),
         };
         normalizeFranchiseAdvantageVideos(merged, raw as Record<string, unknown>);
+        normalizeFranchiseAdvantagePhotos(merged, raw as Record<string, unknown>);
         merged.key_navigation = normalizeKeyNavigation(merged.key_navigation);
         return merged;
     } catch {
