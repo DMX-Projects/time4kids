@@ -81,6 +81,8 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
 
     const handleCancelLogout = () => setShowLogoutConfirm(false);
 
+    const hasSidebarNav = navItems.length > 0;
+
     return (
         <RoleGuard allowedRole={role}>
             <div className="h-screen flex bg-white isolate overflow-hidden">
@@ -88,22 +90,26 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                 <SidebarMenuProvider closeMenu={() => setOpen(false)}>
                     {/* Render role-specific sidebar */}
                     {isAdmin && <AdminSidebar brand={brand} navItems={navItems} open={open} />}
-                    {role === "franchise" && <FranchiseSidebar brand={brand} navItems={navItems} open={open} />}
-                    {role === "parent" && <ParentSidebar brand={brand} navItems={navItems} open={open} />}
+                    {role === "franchise" && hasSidebarNav && <FranchiseSidebar brand={brand} navItems={navItems} open={open} />}
+                    {role === "parent" && hasSidebarNav && <ParentSidebar brand={brand} navItems={navItems} open={open} />}
                 </SidebarMenuProvider>
-                {open && <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setOpen(false)} aria-label="Close menu" />}
+                {open && hasSidebarNav && (
+                    <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setOpen(false)} aria-label="Close menu" />
+                )}
 
                 <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-y-auto bg-slate-50">
                     <header className="sticky top-0 bg-white border-b border-[#E5E7EB] z-30 shadow-sm">
                         <div className="container mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                                <button
-                                    className="md:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white text-[#1F2937] border border-[#E5E7EB] flex-shrink-0"
-                                    onClick={() => setOpen((prev) => !prev)}
-                                    aria-label="Toggle menu"
-                                >
-                                    {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                                </button>
+                                {hasSidebarNav && (
+                                    <button
+                                        className="md:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white text-[#1F2937] border border-[#E5E7EB] flex-shrink-0"
+                                        onClick={() => setOpen((prev) => !prev)}
+                                        aria-label="Toggle menu"
+                                    >
+                                        {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                                    </button>
+                                )}
                                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                                     {isAdmin ? (
                                         <>
