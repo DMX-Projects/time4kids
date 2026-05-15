@@ -91,6 +91,18 @@ function getYoutubeEmbedSrc(raw: string): string | null {
     return null;
 }
 
+function blobShape(variant: number) {
+    const borderRadius =
+        variant % 2 === 0
+            ? '60% 40% 30% 70% / 60% 30% 70% 40%'
+            : '30% 70% 70% 30% / 30% 30% 70% 70%';
+    const glow =
+        variant % 2 === 0
+            ? 'from-orange-300 via-amber-300 to-orange-400'
+            : 'from-sky-300 via-cyan-300 to-teal-400';
+    return { borderRadius, glow };
+}
+
 function FranchiseVideoBlob({
     variant,
     surfaceSrc,
@@ -104,14 +116,7 @@ function FranchiseVideoBlob({
     onOpen: () => void;
     videoReady: boolean;
 }) {
-    const borderRadius =
-        variant % 2 === 0
-            ? '60% 40% 30% 70% / 60% 30% 70% 40%'
-            : '30% 70% 70% 30% / 30% 30% 70% 70%';
-    const glow =
-        variant % 2 === 0
-            ? 'from-orange-300 via-amber-300 to-orange-400'
-            : 'from-sky-300 via-cyan-300 to-teal-400';
+    const { borderRadius, glow } = blobShape(variant);
 
     return (
         <button
@@ -150,12 +155,178 @@ function FranchiseVideoBlob({
     );
 }
 
+function FranchisePhotoBlob({
+    variant,
+    surfaceSrc,
+    surfaceAlt,
+    onOpen,
+}: {
+    variant: number;
+    surfaceSrc: string;
+    surfaceAlt: string;
+    onOpen: () => void;
+}) {
+    const { borderRadius, glow } = blobShape(variant + 1);
+
+    return (
+        <button
+            type="button"
+            onClick={onOpen}
+            className="group relative mx-auto w-full max-w-[min(100%,20rem)] text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8ec] sm:max-w-[22rem] lg:max-w-[24rem]"
+            aria-label={`View ${surfaceAlt}`}
+        >
+            <motion.div
+                className={`pointer-events-none absolute inset-0 scale-[0.92] rounded-full bg-gradient-to-br ${glow} opacity-30 blur-2xl transition-opacity duration-500 group-hover:opacity-40`}
+                aria-hidden
+            />
+            <motion.div
+                className="relative aspect-square w-full overflow-hidden border-[7px] border-white shadow-[0_24px_56px_rgba(15,23,42,0.16)] transition-transform duration-500 group-hover:scale-[1.02] sm:border-[8px] lg:border-[9px]"
+                style={{ borderRadius }}
+            >
+                <Image
+                    src={surfaceSrc}
+                    alt={surfaceAlt}
+                    fill
+                    className="object-cover transition duration-500 group-hover:scale-105"
+                    sizes="(max-width: 640px) 90vw, 360px"
+                    unoptimized={/^https?:\/\//i.test(surfaceSrc)}
+                />
+                <span
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-80 transition group-hover:opacity-100"
+                    aria-hidden
+                />
+            </motion.div>
+        </button>
+    );
+}
+
+function FranchiseAdvantageCarousel({
+    slideCount,
+    activeIndex,
+    onPrev,
+    onNext,
+    onSelect,
+    prevLabel,
+    nextLabel,
+    dotsLabel,
+    children,
+}: {
+    slideCount: number;
+    activeIndex: number;
+    onPrev: () => void;
+    onNext: () => void;
+    onSelect: (index: number) => void;
+    prevLabel: string;
+    nextLabel: string;
+    dotsLabel: string;
+    children: React.ReactNode;
+}) {
+    if (slideCount === 0) return null;
+
+    return (
+        <>
+            <div className="relative overflow-hidden pb-2">
+                <motion.div
+                    className="flex transition-transform duration-500 ease-out will-change-transform"
+                    style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+                >
+                    {children}
+                </motion.div>
+                {slideCount > 1 ? (
+                    <>
+                        <button
+                            type="button"
+                            onClick={onPrev}
+                            className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-800 shadow-md transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-11 sm:w-11"
+                            aria-label={prevLabel}
+                        >
+                            <ChevronLeft className="h-6 w-6" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onNext}
+                            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-slate-800 shadow-md transition hover:bg-orange-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:h-11 sm:w-11"
+                            aria-label={nextLabel}
+                        >
+                            <ChevronRight className="h-6 w-6" />
+                        </button>
+                    </>
+                ) : null}
+            </div>
+            {slideCount > 1 ? (
+                <div className="mt-2 flex justify-center gap-2" role="tablist" aria-label={dotsLabel}>
+                    {Array.from({ length: slideCount }, (_, i) => (
+                        <button
+                            key={i}
+                            type="button"
+                            role="tab"
+                            aria-selected={i === activeIndex}
+                            onClick={() => onSelect(i)}
+                            className={`h-2.5 rounded-full transition-all ${
+                                i === activeIndex ? 'w-8 bg-orange-500' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                            }`}
+                            aria-label={`Show slide ${i + 1}`}
+                        />
+                    ))}
+                </div>
+            ) : null}
+        </>
+    );
+}
+
 const FRANCHISE_SECTION_HIGHLIGHTS = [
     'The T.I.M.E. Kids Advantage',
     'Comprehensive Franchise Support',
     'What You Need to Get Started',
     'Start Your Journey with T.I.M.E. Kids',
 ] as const;
+
+/** Split one update message into two lines inside the news card. */
+function splitMessageTwoLines(text: string): [string, string] {
+    const t = text.trim();
+    if (!t) return ['', ''];
+    const words = t.split(/\s+/).filter(Boolean);
+    if (words.length <= 1) return [t, ''];
+    const mid = Math.ceil(words.length / 2);
+    return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+}
+
+function NewsUpdateSlide({ text, date }: { text: string; date: string }) {
+    const [line1, line2] = splitMessageTwoLines(text);
+    return (
+        <div className="flex min-h-[5.5rem] flex-col justify-center px-8 py-5 pb-6 sm:min-h-[6.25rem] sm:px-10 sm:py-6 sm:pb-7">
+            {date ? (
+                <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-orange-600">{date}</p>
+            ) : null}
+            <p className="text-base font-semibold leading-relaxed text-slate-700 md:text-lg">{line1}</p>
+            {line2 ? <p className="mt-1.5 text-base font-semibold leading-relaxed text-slate-700 md:text-lg">{line2}</p> : null}
+        </div>
+    );
+}
+
+const FRANCHISE_PHOTO_TARGET_COUNT = 10;
+
+function buildFranchisePhotoSlides(
+    raw: { src: string; alt?: string }[] | undefined,
+    defaults: { src: string; alt?: string }[],
+): { src: string; alt?: string }[] {
+    const base = raw?.length ? raw : defaults;
+    const filtered = base.filter((p) => (p.src || '').trim());
+    if (filtered.length >= FRANCHISE_PHOTO_TARGET_COUNT) {
+        return filtered.slice(0, FRANCHISE_PHOTO_TARGET_COUNT);
+    }
+    const out = [...filtered];
+    const used = new Set(out.map((p) => p.src.trim()));
+    for (const d of defaults) {
+        if (out.length >= FRANCHISE_PHOTO_TARGET_COUNT) break;
+        const s = d.src.trim();
+        if (s && !used.has(s)) {
+            out.push(d);
+            used.add(s);
+        }
+    }
+    return out.length > 0 ? out : defaults.slice(0, FRANCHISE_PHOTO_TARGET_COUNT);
+}
 
 function formatSlideDate(iso: string | null | undefined): string {
     if (!iso) return '';
@@ -214,7 +385,10 @@ export default function BenefitsUpdates() {
     const [slides, setSlides] = useState<Slide[]>([]);
     const [updatesReady, setUpdatesReady] = useState(false);
     const [modalVideoIndex, setModalVideoIndex] = useState<number | null>(null);
-    const [carouselIndex, setCarouselIndex] = useState(0);
+    const [modalPhotoIndex, setModalPhotoIndex] = useState<number | null>(null);
+    const [videoCarouselIndex, setVideoCarouselIndex] = useState(0);
+    const [photoCarouselIndex, setPhotoCarouselIndex] = useState(0);
+    const [newsIndex, setNewsIndex] = useState(0);
 
     const franchiseVideos = useMemo(() => {
         const raw =
@@ -229,22 +403,37 @@ export default function BenefitsUpdates() {
               );
     }, [home.franchise_advantage_videos]);
 
+    const franchisePhotos = useMemo(
+        () =>
+            buildFranchisePhotoSlides(
+                home.franchise_advantage_photos,
+                DEFAULT_HOME_PAGE_DATA.franchise_advantage_photos,
+            ),
+        [home.franchise_advantage_photos],
+    );
+
     useEffect(() => {
-        setCarouselIndex((i) => Math.min(Math.max(0, i), Math.max(0, franchiseVideos.length - 1)));
+        setVideoCarouselIndex((i) => Math.min(Math.max(0, i), Math.max(0, franchiseVideos.length - 1)));
     }, [franchiseVideos.length]);
+
+    useEffect(() => {
+        setPhotoCarouselIndex((i) => Math.min(Math.max(0, i), Math.max(0, franchisePhotos.length - 1)));
+    }, [franchisePhotos.length]);
 
     const benefits = [...FRANCHISE_SECTION_HIGHLIGHTS];
 
     const emptyMessage = (home.updates_empty_message || '').trim() || 'News updates and announcements will appear here.';
 
-    const tickerSegments = (() => {
-        if (!updatesReady) return ['Loading updates…'];
-        const texts = slides.map((s) => s.text.trim()).filter(Boolean);
-        if (texts.length === 0) return [emptyMessage];
-        return texts;
-    })();
+    const newsItems = useMemo(() => {
+        if (!updatesReady) return [{ text: 'Loading updates…', date: '' }];
+        const withText = slides.filter((s) => s.text.trim());
+        if (withText.length === 0) return [{ text: emptyMessage, date: '' }];
+        return withText;
+    }, [slides, updatesReady, emptyMessage]);
 
-    const tickerLine = tickerSegments.join('  ·  ');
+    useEffect(() => {
+        setNewsIndex((i) => Math.min(Math.max(0, i), Math.max(0, newsItems.length - 1)));
+    }, [newsItems.length]);
 
     useEffect(() => {
         const fetchUpdates = async () => {
@@ -363,23 +552,37 @@ export default function BenefitsUpdates() {
                                 </h3>
                             </div>
 
-                            <div className="relative min-h-[3.5rem] w-full overflow-hidden rounded-2xl border border-white/70 bg-white/60 py-3 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-[#fff8ec] to-transparent" />
-                                <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-[#fff8ec] to-transparent" />
-                                <div
-                                    className="benefits-news-marquee flex w-max items-center"
-                                    style={{
-                                        animationDuration: `${Math.max(24, Math.min(100, tickerLine.length * 0.085))}s`,
-                                    }}
+                            <motion.div className="w-full rounded-2xl border border-white/70 bg-white/60 px-2 pb-3 pt-2 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:px-3">
+                                <FranchiseAdvantageCarousel
+                                    slideCount={newsItems.length}
+                                    activeIndex={newsIndex}
+                                    onPrev={() =>
+                                        setNewsIndex((idx) => {
+                                            const n = newsItems.length;
+                                            return (idx - 1 + n) % n;
+                                        })
+                                    }
+                                    onNext={() =>
+                                        setNewsIndex((idx) => {
+                                            const n = newsItems.length;
+                                            return (idx + 1) % n;
+                                        })
+                                    }
+                                    onSelect={setNewsIndex}
+                                    prevLabel="Previous news update"
+                                    nextLabel="Next news update"
+                                    dotsLabel="News updates"
                                 >
-                                    <span className="whitespace-nowrap px-6 text-sm font-semibold leading-relaxed text-slate-700 md:text-base">
-                                        {tickerLine}
-                                    </span>
-                                    <span className="whitespace-nowrap px-6 text-sm font-semibold leading-relaxed text-slate-700 md:text-base" aria-hidden>
-                                        {tickerLine}
-                                    </span>
-                                </div>
-                            </div>
+                                    {newsItems.map((item, i) => (
+                                        <div
+                                            key={item.id ?? `${item.text.slice(0, 24)}-${i}`}
+                                            className="min-w-full shrink-0"
+                                        >
+                                            <NewsUpdateSlide text={item.text} date={item.date} />
+                                        </div>
+                                    ))}
+                                </FranchiseAdvantageCarousel>
+                            </motion.div>
                         </div>
                     </motion.div>
 
@@ -408,7 +611,7 @@ export default function BenefitsUpdates() {
                                     <div className="relative overflow-hidden pb-2">
                                         <div
                                             className="flex transition-transform duration-500 ease-out will-change-transform"
-                                            style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+                                            style={{ transform: `translateX(-${videoCarouselIndex * 100}%)` }}
                                         >
                                             {franchiseVideos.map((item, i) => {
                                                 const posterRaw = (item.poster || '').trim();
@@ -435,7 +638,7 @@ export default function BenefitsUpdates() {
                                                 <button
                                                     type="button"
                                                     onClick={() =>
-                                                        setCarouselIndex((idx) => {
+                                                        setVideoCarouselIndex((idx) => {
                                                             const n = franchiseVideos.length;
                                                             return (idx - 1 + n) % n;
                                                         })
@@ -448,7 +651,7 @@ export default function BenefitsUpdates() {
                                                 <button
                                                     type="button"
                                                     onClick={() =>
-                                                        setCarouselIndex((idx) => {
+                                                        setVideoCarouselIndex((idx) => {
                                                             const n = franchiseVideos.length;
                                                             return (idx + 1) % n;
                                                         })
@@ -468,10 +671,10 @@ export default function BenefitsUpdates() {
                                                     key={i}
                                                     type="button"
                                                     role="tab"
-                                                    aria-selected={i === carouselIndex}
-                                                    onClick={() => setCarouselIndex(i)}
+                                                    aria-selected={i === videoCarouselIndex}
+                                                    onClick={() => setVideoCarouselIndex(i)}
                                                     className={`h-2.5 rounded-full transition-all ${
-                                                        i === carouselIndex ? 'w-8 bg-orange-500' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                                                        i === videoCarouselIndex ? 'w-8 bg-orange-500' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
                                                     }`}
                                                     aria-label={`Show video ${i + 1}`}
                                                 />
@@ -481,6 +684,45 @@ export default function BenefitsUpdates() {
                                 </>
                             ) : null}
                         </div>
+                        {franchisePhotos.length > 0 ? (
+                            <div className="relative w-full max-w-[min(100%,24rem)] sm:mx-auto lg:mx-0 lg:max-w-[26rem]">
+                                <FranchiseAdvantageCarousel
+                                    slideCount={franchisePhotos.length}
+                                    activeIndex={photoCarouselIndex}
+                                    onPrev={() =>
+                                        setPhotoCarouselIndex((idx) => {
+                                            const n = franchisePhotos.length;
+                                            return (idx - 1 + n) % n;
+                                        })
+                                    }
+                                    onNext={() =>
+                                        setPhotoCarouselIndex((idx) => {
+                                            const n = franchisePhotos.length;
+                                            return (idx + 1) % n;
+                                        })
+                                    }
+                                    onSelect={setPhotoCarouselIndex}
+                                    prevLabel="Previous photo"
+                                    nextLabel="Next photo"
+                                    dotsLabel="Photo slides"
+                                >
+                                    {franchisePhotos.map((item, i) => {
+                                        const srcRaw = (item.src || '').trim();
+                                        const imageSrc = mediaUrl(srcRaw) || srcRaw;
+                                        return (
+                                            <div key={`${srcRaw}-${i}`} className="min-w-full shrink-0 px-1 sm:px-2">
+                                                <FranchisePhotoBlob
+                                                    variant={i}
+                                                    surfaceSrc={imageSrc}
+                                                    surfaceAlt={item.alt || `Franchise photo ${i + 1}`}
+                                                    onOpen={() => setModalPhotoIndex(i)}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </FranchiseAdvantageCarousel>
+                            </div>
+                        ) : null}
                     </motion.div>
                 </div>
             </div>
@@ -530,21 +772,33 @@ export default function BenefitsUpdates() {
                 ) : null}
             </Modal>
 
-            <style jsx global>{`
-                @keyframes benefits-news-marquee {
-                    from {
-                        transform: translateX(0);
-                    }
-                    to {
-                        transform: translateX(-50%);
-                    }
-                }
-                .benefits-news-marquee {
-                    animation-name: benefits-news-marquee;
-                    animation-timing-function: linear;
-                    animation-iteration-count: infinite;
-                }
-            `}</style>
+            <Modal
+                isOpen={modalPhotoIndex !== null}
+                onClose={() => setModalPhotoIndex(null)}
+                title="Franchise photo"
+                size="xl"
+            >
+                {modalPhotoIndex !== null && franchisePhotos[modalPhotoIndex] ? (
+                    (() => {
+                        const item = franchisePhotos[modalPhotoIndex];
+                        const srcRaw = (item.src || '').trim();
+                        const resolved = mediaUrl(srcRaw) || srcRaw;
+                        return (
+                            <div className="relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-xl bg-slate-100 shadow-lg">
+                                <Image
+                                    src={resolved}
+                                    alt={item.alt || 'Franchise photo'}
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 768px) 90vw, 512px"
+                                    unoptimized={/^https?:\/\//i.test(resolved)}
+                                />
+                            </div>
+                        );
+                    })()
+                ) : null}
+            </Modal>
+
         </section>
     );
 }

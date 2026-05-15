@@ -8,6 +8,7 @@ import { LayoutTemplate, Plus, Trash2, ChevronDown } from "lucide-react";
 import {
     DEFAULT_HOME_PAGE_DATA,
     mergeHomePageData,
+    type FranchiseAdvantagePhotoItem,
     type FranchiseAdvantageVideoItem,
     type HomePageData,
     type KeyNavItem,
@@ -229,6 +230,7 @@ export default function AdminHomeContentPage() {
     const [uploadingProgramIndex, setUploadingProgramIndex] = useState<number | null>(null);
     const [uploadingWhyIndex, setUploadingWhyIndex] = useState<number | null>(null);
     const [uploadingSpotlight, setUploadingSpotlight] = useState<number | null>(null);
+    const [uploadingFranchisePhoto, setUploadingFranchisePhoto] = useState<number | null>(null);
     const [programUploadInfo, setProgramUploadInfo] = useState<Record<number, string>>({});
     const [whyUploadInfo, setWhyUploadInfo] = useState<Record<number, string>>({});
 
@@ -348,6 +350,56 @@ export default function AdminHomeContentPage() {
             ...data,
             franchise_advantage_videos: data.franchise_advantage_videos.filter((_, j) => j !== i),
         });
+    };
+
+    const updateFranchisePhoto = (i: number, patch: Partial<FranchiseAdvantagePhotoItem>) => {
+        const next = [...(data.franchise_advantage_photos ?? [])];
+        next[i] = { ...next[i], ...patch };
+        setData({ ...data, franchise_advantage_photos: next });
+    };
+
+    const addFranchisePhoto = () => {
+        const base = data.franchise_advantage_photos ?? [];
+        setData({
+            ...data,
+            franchise_advantage_photos: [...base, { src: "", alt: "" }],
+        });
+    };
+
+    const removeFranchisePhoto = (i: number) => {
+        const base = data.franchise_advantage_photos ?? [];
+        setData({
+            ...data,
+            franchise_advantage_photos: base.filter((_, j) => j !== i),
+        });
+    };
+
+    const uploadFranchisePhoto = async (index: number, file: File) => {
+        setError(null);
+        setMessage(null);
+        setUploadingFranchisePhoto(index);
+        try {
+            if (file.size > MAX_UPLOAD_BYTES) {
+                throw new Error(`File is too large (${formatMb(file.size)}). Max allowed is ${formatMb(MAX_UPLOAD_BYTES)}.`);
+            }
+            const formData = new FormData();
+            formData.append("title", `Home franchise photo ${index + 1}`);
+            formData.append("category", "Banner");
+            formData.append("media_type", "image");
+            formData.append("file", file);
+
+            const created = (await authFetch("/media/", { method: "POST", body: formData })) as { file?: string };
+            const filePath = created?.file;
+            if (!filePath || typeof filePath !== "string") {
+                throw new Error("Upload succeeded but server did not return a file path.");
+            }
+            updateFranchisePhoto(index, { src: filePath });
+            setMessage("Image uploaded. Don’t forget to Save changes.");
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Image upload failed");
+        } finally {
+            setUploadingFranchisePhoto(null);
+        }
     };
 
     const uploadFranchiseVideoPoster = async (index: number, file: File) => {
@@ -635,6 +687,60 @@ export default function AdminHomeContentPage() {
                         ))}
                         <Button type="button" variant="outline" size="sm" onClick={addFranchiseVideo} className="inline-flex items-center gap-2">
                             <Plus className="w-4 h-4" /> Add video slide
+                        </Button>
+                    </Section>
+
+                    <Section title="2c. Franchise advantage photos (home — carousel below videos)" defaultOpen={false}>
+                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                            <strong>Where it shows:</strong> Home page → “Why Partner with …” right column, directly under the video blob carousel. Same slide arrows and dots. Each row: image URL and optional alt. Slides without an image URL are skipped on the site.
+                        </div>
+                        {(data.franchise_advantage_photos ?? []).map((row, i) => (
+                            <div key={i} className="rounded-xl border border-slate-100 p-3 space-y-2 bg-white">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-semibold text-slate-800">Photo {i + 1}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFranchisePhoto(i)}
+                                        className="text-red-600 hover:bg-red-50 p-1 rounded"
+                                        aria-label="Remove"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Image URL</label>
+                                    <input
+                                        className={inputClass}
+                                        value={row.src}
+                                        onChange={(e) => updateFranchisePhoto(i, { src: e.target.value })}
+                                    />
+                                </div>
+                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        disabled={uploadingFranchisePhoto === i}
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            e.target.value = "";
+                                            if (f) void uploadFranchisePhoto(i, f);
+                                        }}
+                                    />
+                                    {uploadingFranchisePhoto === i ? "Uploading…" : "Upload image"}
+                                </label>
+                                <div>
+                                    <label className={labelClass}>Alt text</label>
+                                    <input
+                                        className={inputClass}
+                                        value={row.alt ?? ""}
+                                        onChange={(e) => updateFranchisePhoto(i, { alt: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={addFranchisePhoto} className="inline-flex items-center gap-2">
+                            <Plus className="w-4 h-4" /> Add photo slide
                         </Button>
                     </Section>
 

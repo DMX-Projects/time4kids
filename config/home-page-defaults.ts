@@ -17,6 +17,12 @@ export type FranchiseAdvantageVideoItem = {
     alt?: string;
 };
 
+export type FranchiseAdvantagePhotoItem = {
+    /** Image inside the blob (path, /media/…, or full URL). */
+    src: string;
+    alt?: string;
+};
+
 /** Google Street View / Maps embed used as the public “Virtual Tour” destination. */
 export const VIRTUAL_TOUR_MAPS_URL =
     "https://www.google.com/maps/embed?pb=!1m0!3m2!1sen!2s!4v1456003231726!6m8!1m7!1sUEc7Ta_OzQcAAAQq3Rq0gw!2m2!1d17.40666583994208!2d78.48091207922675!3f90!4f0!5f0.4000000000000002";
@@ -25,6 +31,7 @@ export type HomePageData = {
     key_navigation: KeyNavItem[];
     franchise_benefits?: string[];
     franchise_advantage_videos: FranchiseAdvantageVideoItem[];
+    franchise_advantage_photos: FranchiseAdvantagePhotoItem[];
     updates_empty_message?: string;
     intro: {
         title: string;
@@ -98,6 +105,18 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
         { poster: "/1.png", src: "", alt: "Franchise highlight 1" },
         { poster: "/16.png", src: "", alt: "Franchise highlight 2" },
         { poster: "/11.png", src: "", alt: "Franchise highlight 3" },
+    ],
+    franchise_advantage_photos: [
+        { src: "/4.png", alt: "Franchise photo 1" },
+        { src: "/17.png", alt: "Franchise photo 2" },
+        { src: "/18.png", alt: "Franchise photo 3" },
+        { src: "/12.png", alt: "Franchise photo 4" },
+        { src: "/1.png", alt: "Franchise photo 5" },
+        { src: "/11.png", alt: "Franchise photo 6" },
+        { src: "/16.png", alt: "Franchise photo 7" },
+        { src: "/feature-safe-infrastructure.png", alt: "Franchise photo 8" },
+        { src: "/feature-trained-teachers.png", alt: "Franchise photo 9" },
+        { src: "/day care.png", alt: "Franchise photo 10" },
     ],
     updates_empty_message: "New updates will appear here once they are added under Admin → Updates.",
     intro: {
@@ -264,6 +283,26 @@ export function normalizeFranchiseAdvantageVideos(merged: HomePageData, raw: Rec
     merged.franchise_advantage_videos = [...defaults];
 }
 
+/** Coerce franchise advantage photo slides for the home carousel. */
+export function normalizeFranchiseAdvantagePhotos(merged: HomePageData, raw: Record<string, unknown>): void {
+    const defaults = DEFAULT_HOME_PAGE_DATA.franchise_advantage_photos;
+    const rawPhotos = raw.franchise_advantage_photos;
+    if (Array.isArray(rawPhotos) && rawPhotos.length > 0) {
+        const cleaned: FranchiseAdvantagePhotoItem[] = [];
+        for (const row of rawPhotos) {
+            if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+            const o = row as Record<string, unknown>;
+            const src = String(o.src ?? "").trim();
+            if (!src) continue;
+            const alt = typeof o.alt === "string" ? o.alt : undefined;
+            cleaned.push({ src, alt });
+        }
+        merged.franchise_advantage_photos = cleaned.length > 0 ? cleaned : [...defaults];
+        return;
+    }
+    merged.franchise_advantage_photos = [...defaults];
+}
+
 /** Stable href key so `/Gallery` matches `/gallery` for dedupe. */
 function keyNavHrefKey(href: string): string {
     const t = href.trim();
@@ -372,6 +411,7 @@ export function mergeHomePageData(raw: Partial<HomePageData> | null | undefined)
             programs: normalizeProgramsPreviewPrograms(programs),
         };
         normalizeFranchiseAdvantageVideos(merged, raw as Record<string, unknown>);
+        normalizeFranchiseAdvantagePhotos(merged, raw as Record<string, unknown>);
         merged.key_navigation = normalizeKeyNavigation(merged.key_navigation);
         return merged;
     } catch {
