@@ -641,7 +641,7 @@ export default function AdminHomeContentPage() {
 
                     <Section title="3. Oval blob — promotion photos (below video)" defaultOpen>
                         <div className="rounded-xl border border-orange-200 bg-orange-50/60 px-3 py-2 text-xs text-slate-700">
-                            <strong>On the homepage:</strong> Lower oval carousel (NEP, brochure, promos).
+                            <strong>On the homepage:</strong> Lower oval photo carousel — only slides you keep here are shown (save after delete).
                         </div>
                         {(data.franchise_advantage_photos ?? []).map((row, i) => (
                             <div key={i} className="rounded-xl border border-slate-200 p-4 space-y-3 bg-white shadow-sm">

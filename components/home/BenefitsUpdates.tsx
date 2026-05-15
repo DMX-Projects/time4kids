@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
-import { apiUrl, mediaUrl } from '@/lib/api-client';
+import { apiUrl, mediaUrl, resolveHomeMediaAssetUrl } from '@/lib/api-client';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 import FranchiseVideoBlob, {
     FranchiseBlobThumbnail,
@@ -190,44 +190,17 @@ function NewsUpdateSlide({ text }: { text: string }) {
 /** Franchise advantage photo slider — CMS supports up to 8 oval slides. */
 const FRANCHISE_PHOTO_TARGET_COUNT = 8;
 
-/** Always shown first in the oval franchise photo carousel. */
-const PRIORITY_FRANCHISE_PHOTOS: { src: string; alt?: string }[] = [
-    { src: '/franchise-gallery/franchise-nep-compliant.png', alt: 'NEP 2020 compliant — T.I.M.E. Kids' },
-    { src: '/franchise-gallery/franchise-brochure-cover.png', alt: 'Become a franchisee of T.I.M.E. Kids pre-schools' },
-];
-
 function buildFranchisePhotoSlides(
     raw: { src: string; alt?: string }[] | undefined,
     defaults: { src: string; alt?: string }[],
 ): { src: string; alt?: string }[] {
-    const base = raw?.length ? raw : defaults;
-    const filtered = base.filter((p) => (p.src || '').trim());
-    const out: { src: string; alt?: string }[] = [];
-    const used = new Set<string>();
-
-    for (const p of PRIORITY_FRANCHISE_PHOTOS) {
-        const s = p.src.trim();
-        if (!s || used.has(s)) continue;
-        out.push(p);
-        used.add(s);
+    const fromCms = (raw ?? []).map((p) => ({ src: (p.src || '').trim(), alt: p.alt })).filter((p) => p.src);
+    if (fromCms.length > 0) {
+        return fromCms.slice(0, FRANCHISE_PHOTO_TARGET_COUNT);
     }
-    for (const p of filtered) {
-        if (out.length >= FRANCHISE_PHOTO_TARGET_COUNT) break;
-        const s = p.src.trim();
-        if (s && !used.has(s)) {
-            out.push(p);
-            used.add(s);
-        }
-    }
-    for (const d of defaults) {
-        if (out.length >= FRANCHISE_PHOTO_TARGET_COUNT) break;
-        const s = d.src.trim();
-        if (s && !used.has(s)) {
-            out.push(d);
-            used.add(s);
-        }
-    }
-    return out.length > 0 ? out : defaults.slice(0, FRANCHISE_PHOTO_TARGET_COUNT);
+    return defaults
+        .filter((p) => (p.src || '').trim())
+        .slice(0, FRANCHISE_PHOTO_TARGET_COUNT);
 }
 
 function formatSlideDate(iso: string | null | undefined): string {
@@ -475,10 +448,7 @@ export default function BenefitsUpdates() {
                                     const item = franchiseVideos[videoCarouselIndex] ?? franchiseVideos[0];
                                     const i = videoCarouselIndex;
                                     const posterRaw = (item.poster || '').trim();
-                                    const posterSrc =
-                                        mediaUrl(posterRaw || (item.src.trim() ? '/icon-media.svg' : '')) ||
-                                        posterRaw ||
-                                        '/franchise-gallery/franchise-video-poster.png';
+                                    const posterSrc = posterRaw || '/icon-media.svg';
                                     const srcRaw = item.src.trim();
                                     const embedSrc = getFranchiseVideoEmbedSrc(srcRaw);
                                     const fileSrc = embedSrc ? null : (srcRaw ? mediaUrl(srcRaw) || srcRaw : null);
@@ -530,10 +500,7 @@ export default function BenefitsUpdates() {
                                         >
                                             {franchiseVideos.map((v, vi) => {
                                                 const pr = (v.poster || '').trim();
-                                                const ps =
-                                                    mediaUrl(pr || (v.src.trim() ? '/icon-media.svg' : '')) ||
-                                                    pr ||
-                                                    '/icon-media.svg';
+                                                const ps = pr || '/icon-media.svg';
                                                 const sr = v.src.trim();
                                                 const es = getFranchiseVideoEmbedSrc(sr);
                                                 const fs2 = es ? null : (sr ? mediaUrl(sr) || sr : null);
@@ -586,7 +553,7 @@ export default function BenefitsUpdates() {
                                 >
                                     {franchisePhotos.map((item, i) => {
                                         const srcRaw = (item.src || '').trim();
-                                        const imageSrc = mediaUrl(srcRaw) || srcRaw;
+                                        const imageSrc = resolveHomeMediaAssetUrl(srcRaw) || srcRaw;
                                         return (
                                             <div key={`${srcRaw}-${i}`} className="min-w-full shrink-0 px-1 sm:px-2">
                                                 <FranchisePhotoBlob
