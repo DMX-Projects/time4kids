@@ -14,7 +14,11 @@ import {
     FRANCHISE_CENTER_PAGE_BLOCK_B,
 } from "@/config/franchise-center-page-nav";
 import { FranchiseCenterPageAccordion } from "@/components/dashboard/franchise/FranchiseCenterPageAccordion";
-import { getFranchiseResourceFileMeta } from "@/lib/franchise-resource-file-meta";
+import {
+    getFranchiseResourceFileMeta,
+    getFranchiseResourceFileMetaFromDoc,
+} from "@/lib/franchise-resource-file-meta";
+import { resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
 import { Plus, Pencil, Trash2, ExternalLink, Download, RefreshCw, Info } from "lucide-react";
 
 export type FranchiseDocCategorySummary = {
@@ -73,6 +77,7 @@ export type FranchiseResourceDoc = {
     source_path?: string | null;
     description?: string;
     file: string | null;
+    embed_url?: string | null;
     franchise: number | null;
     franchise_name?: string | null;
     academic_year: string;
@@ -99,6 +104,7 @@ const emptyForm = {
     category: "ACADEMIC_DOCUMENTS",
     title: "",
     source_path: "",
+    embed_url: "",
     description: "",
     academic_year: "",
     order: 0,
@@ -239,6 +245,7 @@ export default function AdminFranchiseDocumentsPage() {
             category: row.category,
             title: row.title,
             source_path: row.source_path ?? "",
+            embed_url: row.embed_url ?? "",
             description: row.description ?? "",
             academic_year: row.academic_year ?? "",
             order: row.order ?? 0,
@@ -261,21 +268,35 @@ export default function AdminFranchiseDocumentsPage() {
             showToast("Title is required.", "error");
             return;
         }
+        const embedRaw = form.embed_url.trim();
+        const embedNormalized = embedRaw ? resolveFranchiseEmbedSrc(embedRaw) : null;
+        if (embedRaw && !embedNormalized) {
+            showToast("Could not read that embed link. Paste a YouTube or MediaDelivery embed URL.", "error");
+            return;
+        }
+        if (file && embedNormalized) {
+            showToast("Use either a file upload or an embed link, not both.", "error");
+            return;
+        }
+
         setSubmitting(true);
         try {
+            const franchise =
+                form.franchise_id === "" || form.franchise_id === "__global__"
+                    ? null
+                    : Number(form.franchise_id);
+
             if (editing) {
                 const metaBody = {
                     category: form.category,
                     title: form.title.trim(),
                     source_path: form.source_path.trim() || null,
+                    embed_url: embedNormalized || "",
                     description: form.description,
                     academic_year: form.academic_year || "",
                     order: form.order,
                     is_active: form.is_active,
-                    franchise:
-                        form.franchise_id === "" || form.franchise_id === "__global__"
-                            ? null
-                            : Number(form.franchise_id),
+                    franchise,
                 };
                 await authFetch(`/documents/admin/franchise-documents/${editing.id}/`, {
                     method: "PATCH",
@@ -292,27 +313,43 @@ export default function AdminFranchiseDocumentsPage() {
                 }
                 showToast("Document updated.", "success");
             } else {
-                if (!file) {
-                    showToast("Choose a file to upload.", "error");
+                if (!file && !embedNormalized) {
+                    showToast("Upload a file or paste an embed/video link.", "error");
                     setSubmitting(false);
                     return;
                 }
-                const fd = new FormData();
-                fd.append("category", form.category);
-                fd.append("title", form.title.trim());
-                if (form.source_path.trim()) fd.append("source_path", form.source_path.trim());
-                fd.append("description", form.description);
-                fd.append("academic_year", form.academic_year);
-                fd.append("order", String(form.order));
-                fd.append("is_active", form.is_active ? "true" : "false");
-                if (form.franchise_id && form.franchise_id !== "__global__") {
-                    fd.append("franchise", String(form.franchise_id));
+                if (embedNormalized) {
+                    await authFetch("/documents/admin/franchise-documents/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            category: form.category,
+                            title: form.title.trim(),
+                            source_path: form.source_path.trim() || null,
+                            embed_url: embedNormalized,
+                            description: form.description,
+                            academic_year: form.academic_year,
+                            order: form.order,
+                            is_active: form.is_active,
+                            franchise,
+                        }),
+                    });
+                } else if (file) {
+                    const fd = new FormData();
+                    fd.append("category", form.category);
+                    fd.append("title", form.title.trim());
+                    if (form.source_path.trim()) fd.append("source_path", form.source_path.trim());
+                    fd.append("description", form.description);
+                    fd.append("academic_year", form.academic_year);
+                    fd.append("order", String(form.order));
+                    fd.append("is_active", form.is_active ? "true" : "false");
+                    if (franchise != null) fd.append("franchise", String(franchise));
+                    fd.append("file", file);
+                    await authFetch("/documents/admin/franchise-documents/", {
+                        method: "POST",
+                        body: fd,
+                    });
                 }
-                fd.append("file", file);
-                await authFetch(`/documents/admin/franchise-documents/`, {
-                    method: "POST",
-                    body: fd,
-                });
                 showToast("Document saved to database.", "success");
             }
             closeModal();
@@ -368,7 +405,7 @@ export default function AdminFranchiseDocumentsPage() {
                 <div>
                     <h1 className="text-2xl font-semibold text-orange-900">Centre page documents</h1>
                     <p className="text-sm text-orange-800/90 mt-1 max-w-2xl">
-                        Upload, edit, or delete PDFs, images, ZIPs, and other files for the franchise{" "}
+                        Upload, edit, or delete PDFs, images, ZIPs, videos, and iframe embed links for the franchise{" "}
                         <strong>Center Page</strong>. Every upload is saved in the{" "}
                         <strong>PostgreSQL database</strong> (<code className="text-[11px]">FranchiseDocument</code>)
                         and the file is stored under <code className="text-[11px]">media/franchise_documents/</code>.
@@ -404,8 +441,9 @@ export default function AdminFranchiseDocumentsPage() {
                         <p className="font-semibold text-blue-900">How uploads connect to the Centre Page</p>
                         <ul className="list-disc pl-5 space-y-1 text-slate-700">
                             <li>
-                                <strong>Add document</strong> — saves a database row + file. Set <strong>Title</strong>{" "}
-                                to match the Centre Page link label (e.g. same as the checklist text).
+                                <strong>Add document</strong> — upload a <strong>file</strong> or paste an{" "}
+                                <strong>embed / video link</strong> (YouTube, MediaDelivery). Set <strong>Title</strong>{" "}
+                                to match the Centre Page link label.
                             </li>
                             <li>
                                 <strong>Edit</strong> — change title, category, replace file, or turn off{" "}
@@ -560,13 +598,13 @@ export default function AdminFranchiseDocumentsPage() {
                                     <th className="px-4 py-3 font-semibold">Centre</th>
                                     <th className="px-4 py-3 font-semibold">AY</th>
                                     <th className="px-4 py-3 font-semibold">Active</th>
-                                    <th className="px-4 py-3 font-semibold">File</th>
+                                    <th className="px-4 py-3 font-semibold">File / Embed</th>
                                     <th className="px-4 py-3 font-semibold w-28">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-orange-100">
                                 {items.map((row) => {
-                                    const fm = getFranchiseResourceFileMeta(row.file);
+                                    const fm = getFranchiseResourceFileMetaFromDoc(row);
                                     return (
                                     <tr key={row.id} className="hover:bg-orange-50/40">
                                         <td className="px-4 py-2 text-slate-700">{row.order}</td>
@@ -578,20 +616,26 @@ export default function AdminFranchiseDocumentsPage() {
                                         <td className="px-4 py-2 text-slate-600">{row.academic_year || "—"}</td>
                                         <td className="px-4 py-2">{row.is_active ? "Yes" : "No"}</td>
                                         <td className="px-4 py-2">
-                                            {row.file ? (
-                                                <div className="flex flex-col gap-1 items-start max-w-[140px]">
+                                            {row.file || row.embed_url ? (
+                                                <div className="flex flex-col gap-1 items-start max-w-[200px]">
                                                     <span className="inline-flex rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
                                                         {fm.extLabel}
                                                     </span>
-                                                    <a
-                                                        href={mediaUrl(row.file)}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-600 inline-flex items-center gap-1 hover:underline text-xs"
-                                                    >
-                                                        {fm.actionLabel}{" "}
-                                                        <ExternalLink className="w-3 h-3 shrink-0" />
-                                                    </a>
+                                                    {row.file ? (
+                                                        <a
+                                                            href={mediaUrl(row.file)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-blue-600 inline-flex items-center gap-1 hover:underline text-xs"
+                                                        >
+                                                            {fm.actionLabel}{" "}
+                                                            <ExternalLink className="w-3 h-3 shrink-0" />
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-600 truncate max-w-full" title={row.embed_url ?? ""}>
+                                                            {row.embed_url}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 "—"
@@ -718,7 +762,7 @@ export default function AdminFranchiseDocumentsPage() {
                     </label>
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
                         <span>
-                            File {editing ? "(optional — leave empty to keep current)" : "(required)"}
+                            File {editing ? "(optional — leave empty to keep current)" : "(optional if embed link below)"}
                         </span>
                         <span className="font-normal text-slate-500">
                             PDF, images (PNG/JPG), ZIP, audio, video, and Office formats are supported.
@@ -728,6 +772,19 @@ export default function AdminFranchiseDocumentsPage() {
                             accept=".pdf,.zip,.rar,.7z,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.mp3,.mp4,.wav,.htm,.html"
                             className="text-sm"
                             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                        />
+                    </label>
+                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+                        <span>Embed / video link (optional — instead of file)</span>
+                        <span className="font-normal text-slate-500">
+                            YouTube, MediaDelivery, or paste full{" "}
+                            <code className="text-[10px] bg-slate-100 px-1 rounded">&lt;iframe src=&quot;…&quot;&gt;</code>
+                        </span>
+                        <textarea
+                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono min-h-[72px]"
+                            placeholder="https://www.youtube.com/watch?v=… or https://iframe.mediadelivery.net/embed/…"
+                            value={form.embed_url}
+                            onChange={(e) => setForm({ ...form, embed_url: e.target.value })}
                         />
                     </label>
                     <div className="flex gap-2 pt-2">

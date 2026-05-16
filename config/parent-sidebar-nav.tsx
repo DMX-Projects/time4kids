@@ -23,7 +23,7 @@ import {
 import type { DashboardNavItem } from "@/components/layout/DashboardShell";
 
 /** When `true`, hides the main parent portal links (see filter set below). Dashboard + Important documents stay. */
-export const HIDE_PARENT_SIDEBAR_MAIN_LINKS = true;
+export const HIDE_PARENT_SIDEBAR_MAIN_LINKS = false;
 
 const HIDDEN_WHEN_FLAG: ReadonlySet<string> = new Set([
     "My details",

@@ -7,19 +7,25 @@ import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
-import { apiUrl, mediaUrl, resolveHomeMediaAssetUrl } from '@/lib/api-client';
+import { mediaUrl, resolveHomeMediaAssetUrl } from '@/lib/api-client';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 import FranchiseVideoBlob, {
     FranchiseBlobThumbnail,
     getFranchiseVideoEmbedSrc,
 } from '@/components/home/FranchiseVideoBlob';
+import {
+    FranchiseVideoPlaybackProvider,
+    useFranchiseVideoPlayback,
+} from '@/components/home/FranchiseVideoPlaybackContext';
 import { FranchiseBlobShell } from '@/components/home/franchise-blob';
 import FranchisePhotoGalleryModal from '@/components/home/FranchisePhotoGalleryModal';
-import { DEFAULT_HOME_PAGE_DATA } from '@/config/home-page-defaults';
+import NewsTickerMarquee from '@/components/home/NewsTickerMarquee';
+import {
+    DEFAULT_FRANCHISE_VIDEO_POSTER,
+    DEFAULT_HOME_PAGE_DATA,
+} from '@/config/home-page-defaults';
 
 gsap.registerPlugin(ScrollTrigger);
-
-type Slide = { id?: number; date: string; text: string };
 
 /** Clean horizontal mark from `public` (no screenshot / checkerboard). Replace file if you export a new PNG with alpha. */
 const FRANCHISE_HEADING_LOGO = '/time-kids-logo-new.png';
@@ -175,15 +181,98 @@ function FranchiseAdvantageCarousel({
     );
 }
 
-function NewsUpdateSlide({ text }: { text: string }) {
-    const message = text.trim();
+type FranchiseAdvantageVideo = { poster?: string; src: string; alt?: string };
+
+function FranchiseAdvantageVideosPanel({
+    videos,
+    carouselIndex,
+    onCarouselIndexChange,
+}: {
+    videos: FranchiseAdvantageVideo[];
+    carouselIndex: number;
+    onCarouselIndexChange: React.Dispatch<React.SetStateAction<number>>;
+}) {
+    const { stop } = useFranchiseVideoPlayback();
+
+    if (videos.length === 1) {
+        const item = videos[0];
+        const posterRaw = (item.poster || '').trim();
+        const posterSrc =
+            resolveHomeMediaAssetUrl(posterRaw) ||
+            resolveHomeMediaAssetUrl(DEFAULT_FRANCHISE_VIDEO_POSTER) ||
+            DEFAULT_FRANCHISE_VIDEO_POSTER;
+        const srcRaw = item.src.trim();
+        const embedSrc = getFranchiseVideoEmbedSrc(srcRaw);
+        const fileSrc = embedSrc ? null : (srcRaw ? mediaUrl(srcRaw) || srcRaw : null);
+        const openable = Boolean(embedSrc || fileSrc);
+
+        return (
+            <FranchiseVideoBlob
+                variant={0}
+                videoIndex={0}
+                surfaceSrc={posterSrc}
+                surfaceAlt={item.alt || 'T.I.M.E. Kids franchise advantage'}
+                embedSrc={embedSrc}
+                fileSrc={fileSrc}
+                videoReady={openable}
+            />
+        );
+    }
+
     return (
-        <div className="flex min-h-[5.5rem] items-center gap-3 px-8 py-5 pb-6 sm:min-h-[6.25rem] sm:gap-4 sm:px-10 sm:py-6 sm:pb-7">
-            <span className="shrink-0 text-2xl font-bold leading-none text-orange-500 md:text-3xl" aria-hidden>
-                →
-            </span>
-            <p className="min-w-0 flex-1 text-base font-semibold leading-relaxed text-slate-800 md:text-lg">{message}</p>
-        </div>
+        <FranchiseAdvantageCarousel
+            slideCount={videos.length}
+            activeIndex={carouselIndex}
+            onPrev={() => {
+                stop();
+                onCarouselIndexChange((idx) => {
+                    const n = videos.length;
+                    return (idx - 1 + n) % n;
+                });
+            }}
+            onNext={() => {
+                stop();
+                onCarouselIndexChange((idx) => {
+                    const n = videos.length;
+                    return (idx + 1) % n;
+                });
+            }}
+            onSelect={(next) => {
+                stop();
+                onCarouselIndexChange(next);
+            }}
+            prevLabel="Previous video"
+            nextLabel="Next video"
+            dotsLabel="Video slides"
+            controlsOutside
+        >
+            {videos.map((v, vi) => {
+                const pr = (v.poster || '').trim();
+                const ps =
+                    resolveHomeMediaAssetUrl(pr) ||
+                    resolveHomeMediaAssetUrl(DEFAULT_FRANCHISE_VIDEO_POSTER) ||
+                    DEFAULT_FRANCHISE_VIDEO_POSTER;
+                const sr = v.src.trim();
+                const es = getFranchiseVideoEmbedSrc(sr);
+                const fs2 = es ? null : (sr ? mediaUrl(sr) || sr : null);
+                const canOpen = Boolean(es || fs2);
+                const active = vi === carouselIndex;
+                return (
+                    <motion.div key={`${v.poster}-${v.src}-${vi}`} className="w-full shrink-0 basis-full">
+                        <FranchiseVideoBlob
+                            variant={vi}
+                            videoIndex={vi}
+                            surfaceSrc={ps}
+                            surfaceAlt={v.alt || `Franchise video ${vi + 1}`}
+                            embedSrc={es}
+                            fileSrc={fs2}
+                            videoReady={canOpen}
+                            active={active}
+                        />
+                    </motion.div>
+                );
+            })}
+        </FranchiseAdvantageCarousel>
     );
 }
 
@@ -203,33 +292,12 @@ function buildFranchisePhotoSlides(
         .slice(0, FRANCHISE_PHOTO_TARGET_COUNT);
 }
 
-function formatSlideDate(iso: string | null | undefined): string {
-    if (!iso) return '';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return String(iso);
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
-}
-
-const FALLBACK_UPDATES: Slide[] = [
-    {
-        date: '28-12-2015',
-        text: 'T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. With 350+ pre-schools, T.I.M.E. Kids is poised for major expansion across the country.',
-    },
-];
-
 export default function BenefitsUpdates() {
     const home = useHomePageContent();
     const sectionRef = useRef<HTMLDivElement>(null);
-    const [slides, setSlides] = useState<Slide[]>([]);
-    const [updatesReady, setUpdatesReady] = useState(false);
     const [modalPhotoIndex, setModalPhotoIndex] = useState<number | null>(null);
     const [videoCarouselIndex, setVideoCarouselIndex] = useState(0);
     const [photoCarouselIndex, setPhotoCarouselIndex] = useState(0);
-    const [newsIndex, setNewsIndex] = useState(0);
-    const [playingVideoIndex, setPlayingVideoIndex] = useState<number | null>(null);
 
     const franchiseVideos = useMemo(() => {
         const raw =
@@ -261,48 +329,13 @@ export default function BenefitsUpdates() {
         setPhotoCarouselIndex((i) => Math.min(Math.max(0, i), Math.max(0, franchisePhotos.length - 1)));
     }, [franchisePhotos.length]);
 
-    useEffect(() => {
-        setPlayingVideoIndex(null);
-    }, [videoCarouselIndex]);
+    const newsTickerLines = useMemo(
+        () => (home.news_ticker_items ?? []).map((item) => item.text).filter((t) => t.trim()),
+        [home.news_ticker_items],
+    );
 
-    const emptyMessage = (home.updates_empty_message || '').trim() || 'News updates and announcements will appear here.';
-
-    const newsItems = useMemo(() => {
-        if (!updatesReady) return [{ text: 'Loading updates…', date: '' }];
-        const withText = slides.filter((s) => s.text.trim());
-        if (withText.length === 0) return [{ text: emptyMessage, date: '' }];
-        return withText;
-    }, [slides, updatesReady, emptyMessage]);
-
-    useEffect(() => {
-        setNewsIndex((i) => Math.min(Math.max(0, i), Math.max(0, newsItems.length - 1)));
-    }, [newsItems.length]);
-
-    useEffect(() => {
-        const fetchUpdates = async () => {
-            try {
-                const response = await fetch(apiUrl('/updates/?placement=franchise'));
-                if (!response.ok) throw new Error('bad status');
-                const data = await response.json();
-                const items = Array.isArray(data) ? data : data.results || [];
-                const mapped: Slide[] = items.map((u: { id?: number; text?: string; start_date?: string | null }) => ({
-                    id: u.id,
-                    date: formatSlideDate(u.start_date),
-                    text: (u.text || '').trim(),
-                })).filter((u: Slide) => u.text.length > 0);
-                setSlides(
-                    mapped.length > 0
-                        ? mapped
-                        : [{ date: '', text: (home.updates_empty_message || '').trim() || 'News updates and announcements will appear here.' }],
-                );
-            } catch {
-                setSlides(FALLBACK_UPDATES);
-            } finally {
-                setUpdatesReady(true);
-            }
-        };
-        fetchUpdates();
-    }, [home.updates_empty_message]);
+    const newsEmptyMessage =
+        (home.updates_empty_message || '').trim() || 'News updates and announcements will appear here.';
 
     useEffect(() => {
         if (!sectionRef.current) return;
@@ -389,36 +422,8 @@ export default function BenefitsUpdates() {
                                 </h3>
                             </div>
 
-                            <motion.div className="w-full rounded-2xl border border-white/70 bg-white/60 px-2 pb-3 pt-2 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:px-3">
-                                <FranchiseAdvantageCarousel
-                                    slideCount={newsItems.length}
-                                    activeIndex={newsIndex}
-                                    onPrev={() =>
-                                        setNewsIndex((idx) => {
-                                            const n = newsItems.length;
-                                            return (idx - 1 + n) % n;
-                                        })
-                                    }
-                                    onNext={() =>
-                                        setNewsIndex((idx) => {
-                                            const n = newsItems.length;
-                                            return (idx + 1) % n;
-                                        })
-                                    }
-                                    onSelect={setNewsIndex}
-                                    prevLabel="Previous news update"
-                                    nextLabel="Next news update"
-                                    dotsLabel="News updates"
-                                >
-                                    {newsItems.map((item, i) => (
-                                        <div
-                                            key={item.id ?? `${item.text.slice(0, 24)}-${i}`}
-                                            className="min-w-full shrink-0"
-                                        >
-                                            <NewsUpdateSlide text={item.text} />
-                                        </div>
-                                    ))}
-                                </FranchiseAdvantageCarousel>
+                            <motion.div className="w-full rounded-2xl border border-white/70 bg-white/60 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+                                <NewsTickerMarquee lines={newsTickerLines} emptyMessage={newsEmptyMessage} />
                             </motion.div>
                         </div>
                     </motion.div>
@@ -444,88 +449,13 @@ export default function BenefitsUpdates() {
                         </div>
                         <div className="relative w-full max-w-[min(100%,24rem)] sm:mx-auto lg:mx-0 lg:max-w-[26rem]">
                             {franchiseVideos.length > 0 ? (
-                                (() => {
-                                    const item = franchiseVideos[videoCarouselIndex] ?? franchiseVideos[0];
-                                    const i = videoCarouselIndex;
-                                    const posterRaw = (item.poster || '').trim();
-                                    const posterSrc = posterRaw || '/icon-media.svg';
-                                    const srcRaw = item.src.trim();
-                                    const embedSrc = getFranchiseVideoEmbedSrc(srcRaw);
-                                    const fileSrc = embedSrc ? null : (srcRaw ? mediaUrl(srcRaw) || srcRaw : null);
-                                    const openable = Boolean(embedSrc || fileSrc);
-
-                                    if (franchiseVideos.length === 1) {
-                                        return (
-                                            <FranchiseVideoBlob
-                                                variant={0}
-                                                surfaceSrc={posterSrc}
-                                                surfaceAlt={item.alt || 'T.I.M.E. Kids franchise advantage'}
-                                                embedSrc={embedSrc}
-                                                fileSrc={fileSrc}
-                                                isPlaying={playingVideoIndex === 0}
-                                                videoReady={openable}
-                                                showPlayOverlay={playingVideoIndex !== 0}
-                                                onPlay={() => openable && setPlayingVideoIndex(0)}
-                                                onStop={() => setPlayingVideoIndex(null)}
-                                            />
-                                        );
-                                    }
-
-                                    return (
-                                        <FranchiseAdvantageCarousel
-                                            slideCount={franchiseVideos.length}
-                                            activeIndex={videoCarouselIndex}
-                                            onPrev={() => {
-                                                setPlayingVideoIndex(null);
-                                                setVideoCarouselIndex((idx) => {
-                                                    const n = franchiseVideos.length;
-                                                    return (idx - 1 + n) % n;
-                                                });
-                                            }}
-                                            onNext={() => {
-                                                setPlayingVideoIndex(null);
-                                                setVideoCarouselIndex((idx) => {
-                                                    const n = franchiseVideos.length;
-                                                    return (idx + 1) % n;
-                                                });
-                                            }}
-                                            onSelect={(next) => {
-                                                setPlayingVideoIndex(null);
-                                                setVideoCarouselIndex(next);
-                                            }}
-                                            prevLabel="Previous video"
-                                            nextLabel="Next video"
-                                            dotsLabel="Video slides"
-                                            controlsOutside
-                                        >
-                                            {franchiseVideos.map((v, vi) => {
-                                                const pr = (v.poster || '').trim();
-                                                const ps = pr || '/icon-media.svg';
-                                                const sr = v.src.trim();
-                                                const es = getFranchiseVideoEmbedSrc(sr);
-                                                const fs2 = es ? null : (sr ? mediaUrl(sr) || sr : null);
-                                                const canOpen = Boolean(es || fs2);
-                                                const active = vi === videoCarouselIndex;
-                                                return (
-                                                    <div key={`${v.poster}-${v.src}-${vi}`} className="w-full shrink-0 basis-full">
-                                                        <FranchiseVideoBlob
-                                                            variant={vi}
-                                                            surfaceSrc={ps}
-                                                            surfaceAlt={v.alt || `Franchise video ${vi + 1}`}
-                                                            embedSrc={es}
-                                                            fileSrc={fs2}
-                                                            isPlaying={playingVideoIndex === vi && active}
-                                                            videoReady={canOpen}
-                                                            showPlayOverlay={active && playingVideoIndex !== vi}
-                                                            onPlay={() => canOpen && setPlayingVideoIndex(vi)}
-                                                            onStop={() => setPlayingVideoIndex(null)}
-                                                        />
-                                                    </div>
-                                                );
-                                            })}
-                                        </FranchiseAdvantageCarousel>
-                                    );
-                                })()
+                                <FranchiseVideoPlaybackProvider resetKey={videoCarouselIndex}>
+                                    <FranchiseAdvantageVideosPanel
+                                        videos={franchiseVideos}
+                                        carouselIndex={videoCarouselIndex}
+                                        onCarouselIndexChange={setVideoCarouselIndex}
+                                    />
+                                </FranchiseVideoPlaybackProvider>
                             ) : null}
                         </div>
                         {franchisePhotos.length > 0 ? (

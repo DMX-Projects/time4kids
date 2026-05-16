@@ -14,7 +14,12 @@ import {
   resolveCenterPageLinks,
   shouldOpenFranchiseLinkInNewTab,
 } from "@/lib/franchise-center-page-links";
-import { openFranchiseHubDocumentBlobInNewTab } from "@/lib/franchise-hub-document-open";
+import { downloadFilenameFromLink, extensionFromPath } from "@/lib/franchise-download-filename";
+import {
+  openFranchiseEmbedLink,
+  openFranchiseFileFromHref,
+  openFranchiseHubDocument,
+} from "@/lib/franchise-hub-document-open";
 
 import type {
   CenterPageLink,
@@ -204,8 +209,7 @@ function LinkRows({
 
   onAdminPickCategory?: (category: string) => void;
 }) {
-  const { authFetchBlob } = useAuth();
-  const [openingHubDocId, setOpeningHubDocId] = useState<number | null>(null);
+  const { tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
   const displayLinks =
     mode === "franchise" && hubDocsByCategory
       ? resolveCenterPageLinks(links, hubDocsByCategory, hubDocsBySourcePath)
@@ -213,16 +217,55 @@ function LinkRows({
   const franchiseRowClass =
     "group/link flex min-w-0 items-start gap-2.5 font-serif text-sm leading-snug text-slate-600 hover:text-slate-900";
 
-  const openHubDocument = async (docId: number) => {
-    if (openingHubDocId != null) return;
-    setOpeningHubDocId(docId);
-    try {
-      const blob = await authFetchBlob(`/documents/franchise/documents/${docId}/file/`);
-      openFranchiseHubDocumentBlobInNewTab(blob);
-    } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Could not open document.");
-    } finally {
-      setOpeningHubDocId(null);
+  const findHubDocById = (docId: number): FranchiseHubDoc | undefined => {
+    if (hubDocsBySourcePath) {
+      for (const d of Array.from(hubDocsBySourcePath.values())) {
+        if (d.id === docId) return d;
+      }
+    }
+    if (hubDocsByCategory) {
+      for (const list of Array.from(hubDocsByCategory.values())) {
+        const found = list.find((d) => d.id === docId);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  };
+
+  const openFranchiseLink = (link: CenterPageLink) => {
+    const doc = link.franchiseHubDocId != null ? findHubDocById(link.franchiseHubDocId) : undefined;
+    if (doc?.embed_url?.trim()) {
+      openFranchiseEmbedLink(doc.embed_url);
+      return;
+    }
+    const ext =
+      extensionFromPath(doc?.source_path) ||
+      extensionFromPath(doc?.file) ||
+      extensionFromPath(link.href) ||
+      ".pdf";
+    const downloadName = downloadFilenameFromLink(link.label, link.href, ext);
+
+    const access = tokens?.access;
+    if (link.franchiseHubDocId != null) {
+      openFranchiseHubDocument(
+        access,
+        authFetchBlobResponse,
+        authFetchBlobFromHref,
+        `/documents/franchise/documents/${link.franchiseHubDocId}/file/`,
+        downloadName,
+        link.franchiseHubDocId,
+        link.href,
+      );
+      return;
+    }
+    if (shouldOpenFranchiseLinkInNewTab(link.href)) {
+      openFranchiseFileFromHref(
+        access,
+        authFetchBlobResponse,
+        authFetchBlobFromHref,
+        link.href,
+        downloadName,
+      );
     }
   };
 
@@ -237,38 +280,23 @@ function LinkRows({
           : "";
 
         const hubDocId = link.franchiseHubDocId;
-        const openInNewTab =
+        const openAsFile =
           mode === "franchise" &&
           (hubDocId != null || shouldOpenFranchiseLinkInNewTab(link.href));
 
         return (
           <li key={link.rowKey ?? `link-${index}-${link.label}`} className="min-w-0">
             {mode === "franchise" ? (
-              hubDocId != null ? (
+              openAsFile ? (
                 <button
                   type="button"
-                  onClick={() => void openHubDocument(hubDocId)}
-                  disabled={openingHubDocId === hubDocId}
-                  className={`${franchiseRowClass} w-full text-left disabled:opacity-60`}
-                >
-                  <HandprintBullet className="mt-0.5 shrink-0 text-emerald-600" />
-
-                  <span className={franchiseLabelClass}>
-                    {link.label}
-                    {openingHubDocId === hubDocId ? " — Opening…" : ""}
-                  </span>
-                </button>
-              ) : openInNewTab ? (
-                <a
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={franchiseRowClass}
+                  onClick={() => openFranchiseLink(link)}
+                  className={`${franchiseRowClass} w-full text-left`}
                 >
                   <HandprintBullet className="mt-0.5 shrink-0 text-emerald-600" />
 
                   <span className={franchiseLabelClass}>{link.label}</span>
-                </a>
+                </button>
               ) : (
                 <Link href={link.href} className={franchiseRowClass}>
                   <HandprintBullet className="mt-0.5 shrink-0 text-emerald-600" />

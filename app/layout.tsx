@@ -5,6 +5,7 @@ import { Dosis, Schoolbell } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { FooterContentProvider } from "@/components/layout/FooterContentProvider";
 import ScrollProgress from "@/components/animations/ScrollProgress";
 import SmoothScroll from "@/components/shared/SmoothScroll";
 import ConditionalChrome from "@/components/layout/ConditionalChrome";
@@ -93,6 +94,7 @@ export default function RootLayout({
                 ) : null} */}
                 <AuthProvider>
                     <ToastProvider>
+                        <FooterContentProvider>
                         <SchoolDataProvider>
                             <ConditionalChrome>
                                 <SmoothScroll />
@@ -112,6 +114,7 @@ export default function RootLayout({
                                 <FloatingSideTabs />
                             </ConditionalChrome>
                         </SchoolDataProvider>
+                        </FooterContentProvider>
                     </ToastProvider>
                 </AuthProvider>
             </body>

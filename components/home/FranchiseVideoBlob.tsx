@@ -4,47 +4,14 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Play } from 'lucide-react';
 import { resolveHomeMediaAssetUrl } from '@/lib/api-client';
+import { getFranchiseVideoEmbedSrc } from '@/lib/franchise-embed-url';
 import { FranchiseBlobShell } from '@/components/home/franchise-blob';
+import { useFranchiseVideoPlayback } from '@/components/home/FranchiseVideoPlaybackContext';
+
+export { getFranchiseVideoEmbedSrc } from '@/lib/franchise-embed-url';
 
 export const FRANCHISE_ADVANTAGE_VIDEO_EMBED =
     'https://iframe.mediadelivery.net/embed/117208/9005f10d-a5c3-4cd7-831e-fac0c2b5334f?autoplay=true';
-
-/** Bunny / mediadelivery iframe, YouTube, or null for direct MP4/file URLs. */
-export function getFranchiseVideoEmbedSrc(raw: string): string | null {
-    const u = raw.trim();
-    if (!u) return null;
-    if (/iframe\.mediadelivery\.net\/embed/i.test(u) || /player\.mediadelivery\.net\/embed/i.test(u)) {
-        const base = u.replace(/player\.mediadelivery\.net/i, 'iframe.mediadelivery.net');
-        const params = new URLSearchParams(base.includes('?') ? base.split('?')[1] : '');
-        if (!params.has('autoplay')) params.set('autoplay', 'true');
-        if (!params.has('preload')) params.set('preload', 'true');
-        if (!params.has('responsive')) params.set('responsive', 'true');
-        return `${base.split('?')[0]}?${params.toString()}`;
-    }
-    return getYoutubeEmbedSrc(u);
-}
-
-function getYoutubeEmbedSrc(raw: string): string | null {
-    const u = raw.trim();
-    if (!u) return null;
-    try {
-        const url = new URL(/^https?:\/\//i.test(u) ? u : `https://${u}`);
-        const h = url.hostname.replace(/^www\./i, '');
-        if (h === 'youtu.be') {
-            const id = url.pathname.replace(/^\//, '').split('/')[0];
-            return id ? `https://www.youtube.com/embed/${id}` : null;
-        }
-        if (h.includes('youtube.com')) {
-            const v = url.searchParams.get('v');
-            if (v) return `https://www.youtube.com/embed/${v}`;
-            const m = url.pathname.match(/\/(?:embed|shorts|live)\/([^/?]+)/);
-            if (m?.[1]) return `https://www.youtube.com/embed/${m[1]}`;
-        }
-    } catch {
-        /* ignore */
-    }
-    return null;
-}
 
 /** Promo posters & portraits — fit inside organic blob without harsh edge crop. */
 export const franchiseBlobThumbnailImageClass =
@@ -103,30 +70,30 @@ export function FranchiseBlobThumbnail({ src, alt, fallbackSrc }: FranchiseBlobT
 
 type FranchiseVideoBlobProps = {
     variant: number;
+    videoIndex: number;
     surfaceSrc: string;
     surfaceAlt: string;
     embedSrc: string | null;
     fileSrc: string | null;
-    isPlaying: boolean;
-    onPlay: () => void;
-    onStop: () => void;
     videoReady: boolean;
-    /** Only the active carousel slide shows the play overlay (avoids double buttons). */
-    showPlayOverlay?: boolean;
+    /** Carousel: only the visible slide is interactive. Defaults to true. */
+    active?: boolean;
 };
 
 export default function FranchiseVideoBlob({
     variant,
+    videoIndex,
     surfaceSrc,
     surfaceAlt,
     embedSrc,
     fileSrc,
-    isPlaying,
-    onPlay,
-    onStop,
     videoReady,
-    showPlayOverlay = true,
+    active = true,
 }: FranchiseVideoBlobProps) {
+    const { playingIndex, play, stop } = useFranchiseVideoPlayback();
+    const isPlaying = active && playingIndex === videoIndex;
+    const showPlayOverlay = active && playingIndex !== videoIndex;
+
     return (
         <motion.div className="group relative mx-auto w-full max-w-[min(100%,20rem)] sm:max-w-[22rem] lg:max-w-[24rem]">
             <FranchiseBlobShell
@@ -164,7 +131,7 @@ export default function FranchiseVideoBlob({
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            onPlay();
+                            if (videoReady) play(videoIndex);
                         }}
                         disabled={!videoReady}
                         className="absolute inset-0 overflow-hidden text-left [border-radius:inherit] focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8ec] disabled:pointer-events-none disabled:opacity-55"
@@ -195,7 +162,7 @@ export default function FranchiseVideoBlob({
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            onStop();
+                            stop();
                         }}
                         className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-base font-bold text-white shadow-md backdrop-blur-sm transition hover:bg-black/80"
                         aria-label="Close video"

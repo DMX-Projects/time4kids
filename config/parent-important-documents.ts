@@ -18,40 +18,6 @@ export type ParentImportantDocumentItem = {
 
 export const PARENT_IMPORTANT_DOCUMENTS: ParentImportantDocumentItem[] = [
     {
-        id: "holiday-lists",
-        title: "Holiday Lists (AY 2025-26)",
-        resourceLinks: [
-            {
-                label: "AP and Telangana Holiday Lists (AY 2025-26)",
-                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2025-26/AP-and-Telangana%20Holiday%20List%20AY%202025-26.pdf",
-            },
-            {
-                label: "Karnataka Holiday Lists (AY 2025-26)",
-                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2025-26/Karnataka%20%20Holiday%20List%20AY%202025-26.pdf",
-            },
-            {
-                label: "Kerala Holiday Lists (AY 2025-26)",
-                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2025-26/Kerala%20Holiday%20List%20AY%202025-26.pdf",
-            },
-            {
-                label: "Maharashtra Holiday Lists (AY 2025-26)",
-                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2025-26/Maharashtra%20%20Holiday%20List%20AY%202025-26.pdf",
-            },
-            {
-                label: "Madhya Pradesh Holiday Lists (AY 2025-26)",
-                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2025-26/Madhya%20Pradesh%20%20Holiday%20List%20AY%202025-26.pdf",
-            },
-            {
-                label: "Tamilnadu Holiday Lists (AY 2025-26)",
-                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2025-26/Tamil%20Nadu%20%20Holiday%20List%20AY%202025-26.pdf",
-            },
-            {
-                label: "West Bengal Holiday Lists (AY 2025-26)",
-                href: "http://103.65.21.245:8080/uploads/pc/holidayslist-2025-26/West%20Bengal%20Holiday%20List-2025-26.pdf",
-            },
-        ],
-    },
-    {
         id: "audio-rhymes",
         title: "Audio Rhymes (AY 2025-26)",
         resourceLinks: [
@@ -99,7 +65,7 @@ export const PARENT_IMPORTANT_DOCUMENTS: ParentImportantDocumentItem[] = [
     },
     {
         id: "watch-hear-learn",
-        title: "Watch Hear Learn (AY 2025-26)",
+        title: "Watch Hear Learn (AY 2026-27)",
         body: "These use the legacy T.I.M.E. media site.",
         resourceLinks: [
             {

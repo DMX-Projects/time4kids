@@ -13,6 +13,7 @@ import {
     type FranchiseAdvantageVideoItem,
     type HomePageData,
     type KeyNavItem,
+    type NewsTickerItem,
 } from "@/config/home-page-defaults";
 import { isVirtualTourNavItem } from "@/lib/virtual-tour";
 
@@ -317,6 +318,26 @@ export default function AdminHomeContentPage() {
         setData({
             ...data,
             franchise_advantage_photos: base.filter((_, j) => j !== i),
+        });
+    };
+
+    const updateNewsTicker = (i: number, patch: Partial<NewsTickerItem>) => {
+        const next = [...(data.news_ticker_items ?? [])];
+        next[i] = { ...next[i], ...patch };
+        setData({ ...data, news_ticker_items: next });
+    };
+
+    const addNewsTicker = () => {
+        setData({
+            ...data,
+            news_ticker_items: [...(data.news_ticker_items ?? []), { text: "" }],
+        });
+    };
+
+    const removeNewsTicker = (i: number) => {
+        setData({
+            ...data,
+            news_ticker_items: (data.news_ticker_items ?? []).filter((_, j) => j !== i),
         });
     };
 
@@ -677,10 +698,44 @@ export default function AdminHomeContentPage() {
                             </div>
                         ))}
                         <Button type="button" variant="outline" size="sm" onClick={addFranchisePhoto} className="inline-flex items-center gap-2"><Plus className="w-4 h-4" /> Add photo slide</Button>
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-2">
-                            <label className={labelClass}>News box — when no updates</label>
-                            <input className={inputClass} value={data.updates_empty_message ?? ""} onChange={(e) => setData({ ...data, updates_empty_message: e.target.value })} />
-                            <p className="text-xs text-slate-500">Live news: <Link href="/dashboard/admin/updates" className="text-orange-600 underline">Admin → Updates</Link></p>
+                        <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-4 space-y-3">
+                            <div>
+                                <p className="text-sm font-semibold text-slate-900">Latest news ticker (scrolling text)</p>
+                                <p className="text-xs text-slate-600 mt-1">
+                                    Shown under <strong>Latest News &amp; Updates</strong> on the home page. Each line scrolls continuously in one band (separated by •).
+                                </p>
+                            </div>
+                            {(data.news_ticker_items ?? []).map((row, i) => (
+                                <div key={i} className="flex flex-wrap items-start gap-2 rounded-lg border border-slate-200 bg-white p-3">
+                                    <div className="min-w-0 flex-1">
+                                        <label className={labelClass}>Line {i + 1}</label>
+                                        <textarea
+                                            className={`${inputClass} min-h-[72px]`}
+                                            value={row.text}
+                                            onChange={(e) => updateNewsTicker(i, { text: e.target.value })}
+                                            placeholder="Announcement text…"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeNewsTicker(i)}
+                                        className="mt-5 inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" /> Remove
+                                    </button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" size="sm" onClick={addNewsTicker} className="inline-flex items-center gap-2">
+                                <Plus className="w-4 h-4" /> Add news line
+                            </Button>
+                            <div className="pt-2 border-t border-orange-100">
+                                <label className={labelClass}>Message when no lines are set</label>
+                                <input
+                                    className={inputClass}
+                                    value={data.updates_empty_message ?? ""}
+                                    onChange={(e) => setData({ ...data, updates_empty_message: e.target.value })}
+                                />
+                            </div>
                         </div>
                     </Section>
 

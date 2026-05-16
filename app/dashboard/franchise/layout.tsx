@@ -3,7 +3,6 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { FRANCHISE_SIDEBAR_NAV } from "@/config/franchise-sidebar-nav";
 import { FranchiseDataProvider, useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
-
 /** Sidebar/header: show which centre this login belongs to (from GET /franchises/franchise/profile/). */
 function FranchiseDashboardShell({ children }: { children: React.ReactNode }) {
     const { profile } = useFranchiseData();

@@ -141,7 +141,11 @@ function findFranchiseDocByLooseBasename(
     if (!want) return undefined;
 
     const matches = (d: FranchiseHubDoc) =>
-        Boolean(d.file && d.id && looseBasenameKey((d.source_path || "").split("/").filter(Boolean).pop() || "") === want);
+        Boolean(
+            d.id &&
+                (d.file || d.embed_url) &&
+                looseBasenameKey((d.source_path || "").split("/").filter(Boolean).pop() || "") === want,
+        );
 
     if (adminCategory) {
         for (const d of docsByCategory.get(adminCategory) ?? []) {
@@ -208,21 +212,27 @@ export function resolveCenterPageLinkMeta(
     const publicRel = extractPublicFranchiseRelativePath(link.href);
     if (publicRel && docsBySourcePath) {
         const byPublic = docsBySourcePath.get(normalizeSourcePathKey(publicRel));
-        if (byPublic?.file && byPublic.id) return withFranchiseHubDownload(byPublic.id);
+        if (byPublic?.id && (byPublic.file || byPublic.embed_url)) return withFranchiseHubDownload(byPublic.id);
     }
 
     const legacyRel = extractLegacyPcRelativePath(link.href);
     if (legacyRel && docsBySourcePath) {
         const byPath = docsBySourcePath.get(normalizeSourcePathKey(legacyRel));
-        if (byPath?.file && byPath.id) return withFranchiseHubDownload(byPath.id);
+        if (byPath?.id && (byPath.file || byPath.embed_url)) return withFranchiseHubDownload(byPath.id);
         const loose = findFranchiseDocByLooseBasename(legacyRel, docsBySourcePath, docsByCategory, link.adminCategory);
-        if (loose?.file && loose.id) return withFranchiseHubDownload(loose.id);
+        if (loose?.id && (loose.file || loose.embed_url)) return withFranchiseHubDownload(loose.id);
     }
 
     if (link.adminCategory) {
         const docs = docsByCategory.get(link.adminCategory) ?? [];
         const match = findDocForLink(link.label, docs);
-        if (match?.file && match.id) return withFranchiseHubDownload(match.id);
+        if (match?.id && (match.file || match.embed_url)) return withFranchiseHubDownload(match.id);
+    }
+
+    /** Match embed/file uploads by title when checklist has no adminCategory (e.g. Parents orientation video). */
+    for (const docs of Array.from(docsByCategory.values())) {
+        const match = findDocForLink(link.label, docs);
+        if (match?.id && (match.file || match.embed_url)) return withFranchiseHubDownload(match.id);
     }
 
     const fromPcFolder = legacyPcHrefToMediaUrl(link.href);

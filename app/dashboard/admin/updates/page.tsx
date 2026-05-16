@@ -181,9 +181,10 @@ export default function AdminUpdatesPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold text-slate-900">Home page updates</h1>
+                    <h1 className="text-2xl font-semibold text-slate-900">Intro board updates</h1>
                     <p className="text-sm text-slate-600">
-                        Rows with <strong>no centre</strong> (head-office) appear on the selected home page updates board. Centre-specific rows are for school microsites only.
+                        For the <strong>intro</strong> section ticker only. The franchise “Latest News &amp; Updates” band is edited under{" "}
+                        <strong>Admin → Home page content → Latest news ticker</strong> (scrolling lines).
                     </p>
                 </div>
                 <Button size="sm" onClick={startCreate} className="inline-flex items-center gap-2">
@@ -257,7 +258,7 @@ export default function AdminUpdatesPage() {
                             required
                         >
                             <option value="intro">Intro board</option>
-                            <option value="franchise">Franchise board</option>
+                            <option value="franchise">Franchise board (legacy — use Home page content ticker)</option>
                         </select>
                     </div>
                     <div>
