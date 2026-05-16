@@ -120,6 +120,40 @@ function normalizeSourcePathKey(path: string): string {
     return path.replace(/\\/g, "/").trim().replace(/^\/+/, "").toLowerCase();
 }
 
+/** Match legacy URL filenames to `source_path` when spacing/underscores differ (pc import vs old site URLs). */
+function looseBasenameKey(pathOrFileName: string): string {
+    const seg = pathOrFileName.split("/").filter(Boolean).pop() || pathOrFileName;
+    const lower = seg.trim().toLowerCase();
+    const extMatch = lower.match(/\.([a-z0-9]{1,8})$/i);
+    const ext = extMatch ? extMatch[1].toLowerCase() : "";
+    const base = ext ? lower.slice(0, lower.length - ext.length - 1) : lower;
+    const slug = base.replace(/[^a-z0-9]+/gi, "");
+    return ext ? `${slug}.${ext}` : slug;
+}
+
+function findFranchiseDocByLooseBasename(
+    legacyRelativePath: string,
+    docsBySourcePath: Map<string, FranchiseHubDoc>,
+    docsByCategory: Map<string, FranchiseHubDoc[]>,
+    adminCategory?: string,
+): FranchiseHubDoc | undefined {
+    const want = looseBasenameKey(legacyRelativePath.split("/").filter(Boolean).pop() || legacyRelativePath);
+    if (!want) return undefined;
+
+    const matches = (d: FranchiseHubDoc) =>
+        Boolean(d.file && d.id && looseBasenameKey((d.source_path || "").split("/").filter(Boolean).pop() || "") === want);
+
+    if (adminCategory) {
+        for (const d of docsByCategory.get(adminCategory) ?? []) {
+            if (matches(d)) return d;
+        }
+    }
+    for (const d of docsBySourcePath.values()) {
+        if (matches(d)) return d;
+    }
+    return undefined;
+}
+
 /** e.g. `/franchise-artworks/.../file.png` → `franchise-artworks/.../file.png` (matches DB source_path). */
 function extractPublicFranchiseRelativePath(href: string): string | null {
     const trimmed = href.trim();
@@ -156,46 +190,54 @@ export function groupFranchiseHubDocsBySourcePath(
     return map;
 }
 
+type ResolvedHubLink = { href: string; franchiseHubDocId?: number };
+
+function withFranchiseHubDownload(docId: number): ResolvedHubLink {
+    return { href: `#franchise-hub-doc-${docId}`, franchiseHubDocId: docId };
+}
+
 /**
  * Resolve centre-page links for live franchise dashboard.
  * PostgreSQL `FranchiseDocument` rows win first; pc folder / static files are fallbacks only.
  */
-export function resolveCenterPageLinkHref(
+export function resolveCenterPageLinkMeta(
     link: CenterPageLink,
     docsByCategory: Map<string, FranchiseHubDoc[]>,
     docsBySourcePath?: Map<string, FranchiseHubDoc>,
-): string {
+): ResolvedHubLink {
     const publicRel = extractPublicFranchiseRelativePath(link.href);
     if (publicRel && docsBySourcePath) {
         const byPublic = docsBySourcePath.get(normalizeSourcePathKey(publicRel));
-        if (byPublic?.file) return mediaUrl(byPublic.file);
+        if (byPublic?.file && byPublic.id) return withFranchiseHubDownload(byPublic.id);
     }
 
     const legacyRel = extractLegacyPcRelativePath(link.href);
     if (legacyRel && docsBySourcePath) {
         const byPath = docsBySourcePath.get(normalizeSourcePathKey(legacyRel));
-        if (byPath?.file) return mediaUrl(byPath.file);
+        if (byPath?.file && byPath.id) return withFranchiseHubDownload(byPath.id);
+        const loose = findFranchiseDocByLooseBasename(legacyRel, docsBySourcePath, docsByCategory, link.adminCategory);
+        if (loose?.file && loose.id) return withFranchiseHubDownload(loose.id);
     }
 
     if (link.adminCategory) {
         const docs = docsByCategory.get(link.adminCategory) ?? [];
         const match = findDocForLink(link.label, docs);
-        if (match?.file) return mediaUrl(match.file);
+        if (match?.file && match.id) return withFranchiseHubDownload(match.id);
     }
 
     const fromPcFolder = legacyPcHrefToMediaUrl(link.href);
-    if (fromPcFolder) return fromPcFolder;
+    if (fromPcFolder) return { href: fromPcFolder };
 
     if (isLegacyFranchiseUploadUrl(link.href)) {
-        return link.href;
+        return { href: link.href };
     }
 
     const trimmed = link.href.trim();
     if (trimmed.startsWith("/media/")) {
-        return mediaUrl(trimmed.replace(/^\/media\/?/, ""));
+        return { href: mediaUrl(trimmed.replace(/^\/media\/?/, "")) };
     }
 
-    return link.href;
+    return { href: link.href };
 }
 
 export function resolveCenterPageLinks(
@@ -203,8 +245,12 @@ export function resolveCenterPageLinks(
     docsByCategory: Map<string, FranchiseHubDoc[]>,
     docsBySourcePath?: Map<string, FranchiseHubDoc>,
 ): CenterPageLink[] {
-    return links.map((link) => ({
-        ...link,
-        href: resolveCenterPageLinkHref(link, docsByCategory, docsBySourcePath),
-    }));
+    return links.map((link) => {
+        const meta = resolveCenterPageLinkMeta(link, docsByCategory, docsBySourcePath);
+        return {
+            ...link,
+            href: meta.href,
+            franchiseHubDocId: meta.franchiseHubDocId,
+        };
+    });
 }

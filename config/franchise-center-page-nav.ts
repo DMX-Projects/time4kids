@@ -16,6 +16,11 @@ export type CenterPageLink = {
     emphasize?: boolean;
     /** Stable list key when the same label+href appears twice */
     rowKey?: string;
+    /**
+     * When set (franchise dashboard), open file via authenticated API instead of public `/media/…`
+     * (avoids 404 when marketing domain does not proxy uploads).
+     */
+    franchiseHubDocId?: number;
 };
 
 /** Third level (e.g. “Block-1”) — grey pill, then handprint links */

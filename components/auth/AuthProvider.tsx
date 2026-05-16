@@ -31,6 +31,8 @@ type AuthContextValue = {
     /** Re-fetch `/auth/me/` and update stored session (e.g. after parent updates display name). */
     refreshUser: () => Promise<void>;
     authFetch: <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
+    /** PDFs and uploads — skips JSON parsing; use for `/file/` endpoints. */
+    authFetchBlob: (path: string, init?: RequestInit) => Promise<Blob>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -378,7 +380,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return (await response.json().catch(() => null)) as T;
     };
 
-    const value: AuthContextValue = { user, tokens, loading, login, logout, refreshTokens, refreshUser, authFetch };
+    const authFetchBlob = async (path: string, init?: RequestInit, retry = true): Promise<Blob> => {
+        const access = tokensRef.current?.access;
+        if (!access) {
+            const err = new Error("Authentication required. Please sign in.");
+            (err as Error & { code?: string }).code = "AUTH_REQUIRED";
+            throw err;
+        }
+        const headers = new Headers(init?.headers || {});
+        headers.set("Authorization", `Bearer ${access}`);
+        const response = await fetch(apiUrl(path), { ...init, headers });
+        if (response.status === 401 && retry) {
+            const refreshed = await refreshTokens();
+            if (refreshed) {
+                const retryHeaders = new Headers(init?.headers || {});
+                retryHeaders.set("Authorization", `Bearer ${refreshed.access}`);
+                const retried = await fetch(apiUrl(path), { ...init, headers: retryHeaders });
+                if (retried.ok) return retried.blob();
+                throw await toApiError(retried);
+            }
+            logout();
+            throw new Error("Session expired. Please login again.");
+        }
+        if (!response.ok) throw await toApiError(response);
+        return response.blob();
+    };
+
+    const value: AuthContextValue = {
+        user,
+        tokens,
+        loading,
+        login,
+        logout,
+        refreshTokens,
+        refreshUser,
+        authFetch,
+        authFetchBlob,
+    };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
