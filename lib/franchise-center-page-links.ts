@@ -148,7 +148,7 @@ function findFranchiseDocByLooseBasename(
             if (matches(d)) return d;
         }
     }
-    for (const d of docsBySourcePath.values()) {
+    for (const d of Array.from(docsBySourcePath.values())) {
         if (matches(d)) return d;
     }
     return undefined;
