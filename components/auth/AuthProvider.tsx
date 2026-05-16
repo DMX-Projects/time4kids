@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiUrl, jsonHeaders, toApiError } from "@/lib/api-client";
+import { apiUrl, jsonHeaders, mediaUrl, normalizeApiPath, toApiError } from "@/lib/api-client";
+import { parseFilenameFromContentDisposition } from "@/lib/franchise-download-filename";
 import { AccessLoading } from "@/components/auth/AccessLoading";
 
 type Role = "admin" | "franchise" | "parent" | "driver";
@@ -33,6 +34,16 @@ type AuthContextValue = {
     authFetch: <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
     /** PDFs and uploads — skips JSON parsing; use for `/file/` endpoints. */
     authFetchBlob: (path: string, init?: RequestInit) => Promise<Blob>;
+    /** Blob + filename from Content-Disposition (for hub document downloads). */
+    authFetchBlobResponse: (
+        path: string,
+        init?: RequestInit,
+    ) => Promise<{ blob: Blob; filename?: string }>;
+    /** Fetch a file blob from an API path or full media/legacy URL. */
+    authFetchBlobFromHref: (
+        href: string,
+        init?: RequestInit,
+    ) => Promise<{ blob: Blob; filename?: string }>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -406,6 +417,99 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return response.blob();
     };
 
+    const authFetchBlobResponse = async (
+        path: string,
+        init?: RequestInit,
+        retry = true,
+    ): Promise<{ blob: Blob; filename?: string }> => {
+        const access = tokensRef.current?.access;
+        if (!access) {
+            const err = new Error("Authentication required. Please sign in.");
+            (err as Error & { code?: string }).code = "AUTH_REQUIRED";
+            throw err;
+        }
+        const headers = new Headers(init?.headers || {});
+        headers.set("Authorization", `Bearer ${access}`);
+        const response = await fetch(apiUrl(path), { ...init, headers });
+        if (response.status === 401 && retry) {
+            const refreshed = await refreshTokens();
+            if (refreshed) {
+                const retryHeaders = new Headers(init?.headers || {});
+                retryHeaders.set("Authorization", `Bearer ${refreshed.access}`);
+                const retried = await fetch(apiUrl(path), { ...init, headers: retryHeaders });
+                if (retried.ok) {
+                    return {
+                        blob: await retried.blob(),
+                        filename: parseFilenameFromContentDisposition(
+                            retried.headers.get("Content-Disposition"),
+                        ),
+                    };
+                }
+                throw await toApiError(retried);
+            }
+            logout();
+            throw new Error("Session expired. Please login again.");
+        }
+        if (!response.ok) throw await toApiError(response);
+        return {
+            blob: await response.blob(),
+            filename: parseFilenameFromContentDisposition(response.headers.get("Content-Disposition")),
+        };
+    };
+
+    const authFetchBlobFromHref = async (
+        href: string,
+        init?: RequestInit,
+        retry = true,
+    ): Promise<{ blob: Blob; filename?: string }> => {
+        const trimmed = href.trim();
+        if (!trimmed) {
+            throw new Error("Missing file URL.");
+        }
+        if (trimmed.startsWith("/documents/")) {
+            return authFetchBlobResponse(normalizeApiPath(trimmed), init, retry);
+        }
+        if (trimmed.startsWith("/") && !trimmed.startsWith("/media/")) {
+            return authFetchBlobResponse(normalizeApiPath(trimmed), init, retry);
+        }
+
+        const access = tokensRef.current?.access;
+        const headers = new Headers(init?.headers || {});
+        if (access) headers.set("Authorization", `Bearer ${access}`);
+
+        const fetchUrl = /^https?:\/\//i.test(trimmed)
+            ? trimmed
+            : trimmed.startsWith("/media/")
+              ? mediaUrl(trimmed.replace(/^\/media\/?/i, ""))
+              : apiUrl(trimmed);
+
+        const response = await fetch(fetchUrl, { ...init, headers });
+        if (response.status === 401 && retry && access) {
+            const refreshed = await refreshTokens();
+            if (refreshed) {
+                const retryHeaders = new Headers(init?.headers || {});
+                retryHeaders.set("Authorization", `Bearer ${refreshed.access}`);
+                const retried = await fetch(fetchUrl, { ...init, headers: retryHeaders });
+                if (retried.ok) {
+                    return {
+                        blob: await retried.blob(),
+                        filename: parseFilenameFromContentDisposition(
+                            retried.headers.get("Content-Disposition"),
+                        ),
+                    };
+                }
+                throw await toApiError(retried);
+            }
+            logout();
+            throw new Error("Session expired. Please login again.");
+        }
+        if (!response.ok) throw await toApiError(response);
+        return {
+            blob: await response.blob(),
+            filename: parseFilenameFromContentDisposition(response.headers.get("Content-Disposition")),
+        };
+    };
+
     const value: AuthContextValue = {
         user,
         tokens,
@@ -416,6 +520,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         refreshUser,
         authFetch,
         authFetchBlob,
+        authFetchBlobResponse,
+        authFetchBlobFromHref,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

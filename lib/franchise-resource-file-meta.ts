@@ -30,6 +30,29 @@ function extensionFromPath(file: string): string {
     return base.slice(dot + 1).toLowerCase();
 }
 
+export function getFranchiseResourceFileMetaFromDoc(doc: {
+    file?: string | null;
+    embed_url?: string | null;
+}): FranchiseResourceFileMeta {
+    const embed = (doc.embed_url || "").trim();
+    if (embed) {
+        return {
+            kind: "video",
+            ext: "embed",
+            extLabel: "EMBED",
+            actionLabel: "Watch",
+        };
+    }
+    return getFranchiseResourceFileMeta(doc.file);
+}
+
+export function franchiseHubDocHasContent(doc: {
+    file?: string | null;
+    embed_url?: string | null;
+}): boolean {
+    return Boolean((doc.file || "").trim() || (doc.embed_url || "").trim());
+}
+
 export function getFranchiseResourceFileMeta(file: string | null | undefined): FranchiseResourceFileMeta {
     if (!file || !file.trim()) {
         return {

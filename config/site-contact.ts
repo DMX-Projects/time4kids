@@ -25,5 +25,5 @@ export const SITE_HOMEPAGE_FOOTER_PHONE_TEL = SITE_CORPORATE_CONTACT.franchiseCe
 export const SITE_SOCIAL_LINKS = {
     facebook: "https://www.facebook.com/pages/TIME-Kids/187099544682886",
     instagram: "https://www.instagram.com/timekidsindia?igsh=czcxb2pkem8zNGVk",
-    youtube: "https://www.youtube.com/@t.i.m.e.kidspreschoolstkps9493",
+    youtube: "https://youtu.be/zRQzyPqGmgs?si=dZc5tu7RZ5tRHr5_",
 } as const;

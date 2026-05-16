@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
     Archive,
     ChevronRight,
@@ -16,10 +15,14 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import {
     franchiseResourceIconWrapClasses,
     franchiseResourceRowAccentClasses,
-    getFranchiseResourceFileMeta,
     type FranchiseResourceFileKind,
 } from "@/lib/franchise-resource-file-meta";
-import { openFranchiseHubDocumentBlobInNewTab } from "@/lib/franchise-hub-document-open";
+import { downloadFilenameFromLink, extensionFromPath } from "@/lib/franchise-download-filename";
+import { openFranchiseEmbedLink, openFranchiseHubDocument } from "@/lib/franchise-hub-document-open";
+import {
+    franchiseHubDocHasContent,
+    getFranchiseResourceFileMetaFromDoc,
+} from "@/lib/franchise-resource-file-meta";
 
 export type FranchiseHubDoc = {
     id: number;
@@ -28,6 +31,7 @@ export type FranchiseHubDoc = {
     title: string;
     description: string;
     file: string;
+    embed_url?: string | null;
     display_title?: string;
     academic_year?: string;
 };
@@ -57,27 +61,35 @@ function KindIcon({ kind, className }: { kind: FranchiseResourceFileKind; classN
 }
 
 export function FranchiseResourceFileRow({ doc }: { doc: FranchiseHubDoc }) {
-    const { authFetchBlob } = useAuth();
-    const [opening, setOpening] = useState(false);
-    const meta = getFranchiseResourceFileMeta(doc.file);
+    const { tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
+    const meta = getFranchiseResourceFileMetaFromDoc(doc);
     const title = doc.display_title || doc.title;
     const iconWrap = franchiseResourceIconWrapClasses(meta.kind);
     const btn = franchiseResourceRowAccentClasses(meta.kind);
 
-    const openAuthenticated = async () => {
-        if (!doc.id || opening) return;
-        setOpening(true);
-        try {
-            const blob = await authFetchBlob(`/documents/franchise/documents/${doc.id}/file/`);
-            openFranchiseHubDocumentBlobInNewTab(blob);
-        } catch (e) {
-            window.alert(e instanceof Error ? e.message : "Could not open document.");
-        } finally {
-            setOpening(false);
+    const openAuthenticated = () => {
+        if (!doc.id) return;
+        if (doc.embed_url?.trim()) {
+            openFranchiseEmbedLink(doc.embed_url);
+            return;
         }
+        const title = doc.display_title || doc.title;
+        const ext =
+            extensionFromPath(doc.source_path) ||
+            extensionFromPath(doc.file) ||
+            ".pdf";
+        openFranchiseHubDocument(
+            tokens?.access,
+            authFetchBlobResponse,
+            authFetchBlobFromHref,
+            `/documents/franchise/documents/${doc.id}/file/`,
+            downloadFilenameFromLink(title, doc.file || doc.source_path || "", ext),
+            doc.id,
+            doc.file || doc.source_path || "",
+        );
     };
 
-    if (!doc.file) {
+    if (!franchiseHubDocHasContent(doc)) {
         return (
             <div className="flex flex-wrap items-start justify-between gap-4 border border-[#E5E7EB] rounded-2xl p-4 bg-white">
                 <div className="flex gap-3 min-w-0">
@@ -90,7 +102,7 @@ export function FranchiseResourceFileRow({ doc }: { doc: FranchiseHubDoc }) {
                     <div className="min-w-0">
                         <p className="text-sm font-semibold text-[#111827]">{title}</p>
                         {doc.description ? <p className="text-xs text-[#6B7280] mt-1">{doc.description}</p> : null}
-                        <p className="text-xs text-amber-700 mt-2">No file attached yet.</p>
+                        <p className="text-xs text-amber-700 mt-2">No file or embed link attached yet.</p>
                     </div>
                 </div>
             </div>
@@ -122,11 +134,10 @@ export function FranchiseResourceFileRow({ doc }: { doc: FranchiseHubDoc }) {
 
             <button
                 type="button"
-                onClick={() => void openAuthenticated()}
-                disabled={opening}
-                className={`inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-60 ${btn}`}
+                onClick={openAuthenticated}
+                className={`inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${btn}`}
             >
-                {opening ? "Opening…" : meta.actionLabel}
+                {meta.actionLabel}
                 <ChevronRight className="w-4 h-4 opacity-90" aria-hidden />
             </button>
         </div>

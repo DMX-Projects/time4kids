@@ -16,6 +16,7 @@ const navItems: DashboardNavItem[] = [
     { label: "Admission page content", href: "/dashboard/admin/admission-content", icon: <GraduationCap className="w-5 h-5" /> },
     { label: "FAQ page content", href: "/dashboard/admin/faq-content", icon: <HelpCircle className="w-5 h-5" /> },
     { label: "About page content", href: "/dashboard/admin/about-content", icon: <LayoutTemplate className="w-5 h-5" /> },
+    { label: "Footer content", href: "/dashboard/admin/footer-content", icon: <LayoutTemplate className="w-5 h-5" /> },
     { label: "Locations", href: "/dashboard/admin/locations", icon: <MapPin className="w-5 h-5" /> },
     { label: "Franchise", href: "/dashboard/admin/add-franchise", icon: <Building2 className="w-5 h-5" /> },
     { label: "Careers", href: "/dashboard/admin/careers", icon: <Briefcase className="w-5 h-5" /> },

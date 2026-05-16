@@ -23,7 +23,7 @@ import {
 import type { DashboardNavItem } from "@/components/layout/DashboardShell";
 
 /** Set to `true` to show the franchise left nav again. */
-export const SHOW_FRANCHISE_SIDEBAR_NAV = false;
+export const SHOW_FRANCHISE_SIDEBAR_NAV = true;
 
 const FRANCHISE_SIDEBAR_NAV_ALL: DashboardNavItem[] = [
     { label: "Dashboard", href: "/dashboard/franchise/", icon: <LayoutDashboard className="w-4 h-4" /> },

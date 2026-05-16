@@ -698,6 +698,7 @@ export const FRANCHISE_CENTER_PAGE_BLOCK_A: CenterPageTopItem[] = [
             {
                 label: "Parents orientation details for centres",
                 href: "http://103.65.21.245:8080/uploads/pc/Parents%20orientation%20details%20for%20centres.htm",
+                adminCategory: "PARENT_ORIENTATION",
                 rowKey: "parents-orientation-centres",
             },
         ],

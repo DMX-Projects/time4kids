@@ -9,7 +9,8 @@ import TwinklingStars from '@/components/animations/TwinklingStars';
 import Link from 'next/link';
 
 import { Phone, MapPin, Facebook, Instagram, Youtube, Send, Briefcase, Building2 } from 'lucide-react';
-import { SITE_CORPORATE_CONTACT, SITE_SOCIAL_LINKS } from '@/config/site-contact';
+import { SITE_CORPORATE_CONTACT } from '@/config/site-contact';
+import { useFooterContent } from '@/components/layout/FooterContentProvider';
 import { useForm } from 'react-hook-form';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 import { useToast } from '@/components/ui/Toast';
@@ -25,6 +26,7 @@ interface ContactFormData {
 }
 
 export default function ContactPage() {
+    const footer = useFooterContent();
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormData>();
@@ -166,7 +168,7 @@ export default function ContactPage() {
                                 <h3 className="font-semibold text-gray-900 mb-4">Connect With Us</h3>
                                 <div className="flex space-x-4 mb-6">
                                     <a
-                                        href={SITE_SOCIAL_LINKS.facebook}
+                                        href={footer.social.facebook}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center hover:scale-110 transition-transform"
@@ -174,7 +176,7 @@ export default function ContactPage() {
                                         <Facebook className="w-6 h-6 text-white" />
                                     </a>
                                     <a
-                                        href={SITE_SOCIAL_LINKS.instagram}
+                                        href={footer.social.instagram}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center hover:scale-110 transition-transform"
@@ -182,7 +184,7 @@ export default function ContactPage() {
                                         <Instagram className="w-6 h-6 text-white" />
                                     </a>
                                     <a
-                                        href={SITE_SOCIAL_LINKS.youtube}
+                                        href={footer.social.youtube}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center hover:scale-110 transition-transform"
@@ -193,7 +195,7 @@ export default function ContactPage() {
                                 <div className="text-center">
                                     <p className="text-sm text-gray-600 mb-3">Scan to connect:</p>
                                     <div className="inline-block transform scale-75">
-                                        <QRCode value="https://www.timekidspreschools.in" size={120} />
+                                        <QRCode value={footer.qr_code_url} size={120} />
                                     </div>
                                 </div>
                             </Card>

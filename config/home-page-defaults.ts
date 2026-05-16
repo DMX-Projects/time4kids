@@ -9,6 +9,9 @@ export type KeyNavItem = {
     external?: boolean;
 };
 
+/** Default homepage franchise video thumbnail (`public/franchise-gallery/`). */
+export const DEFAULT_FRANCHISE_VIDEO_POSTER = "/franchise-gallery/franchise-video-poster.png";
+
 export type FranchiseAdvantageVideoItem = {
     /** Thumbnail inside the blob (path, /media/…, or full URL). */
     poster: string;
@@ -23,6 +26,10 @@ export type FranchiseAdvantagePhotoItem = {
     alt?: string;
 };
 
+export type NewsTickerItem = {
+    text: string;
+};
+
 /** Google Street View / Maps embed used as the public “Virtual Tour” destination. */
 export const VIRTUAL_TOUR_MAPS_URL =
     "https://www.google.com/maps/embed?pb=!1m0!3m2!1sen!2s!4v1456003231726!6m8!1m7!1sUEc7Ta_OzQcAAAQq3Rq0gw!2m2!1d17.40666583994208!2d78.48091207922675!3f90!4f0!5f0.4000000000000002";
@@ -32,6 +39,8 @@ export type HomePageData = {
     franchise_benefits?: string[];
     franchise_advantage_videos: FranchiseAdvantageVideoItem[];
     franchise_advantage_photos: FranchiseAdvantagePhotoItem[];
+    /** Scrolling lines under “Latest News & Updates” (home franchise section). */
+    news_ticker_items: NewsTickerItem[];
     updates_empty_message?: string;
     intro: {
         title: string;
@@ -102,7 +111,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
     ],
     franchise_advantage_videos: [
         {
-            poster: "/franchise-gallery/franchise-video-poster.png",
+            poster: DEFAULT_FRANCHISE_VIDEO_POSTER,
             src: "https://iframe.mediadelivery.net/embed/117208/9005f10d-a5c3-4cd7-831e-fac0c2b5334f?autoplay=true",
             alt: "T.I.M.E. Kids franchise advantage",
         },
@@ -118,7 +127,12 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
         { src: "/franchise-gallery/franchise-promo-6.png", alt: "Launch a preschool with T.I.M.E. Kids" },
         { src: "/franchise-gallery/franchise-promo-7.png", alt: "Franchise opportunity — invest in preschool" },
     ],
-    updates_empty_message: "New updates will appear here once they are added under Admin → Updates.",
+    news_ticker_items: [
+        {
+            text: "Our New centres opened for Academic year 2026-27 (Bengaluru – Dommasandra, Horamavu New, JP Nagar 9th Phase, Kamakshipalya) (Bhadrak – Motel Chhak) (Bhubaneswar – Patrapada) (Chennai – Chitlapakkam, Kovur, Mugalivakkam New, Porur, Pozhichalur, Tondiarpet New, West Mambalam) (Cuttack – CDA) (Ernakulam – Irumpanam) (Guntakal – Alur Road) (Guntur – Krishna Nagar) (Hyderabad – Ameenpur, Goshamahal, Kuntloor, Medchal, Presidency Avenue – Alwal, RR Colony – Ameenpur, Sri Ram Nagar - Jeedimetla) (Kolkata – Kestopur) (Kollam – Paravur) (Kozhikode – Pantheerankav) (Pathanamthitta – Changanassery) (Patna – Gola Road New, Khagaul Road, Priyadarshi) (Thrissur – Chiyyaram, Nellikunnu) (Tiruvannamalai – Arani) (Trichy – Pon Nagar) (Trivandrum – Kalathukal, Attingal, Vettu Road)",
+        },
+    ],
+    updates_empty_message: "Add scrolling news lines under Admin → Home page content → Latest news ticker.",
     intro: {
         title: "Welcome to T.I.M.E. Kids",
         subtitle:
@@ -264,7 +278,7 @@ export function normalizeFranchiseAdvantageVideos(merged: HomePageData, raw: Rec
             const src = String(o.src ?? "").trim();
             const alt = typeof o.alt === "string" ? o.alt : undefined;
             if (!poster && !src) continue;
-            cleaned.push({ poster: poster || "/icon-media.svg", src, alt });
+            cleaned.push({ poster: poster || DEFAULT_FRANCHISE_VIDEO_POSTER, src, alt });
         }
         merged.franchise_advantage_videos = cleaned.length > 0 ? cleaned : [...defaults];
         return;
@@ -281,6 +295,24 @@ export function normalizeFranchiseAdvantageVideos(merged: HomePageData, raw: Rec
         }
     }
     merged.franchise_advantage_videos = [...defaults];
+}
+
+/** Coerce scrolling news ticker lines for the franchise updates board. */
+export function normalizeNewsTickerItems(merged: HomePageData, raw: Record<string, unknown>): void {
+    const defaults = DEFAULT_HOME_PAGE_DATA.news_ticker_items;
+    const rawItems = raw.news_ticker_items;
+    if (!Array.isArray(rawItems) || rawItems.length === 0) {
+        merged.news_ticker_items = [...defaults];
+        return;
+    }
+    const cleaned: NewsTickerItem[] = [];
+    for (const row of rawItems) {
+        if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+        const text = String((row as Record<string, unknown>).text ?? "").trim();
+        if (!text) continue;
+        cleaned.push({ text });
+    }
+    merged.news_ticker_items = cleaned.length > 0 ? cleaned : [...defaults];
 }
 
 /** Coerce franchise advantage photo slides for the home carousel. */
@@ -412,6 +444,7 @@ export function mergeHomePageData(raw: Partial<HomePageData> | null | undefined)
         };
         normalizeFranchiseAdvantageVideos(merged, raw as Record<string, unknown>);
         normalizeFranchiseAdvantagePhotos(merged, raw as Record<string, unknown>);
+        normalizeNewsTickerItems(merged, raw as Record<string, unknown>);
         merged.key_navigation = normalizeKeyNavigation(merged.key_navigation);
         return merged;
     } catch {
