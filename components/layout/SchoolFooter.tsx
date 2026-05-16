@@ -179,7 +179,7 @@ const SchoolFooter = ({ homeUrl, facebookUrl, instagramUrl, twitterUrl, contactP
                                     { name: 'Nursery', color: 'bg-[#f3eaff] text-[#6f42c1]', initial: 'N' },
                                     { name: 'Pre-Primary I', color: 'bg-[#e7f3ff] text-[#0d6efd]', initial: 'P' },
                                     { name: 'Pre-Primary II', color: 'bg-[#ecf9f2] text-[#198754]', initial: 'P' },
-                                    { name: 'Day Care', color: 'bg-[#fff9e6] text-[#ffc107]', initial: 'D' }
+                                    { name: 'Summer Programs', color: 'bg-[#fff9e6] text-[#ffc107]', initial: 'S' }
                                 ].map((item) => (
                                     <li key={item.name} className="flex items-center gap-4 group cursor-default">
                                         <span className={`w-8 h-8 rounded-lg ${item.color} flex items-center justify-center text-sm font-black shadow-sm group-hover:scale-110 transition-transform`}>

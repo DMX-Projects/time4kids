@@ -15,6 +15,7 @@ import {
     type KeyNavItem,
     type NewsTickerItem,
 } from "@/config/home-page-defaults";
+import { franchiseVideoPosterUploadTitle, programsPreviewUploadTitle } from "@/lib/gallery-event-names";
 import { isVirtualTourNavItem } from "@/lib/virtual-tour";
 
 const NAV_CLASS_OPTIONS = [
@@ -406,7 +407,7 @@ export default function AdminHomeContentPage() {
                 throw new Error(`File is too large (${formatMb(file.size)}). Max allowed is ${formatMb(MAX_UPLOAD_BYTES)}.`);
             }
             const formData = new FormData();
-            formData.append("title", `Home franchise video poster ${index + 1}`);
+            formData.append("title", franchiseVideoPosterUploadTitle(index));
             formData.append("category", "Banner");
             formData.append("media_type", "image");
             formData.append("file", file);
@@ -448,7 +449,7 @@ export default function AdminHomeContentPage() {
 
             const programName = data.programs_preview.programs[programIndex]?.programName || `Program ${programIndex + 1}`;
             const formData = new FormData();
-            formData.append("title", `Homepage program: ${programName}`);
+            formData.append("title", programsPreviewUploadTitle(programName));
             formData.append("category", "Banner");
             formData.append("media_type", "image");
             formData.append("file", file);

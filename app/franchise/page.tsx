@@ -188,6 +188,7 @@ export default function FranchisePage() {
                                         </div>
                                         <div>
                                             <p className="font-semibold text-gray-900 mb-1">Phone</p>
+                                            <p className="text-gray-600">Cell: {mainBranch.cell}</p>
                                             <p className="text-gray-600">{mainBranch.phone}</p>
                                             <p className="text-sm text-gray-500 mt-1">Fax: {mainBranch.fax}</p>
                                         </div>
@@ -201,9 +202,8 @@ export default function FranchisePage() {
                                         </div>
                                         <div>
                                             <p className="font-semibold text-gray-900 mb-1">Email</p>
-                                            <p className="text-gray-600">{mainBranch.email}</p>
-                                            <p className="text-sm text-gray-500 mt-1">Franchise: {mainBranch.franchise_email}</p>
-                                            <p className="text-sm text-gray-500">Cell: {mainBranch.cell}</p>
+                                            <p className="text-gray-600">Admission Enquiry : {mainBranch.email}</p>
+                                            <p className="text-gray-600 mt-1">Franchise Enquiry : {mainBranch.franchise_email}</p>
                                         </div>
                                     </div>
 

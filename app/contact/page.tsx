@@ -8,7 +8,8 @@ import AnimatedLetters from '@/components/animations/AnimatedLetters';
 import TwinklingStars from '@/components/animations/TwinklingStars';
 import Link from 'next/link';
 
-import { Phone, MapPin, Facebook, Instagram, Youtube, Send, Briefcase, Building2 } from 'lucide-react';
+import { Phone, MapPin, Send, Briefcase, Building2 } from 'lucide-react';
+import { SocialBrandLink } from '@/components/ui/SocialBrandIcons';
 import { SITE_CORPORATE_CONTACT } from '@/config/site-contact';
 import { useFooterContent } from '@/components/layout/FooterContentProvider';
 import { useForm } from 'react-hook-form';
@@ -64,13 +65,13 @@ export default function ContactPage() {
 
     return (
         <div className="min-h-screen">
-            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 section-gap relative overflow-hidden">
+            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 section-gap relative overflow-x-hidden pt-24 md:pt-32">
                 <AnimatedLetters />
                 <TwinklingStars count={18} />
 
                 <div className="container mx-auto px-4 relative z-10">
                     <div className="max-w-4xl mx-auto text-center">
-                        <h1 className="font-luckiest text-5xl md:text-6xl mb-6 text-[#003366] tracking-wider">
+                        <h1 className="font-luckiest text-5xl md:text-6xl mb-6 text-[#003366] tracking-wider leading-normal">
                             Get in <span className="text-[#E67E22]">Touch</span>
                         </h1>
                         <p className="text-xl text-gray-700 leading-relaxed">
@@ -166,31 +167,10 @@ export default function ContactPage() {
 
                             <Card>
                                 <h3 className="font-semibold text-gray-900 mb-4">Connect With Us</h3>
-                                <div className="flex space-x-4 mb-6">
-                                    <a
-                                        href={footer.social.facebook}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center hover:scale-110 transition-transform"
-                                    >
-                                        <Facebook className="w-6 h-6 text-white" />
-                                    </a>
-                                    <a
-                                        href={footer.social.instagram}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center hover:scale-110 transition-transform"
-                                    >
-                                        <Instagram className="w-6 h-6 text-white" />
-                                    </a>
-                                    <a
-                                        href={footer.social.youtube}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center hover:scale-110 transition-transform"
-                                    >
-                                        <Youtube className="w-6 h-6 text-white" />
-                                    </a>
+                                <div className="mb-6 flex gap-4">
+                                    <SocialBrandLink platform="facebook" href={footer.social.facebook} size="md" />
+                                    <SocialBrandLink platform="instagram" href={footer.social.instagram} size="md" />
+                                    <SocialBrandLink platform="youtube" href={footer.social.youtube} size="md" />
                                 </div>
                                 <div className="text-center">
                                     <p className="text-sm text-gray-600 mb-3">Scan to connect:</p>

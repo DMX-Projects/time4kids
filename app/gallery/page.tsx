@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { buildFallbackGalleryFromMock } from '@/lib/mock-media-data';
+import { extractGalleryEventKey, formatGalleryEventName } from '@/lib/gallery-event-names';
 import Modal from '@/components/ui/Modal';
 
 interface MediaItem {
@@ -51,16 +52,8 @@ export default function GalleryPage() {
 
                 results.forEach((item: any) => {
                     // Extract event name from title (before the dash)
-                    const eventMatch = item.title.match(/^(.+?)\s*-\s*\d+$/);
-                    const eventName = eventMatch
-                        ? eventMatch[1].trim()
-                        : item.title;
-
-                    // Capitalize event name properly
-                    const formattedEventName = eventName
-                        .split(' ')
-                        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                        .join(' ');
+                    const eventName = extractGalleryEventKey(item.title);
+                    const formattedEventName = formatGalleryEventName(eventName);
 
                     if (!groupedEvents[formattedEventName]) {
                         groupedEvents[formattedEventName] = [];

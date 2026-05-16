@@ -157,7 +157,7 @@ const NavigationCard = ({
         ? `${getNavAlt(item)}, opens virtual tour`
         : `${getNavAlt(item)}${external ? ', opens in a new tab' : ''}`;
     const linkClass =
-        'relative flex shrink-0 flex-col items-center group no-underline text-inherit cursor-pointer min-w-[108px] xs:min-w-[118px] sm:min-w-[132px] md:min-w-[140px] lg:min-w-[148px] xl:min-w-[178px] px-1.5 pt-6 pb-2 sm:px-2 md:px-2.5 lg:px-2.5 xl:px-3 rounded-3xl transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400 bg-transparent border-0';
+        'relative flex shrink-0 flex-col items-center group no-underline text-inherit cursor-pointer min-w-[100px] sm:min-w-[118px] md:min-w-[140px] lg:min-w-[148px] xl:min-w-[178px] px-1.5 pt-6 pb-2 sm:px-2 md:px-2.5 lg:px-2.5 xl:px-3 rounded-3xl transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400 bg-transparent border-0';
 
     const cardBody = (
         <>
@@ -422,40 +422,52 @@ export default function KeyNavigation() {
                 <div className="absolute left-1/2 top-1/2 h-[300px] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-50/30 blur-[150px]" />
             </div>
 
-            {/* Scroll when needed; `w-max min-w-full` + `justify-center` centers the row when it fits (no extra gap on the right). */}
             <div className="relative z-10 mx-auto w-full min-w-0 px-3 sm:px-4 md:container md:px-4">
-                <div
-                    className={`no-scrollbar max-w-full min-w-0 touch-pan-x overscroll-x-contain pb-4 pt-6 snap-x snap-proximity ${
-                        brochureMenuOpen ? 'overflow-visible' : 'overflow-x-auto overflow-y-visible'
-                    }`}
-                    onMouseLeave={() => {
-                        if (!brochureMenuOpen) setHoveredIndex(null);
-                    }}
-                >
-                    <div className="mx-auto flex min-w-full w-max flex-nowrap items-center justify-center gap-1.5 scroll-px-3 sm:gap-2 sm:scroll-px-4 md:gap-3 lg:gap-4 xl:gap-5">
-                        {items.map((item, index) => (
-                            <motion.div
-                                key={`${item.href}-${index}`}
-                                className={`shrink-0 snap-start ${brochureMenuOpen && index === brochureIndex ? 'relative z-[100]' : ''}`}
-                                onMouseEnter={() => setHoveredIndex(index)}
-                                onFocus={() => setHoveredIndex(index)}
-                                onBlur={() => setHoveredIndex(null)}
-                            >
-                                <NavigationCard
-                                    item={item}
-                                    index={index}
-                                    isActive={index === hoveredIndex || (brochureMenuOpen && index === brochureIndex)}
-                                    onOpenVirtualTour={() => setVirtualTourOpen(true)}
-                                    brochureLinks={isBrochureNavItem(item) ? brochureHrefs : null}
-                                    brochureOpen={brochureMenuOpen && index === brochureIndex}
-                                    onBrochureToggle={
-                                        isBrochureNavItem(item)
-                                            ? () => setBrochureMenuOpen((open) => !open)
-                                            : undefined
-                                    }
-                                />
-                            </motion.div>
-                        ))}
+                <p className="mb-2 text-center text-xs font-semibold tracking-wide text-slate-400 md:hidden">
+                    Swipe sideways to see all shortcuts →
+                </p>
+                <div className="relative">
+                    {!brochureMenuOpen ? (
+                        <div
+                            className="pointer-events-none absolute right-0 top-4 bottom-6 z-20 w-16 bg-gradient-to-l from-white via-white/95 to-transparent md:hidden"
+                            aria-hidden
+                        />
+                    ) : null}
+                    <div
+                        role="region"
+                        aria-label="Quick links"
+                        className={`key-nav-track no-scrollbar max-w-full min-w-0 touch-pan-x overscroll-x-contain scroll-smooth pb-4 pt-2 snap-x snap-mandatory scroll-px-4 md:snap-proximity md:pt-6 ${
+                            brochureMenuOpen ? 'overflow-visible' : 'overflow-x-auto overflow-y-visible'
+                        }`}
+                        onMouseLeave={() => {
+                            if (!brochureMenuOpen) setHoveredIndex(null);
+                        }}
+                    >
+                        <div className="flex w-max min-w-full flex-nowrap items-center justify-start gap-2 scroll-px-4 sm:gap-2 md:mx-auto md:justify-center md:gap-3 lg:gap-4 xl:gap-5">
+                            {items.map((item, index) => (
+                                <motion.div
+                                    key={`${item.href}-${index}`}
+                                    className={`shrink-0 snap-start ${brochureMenuOpen && index === brochureIndex ? 'relative z-[100]' : ''}`}
+                                    onMouseEnter={() => setHoveredIndex(index)}
+                                    onFocus={() => setHoveredIndex(index)}
+                                    onBlur={() => setHoveredIndex(null)}
+                                >
+                                    <NavigationCard
+                                        item={item}
+                                        index={index}
+                                        isActive={index === hoveredIndex || (brochureMenuOpen && index === brochureIndex)}
+                                        onOpenVirtualTour={() => setVirtualTourOpen(true)}
+                                        brochureLinks={isBrochureNavItem(item) ? brochureHrefs : null}
+                                        brochureOpen={brochureMenuOpen && index === brochureIndex}
+                                        onBrochureToggle={
+                                            isBrochureNavItem(item)
+                                                ? () => setBrochureMenuOpen((open) => !open)
+                                                : undefined
+                                        }
+                                    />
+                                </motion.div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>

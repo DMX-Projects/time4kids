@@ -7,6 +7,7 @@ import { ArrowRight } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
+import { formatAgeGroupLabel } from '@/lib/format-age-group';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -186,10 +187,10 @@ const ProgramsPreview = () => {
                                         />
                                     </div>
                                     <div
-                                        className="absolute -bottom-1 right-0 max-w-[min(100%,10rem)] rounded-full px-3 py-1.5 text-center text-[14px] font-black leading-tight text-white shadow-lg sm:-bottom-2 sm:right-1 sm:max-w-none sm:px-4 sm:py-2"
+                                        className="absolute -bottom-1 right-0 max-w-[min(100%,13rem)] rounded-full px-3 py-1.5 text-center text-[11px] font-black leading-tight text-white shadow-lg sm:-bottom-2 sm:right-1 sm:max-w-none sm:px-4 sm:py-2 sm:text-[13px]"
                                         style={{ backgroundColor: program.color }}
                                     >
-                                        {program.ageGroup}
+                                        {formatAgeGroupLabel(program.ageGroup)}
                                     </div>
                                 </Link>
                                 <h3 className="font-display text-xl font-black leading-tight text-[#253247] sm:text-2xl lg:text-3xl mb-1 sm:mb-2 whitespace-pre-line">

@@ -4,7 +4,8 @@ import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Facebook, Instagram, Youtube, MapPin, Phone, Mail } from 'lucide-react';
+import { MapPin, Phone, Mail } from 'lucide-react';
+import { SocialBrandLink } from '@/components/ui/SocialBrandIcons';
 import { gsap } from 'gsap';
 import { useFooterContent } from '@/components/layout/FooterContentProvider';
 
@@ -150,31 +151,10 @@ const Footer = () => {
                     {/* Column 4: Connect With Us */}
                     <div>
                         <h3 className="font-bold text-lg mb-6 text-gray-900">Connect With Us</h3>
-                        <div className="flex space-x-3">
-                            <a
-                                href={footer.social.facebook}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-8 h-8 bg-gray-600 hover:bg-blue-600 text-white rounded flex items-center justify-center transition-all hover:scale-110"
-                            >
-                                <Facebook className="w-4 h-4" />
-                            </a>
-                            <a
-                                href={footer.social.instagram}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-8 h-8 bg-gray-600 hover:bg-pink-600 text-white rounded flex items-center justify-center transition-all hover:scale-110"
-                            >
-                                <Instagram className="w-4 h-4" />
-                            </a>
-                            <a
-                                href={footer.social.youtube}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-8 h-8 bg-gray-600 hover:bg-red-600 text-white rounded flex items-center justify-center transition-all hover:scale-110"
-                            >
-                                <Youtube className="w-4 h-4" />
-                            </a>
+                        <div className="flex gap-3">
+                            <SocialBrandLink platform="facebook" href={footer.social.facebook} size="sm" />
+                            <SocialBrandLink platform="instagram" href={footer.social.instagram} size="sm" />
+                            <SocialBrandLink platform="youtube" href={footer.social.youtube} size="sm" />
                         </div>
                     </div>
                 </div>

@@ -2,6 +2,10 @@
 
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import {
+    KIDS_TEACHER_RATIO_FAQ,
+    normalizeAdmissionFaqs,
+} from '@/config/admission-page-defaults';
 
 interface FAQItem {
     question: string;
@@ -32,10 +36,7 @@ const FAQAccordion = ({ customFaqs }: FAQAccordionProps) => {
             question: 'Is there a trial class available?',
             answer: 'Yes, we offer trial classes so your child can experience our learning environment. Contact your nearest centre to schedule a trial class.'
         },
-        {
-            question: 'What is the student-teacher ratio?',
-            answer: 'We maintain a low student-teacher ratio of 1:10 to ensure personalized attention for every child.'
-        },
+        KIDS_TEACHER_RATIO_FAQ,
         {
             question: 'Are meals provided?',
             answer: 'Nutritious snacks and meals are provided for children enrolled in full-day programs and day care. We follow strict hygiene standards.'
@@ -50,7 +51,10 @@ const FAQAccordion = ({ customFaqs }: FAQAccordionProps) => {
         },
     ];
 
-    const faqs = customFaqs && customFaqs.length > 0 ? customFaqs : defaultFaqs;
+    const faqs =
+        customFaqs && customFaqs.length > 0
+            ? normalizeAdmissionFaqs(customFaqs)
+            : defaultFaqs;
 
     const toggleFAQ = (index: number) => {
         setOpenIndex(openIndex === index ? null : index);

@@ -6,8 +6,11 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Home, Briefcase, Phone, Menu, X } from 'lucide-react';
 import AnimatedNavBar from './AnimatedNavBar';
+import { useFooterContent } from '@/components/layout/FooterContentProvider';
+import { SocialBrandLink } from '@/components/ui/SocialBrandIcons';
 
 export default function Header() {
+    const footer = useFooterContent();
     const pathname = usePathname();
     const [isSticky, setIsSticky] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -73,9 +76,13 @@ export default function Header() {
                         <ul className="header-top-nav">
                             <li><Link href="/"><Home className="inline-block w-5 h-5 mr-1" />HOME</Link></li>
                             <li><Link href="/careers"><Briefcase className="inline-block w-5 h-5 mr-1" />CAREERS</Link></li>
-                            <li><Link href="/contact"><Phone className="inline-block w-5 h-5 mr-1" />CONTACT US</Link></li>
-                            <li>
-
+                            <li className="header-top-contact-social">
+                                <Link href="/contact"><Phone className="inline-block w-5 h-5 mr-1" />CONTACT US</Link>
+                                <span className="header-top-social-icons" aria-label="Social media">
+                                    <SocialBrandLink platform="facebook" href={footer.social.facebook} size="xs" />
+                                    <SocialBrandLink platform="instagram" href={footer.social.instagram} size="xs" />
+                                    <SocialBrandLink platform="youtube" href={footer.social.youtube} size="xs" />
+                                </span>
                             </li>
                         </ul>
                     </div>
@@ -186,12 +193,16 @@ export default function Header() {
                     margin: 0;
                     padding: 0;
                     display: flex;
+                    flex-wrap: wrap;
                     align-items: center;
+                    justify-content: flex-end;
+                    gap: 0;
                     line-height: 30px;
                 }
 
                 .header-top-nav li {
-                    display: inline-block;
+                    display: inline-flex;
+                    align-items: center;
                     padding-left: 15px;
                     position: relative;
                 }
@@ -204,6 +215,18 @@ export default function Header() {
 
                 .header-top-nav li:first-child::before {
                     display: none;
+                }
+
+                .header-top-contact-social {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .header-top-contact-social :global(a:first-of-type) {
+                    display: inline-flex;
+                    align-items: center;
+                    white-space: nowrap;
                 }
 
                 .header-top-nav li :global(a) {
@@ -223,6 +246,14 @@ export default function Header() {
                 .header-top-nav li span i {
                     font-size: 22px;
                     margin-right: 10px;
+                }
+
+                :global(.header-top-social-icons) {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                    flex-shrink: 0;
                 }
 
                 .header {

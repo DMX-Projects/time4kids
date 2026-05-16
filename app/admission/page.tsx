@@ -181,7 +181,7 @@ export default function AdmissionPage() {
                     <div className="max-w-5xl mx-auto bg-white p-8 md:p-12 relative transition-all duration-500">
                         <div className="absolute inset-0 bg-white rounded-[3rem] md:rounded-[65%_35%_70%_30%_/_30%_50%_50%_70%] shadow-[0_20px_60px_rgba(0,0,0,0.05)] border-[6px] border-slate-50 ring-4 ring-slate-100 -z-10 transform transition-all hover:scale-[1.01] hover:rotate-1"></div>
                         <div className="text-center mb-10 relative z-10">
-                            <h2 className="font-display font-black text-3xl md:text-5xl text-slate-800 mb-3 drop-shadow-sm">Enquiry Form</h2>
+                            <h2 className="font-display font-black text-3xl md:text-5xl text-slate-800 mb-3 drop-shadow-sm">Admission Enquiry Form</h2>
                             <p className="text-slate-500 font-bold text-lg">Let&apos;s get to know your little one!</p>
                         </div>
                         <div className="relative z-10">
