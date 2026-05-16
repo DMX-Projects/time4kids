@@ -12,6 +12,30 @@ export type AdmissionFaq = {
     answer: string;
 };
 
+/** Canonical Kids–teacher ratio FAQ (overrides legacy CMS copy). */
+export const KIDS_TEACHER_RATIO_FAQ: AdmissionFaq = {
+    question: "What is the Kids-teacher ratio?",
+    answer: "We maintain a low Kids-teacher ratio of 1:20 to ensure personalized attention for every child.",
+};
+
+export function isKidsTeacherRatioFaq(question: string): boolean {
+    return /teacher\s*ratio/i.test(question) && /(student|kids)/i.test(question);
+}
+
+export function normalizeAdmissionFaq(faq: AdmissionFaq): AdmissionFaq {
+    if (isKidsTeacherRatioFaq(faq.question)) {
+        return KIDS_TEACHER_RATIO_FAQ;
+    }
+    if (/teacher\s*ratio/i.test(faq.question) && /1\s*:\s*10/.test(faq.answer)) {
+        return KIDS_TEACHER_RATIO_FAQ;
+    }
+    return faq;
+}
+
+export function normalizeAdmissionFaqs(faqs: AdmissionFaq[]): AdmissionFaq[] {
+    return faqs.map((f) => normalizeAdmissionFaq(f));
+}
+
 export type AdmissionFaqSection = {
     title_prefix: string;
     title_accent: string;
@@ -87,10 +111,7 @@ export const DEFAULT_ADMISSION_PAGE_DATA: AdmissionPageData = {
             question: "Is there a trial class available?",
             answer: "Yes, we offer trial classes so your child can experience our learning environment. Contact your nearest centre to schedule a trial class.",
         },
-        {
-            question: "What is the student-teacher ratio?",
-            answer: "We maintain a low student-teacher ratio of 1:10 to ensure personalized attention for every child.",
-        },
+        KIDS_TEACHER_RATIO_FAQ,
         {
             question: "Are meals provided?",
             answer: "Nutritious snacks and meals are provided for children enrolled in full-day programs and day care. We follow strict hygiene standards.",
@@ -202,10 +223,14 @@ export function mergeAdmissionPageData(raw: Partial<AdmissionPageData> | null | 
             icon: String(s?.icon || ""),
             color: String(s?.color || ""),
         })) : DEFAULT_ADMISSION_PAGE_DATA.skills;
-        merged.faqs = Array.isArray(merged.faqs) ? merged.faqs.map((f: any) => ({
-            question: String(f?.question || ""),
-            answer: String(f?.answer || ""),
-        })) : DEFAULT_ADMISSION_PAGE_DATA.faqs;
+        merged.faqs = Array.isArray(merged.faqs)
+            ? normalizeAdmissionFaqs(
+                  merged.faqs.map((f: any) => ({
+                      question: String(f?.question || ""),
+                      answer: String(f?.answer || ""),
+                  })),
+              )
+            : DEFAULT_ADMISSION_PAGE_DATA.faqs;
         merged.happy_parents_videos = Array.isArray((merged as any).happy_parents_videos)
             ? (merged as any).happy_parents_videos.map((v: any) => normalizeHappyParentVideoCard(v))
             : DEFAULT_ADMISSION_PAGE_DATA.happy_parents_videos;

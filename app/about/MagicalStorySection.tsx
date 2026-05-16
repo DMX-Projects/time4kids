@@ -243,7 +243,7 @@ export default function MagicalStorySection({ data }: { data?: AboutMagicalStory
                             icon: "Building2",
                             icon_gradient: "from-orange-400 to-orange-600",
                             plane_position: "right",
-                            text: "T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 250+ pre-schools is now poised for major expansion across the country.",
+                            text: "T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 250+ pre-schools in 60 cities across India is now poised for major expansion across the country.",
                         },
                         {
                             icon: "Home",

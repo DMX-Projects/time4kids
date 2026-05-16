@@ -102,6 +102,7 @@ function TestimonialColumn({
     accent: 'orange' | 'sky';
 }) {
     const [index, setIndex] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
     const current = items[index];
     const accentClass = accent === 'orange' ? 'from-orange-400 to-amber-300' : 'from-sky-400 to-cyan-300';
     const dotClass = accent === 'orange' ? 'bg-amber-300' : 'bg-cyan-300';
@@ -114,12 +115,12 @@ function TestimonialColumn({
     }, [items.length]);
 
     useEffect(() => {
-        if (items.length <= 1) return;
+        if (items.length <= 1 || isPaused) return;
         const timer = window.setInterval(() => {
             setIndex((currentIndex) => (currentIndex + 1) % items.length);
         }, 4500);
         return () => window.clearInterval(timer);
-    }, [items.length]);
+    }, [items.length, isPaused]);
 
     const go = (direction: 1 | -1) => {
         if (items.length <= 1) return;
@@ -127,7 +128,17 @@ function TestimonialColumn({
     };
 
     return (
-        <div className="relative">
+        <motion.div
+            className="relative"
+            onPointerEnter={() => setIsPaused(true)}
+            onPointerLeave={() => setIsPaused(false)}
+            onFocusCapture={() => setIsPaused(true)}
+            onBlurCapture={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                    setIsPaused(false);
+                }
+            }}
+        >
             <div className="mb-5 flex items-end justify-between gap-4">
                 <div>
                     <div className={`mb-3 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.18em] shadow-lg backdrop-blur-xl ${badgeClass}`}>
@@ -223,7 +234,7 @@ function TestimonialColumn({
                     ))}
                 </div>
             )}
-        </div>
+        </motion.div>
     );
 }
 

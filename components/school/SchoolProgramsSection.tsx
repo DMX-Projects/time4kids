@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { mediaUrl } from '@/lib/api-client';
+import { formatAgeGroupLabel } from '@/lib/format-age-group';
 import {
     Music,
     Palette,
@@ -208,18 +209,21 @@ const SchoolProgramsSection = ({ selectedPrograms, programCards }: SchoolProgram
                                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
                                 />
                                 <div className="absolute inset-0 shadow-[inset_0_4px_12px_rgba(0,0,0,0.1)] pointer-events-none" />
+                                <div
+                                    className="absolute bottom-2 right-2 z-10 max-w-[min(100%,13rem)] rounded-full px-3 py-1.5 text-center text-[10px] font-black leading-tight text-white shadow-lg sm:bottom-3 sm:right-3 sm:px-4 sm:py-2 sm:text-[11px]"
+                                    style={{ backgroundColor: program.themeColor }}
+                                >
+                                    {formatAgeGroupLabel(program.age)}
+                                </div>
                             </div>
 
                             {/* Card Body Information */}
                             <div className="p-8 text-center flex flex-col flex-grow bg-white/40">
-                                <div className="flex items-center justify-center gap-2 mb-1">
+                                <div className="flex items-center justify-center gap-2 mb-4">
                                     <h5 className="text-lg font-fredoka font-bold text-[#2D2D52]">
                                         {program.title === 'Pre-Primary' ? `${program.title} ${program.id - 2}` : program.title}
                                     </h5>
                                     <program.icon className={`${program.iconColor} w-5 h-5`} strokeWidth={2.5} />
-                                </div>
-                                <div className={`text-[11px] font-bold ${program.iconColor} mb-4 tracking-tighter`}>
-                                    {program.age}
                                 </div>
                                 <p className="text-[14px] text-[#4B5563] font-medium leading-relaxed">
                                     {program.description}

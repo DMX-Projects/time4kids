@@ -454,15 +454,18 @@ function LocateCentreContent() {
                                                             {centre.city}
                                                         </span>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-2">
+                                                    <div className="flex flex-col gap-2">
+                                                        <div className="flex flex-wrap gap-2">
+                                                        {centre.phone?.trim() ? (
                                                         <a
-                                                            href={`tel:${centre.phone}`}
+                                                            href={`tel:${centre.phone.replace(/[^\d+]/g, '')}`}
                                                             onClick={(e) => e.stopPropagation()}
                                                             className="inline-flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-slate-700 transition-all shadow-md hover:shadow-lg whitespace-nowrap group-hover:scale-105"
                                                         >
                                                             <Phone className="w-3.5 h-3.5" />
-                                                            call
+                                                            Call
                                                         </a>
+                                                        ) : null}
                                                         {centre.googleMapLink && (
                                                             <a
                                                                 href={centre.googleMapLink}
@@ -485,6 +488,17 @@ function LocateCentreContent() {
                                                         {centre.socials?.youtube && (
                                                             <a href={centre.socials.youtube} target="_blank" onClick={(e) => e.stopPropagation()} className="p-2 bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition"><Youtube className="w-4 h-4" /></a>
                                                         )}
+                                                        </div>
+                                                        {centre.phone?.trim() ? (
+                                                            <a
+                                                                href={`tel:${centre.phone.replace(/[^\d+]/g, '')}`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-pink-600 transition-colors"
+                                                            >
+                                                                <Phone className="w-4 h-4 shrink-0 text-slate-500" aria-hidden />
+                                                                {centre.phone}
+                                                            </a>
+                                                        ) : null}
                                                     </div>
                                                 </div>
                                             </div>

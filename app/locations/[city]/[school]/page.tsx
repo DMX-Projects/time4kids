@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getFranchiseBySlug } from '@/lib/api/franchises';
 import SchoolIntroSection from '@/components/school/home/SchoolIntroSection';
+import SchoolKeyNavigation from '@/components/school/home/SchoolKeyNavigation';
 import SchoolProgramsSection from '@/components/school/SchoolProgramsSection';
 import GallerySection from '@/components/school/GallerySection';
 import ContactSection from '@/components/school/ContactSection';
@@ -42,6 +43,8 @@ export default async function SchoolPage({ params }: PageProps) {
                     urlCityFallback={urlCityFallback}
                 />
             </div>
+
+            <SchoolKeyNavigation />
 
             {/* Contact — second */}
             <div className="border-t border-slate-200/80 bg-[#f7fcff]">

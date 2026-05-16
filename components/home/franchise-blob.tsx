@@ -15,7 +15,7 @@ type FranchiseBlobShellProps = {
     borderClassName?: string;
 };
 
-/** Organic oval frame — shared by slider thumbnails and gallery popup. */
+/** Organic oval frame — slider thumbnails on the home page (gallery popup uses a rectangle). */
 export function FranchiseBlobShell({
     variant,
     children,

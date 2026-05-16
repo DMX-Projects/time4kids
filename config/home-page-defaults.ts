@@ -82,6 +82,8 @@ export type HomePageData = {
 
 export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
     key_navigation: [
+        { icon: "/icon-nearstcenter.png", alt: "Find your Nearest Centre", href: "/locate-centre", label: "Find your Nearest  Centre", nav_class: "nav-link3" },
+        { icon: "/icon-franchise.png", alt: "Become a Franchisee", href: "/franchise", label: "Become a Franchisee", nav_class: "nav-link1" },
         {
             icon: "/icon-tour.png",
             alt: "Virtual Tour",
@@ -90,8 +92,6 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             nav_class: "nav-link1",
         },
         { icon: "/icon-gallery.png", alt: "Photo / Video Gallery", href: "/gallery", label: "Photo / Video Gallery", nav_class: "nav-link2" },
-        { icon: "/icon-nearstcenter.png", alt: "Find your Nearest Centre", href: "/locate-centre", label: "Find your Nearest  Centre", nav_class: "nav-link3" },
-        { icon: "/icon-franchise.png", alt: "Become a Franchisee", href: "/franchise", label: "Become a Franchisee", nav_class: "nav-link1" },
         {
             icon: "/icon-brochure.png",
             alt: "Download Brochure",
@@ -138,7 +138,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
         subtitle:
             "A chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training.",
         paragraphs: [
-            "T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 350+ pre-schools is now poised for major expansion across the country.",
+            "T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. After its hugely successful beginning in Hyderabad, T.I.M.E. Kids with 250+ pre-schools in 60 cities across India is now poised for major expansion across the country.",
             "The programme at T.I.M.E. Kids pre-schools aims at making the transition from home to school easy, by providing the warm, safe and caring and learning environment that young children have at home. Our play schools offer wholesome, fun-filled and memorable childhood education to our children.",
             "We are backed by our educational expertise of over 27 years, well trained care providers and a balanced educational programme. The programme at T.I.M.E. Kids pre-schools is based on the principles of age-appropriate child development.",
         ],
@@ -160,7 +160,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             {
                 image: "/day care.png",
                 programName: "Play Group",
-                ageGroup: "2 - 3 years",
+                ageGroup: "Age group : 2-3 years",
                 description: "Introduction to social interaction and basic motor skills.",
                 color: "#ef5f5f",
                 yOffset: "-20px",
@@ -168,7 +168,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             {
                 image: "/images/nursery_girl.png",
                 programName: "Nursery",
-                ageGroup: "3 - 4 years",
+                ageGroup: "Age group : 3-4 years",
                 description: "Building foundation for language, numbers, and expression.",
                 color: "#fbd267",
                 yOffset: "40px",
@@ -177,7 +177,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             {
                 image: "/1.png",
                 programName: "PP-1",
-                ageGroup: "4 - 5 years",
+                ageGroup: "Age group : 4-5 years",
                 description:
                     "Expanding from school to the world around — curious, interactive, and building strong foundations.",
                 color: "#e74c3c",
@@ -186,7 +186,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             {
                 image: "/11.png",
                 programName: "PP-2",
-                ageGroup: "5 - 6 years",
+                ageGroup: "Age group : 5-6 years",
                 description:
                     "Confident learners ready for formal schooling — communication, independence, and core skills.",
                 color: "#2980b9",
@@ -195,7 +195,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             {
                 image: "/images/landing-banner.jpg",
                 programName: "Summer Programs",
-                ageGroup: "2 - 10 years",
+                ageGroup: "Age group : 2-10 years",
                 description: "Extended care with engaging activities throughout the day.",
                 color: "#ff9f43",
                 yOffset: "30px",
@@ -382,6 +382,18 @@ function keyNavSlot(x: KeyNavItem): string {
     return `other:icon:${icon || "none"}:${lab.slice(0, 48)}`;
 }
 
+/** Public homepage quick-link order (locate + franchise first). */
+const KEY_NAV_SLOT_ORDER = ["locate", "franchise", "tour", "gallery", "brochure", "media"] as const;
+
+function sortKeyNavByDisplayOrder(rows: KeyNavItem[]): KeyNavItem[] {
+    const rank = new Map<string, number>(KEY_NAV_SLOT_ORDER.map((slot, i) => [slot, i]));
+    return [...rows].sort((a, b) => {
+        const ra = rank.get(keyNavSlot(a)) ?? 99;
+        const rb = rank.get(keyNavSlot(b)) ?? 99;
+        return ra - rb;
+    });
+}
+
 /** Keep the first row per slot so CMS + merged defaults never show duplicate tiles. */
 function dedupeKeyNavBySlot(rows: KeyNavItem[]): KeyNavItem[] {
     const seen = new Set<string>();
@@ -422,7 +434,7 @@ export function normalizeKeyNavigation(rows: unknown): KeyNavItem[] {
         merged.push(d);
         seenSlots.add(slot);
     }
-    return dedupeKeyNavBySlot(merged);
+    return sortKeyNavByDisplayOrder(dedupeKeyNavBySlot(merged));
 }
 
 /** Merge API payload over defaults so missing keys still work. */

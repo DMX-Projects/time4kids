@@ -55,7 +55,7 @@ function formatSlideDate(iso: string | null | undefined): string {
 const FALLBACK_UPDATES: Slide[] = [
     {
         date: '28-12-2015',
-        text: 'T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. With 350+ pre-schools, T.I.M.E. Kids is poised for major expansion across the country.',
+        text: 'T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E., the national leader in entrance exam training. With 250+ pre-schools in 60 cities across India, T.I.M.E. Kids is poised for major expansion across the country.',
     },
 ];
 

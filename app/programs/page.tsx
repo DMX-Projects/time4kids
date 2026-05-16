@@ -9,6 +9,7 @@ import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
 import { gsap } from 'gsap';
 import { apiUrl } from '@/lib/api-client';
 import { DEFAULT_PROGRAMS_PAGE_DATA, mergeProgramsPageData, type ProgramsPageProgram } from '@/config/programs-page-defaults';
+import { formatAgeGroupLabel } from '@/lib/format-age-group';
 
 // --- Interactive Bubbles Component ---
 const InteractiveBubbles = () => {
@@ -252,7 +253,7 @@ export default function ProgramsPage() {
                                 <React.Fragment key={index}>
                                 <header className={`mb-6 w-full text-center md:mb-8 lg:mb-10 ${index % 2 === 0 ? 'md:text-left' : 'md:text-right'}`}>
                                     <p className={`text-xs font-bold uppercase tracking-widest text-slate-500 sm:text-sm ${theme.accent}`}>
-                                        {program.ageGroup}
+                                        {formatAgeGroupLabel(program.ageGroup)}
                                     </p>
                                     <h2 className="mt-2 font-display font-black text-4xl leading-tight tracking-tight text-slate-800 drop-shadow-sm sm:text-5xl md:text-6xl lg:text-7xl">
                                         {program.name}

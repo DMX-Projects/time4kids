@@ -1,12 +1,9 @@
-'use client';
-
 import { useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { mediaUrl } from '@/lib/api-client';
-import { FranchiseBlobShell } from '@/components/home/franchise-blob';
-import { franchiseBlobThumbnailImageClass } from '@/components/home/FranchiseVideoBlob';
 
 export type FranchiseGalleryPhoto = { src: string; alt?: string };
 
@@ -55,11 +52,13 @@ export default function FranchisePhotoGalleryModal({
         };
     }, [isOpen, onClose, goPrev, goNext]);
 
-    return (
+    if (typeof document === 'undefined') return null;
+
+    return createPortal(
         <AnimatePresence>
             {isOpen ? (
                 <motion.div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -69,127 +68,108 @@ export default function FranchisePhotoGalleryModal({
                 >
                     <motion.button
                         type="button"
-                        className="absolute inset-0 bg-slate-900/75 backdrop-blur-md"
+                        className="absolute inset-0 bg-slate-900/75 backdrop-blur-sm"
                         aria-label="Close gallery"
                         onClick={onClose}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
                     />
 
                     <motion.div
-                        className="relative z-10 w-full max-w-2xl"
-                        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+                        className="relative z-10 flex h-[min(92vh,880px)] w-[min(96vw,56rem)] max-w-none flex-col overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-white via-[#fff8ec] to-orange-50/95 shadow-[0_32px_80px_rgba(15,23,42,0.35)]"
+                        initial={{ opacity: 0, scale: 0.96, y: 16 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.96, y: 8 }}
+                        exit={{ opacity: 0, scale: 0.97, y: 12 }}
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <motion.div
-                            className="overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-br from-white via-[#fff8ec] to-orange-50/90 shadow-[0_32px_80px_rgba(15,23,42,0.35)]"
-                            layout
-                        >
-                            <motion.div
-                                className="flex items-center justify-between border-b border-orange-100/80 bg-white/80 px-5 py-4 backdrop-blur-sm"
-                                layout
-                            >
-                                <motion.div layout>
-                                    <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-600">
-                                        Franchise gallery
-                                    </p>
-                                    <p className="mt-0.5 font-display text-lg font-black text-slate-900">
-                                        {index + 1} <span className="text-slate-400">/</span> {count}
-                                    </p>
-                                </motion.div>
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-orange-100 hover:text-orange-700"
-                                    aria-label="Close"
-                                >
-                                    <X className="h-5 w-5" />
-                                </button>
-                            </motion.div>
-
-                            <div className="relative px-4 py-8 sm:px-8 sm:py-10">
-                                <div className="relative mx-auto max-w-md">
-                                    <AnimatePresence mode="wait" initial={false}>
-                                        <motion.div
-                                            key={index}
-                                            initial={{ opacity: 0, x: 28 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -28 }}
-                                            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                                        >
-                                            <FranchiseBlobShell
-                                                variant={index}
-                                                className="relative isolate mx-auto aspect-square w-full max-w-[min(100%,18rem)] sm:max-w-[20rem]"
-                                            >
-                                                <span className="absolute inset-0 overflow-hidden bg-[#f3ebe0] [border-radius:inherit]">
-                                                    <Image
-                                                        src={resolvePhotoSrc(photos[index]?.src ?? '')}
-                                                        alt={photos[index]?.alt || `Franchise photo ${index + 1}`}
-                                                        fill
-                                                        className={franchiseBlobThumbnailImageClass}
-                                                        sizes="(max-width: 640px) 85vw, 400px"
-                                                        unoptimized
-                                                        priority
-                                                    />
-                                                </span>
-                                            </FranchiseBlobShell>
-                                        </motion.div>
-                                    </AnimatePresence>
-
-                                    {count > 1 ? (
-                                        <>
-                                            <button
-                                                type="button"
-                                                onClick={goPrev}
-                                                className="absolute left-0 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/90 bg-white/95 text-slate-800 shadow-lg transition hover:bg-orange-50 sm:-left-2"
-                                                aria-label="Previous photo"
-                                            >
-                                                <ChevronLeft className="h-6 w-6" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={goNext}
-                                                className="absolute right-0 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/90 bg-white/95 text-slate-800 shadow-lg transition hover:bg-orange-50 sm:-right-2"
-                                                aria-label="Next photo"
-                                            >
-                                                <ChevronRight className="h-6 w-6" />
-                                            </button>
-                                        </>
-                                    ) : null}
-                                </div>
-
-                                {count > 1 ? (
-                                    <motion.div
-                                        className="mt-6 flex max-w-full flex-wrap justify-center gap-2 px-2"
-                                        role="tablist"
-                                        aria-label="Gallery thumbnails"
-                                    >
-                                        {photos.map((photo, i) => (
-                                            <button
-                                                key={`${photo.src}-${i}`}
-                                                type="button"
-                                                role="tab"
-                                                aria-selected={i === index}
-                                                onClick={() => onIndexChange(i)}
-                                                className={`h-2.5 shrink-0 rounded-full transition-all ${
-                                                    i === index
-                                                        ? 'w-8 bg-orange-500'
-                                                        : 'w-2.5 bg-slate-300 hover:bg-slate-400'
-                                                }`}
-                                                aria-label={`View photo ${i + 1}`}
-                                            />
-                                        ))}
-                                    </motion.div>
-                                ) : null}
+                        <motion.div className="flex shrink-0 items-center justify-between gap-3 border-b border-orange-100/80 bg-white/90 px-5 py-4 backdrop-blur-sm">
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-600">
+                                    Franchise gallery
+                                </p>
+                                <p className="mt-0.5 font-display text-xl font-black text-slate-900">
+                                    {index + 1} <span className="text-slate-400">/</span> {count}
+                                </p>
                             </div>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+                                aria-label="Close gallery"
+                            >
+                                <X className="h-5 w-5" aria-hidden />
+                                Close
+                            </button>
                         </motion.div>
+
+                        <div className="relative flex min-h-0 flex-1 items-center justify-center px-14 py-4 sm:px-20 sm:py-6">
+                            <AnimatePresence mode="wait" initial={false}>
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, x: 32 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -32 }}
+                                    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                                    className="relative h-full w-full min-h-[280px]"
+                                >
+                                    <Image
+                                        src={resolvePhotoSrc(photos[index]?.src ?? '')}
+                                        alt={photos[index]?.alt || `Franchise photo ${index + 1}`}
+                                        fill
+                                        className="object-contain object-center"
+                                        sizes="96vw"
+                                        unoptimized
+                                        priority
+                                    />
+                                </motion.div>
+                            </AnimatePresence>
+
+                            {count > 1 ? (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={goPrev}
+                                        className="absolute left-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/90 bg-white/95 text-slate-800 shadow-lg transition hover:bg-orange-50 sm:left-5 sm:h-14 sm:w-14"
+                                        aria-label="Previous photo"
+                                    >
+                                        <ChevronLeft className="h-7 w-7" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={goNext}
+                                        className="absolute right-3 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/90 bg-white/95 text-slate-800 shadow-lg transition hover:bg-orange-50 sm:right-5 sm:h-14 sm:w-14"
+                                        aria-label="Next photo"
+                                    >
+                                        <ChevronRight className="h-7 w-7" />
+                                    </button>
+                                </>
+                            ) : null}
+                        </div>
+
+                        {count > 1 ? (
+                            <div
+                                className="flex shrink-0 justify-center gap-2 border-t border-orange-100/60 bg-white/60 px-4 py-4"
+                                role="tablist"
+                                aria-label="Gallery thumbnails"
+                            >
+                                {photos.map((photo, i) => (
+                                    <button
+                                        key={`${photo.src}-${i}`}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={i === index}
+                                        onClick={() => onIndexChange(i)}
+                                        className={`h-2.5 rounded-full transition-all ${
+                                            i === index ? 'w-8 bg-orange-500' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                                        }`}
+                                        aria-label={`View photo ${i + 1}`}
+                                    />
+                                ))}
+                            </div>
+                        ) : null}
                     </motion.div>
                 </motion.div>
             ) : null}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body,
     );
 }

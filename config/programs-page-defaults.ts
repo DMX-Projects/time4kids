@@ -47,7 +47,7 @@ export const DEFAULT_PROGRAMS_PAGE_DATA: ProgramsPageData = {
         {
             image: "/1.png",
             name: "Play Group",
-            ageGroup: "Age Group: 2-3 Years",
+            ageGroup: "Age group : 2-3 years",
             duration: "2-3 hours",
             description: PROGRAM_DESCRIPTIONS.playGroup,
             features: ["Smooth Transition Beyond Home", "Sensory & Guided Play", "Music and Storytelling", "Social and Motor Skills"],
@@ -55,7 +55,7 @@ export const DEFAULT_PROGRAMS_PAGE_DATA: ProgramsPageData = {
         {
             image: "/2 (1).png",
             name: "Nursery",
-            ageGroup: "Age Group: 3-4 Years",
+            ageGroup: "Age group : 3-4 years",
             duration: "3-4 hours",
             description: PROGRAM_DESCRIPTIONS.nursery,
             features: ["Language and Phonics", "Numbers and Pre-Writing", "Creative Expression", "Confidence and Independence"],
@@ -63,15 +63,15 @@ export const DEFAULT_PROGRAMS_PAGE_DATA: ProgramsPageData = {
         {
             image: "/2.png",
             name: "PP-1 / Junior KG / LKG",
-            ageGroup: "Age Group: 4-5 Years",
-            duration: "4 hours",
+            ageGroup: "Age group : 4-5 years",
+            duration: "4-5 hours",
             description: PROGRAM_DESCRIPTIONS.pp1,
             features: ["Pre-Reading and Phonics", "Number Concepts", "Logical Thinking", "Projects and Role Play"],
         },
         {
             image: "/16.png",
             name: "PP-2 / Senior KG / UKG",
-            ageGroup: "Age Group: 5-6 Years",
+            ageGroup: "Age group : 5-6 years",
             duration: "4-5 hours",
             description: PROGRAM_DESCRIPTIONS.pp2,
             features: ["Reading and Writing Readiness", "Vocabulary and Maths", "Reasoning and Creativity", "Primary School Confidence"],

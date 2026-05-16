@@ -459,7 +459,9 @@ export default function BenefitsUpdates() {
                             ) : null}
                         </div>
                         {franchisePhotos.length > 0 ? (
-                            <div className="relative w-full max-w-[min(100%,24rem)] sm:mx-auto lg:mx-0 lg:max-w-[26rem]">
+                            <motion.div
+                                className="relative w-full max-w-[min(100%,24rem)] sm:mx-auto lg:mx-0 lg:max-w-[26rem]"
+                            >
                                 <FranchiseAdvantageCarousel
                                     slideCount={franchisePhotos.length}
                                     activeIndex={photoCarouselIndex}
@@ -499,12 +501,11 @@ export default function BenefitsUpdates() {
                                         );
                                     })}
                                 </FranchiseAdvantageCarousel>
-                            </div>
+                            </motion.div>
                         ) : null}
                     </motion.div>
                 </div>
             </div>
-
 
             <FranchisePhotoGalleryModal
                 photos={franchisePhotos}

@@ -28,6 +28,26 @@ interface AdmissionFormProps {
     contactPhone?: string;
 }
 
+const CHILD_AGE_OPTIONS = [
+    '2 to 3 years',
+    '3 to 4 years',
+    '4 to 5 years',
+    '5 to 6 years',
+    '6 to 7 years',
+    '7 to 8 years',
+    '8 years and above',
+] as const;
+
+const PROGRAM_OPTIONS = [
+    'Play group',
+    'Nursery',
+    'PP-1 / Junior KG / LKG',
+    'PP-2 / Senior KG / UKG',
+    'Summer Camp',
+    'Refresher Course (Level-1)',
+    'Refresher Course (Level-2)',
+] as const;
+
 const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -230,9 +250,11 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                                     className="w-full px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl appearance-none font-medium text-[#2D2D52] focus:ring-4 focus:ring-yellow-100 outline-none"
                                 >
                                     <option value="">Select age</option>
-                                    <option value="2">2+ Years</option>
-                                    <option value="3">3+ Years</option>
-                                    <option value="4">4+ Years</option>
+                                    {CHILD_AGE_OPTIONS.map((age) => (
+                                        <option key={age} value={age}>
+                                            {age}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 
@@ -245,10 +267,11 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                                     className="w-full px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl appearance-none font-medium text-[#2D2D52] focus:ring-4 focus:ring-yellow-100 outline-none"
                                 >
                                     <option value="">Select program</option>
-                                    <option value="playgroup">Playgroup</option>
-                                    <option value="nursery">Nursery</option>
-                                    <option value="pp1">PP1</option>
-                                    <option value="pp2">PP2</option>
+                                    {PROGRAM_OPTIONS.map((program) => (
+                                        <option key={program} value={program}>
+                                            {program}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>

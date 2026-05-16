@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { formatAgeGroupLabel } from '@/lib/format-age-group';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -14,11 +15,11 @@ const SchoolProgramsPreview = () => {
     const sectionRef = useRef(null);
 
     const programs = [
-        { image: '/day care.png', programName: 'Play Group', ageGroup: '2 - 3 years', description: 'Introduction to social interaction and basic motor skills.', color: '#ef5f5f', yOffset: '-20px' },
-        { image: '/faq2.jpeg', programName: 'Nursery', ageGroup: '3 - 4 years', description: 'Building foundation for language, numbers, and expression.', color: '#fbd267', yOffset: '40px' },
-        { image: '/1.png', programName: 'PP-1', ageGroup: '4 - 5 years', description: 'Expanding from school to the world around — curious, interactive, and building strong foundations.', color: '#e74c3c', yOffset: '-30px' },
-        { image: '/11.png', programName: 'PP-2', ageGroup: '5 - 6 years', description: 'Confident learners ready for formal schooling — communication, independence, and core skills.', color: '#2980b9', yOffset: '20px' },
-        { image: '/images/landing-banner.jpg', programName: 'Day Care', ageGroup: '2 - 10 years', description: 'Extended care with engaging activities throughout the day.', color: '#ff9f43', yOffset: '30px' }
+        { image: '/day care.png', programName: 'Play Group', ageGroup: 'Age group : 2-3 years', description: 'Introduction to social interaction and basic motor skills.', color: '#ef5f5f', yOffset: '-20px' },
+        { image: '/faq2.jpeg', programName: 'Nursery', ageGroup: 'Age group : 3-4 years', description: 'Building foundation for language, numbers, and expression.', color: '#fbd267', yOffset: '40px' },
+        { image: '/1.png', programName: 'PP-1', ageGroup: 'Age group : 4-5 years', description: 'Expanding from school to the world around — curious, interactive, and building strong foundations.', color: '#e74c3c', yOffset: '-30px' },
+        { image: '/11.png', programName: 'PP-2', ageGroup: 'Age group : 5-6 years', description: 'Confident learners ready for formal schooling — communication, independence, and core skills.', color: '#2980b9', yOffset: '20px' },
+        { image: '/images/landing-banner.jpg', programName: 'Summer Programs', ageGroup: 'Age group : 2-10 years', description: 'Extended care with engaging activities throughout the day.', color: '#ff9f43', yOffset: '30px' }
     ];
 
     useEffect(() => {
@@ -77,10 +78,10 @@ const SchoolProgramsPreview = () => {
                                         />
                                     </div>
                                     <div
-                                        className="absolute -bottom-1 right-0 max-w-[min(100%,8.5rem)] rounded-full px-2 py-1 text-center text-[9px] font-black leading-tight text-white shadow-lg sm:-bottom-2 sm:right-1 sm:max-w-none sm:px-3 sm:py-1.5 sm:text-[10px]"
+                                        className="absolute -bottom-1 right-0 max-w-[min(100%,13rem)] rounded-full px-3 py-1.5 text-center text-[11px] font-black leading-tight text-white shadow-lg sm:-bottom-2 sm:right-1 sm:max-w-none sm:px-4 sm:py-2 sm:text-[13px]"
                                         style={{ backgroundColor: program.color }}
                                     >
-                                        {program.ageGroup}
+                                        {formatAgeGroupLabel(program.ageGroup)}
                                     </div>
                                 </Link>
                                 <h3 className="font-bubblegum text-xl leading-tight text-[#003366] sm:text-2xl lg:text-3xl mb-1 sm:mb-2 whitespace-pre-line">
