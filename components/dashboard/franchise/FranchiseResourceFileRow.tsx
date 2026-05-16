@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
     Archive,
     ChevronRight,
@@ -11,13 +12,14 @@ import {
     Presentation,
     Video,
 } from "lucide-react";
-import { mediaUrl } from "@/lib/api-client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
     franchiseResourceIconWrapClasses,
     franchiseResourceRowAccentClasses,
     getFranchiseResourceFileMeta,
     type FranchiseResourceFileKind,
 } from "@/lib/franchise-resource-file-meta";
+import { openFranchiseHubDocumentBlobInNewTab } from "@/lib/franchise-hub-document-open";
 
 export type FranchiseHubDoc = {
     id: number;
@@ -55,11 +57,25 @@ function KindIcon({ kind, className }: { kind: FranchiseResourceFileKind; classN
 }
 
 export function FranchiseResourceFileRow({ doc }: { doc: FranchiseHubDoc }) {
+    const { authFetchBlob } = useAuth();
+    const [opening, setOpening] = useState(false);
     const meta = getFranchiseResourceFileMeta(doc.file);
-    const href = doc.file ? mediaUrl(doc.file) : "#";
     const title = doc.display_title || doc.title;
     const iconWrap = franchiseResourceIconWrapClasses(meta.kind);
     const btn = franchiseResourceRowAccentClasses(meta.kind);
+
+    const openAuthenticated = async () => {
+        if (!doc.id || opening) return;
+        setOpening(true);
+        try {
+            const blob = await authFetchBlob(`/documents/franchise/documents/${doc.id}/file/`);
+            openFranchiseHubDocumentBlobInNewTab(blob);
+        } catch (e) {
+            window.alert(e instanceof Error ? e.message : "Could not open document.");
+        } finally {
+            setOpening(false);
+        }
+    };
 
     if (!doc.file) {
         return (
@@ -104,15 +120,15 @@ export function FranchiseResourceFileRow({ doc }: { doc: FranchiseHubDoc }) {
                 </div>
             </div>
 
-            <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${btn}`}
+            <button
+                type="button"
+                onClick={() => void openAuthenticated()}
+                disabled={opening}
+                className={`inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-60 ${btn}`}
             >
-                {meta.actionLabel}
+                {opening ? "Opening…" : meta.actionLabel}
                 <ChevronRight className="w-4 h-4 opacity-90" aria-hidden />
-            </a>
+            </button>
         </div>
     );
 }

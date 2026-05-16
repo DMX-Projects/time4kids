@@ -14,6 +14,7 @@ import {
   resolveCenterPageLinks,
   shouldOpenFranchiseLinkInNewTab,
 } from "@/lib/franchise-center-page-links";
+import { openFranchiseHubDocumentBlobInNewTab } from "@/lib/franchise-hub-document-open";
 
 import type {
   CenterPageLink,
@@ -203,12 +204,27 @@ function LinkRows({
 
   onAdminPickCategory?: (category: string) => void;
 }) {
+  const { authFetchBlob } = useAuth();
+  const [openingHubDocId, setOpeningHubDocId] = useState<number | null>(null);
   const displayLinks =
     mode === "franchise" && hubDocsByCategory
       ? resolveCenterPageLinks(links, hubDocsByCategory, hubDocsBySourcePath)
       : links;
   const franchiseRowClass =
     "group/link flex min-w-0 items-start gap-2.5 font-serif text-sm leading-snug text-slate-600 hover:text-slate-900";
+
+  const openHubDocument = async (docId: number) => {
+    if (openingHubDocId != null) return;
+    setOpeningHubDocId(docId);
+    try {
+      const blob = await authFetchBlob(`/documents/franchise/documents/${docId}/file/`);
+      openFranchiseHubDocumentBlobInNewTab(blob);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Could not open document.");
+    } finally {
+      setOpeningHubDocId(null);
+    }
+  };
 
   return (
     <ul role="list" className="list-none space-y-2 py-1">
@@ -220,13 +236,29 @@ function LinkRows({
           ? "font-semibold text-slate-900 underline decoration-slate-600"
           : "";
 
+        const hubDocId = link.franchiseHubDocId;
         const openInNewTab =
-          mode === "franchise" && shouldOpenFranchiseLinkInNewTab(link.href);
+          mode === "franchise" &&
+          (hubDocId != null || shouldOpenFranchiseLinkInNewTab(link.href));
 
         return (
           <li key={link.rowKey ?? `link-${index}-${link.label}`} className="min-w-0">
             {mode === "franchise" ? (
-              openInNewTab ? (
+              hubDocId != null ? (
+                <button
+                  type="button"
+                  onClick={() => void openHubDocument(hubDocId)}
+                  disabled={openingHubDocId === hubDocId}
+                  className={`${franchiseRowClass} w-full text-left disabled:opacity-60`}
+                >
+                  <HandprintBullet className="mt-0.5 shrink-0 text-emerald-600" />
+
+                  <span className={franchiseLabelClass}>
+                    {link.label}
+                    {openingHubDocId === hubDocId ? " — Opening…" : ""}
+                  </span>
+                </button>
+              ) : openInNewTab ? (
                 <a
                   href={link.href}
                   target="_blank"

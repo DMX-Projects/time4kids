@@ -81,13 +81,34 @@ function resolvedApiBase(): string {
     return `${djangoOriginForServer()}/api`;
 }
 
-function resolvedMediaBase(): string {
-    if (typeof window !== "undefined") {
-        const fallback = `${window.location.origin.replace(/\/$/, "")}/media`;
-        return alignLoopbackDevOrigin(process.env.NEXT_PUBLIC_MEDIA_BASE_URL, fallback);
+/**
+ * When MEDIA_BASE is omitted, uploads still live on the API host (`…/media/`).
+ * Using only `window.location.origin/media` breaks live sites where Next and Django differ.
+ */
+function derivedMediaBaseFromApiBase(): string {
+    let b = (process.env.NEXT_PUBLIC_API_BASE_URL || "").trim().replace(/\/$/, "");
+    if (!b) {
+        const fromApiUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
+        if (fromApiUrl) b = fromApiUrl;
     }
-    const envMedia = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || "").trim().replace(/\/$/, "");
-    if (envMedia) return envMedia;
+    if (!b) return "";
+    if (/\/api$/i.test(b)) b = b.replace(/\/api$/i, "");
+    return `${b.replace(/\/$/, "")}/media`;
+}
+
+function resolvedMediaBase(): string {
+    const pageOriginMedia = `${typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : getServerUrl()}/media`;
+    const envMedia = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || "").trim();
+    const derived = derivedMediaBaseFromApiBase();
+
+    if (typeof window !== "undefined") {
+        if (envMedia) return alignLoopbackDevOrigin(envMedia, pageOriginMedia);
+        if (derived) return alignLoopbackDevOrigin(derived, pageOriginMedia);
+        return pageOriginMedia;
+    }
+    const envMediaServer = envMedia.replace(/\/$/, "");
+    if (envMediaServer) return envMediaServer;
+    if (derived) return derived.replace(/\/$/, "");
     return `${djangoOriginForServer()}/media`;
 }
 
@@ -133,6 +154,8 @@ if (typeof window === "undefined") {
     console.log("NEXT_PUBLIC_SERVER_URL:", process.env.NEXT_PUBLIC_SERVER_URL || "Not Set");
     console.log("BASE_URL (Computed):", BASE_URL);
     console.log("SSR API base (direct Django):", resolvedApiBase());
+    console.log("NEXT_PUBLIC_MEDIA_BASE_URL:", process.env.NEXT_PUBLIC_MEDIA_BASE_URL || "Not Set (derived from API if possible)");
+    console.log("Resolved MEDIA base (SSR):", resolvedMediaBase());
     console.log("-----------------------------------------");
 }
 
@@ -159,8 +182,12 @@ export const mediaUrl = (path?: string | null) => {
         if (typeof window !== "undefined") {
             return `${window.location.origin.replace(/\/$/, "")}${path}`;
         }
-        const site = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || process.env.NEXT_PUBLIC_SERVER_URL || "").replace(/\/media\/?$/, "").replace(/\/$/, "");
+        const site = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || process.env.NEXT_PUBLIC_SERVER_URL || "")
+            .replace(/\/media\/?$/, "")
+            .replace(/\/$/, "");
         if (site) return `${site}${path}`;
+        const derivedOrigin = derivedMediaBaseFromApiBase().replace(/\/media\/?$/, "");
+        if (derivedOrigin) return `${derivedOrigin.replace(/\/$/, "")}${path}`;
         return path;
     }
     return `${mediaBase}/${path.replace(/^\/+/g, "")}`;
