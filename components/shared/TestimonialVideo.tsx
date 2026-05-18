@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getFranchiseVideoEmbedSrc } from '@/components/home/FranchiseVideoBlob';
+import { getFranchiseVideoEmbedSrc } from '@/lib/franchise-embed-url';
 
 interface TestimonialVideoProps {
     videoUrl?: string;

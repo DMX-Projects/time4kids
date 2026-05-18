@@ -55,11 +55,7 @@ export default function SopPage() {
             )}
 
             <p className="text-xs text-[#6B7280]">
-                Includes HO global files and files you upload under{" "}
-                <a href="/dashboard/franchise/upload-for-parents/" className="text-[#2563EB] font-semibold">
-                    Upload centre files
-                </a>{" "}
-                (Franchise centre files).
+                Includes head-office global files and centre resource documents managed by admin.
             </p>
         </div>
     );

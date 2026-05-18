@@ -102,7 +102,7 @@ export default function ParentPortalAdminPage() {
                 ))}
             </div>
 
-            {tab === "homework" && <HomeworkTab authFetch={authFetch} showToast={showToast} students={students} onRefresh={loadStudents} />}
+            {tab === "homework" && <HomeworkTab authFetch={authFetch} showToast={showToast} onRefresh={loadStudents} />}
             {tab === "notifications" && <AnnouncementsTab authFetch={authFetch} showToast={showToast} />}
             {tab === "timetable" && <DocsHintPanel variant="timetable" />}
             {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} students={students} />}
@@ -391,12 +391,10 @@ function FranchiseCalendarTab({ authFetch }: { authFetch: AuthFetchFn }) {
 function HomeworkTab({
     authFetch,
     showToast,
-    students,
     onRefresh,
 }: {
     authFetch: AuthFetchFn;
     showToast: ShowToastFn;
-    students: MiniStudent[];
     onRefresh: () => void;
 }) {
     const [rows, setRows] = useState<{
@@ -411,7 +409,6 @@ function HomeworkTab({
     }[]>([]);
     const [loading, setLoading] = useState(true);
     const [form, setForm] = useState({
-        studentId: "",
         class_name: "",
         assigned_date: "",
         title: "",
@@ -450,8 +447,7 @@ function HomeworkTab({
     const submit = async (e: FormEvent) => {
         e.preventDefault();
         try {
-            const selectedStudent = students.find((s) => String(s.id) === form.studentId);
-            const normalizedClassName = form.class_name.trim() || selectedStudent?.class_name?.trim() || "";
+            const normalizedClassName = form.class_name.trim();
 
             if (form.attachment) {
                 const maxSize = 5 * 1024 * 1024;
@@ -472,7 +468,6 @@ function HomeworkTab({
                 fd.append("description", form.description.trim());
                 fd.append("assigned_date", form.assigned_date);
                 fd.append("class_name", normalizedClassName);
-                if (form.studentId) fd.append("student", String(Number(form.studentId)));
                 fd.append("attachment", form.attachment);
                 fd.append("attachment_name", form.attachment.name);
                 fd.append("attachment_kind", isPdf ? "PDF" : "IMAGE");
@@ -484,11 +479,11 @@ function HomeworkTab({
                     assigned_date: form.assigned_date,
                     class_name: normalizedClassName,
                 };
-                body.student = form.studentId ? Number(form.studentId) : null;
+                body.student = null;
                 await authFetch("/students/franchise/homework/", { method: "POST", headers: jsonHeaders(), body: JSON.stringify(body) });
             }
 
-            setForm({ studentId: "", class_name: "", assigned_date: "", title: "", description: "", attachment: null });
+            setForm({ class_name: "", assigned_date: "", title: "", description: "", attachment: null });
             showToast("Homework published", "success");
             await load();
             onRefresh();
@@ -517,17 +512,6 @@ function HomeworkTab({
                 <label className="text-xs font-semibold text-[#4B5563]">
                     Date
                     <input type="date" required value={form.assigned_date} onChange={(e) => setForm((p) => ({ ...p, assigned_date: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold text-[#4B5563]">
-                    Student (optional)
-                    <select value={form.studentId} onChange={(e) => setForm((p) => ({ ...p, studentId: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
-                        <option value="">— All students (centre-wide) —</option>
-                        {students.map((s) => (
-                            <option key={s.id} value={s.id}>
-                                {s.full_name}
-                            </option>
-                        ))}
-                    </select>
                 </label>
                 <label className="text-xs font-semibold text-[#4B5563] md:col-span-2">
                     Class name (optional, exact match e.g. KG-2 Section A)

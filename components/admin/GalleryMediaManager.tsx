@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import Image from "next/image";
 import { Film, Link2, Plus, Trash2, Upload } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
@@ -376,7 +375,12 @@ export function GalleryMediaManager() {
                                                 ) : item.media_type === "video" ? (
                                                     <video src={mediaUrl(item.file)} className="w-full h-full object-cover" muted />
                                                 ) : (
-                                                    <Image src={mediaUrl(item.file)} alt="" fill className="object-cover" unoptimized />
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img
+                                                        src={mediaUrl(item.file)}
+                                                        alt={item.caption || item.title || ""}
+                                                        className="w-full h-full object-cover"
+                                                    />
                                                 )}
                                                 <button
                                                     type="button"

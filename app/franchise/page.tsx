@@ -7,7 +7,7 @@ import {
     FranchiseNarrativeMain,
     FranchiseQuickHighlightsSection,
 } from '@/components/franchise/FranchiseNarrativePanel';
-import TestimonialVideo from '@/components/shared/TestimonialVideo';
+import FranchiseSuccessStoriesSection from '@/components/franchise/FranchiseSuccessStoriesSection';
 import Card from '@/components/ui/Card';
 import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
 import TwinklingStars from '@/components/animations/TwinklingStars';
@@ -20,8 +20,6 @@ import { DEFAULT_FRANCHISE_PAGE_DATA, mergeFranchisePageData, type FranchisePage
 export default function FranchisePage() {
     const [pageData, setPageData] = useState<FranchisePageData>(DEFAULT_FRANCHISE_PAGE_DATA);
     const [assets, setAssets] = useState<any[]>([]);
-    const [playingIndex, setPlayingIndex] = useState<number | null>(null);
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -102,32 +100,7 @@ export default function FranchisePage() {
                 </div>
             </section>
 
-            <section className="section-gap bg-gray-50">
-                <div className="container mx-auto px-4">
-                    <div className="text-center mb-12">
-                        <h2 className="font-bubblegum text-4xl mb-4 text-[#003366] tracking-wide">
-                            Franchisee <span className="text-[#ef5f5f]">Success Stories</span>
-                        </h2>
-                        <p className="text-lg text-gray-600">Hear from our successful franchise partners</p>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        {testimonials.slice(0, 6).map((t: any, idx: number) => (
-                            <TestimonialVideo
-                                key={idx}
-                                title={t.title}
-                                author={t.author}
-                                location={t.location}
-                                videoUrl={(t.video_url || "").trim() || undefined}
-                                thumbnailUrl={(t.thumbnail_url || "").trim() || undefined}
-                                isPlaying={playingIndex === idx}
-                                onPlay={() => setPlayingIndex(idx)}
-                                onStop={() => setPlayingIndex(null)}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </section>
+            <FranchiseSuccessStoriesSection testimonials={testimonials} />
 
             {/* Main Branch Location */}
             <section className="section-gap bg-white">

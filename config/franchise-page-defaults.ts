@@ -3,6 +3,10 @@
 export type FranchiseBenefit = { icon: string; title: string; description: string };
 export type FranchiseTestimonial = { title: string; author: string; location: string; video_url?: string; thumbnail_url?: string };
 
+/** Default card title on /franchise → Franchisee Success Stories */
+export const FRANCHISE_SUCCESS_STORY_DEFAULT_TITLE =
+    "What our Franchise has to say about T.I.M.E. Kids";
+
 export type FranchiseSectionHeading = {
     heading_prefix: string;
     heading_accent: string;
@@ -169,9 +173,13 @@ export const DEFAULT_FRANCHISE_PAGE_DATA: FranchisePageData = {
         ],
     },
     testimonials: [
-        { title: "Best business decision", author: "Franchise Partner", location: "Bangalore", video_url: "", thumbnail_url: "" },
-        { title: "Complete support from day one", author: "Franchise Partner", location: "Chennai", video_url: "", thumbnail_url: "" },
-        { title: "Rewarding and fulfilling", author: "Franchise Partner", location: "Pune", video_url: "", thumbnail_url: "" },
+        {
+            title: FRANCHISE_SUCCESS_STORY_DEFAULT_TITLE,
+            author: "T.I.M.E. Kids",
+            location: "",
+            video_url: "",
+            thumbnail_url: "/feature-annual-day-celebrations.png",
+        },
     ],
     main_branch: {
         heading_prefix: "Visit Our",
@@ -219,6 +227,14 @@ function ensureFranchiseShape(merged: FranchisePageData): FranchisePageData {
     if (!Array.isArray(merged.benefits)) merged.benefits = d.benefits;
     if (!Array.isArray(merged.offerings)) merged.offerings = d.offerings;
     if (!Array.isArray(merged.testimonials)) merged.testimonials = d.testimonials;
+    merged.testimonials = merged.testimonials.length > 0 ? [merged.testimonials[0]] : d.testimonials;
+    const story = merged.testimonials[0];
+    if (story) {
+        const t = (story.title || "").trim();
+        if (!t || t === "Annual Day Fun") {
+            story.title = FRANCHISE_SUCCESS_STORY_DEFAULT_TITLE;
+        }
+    }
     if (!merged.hero || typeof merged.hero !== "object") merged.hero = d.hero;
     if (!Array.isArray(merged.hero.intro_paragraphs)) merged.hero.intro_paragraphs = d.hero.intro_paragraphs;
     if (!merged.benefits_section) merged.benefits_section = d.benefits_section;

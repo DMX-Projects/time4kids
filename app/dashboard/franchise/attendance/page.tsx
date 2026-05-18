@@ -1,8 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
+import {
+    useSchoolData,
+    type AttendanceRecord,
+} from "@/components/dashboard/shared/SchoolDataProvider";
 import { CalendarDays, Save, CheckCircle, AlertCircle } from "lucide-react";
+
+type AttendanceStatus = AttendanceRecord["status"];
+
+const ATTENDANCE_STATUSES: readonly AttendanceStatus[] = [
+    "PRESENT",
+    "ABSENT",
+    "LATE",
+    "EXCUSED",
+    "HOLIDAY",
+];
+
+function isAttendanceStatus(value: string): value is AttendanceStatus {
+    return (ATTENDANCE_STATUSES as readonly string[]).includes(value);
+}
+
+type AttendanceEdit = { status: AttendanceStatus | ""; note: string };
 
 const toLocalYYYYMMDD = (d: Date) => {
     const tzOffset = d.getTimezoneOffset() * 60000;
@@ -17,7 +36,7 @@ export default function FranchiseAttendancePage() {
     
     // local state to hold attendance edits before saving
     // key is studentId
-    const [edits, setEdits] = useState<Record<string, { status: string, note: string }>>({});
+    const [edits, setEdits] = useState<Record<string, AttendanceEdit>>({});
     const [message, setMessage] = useState<{ type: "success" | "error", text: string } | null>(null);
 
     useEffect(() => {
@@ -31,19 +50,20 @@ export default function FranchiseAttendancePage() {
     }, [selectedDate]);
 
     useEffect(() => {
-        // Initialize edits from fetched attendance
-        const initialEdits: Record<string, { status: string, note: string }> = {};
-        for (const record of attendance) {
-            initialEdits[record.studentId] = {
-                status: record.status,
-                note: record.note || "",
+        const byStudent = new Map(attendance.map((r) => [r.studentId, r]));
+        const initialEdits: Record<string, AttendanceEdit> = {};
+        for (const s of students) {
+            const existing = byStudent.get(s.id);
+            initialEdits[s.id] = {
+                status: existing?.status ?? "",
+                note: existing?.note ?? "",
             };
         }
         setEdits(initialEdits);
         setMessage(null);
-    }, [attendance, selectedDate]);
+    }, [attendance, selectedDate, students]);
 
-    const handleStatusChange = (studentId: string, status: string) => {
+    const handleStatusChange = (studentId: string, status: AttendanceStatus | "") => {
         setEdits(prev => ({
             ...prev,
             [studentId]: {
@@ -57,9 +77,9 @@ export default function FranchiseAttendancePage() {
         setEdits(prev => ({
             ...prev,
             [studentId]: {
-                status: prev[studentId]?.status || "PRESENT",
-                note
-            }
+                status: prev[studentId]?.status ?? "",
+                note,
+            },
         }));
     };
 
@@ -67,31 +87,37 @@ export default function FranchiseAttendancePage() {
         setSaving(true);
         setMessage(null);
         try {
-            // only save those that are edited
-            const toSave = Object.entries(edits).map(([studentId, data]) => ({
-                studentId,
-                date: selectedDate,
-                status: data.status as any,
-                note: data.note
-            }));
-            
-            await markAttendance(toSave);
-            setMessage({ type: "success", text: "Attendance saved successfully." });
-        } catch (err) {
-            setMessage({ type: "error", text: "Failed to save attendance." });
+            const toSave: Omit<AttendanceRecord, "id">[] = sortedStudents.flatMap((s) => {
+                const status = edits[s.id]?.status;
+                if (!status || !isAttendanceStatus(status)) return [];
+                return [
+                    {
+                        studentId: s.id,
+                        date: selectedDate,
+                        status,
+                        note: edits[s.id]?.note ?? "",
+                    },
+                ];
+            });
+
+            if (toSave.length === 0) {
+                setMessage({ type: "error", text: "Select a status for at least one student, or use Mark All Present." });
+                return;
+            }
+
+            await markAttendance(toSave, selectedDate);
+            setMessage({ type: "success", text: `Attendance saved for ${toSave.length} student(s).` });
+        } catch {
+            setMessage({ type: "error", text: "Failed to save attendance. Please try again." });
         } finally {
             setSaving(false);
         }
     };
 
     const markAllPresent = () => {
-        const next = { ...edits };
-        students.forEach(s => {
-            if (!next[s.id]) {
-                 next[s.id] = { status: "PRESENT", note: "" };
-            } else {
-                 next[s.id].status = "PRESENT";
-            }
+        const next: Record<string, AttendanceEdit> = { ...edits };
+        students.forEach((s) => {
+            next[s.id] = { status: "PRESENT", note: next[s.id]?.note ?? "" };
         });
         setEdits(next);
     };
@@ -170,8 +196,8 @@ export default function FranchiseAttendancePage() {
                                 </tr>
                             ) : (
                                 sortedStudents.map((s) => {
-                                    const edit = edits[s.id] || {};
-                                    const status = edit.status || "PRESENT";
+                                    const edit = edits[s.id] || { status: "", note: "" };
+                                    const status = edit.status || "";
                                     return (
                                         <tr key={s.id} className="hover:bg-orange-50/50 transition-colors">
                                             <td className="p-4 text-gray-900 font-medium">{s.rollNumber}</td>
@@ -180,13 +206,20 @@ export default function FranchiseAttendancePage() {
                                             <td className="p-4">
                                                 <select
                                                     value={status}
-                                                    onChange={(e) => handleStatusChange(s.id, e.target.value)}
+                                                    onChange={(e) =>
+                                                        handleStatusChange(
+                                                            s.id,
+                                                            e.target.value as AttendanceStatus | "",
+                                                        )
+                                                    }
                                                     className={`px-3 border py-2 rounded-lg text-sm font-semibold w-full max-w-[150px] outline-none transition-colors
-                                                        ${status === 'PRESENT' ? 'bg-green-50 text-green-700 border-green-200' : 
+                                                        ${!status ? 'bg-white text-gray-500 border-gray-300' :
+                                                          status === 'PRESENT' ? 'bg-green-50 text-green-700 border-green-200' : 
                                                           status === 'ABSENT' ? 'bg-red-50 text-red-700 border-red-200' : 
                                                           status === 'LATE' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
                                                           'bg-gray-50 text-gray-700 border-gray-200'}`}
                                                 >
+                                                    <option value="">Select status</option>
                                                     <option value="PRESENT">Present</option>
                                                     <option value="ABSENT">Absent</option>
                                                     <option value="LATE">Late</option>

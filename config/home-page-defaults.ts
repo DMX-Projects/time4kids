@@ -1,5 +1,7 @@
 /** Mirrors `common/home_page_defaults.py` — used when API is down or keys are missing. */
 
+import { NEWS_TICKER_MAX_WORDS, truncateToWordLimit } from "@/lib/text-limit";
+
 export type KeyNavItem = {
     icon: string;
     alt: string;
@@ -308,7 +310,7 @@ export function normalizeNewsTickerItems(merged: HomePageData, raw: Record<strin
     const cleaned: NewsTickerItem[] = [];
     for (const row of rawItems) {
         if (!row || typeof row !== "object" || Array.isArray(row)) continue;
-        const text = String((row as Record<string, unknown>).text ?? "").trim();
+        const text = truncateToWordLimit(String((row as Record<string, unknown>).text ?? ""), NEWS_TICKER_MAX_WORDS);
         if (!text) continue;
         cleaned.push({ text });
     }

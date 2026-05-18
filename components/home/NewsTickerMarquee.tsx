@@ -8,7 +8,7 @@ type NewsTickerMarqueeProps = {
     className?: string;
 };
 
-/** Continuous horizontal scroll for “Latest News & Updates”. */
+/** Continuous horizontal scroll for “Latest News & Updates”. Parent should handle click to open modal. */
 export default function NewsTickerMarquee({ lines, emptyMessage, className = '' }: NewsTickerMarqueeProps) {
     const displayText = useMemo(() => {
         const parts = lines.map((l) => l.trim()).filter(Boolean);
@@ -38,20 +38,18 @@ export default function NewsTickerMarquee({ lines, emptyMessage, className = '' 
     const marqueeStyle = { animationDuration: `${marqueeDurationSec}s` };
 
     return (
-        <div
-            className={`overflow-hidden ${className}`}
-            role="region"
-            aria-label="Latest news and updates"
-            aria-live="polite"
-        >
+        <div className={`overflow-hidden ${className}`}>
             <div className="flex w-max min-w-full">
-                <div className="marquee-content flex shrink-0" style={marqueeStyle}>
+                <div className="marquee-content flex shrink-0 group-hover:[animation-play-state:paused]" style={marqueeStyle}>
                     {segment}
                 </div>
-                <div className="marquee-content flex shrink-0" style={marqueeStyle} aria-hidden>
+                <div className="marquee-content flex shrink-0 group-hover:[animation-play-state:paused]" style={marqueeStyle}>
                     {segment}
                 </div>
             </div>
+            <p className="border-t border-orange-100/60 px-4 py-2 text-center text-xs font-semibold text-slate-500 group-hover:text-orange-700 sm:px-6">
+                Click to view all updates
+            </p>
         </div>
     );
 }

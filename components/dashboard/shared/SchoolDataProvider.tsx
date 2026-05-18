@@ -173,7 +173,7 @@ export type SchoolDataContextValue = {
 
     // Attendance Methods
     loadAttendance: (dateOrStudentId?: string) => Promise<void>;
-    markAttendance: (records: Omit<AttendanceRecord, "id">[]) => Promise<void>;
+    markAttendance: (records: Omit<AttendanceRecord, "id">[], date?: string) => Promise<void>;
 
     locations: { city_name: string; state: string }[];
     updateEnquiryStatus: (id: string, status: string) => Promise<void>;
@@ -655,7 +655,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         }
     };
 
-    const markAttendance = async (records: Omit<AttendanceRecord, "id">[]) => {
+    const markAttendance = async (records: Omit<AttendanceRecord, "id">[], date?: string) => {
+        const failed: string[] = [];
         for (const rec of records) {
             const body = {
                 student: Number(rec.studentId),
@@ -671,9 +672,13 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
                 });
             } catch (err) {
                 console.error("Failed to mark attendance", err);
+                failed.push(rec.studentId);
             }
         }
-        await loadAttendance();
+        if (failed.length > 0) {
+            throw new Error(`Failed to save ${failed.length} record(s)`);
+        }
+        await loadAttendance(date);
     };
 
     // Franchise Specific CRUD Implementations

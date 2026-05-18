@@ -9,65 +9,10 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
 import { mediaUrl } from "@/lib/api-client";
 import { FRANCHISE_DOCUMENT_CATEGORY_ORDER } from "@/config/franchise-dashboard-resource-order";
-import {
-    FRANCHISE_CENTER_PAGE_BLOCK_A,
-    FRANCHISE_CENTER_PAGE_BLOCK_B,
-} from "@/config/franchise-center-page-nav";
-import { FranchiseCenterPageAccordion } from "@/components/dashboard/franchise/FranchiseCenterPageAccordion";
-import {
-    getFranchiseResourceFileMeta,
-    getFranchiseResourceFileMetaFromDoc,
-} from "@/lib/franchise-resource-file-meta";
+import { FranchiseCentreBulkUpload } from "@/components/franchise/FranchiseCentreBulkUpload";
+import { getFranchiseResourceFileMetaFromDoc } from "@/lib/franchise-resource-file-meta";
 import { resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
-import { Plus, Pencil, Trash2, ExternalLink, Download, RefreshCw, Info } from "lucide-react";
-
-export type FranchiseDocCategorySummary = {
-    category: string;
-    category_display: string;
-    total: number;
-    active: number;
-    inactive: number;
-    with_file: number;
-    missing_file: number;
-    global_count: number;
-    centre_specific_count: number;
-};
-
-function orderSummaryRows(rows: FranchiseDocCategorySummary[]): FranchiseDocCategorySummary[] {
-    const byCat = new Map(rows.map((r) => [r.category, r]));
-    const out: FranchiseDocCategorySummary[] = [];
-    const seen = new Set<string>();
-    for (const c of FRANCHISE_DOCUMENT_CATEGORY_ORDER) {
-        const r = byCat.get(c.value);
-        if (r) {
-            out.push({ ...r, category_display: c.label });
-        } else {
-            out.push({
-                category: c.value,
-                category_display: c.label,
-                total: 0,
-                active: 0,
-                inactive: 0,
-                with_file: 0,
-                missing_file: 0,
-                global_count: 0,
-                centre_specific_count: 0,
-            });
-        }
-        seen.add(c.value);
-    }
-    for (const r of rows) {
-        if (!seen.has(r.category)) out.push(r);
-    }
-    return out;
-}
-
-function csvEscape(value: string | number | boolean | null | undefined): string {
-    if (value === null || value === undefined) return "";
-    const s = String(value);
-    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-    return s;
-}
+import { Plus, Pencil, Trash2, ExternalLink, Info } from "lucide-react";
 
 export type FranchiseResourceDoc = {
     id: number;
@@ -118,9 +63,6 @@ export default function AdminFranchiseDocumentsPage() {
     const { showToast } = useToast();
     const [items, setItems] = useState<FranchiseResourceDoc[]>([]);
     const [loading, setLoading] = useState(true);
-    const [summaryRows, setSummaryRows] = useState<FranchiseDocCategorySummary[]>([]);
-    const [summaryLoading, setSummaryLoading] = useState(true);
-    const [exportingCsv, setExportingCsv] = useState(false);
     const [categoryFilter, setCategoryFilter] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<FranchiseResourceDoc | null>(null);
@@ -128,7 +70,6 @@ export default function AdminFranchiseDocumentsPage() {
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [syncingPc, setSyncingPc] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -148,89 +89,9 @@ export default function AdminFranchiseDocumentsPage() {
         }
     }, [authFetch, categoryFilter, showToast]);
 
-    const loadSummary = useCallback(async () => {
-        setSummaryLoading(true);
-        try {
-            const data = await authFetch<FranchiseDocCategorySummary[]>(
-                `/documents/admin/franchise-documents/summary/`,
-            );
-            const list = Array.isArray(data) ? data : [];
-            setSummaryRows(orderSummaryRows(list));
-        } catch (e) {
-            console.error(e);
-            showToast("Could not load database summary by category.", "error");
-            setSummaryRows([]);
-        } finally {
-            setSummaryLoading(false);
-        }
-    }, [authFetch, showToast]);
-
-    const exportFullTableCsv = useCallback(async () => {
-        setExportingCsv(true);
-        try {
-            const data = await authFetch<FranchiseResourceDoc[] | { results: FranchiseResourceDoc[] }>(
-                `/documents/admin/franchise-documents/`,
-            );
-            const raw = Array.isArray(data) ? data : data?.results ?? [];
-            const list = sortDocsByCategoryOrder(raw);
-            const header = [
-                "id",
-                "category",
-                "category_display",
-                "title",
-                "description",
-                "file",
-                "franchise_id",
-                "franchise_name",
-                "academic_year",
-                "is_active",
-                "order",
-                "created_at",
-                "updated_at",
-            ];
-            const lines = [header.join(",")];
-            for (const row of list) {
-                lines.push(
-                    [
-                        row.id,
-                        csvEscape(row.category),
-                        csvEscape(row.category_display ?? ""),
-                        csvEscape(row.title),
-                        csvEscape(row.description ?? ""),
-                        csvEscape(row.file ?? ""),
-                        row.franchise ?? "",
-                        csvEscape(row.franchise_name ?? ""),
-                        csvEscape(row.academic_year ?? ""),
-                        row.is_active ? "true" : "false",
-                        row.order ?? 0,
-                        csvEscape(row.created_at ?? ""),
-                        csvEscape(row.updated_at ?? ""),
-                    ].join(","),
-                );
-            }
-            const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `franchise-resource-documents-${new Date().toISOString().slice(0, 10)}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast(`Exported ${list.length} row(s) from the database.`, "success");
-        } catch (e) {
-            console.error(e);
-            showToast("CSV export failed.", "error");
-        } finally {
-            setExportingCsv(false);
-        }
-    }, [authFetch, showToast]);
-
     useEffect(() => {
         void load();
     }, [load]);
-
-    useEffect(() => {
-        void loadSummary();
-    }, [loadSummary]);
 
     const openCreate = () => {
         setEditing(null);
@@ -354,34 +215,11 @@ export default function AdminFranchiseDocumentsPage() {
             }
             closeModal();
             void load();
-            void loadSummary();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Save failed.";
             showToast(msg, "error");
         } finally {
             setSubmitting(false);
-        }
-    };
-
-    const syncFromPcFolder = async () => {
-        setSyncingPc(true);
-        try {
-            const res = await authFetch<{ detail: string; total_documents?: number }>(
-                "/documents/admin/franchise-documents/sync-pc/",
-                { method: "POST" },
-            );
-            const extra =
-                typeof res.total_documents === "number"
-                    ? ` (${res.total_documents} documents in database.)`
-                    : "";
-            showToast((res.detail || "Synced from pc folder.") + extra, "success");
-            void load();
-            void loadSummary();
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Sync failed.";
-            showToast(msg, "error");
-        } finally {
-            setSyncingPc(false);
         }
     };
 
@@ -392,7 +230,6 @@ export default function AdminFranchiseDocumentsPage() {
             showToast("Deleted.", "success");
             setDeleteId(null);
             void load();
-            void loadSummary();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Delete failed.";
             showToast(msg, "error");
@@ -413,20 +250,6 @@ export default function AdminFranchiseDocumentsPage() {
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2 shrink-0">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => void syncFromPcFolder()}
-                        disabled={syncingPc}
-                    >
-                        <RefreshCw className={`w-4 h-4 mr-1 inline ${syncingPc ? "animate-spin" : ""}`} />
-                        {syncingPc ? "Syncing…" : "Sync all to database"}
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={exportFullTableCsv} disabled={exportingCsv}>
-                        <Download className="w-4 h-4 mr-1 inline" />
-                        {exportingCsv ? "Exporting…" : "Export CSV (full table)"}
-                    </Button>
                     <Button type="button" size="sm" onClick={openCreate}>
                         <Plus className="w-4 h-4 mr-1 inline" />
                         Add document
@@ -434,121 +257,29 @@ export default function AdminFranchiseDocumentsPage() {
                 </div>
             </div>
 
+            <FranchiseCentreBulkUpload adminHub compact onComplete={() => void load()} />
+
             <div className="rounded-xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-slate-800">
                 <div className="flex gap-2">
                     <Info className="w-5 h-5 shrink-0 text-blue-700 mt-0.5" aria-hidden />
                     <div className="space-y-2 min-w-0">
-                        <p className="font-semibold text-blue-900">How uploads connect to the Centre Page</p>
+                        <p className="font-semibold text-blue-900">How to upload</p>
                         <ul className="list-disc pl-5 space-y-1 text-slate-700">
                             <li>
-                                <strong>Add document</strong> — upload a <strong>file</strong> or paste an{" "}
-                                <strong>embed / video link</strong> (YouTube, MediaDelivery). Set <strong>Title</strong>{" "}
-                                to match the Centre Page link label.
+                                <strong>Upload from PC</strong> — choose files or a whole folder above, pick a category,
+                                then upload (global for all centres).
                             </li>
                             <li>
-                                <strong>Edit</strong> — change title, category, replace file, or turn off{" "}
-                                <strong>Active</strong> to hide from franchises.
+                                <strong>Add document</strong> — one file or embed link with title, category, and sort
+                                order.
                             </li>
                             <li>
-                                <strong>Delete</strong> — removes the file from the hub.
-                            </li>
-                            <li>
-                                <strong>Sync all to database</strong> — imports <code className="text-xs bg-white/80 px-1 rounded">pc/</code> PDFs{" "}
-                                and <code className="text-xs bg-white/80 px-1 rounded">public/franchise-*</code> images into PostgreSQL.
-                            </li>
-                            <li>
-                                <strong>Artworks</strong> — use category <strong>Artworks &amp; Marketing</strong> for
-                                promotion images, or keep PNGs in{" "}
-                                <code className="text-xs bg-white/80 px-1 rounded">public/franchise-artworks/</code>.
+                                <strong>Edit / Delete</strong> — use the table below. Turn off <strong>Active</strong> to
+                                hide from franchises.
                             </li>
                         </ul>
                     </div>
                 </div>
-            </div>
-
-            <div className="max-w-4xl space-y-2">
-                <p className="text-xs text-orange-900/85">
-                    Same <strong>Center Page</strong> structure as the franchise dashboard. Expand each yellow bar, then
-                    each sub-heading; use <strong>Filter →</strong> to set the category filter below for matching uploads.
-                </p>
-                <FranchiseCenterPageAccordion
-                    mode="admin"
-                    sections={[FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B]}
-                    onAdminPickCategory={(cat) => setCategoryFilter(cat)}
-                />
-            </div>
-
-            <div className="bg-white border border-orange-100 rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-orange-100 bg-orange-50/70">
-                    <h2 className="text-sm font-semibold text-orange-900">Database coverage by category</h2>
-                    <p className="text-xs text-orange-800/85 mt-0.5 max-w-3xl">
-                        Aggregated from the <code className="text-[11px] bg-white/80 px-1 rounded">FranchiseDocument</code>{" "}
-                        table (same source as the list below). Click a row to filter the detail table to that category;
-                        click the same row again to clear the filter.
-                    </p>
-                </div>
-                {summaryLoading ? (
-                    <p className="p-6 text-sm text-slate-600">Loading summary…</p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm">
-                            <thead className="bg-orange-50/50 text-left text-orange-900">
-                                <tr>
-                                    <th className="px-4 py-2 font-semibold">Category</th>
-                                    <th className="px-4 py-2 font-semibold text-right">Total</th>
-                                    <th className="px-4 py-2 font-semibold text-right">Active</th>
-                                    <th className="px-4 py-2 font-semibold text-right">Inactive</th>
-                                    <th className="px-4 py-2 font-semibold text-right">With file</th>
-                                    <th className="px-4 py-2 font-semibold text-right">Missing file</th>
-                                    <th className="px-4 py-2 font-semibold text-right">Global</th>
-                                    <th className="px-4 py-2 font-semibold text-right">Centre-only</th>
-                                    <th className="px-4 py-2 font-semibold">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-orange-100">
-                                {summaryRows.map((r) => {
-                                    const empty = r.total === 0;
-                                    const warnMissing = r.missing_file > 0;
-                                    return (
-                                        <tr
-                                            key={r.category}
-                                            className={`cursor-pointer hover:bg-orange-50/50 ${
-                                                categoryFilter === r.category ? "bg-orange-100/40" : ""
-                                            } ${empty ? "text-slate-500" : ""}`}
-                                            onClick={() =>
-                                                setCategoryFilter((prev) => (prev === r.category ? "" : r.category))
-                                            }
-                                        >
-                                            <td className="px-4 py-2 font-medium text-slate-900">{r.category_display}</td>
-                                            <td className="px-4 py-2 text-right tabular-nums">{r.total}</td>
-                                            <td className="px-4 py-2 text-right tabular-nums text-emerald-800">{r.active}</td>
-                                            <td className="px-4 py-2 text-right tabular-nums text-slate-600">{r.inactive}</td>
-                                            <td className="px-4 py-2 text-right tabular-nums">{r.with_file}</td>
-                                            <td className="px-4 py-2 text-right tabular-nums text-amber-800">{r.missing_file}</td>
-                                            <td className="px-4 py-2 text-right tabular-nums">{r.global_count}</td>
-                                            <td className="px-4 py-2 text-right tabular-nums">{r.centre_specific_count}</td>
-                                            <td className="px-4 py-2">
-                                                {empty ? (
-                                                    <span className="inline-flex rounded-full bg-amber-100 text-amber-900 px-2 py-0.5 text-[11px] font-semibold">
-                                                        No rows yet
-                                                    </span>
-                                                ) : warnMissing ? (
-                                                    <span className="inline-flex rounded-full bg-rose-100 text-rose-900 px-2 py-0.5 text-[11px] font-semibold">
-                                                        Missing file on some
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex rounded-full bg-emerald-100 text-emerald-900 px-2 py-0.5 text-[11px] font-semibold">
-                                                        OK
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -584,8 +315,8 @@ export default function AdminFranchiseDocumentsPage() {
                 ) : items.length === 0 ? (
                     <p className="p-8 text-sm text-slate-600">
                         {categoryFilter
-                            ? "No documents in this category for the current filter. Try clearing the filter or pick another row in the coverage table."
-                            : "No documents yet. Add one with the button above."}
+                            ? "No documents in this category. Clear the filter or upload files above."
+                            : "No documents yet. Upload from your PC above or use Add document."}
                     </p>
                 ) : (
                     <div className="overflow-x-auto">

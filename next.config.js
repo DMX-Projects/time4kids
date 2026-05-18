@@ -1,7 +1,13 @@
 /** @type {import('next').NextConfig} */
 /** Django server URL — Next proxies `/api` and `/media` here in dev (and when env is set for local prod runs). */
-const djangoFromEnv = (process.env.DJANGO_DEV_BACKEND_URL || '').replace(/\/$/, '');
+const djangoFromEnv = (
+    process.env.DJANGO_DEV_BACKEND_URL ||
+    process.env.INTERNAL_API_URL ||
+    ''
+).replace(/\/$/, '');
 const djangoDevFallback = 'http://127.0.0.1:8000';
+/** Same-server production: gunicorn on localhost when INTERNAL_API_URL is unset. */
+const djangoProdFallback = 'http://127.0.0.1:8000';
 
 const nextConfig = {
     trailingSlash: true,
@@ -61,7 +67,9 @@ const nextConfig = {
      */
     async rewrites() {
         const isDev = process.env.NODE_ENV === 'development';
-        const djangoBase = isDev ? djangoFromEnv || djangoDevFallback : djangoFromEnv;
+        const djangoBase = isDev
+            ? djangoFromEnv || djangoDevFallback
+            : djangoFromEnv || djangoProdFallback;
         if (!djangoBase) return [];
         return [
             { source: '/admin/:path*/', destination: `${djangoBase}/admin/:path*/` },

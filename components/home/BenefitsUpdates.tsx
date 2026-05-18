@@ -7,19 +7,15 @@ import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
-import { mediaUrl, resolveHomeMediaAssetUrl } from '@/lib/api-client';
+import { mediaUrl, resolveCmsMediaUrl, resolveHomeMediaAssetUrl } from '@/lib/api-client';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
-import FranchiseVideoBlob, {
-    FranchiseBlobThumbnail,
-    getFranchiseVideoEmbedSrc,
-} from '@/components/home/FranchiseVideoBlob';
-import {
-    FranchiseVideoPlaybackProvider,
-    useFranchiseVideoPlayback,
-} from '@/components/home/FranchiseVideoPlaybackContext';
+import { FranchiseBlobThumbnail, FranchiseVideoBlob, getFranchiseVideoEmbedSrc } from '@/components/home/FranchiseVideoBlob';
+import { FranchiseVideoOpenContext } from '@/components/home/franchise-video-open-context';
 import { FranchiseBlobShell } from '@/components/home/franchise-blob';
 import FranchisePhotoGalleryModal from '@/components/home/FranchisePhotoGalleryModal';
+import FranchiseVideoGalleryModal from '@/components/home/FranchiseVideoGalleryModal';
 import NewsTickerMarquee from '@/components/home/NewsTickerMarquee';
+import NewsUpdatesModal from '@/components/home/NewsUpdatesModal';
 import {
     DEFAULT_FRANCHISE_VIDEO_POSTER,
     DEFAULT_HOME_PAGE_DATA,
@@ -183,62 +179,60 @@ function FranchiseAdvantageCarousel({
 
 type FranchiseAdvantageVideo = { poster?: string; src: string; alt?: string };
 
+function franchiseVideoBlobProps(item: FranchiseAdvantageVideo, index: number) {
+    const posterRaw = (item.poster || '').trim();
+    const posterSrc =
+        resolveCmsMediaUrl(posterRaw) ||
+        resolveCmsMediaUrl(DEFAULT_FRANCHISE_VIDEO_POSTER) ||
+        resolveHomeMediaAssetUrl(posterRaw) ||
+        resolveHomeMediaAssetUrl(DEFAULT_FRANCHISE_VIDEO_POSTER) ||
+        DEFAULT_FRANCHISE_VIDEO_POSTER;
+    const srcRaw = item.src.trim();
+    const embedSrc = getFranchiseVideoEmbedSrc(srcRaw);
+    const fileSrc = embedSrc ? null : (srcRaw ? mediaUrl(srcRaw) || srcRaw : null);
+    const openable = Boolean(embedSrc || fileSrc);
+
+    return {
+        variant: index,
+        surfaceSrc: posterSrc,
+        surfaceAlt: item.alt || (index === 0 ? 'T.I.M.E. Kids franchise advantage' : `Franchise video ${index + 1}`),
+        videoReady: openable,
+        videoIndex: index,
+    } as const;
+}
+
 function FranchiseAdvantageVideosPanel({
     videos,
     carouselIndex,
     onCarouselIndexChange,
+    onOpenVideo,
 }: {
     videos: FranchiseAdvantageVideo[];
     carouselIndex: number;
     onCarouselIndexChange: React.Dispatch<React.SetStateAction<number>>;
+    onOpenVideo: (index: number) => void;
 }) {
-    const { stop } = useFranchiseVideoPlayback();
-
-    if (videos.length === 1) {
-        const item = videos[0];
-        const posterRaw = (item.poster || '').trim();
-        const posterSrc =
-            resolveHomeMediaAssetUrl(posterRaw) ||
-            resolveHomeMediaAssetUrl(DEFAULT_FRANCHISE_VIDEO_POSTER) ||
-            DEFAULT_FRANCHISE_VIDEO_POSTER;
-        const srcRaw = item.src.trim();
-        const embedSrc = getFranchiseVideoEmbedSrc(srcRaw);
-        const fileSrc = embedSrc ? null : (srcRaw ? mediaUrl(srcRaw) || srcRaw : null);
-        const openable = Boolean(embedSrc || fileSrc);
-
-        return (
-            <FranchiseVideoBlob
-                variant={0}
-                videoIndex={0}
-                surfaceSrc={posterSrc}
-                surfaceAlt={item.alt || 'T.I.M.E. Kids franchise advantage'}
-                embedSrc={embedSrc}
-                fileSrc={fileSrc}
-                videoReady={openable}
-            />
-        );
-    }
-
     return (
+        <FranchiseVideoOpenContext.Provider value={{ openVideo: onOpenVideo }}>
+            {videos.length === 1 ? (
+                <FranchiseVideoBlob {...franchiseVideoBlobProps(videos[0], 0)} />
+            ) : (
         <FranchiseAdvantageCarousel
             slideCount={videos.length}
             activeIndex={carouselIndex}
             onPrev={() => {
-                stop();
                 onCarouselIndexChange((idx) => {
                     const n = videos.length;
                     return (idx - 1 + n) % n;
                 });
             }}
             onNext={() => {
-                stop();
                 onCarouselIndexChange((idx) => {
                     const n = videos.length;
                     return (idx + 1) % n;
                 });
             }}
             onSelect={(next) => {
-                stop();
                 onCarouselIndexChange(next);
             }}
             prevLabel="Previous video"
@@ -246,33 +240,14 @@ function FranchiseAdvantageVideosPanel({
             dotsLabel="Video slides"
             controlsOutside
         >
-            {videos.map((v, vi) => {
-                const pr = (v.poster || '').trim();
-                const ps =
-                    resolveHomeMediaAssetUrl(pr) ||
-                    resolveHomeMediaAssetUrl(DEFAULT_FRANCHISE_VIDEO_POSTER) ||
-                    DEFAULT_FRANCHISE_VIDEO_POSTER;
-                const sr = v.src.trim();
-                const es = getFranchiseVideoEmbedSrc(sr);
-                const fs2 = es ? null : (sr ? mediaUrl(sr) || sr : null);
-                const canOpen = Boolean(es || fs2);
-                const active = vi === carouselIndex;
-                return (
+            {videos.map((v, vi) => (
                     <motion.div key={`${v.poster}-${v.src}-${vi}`} className="w-full shrink-0 basis-full">
-                        <FranchiseVideoBlob
-                            variant={vi}
-                            videoIndex={vi}
-                            surfaceSrc={ps}
-                            surfaceAlt={v.alt || `Franchise video ${vi + 1}`}
-                            embedSrc={es}
-                            fileSrc={fs2}
-                            videoReady={canOpen}
-                            active={active}
-                        />
+                        <FranchiseVideoBlob {...franchiseVideoBlobProps(v, vi)} />
                     </motion.div>
-                );
-            })}
+                ))}
         </FranchiseAdvantageCarousel>
+            )}
+        </FranchiseVideoOpenContext.Provider>
     );
 }
 
@@ -296,6 +271,8 @@ export default function BenefitsUpdates() {
     const home = useHomePageContent();
     const sectionRef = useRef<HTMLDivElement>(null);
     const [modalPhotoIndex, setModalPhotoIndex] = useState<number | null>(null);
+    const [modalVideoIndex, setModalVideoIndex] = useState<number | null>(null);
+    const [newsModalOpen, setNewsModalOpen] = useState(false);
     const [videoCarouselIndex, setVideoCarouselIndex] = useState(0);
     const [photoCarouselIndex, setPhotoCarouselIndex] = useState(0);
 
@@ -329,10 +306,15 @@ export default function BenefitsUpdates() {
         setPhotoCarouselIndex((i) => Math.min(Math.max(0, i), Math.max(0, franchisePhotos.length - 1)));
     }, [franchisePhotos.length]);
 
-    const newsTickerLines = useMemo(
-        () => (home.news_ticker_items ?? []).map((item) => item.text).filter((t) => t.trim()),
-        [home.news_ticker_items],
-    );
+    const newsTickerItems = useMemo(() => {
+        const raw =
+            home.news_ticker_items?.length > 0
+                ? home.news_ticker_items
+                : DEFAULT_HOME_PAGE_DATA.news_ticker_items;
+        return raw.map((item) => ({ text: (item.text || '').trim() })).filter((item) => item.text);
+    }, [home.news_ticker_items]);
+
+    const newsTickerLines = useMemo(() => newsTickerItems.map((item) => item.text), [newsTickerItems]);
 
     const newsEmptyMessage =
         (home.updates_empty_message || '').trim() || 'News updates and announcements will appear here.';
@@ -403,9 +385,21 @@ export default function BenefitsUpdates() {
                             <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
                                 Join India&apos;s Most Trusted Preschool Franchise Network — build a meaningful business backed by the educational legacy of T.I.M.E.
                             </p>
+                            <Link
+                                href="/franchise/"
+                                className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-orange-600 underline decoration-orange-300 underline-offset-4 transition hover:text-orange-700 hover:decoration-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+                            >
+                                More details
+                                <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                            </Link>
                         </div>
 
-                        <div className="w-full space-y-4 border-t border-white/40 pt-10">
+                        <button
+                            type="button"
+                            onClick={() => setNewsModalOpen(true)}
+                            className="group w-full space-y-4 border-t border-white/40 pt-10 text-left transition hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8ec] rounded-xl"
+                            aria-label="Latest news and updates. Click to view all."
+                        >
                             <div>
                                 <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-4 py-2 shadow-lg shadow-sky-200/20 backdrop-blur-xl">
                                     <span className="relative flex h-2.5 w-2.5">
@@ -422,10 +416,10 @@ export default function BenefitsUpdates() {
                                 </h3>
                             </div>
 
-                            <motion.div className="w-full rounded-2xl border border-white/70 bg-white/60 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+                            <div className="w-full rounded-2xl border border-white/70 bg-white/60 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl">
                                 <NewsTickerMarquee lines={newsTickerLines} emptyMessage={newsEmptyMessage} />
-                            </motion.div>
-                        </div>
+                            </div>
+                        </button>
                     </motion.div>
 
                     {/* Top-right: enquiry + franchise video carousel (CMS) */}
@@ -449,13 +443,15 @@ export default function BenefitsUpdates() {
                         </div>
                         <div className="relative w-full max-w-[min(100%,24rem)] sm:mx-auto lg:mx-0 lg:max-w-[26rem]">
                             {franchiseVideos.length > 0 ? (
-                                <FranchiseVideoPlaybackProvider resetKey={videoCarouselIndex}>
-                                    <FranchiseAdvantageVideosPanel
-                                        videos={franchiseVideos}
-                                        carouselIndex={videoCarouselIndex}
-                                        onCarouselIndexChange={setVideoCarouselIndex}
-                                    />
-                                </FranchiseVideoPlaybackProvider>
+                                <FranchiseAdvantageVideosPanel
+                                    videos={franchiseVideos}
+                                    carouselIndex={videoCarouselIndex}
+                                    onCarouselIndexChange={setVideoCarouselIndex}
+                                    onOpenVideo={(i) => {
+                                        setVideoCarouselIndex(i);
+                                        setModalVideoIndex(i);
+                                    }}
+                                />
                             ) : null}
                         </div>
                         {franchisePhotos.length > 0 ? (
@@ -485,7 +481,8 @@ export default function BenefitsUpdates() {
                                 >
                                     {franchisePhotos.map((item, i) => {
                                         const srcRaw = (item.src || '').trim();
-                                        const imageSrc = resolveHomeMediaAssetUrl(srcRaw) || srcRaw;
+                                        const imageSrc =
+                                            resolveCmsMediaUrl(srcRaw) || resolveHomeMediaAssetUrl(srcRaw) || srcRaw;
                                         return (
                                             <div key={`${srcRaw}-${i}`} className="min-w-full shrink-0 px-1 sm:px-2">
                                                 <FranchisePhotoBlob
@@ -515,6 +512,23 @@ export default function BenefitsUpdates() {
                     setModalPhotoIndex(i);
                     setPhotoCarouselIndex(i);
                 }}
+            />
+
+            <FranchiseVideoGalleryModal
+                videos={franchiseVideos}
+                activeIndex={modalVideoIndex}
+                onClose={() => setModalVideoIndex(null)}
+                onIndexChange={(i) => {
+                    setModalVideoIndex(i);
+                    setVideoCarouselIndex(i);
+                }}
+            />
+
+            <NewsUpdatesModal
+                items={newsTickerItems}
+                emptyMessage={newsEmptyMessage}
+                isOpen={newsModalOpen}
+                onClose={() => setNewsModalOpen(false)}
             />
 
         </section>
