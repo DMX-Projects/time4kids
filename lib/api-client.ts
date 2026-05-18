@@ -134,9 +134,9 @@ function mediaBaseFromResolvedApi(): string {
     return "";
 }
 
-/** When true, keep `NEXT_PUBLIC_MEDIA_BASE_URL=…/media` (nginx serves `/media/` directly). */
-function useDirectMediaUrls(): boolean {
-    return process.env.NEXT_PUBLIC_MEDIA_SERVE_DIRECT === "true";
+/** Only rewrite env `…/media` → `…/cms-media` when explicitly enabled. */
+function useCmsMediaProxy(): boolean {
+    return process.env.NEXT_PUBLIC_USE_CMS_MEDIA_PROXY === "true";
 }
 
 /** `/media/gallery/x.jpg` → `/gallery/x.jpg` for joining with media base. */
@@ -152,7 +152,7 @@ function cmsStorageSuffix(pathname: string): string {
 function normalizePublicMediaBaseUrl(base: string): string {
     const trimmed = base.replace(/\/$/, "");
     if (!trimmed) return trimmed;
-    if (useDirectMediaUrls()) return trimmed;
+    if (!useCmsMediaProxy()) return trimmed;
     if (trimmed.endsWith(PUBLIC_CMS_MEDIA_PREFIX)) return trimmed;
     if (/\/media$/i.test(trimmed)) return trimmed.replace(/\/media$/i, PUBLIC_CMS_MEDIA_PREFIX);
     return trimmed;
@@ -161,7 +161,7 @@ function normalizePublicMediaBaseUrl(base: string): string {
 function resolvedMediaBase(): string {
     const pageOrigin =
         typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : getServerUrl();
-    const pageOriginMedia = `${pageOrigin}${PUBLIC_CMS_MEDIA_PREFIX}`;
+    const pageOriginMedia = `${pageOrigin}/media`;
     const envMedia = normalizePublicMediaBaseUrl((process.env.NEXT_PUBLIC_MEDIA_BASE_URL || "").trim());
     const derived = normalizePublicMediaBaseUrl(mediaBaseFromResolvedApi());
 
@@ -228,27 +228,37 @@ export const apiUrl = (path: string) => `${resolvedApiBase()}${normalizeApiPath(
 export const mediaUrl = (path?: string | null) => {
     if (!path) return "";
     const raw = path.trim();
-    const base = resolvedMediaBase().replace(/\/$/, "");
 
+    let pathname = raw;
     if (/^https?:\/\//i.test(raw)) {
         try {
-            const u = new URL(toCanonicalPublicHref(raw));
-            if (u.pathname.startsWith("/media/") || u.pathname.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`)) {
-                return `${base}${cmsStorageSuffix(u.pathname)}`;
-            }
+            pathname = new URL(toCanonicalPublicHref(raw)).pathname;
         } catch {
-            /* ignore */
+            return toCanonicalPublicHref(raw);
         }
-        return toCanonicalPublicHref(raw);
+    } else {
+        pathname = normalizeUploadedMediaPath(raw);
     }
 
-    const normalized = normalizeUploadedMediaPath(raw);
-    if (normalized.startsWith("/media/") || normalized.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`)) {
-        return `${base}${cmsStorageSuffix(normalized)}`;
+    if (
+        pathname.startsWith("/media/") ||
+        pathname.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`) ||
+        pathname === "/media" ||
+        pathname === PUBLIC_CMS_MEDIA_PREFIX
+    ) {
+        const suffix = cmsStorageSuffix(pathname);
+        const envBase = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || "").trim();
+        if (envBase) {
+            return `${normalizePublicMediaBaseUrl(envBase.replace(/\/$/, ""))}${suffix}`;
+        }
+        // Same-origin `/media/…` — Next rewrites to Django (default on live).
+        return `/media${suffix}`;
     }
+
+    const base = resolvedMediaBase().replace(/\/$/, "");
     if (raw.startsWith(base)) return raw;
-    if (normalized.startsWith("/")) return `${base}${normalized}`;
-    return `${base}/${normalized.replace(/^\/+/g, "")}`;
+    if (pathname.startsWith("/")) return `${base}${pathname}`;
+    return `${base}/${pathname.replace(/^\/+/g, "")}`;
 };
 
 /** Same as `mediaUrl` for CMS uploads; relative `/cms-media/…` works with `next/image` on live. */
@@ -301,8 +311,8 @@ export function resolveCmsMediaUrl(path?: string | null): string {
         }
     }
 
-    if (pathname.startsWith("/media/")) {
-        return toPublicCmsMediaPath(pathname);
+    if (pathname.startsWith("/media/") || pathname.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`)) {
+        return mediaUrl(pathname);
     }
 
     return resolveHomeMediaAssetUrl(pathname || raw) || pathname;
