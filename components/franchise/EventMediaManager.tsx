@@ -4,6 +4,7 @@ import React, { useCallback, useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
+import { buildEventMediaFileViewUrl } from '@/lib/event-media-url';
 import { ArrowLeft, Upload, Trash2, Image as ImageIcon, Play, Loader } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Image from 'next/image';
@@ -227,14 +228,22 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {mediaItems.map((item) => (
+                    {mediaItems.map((item) => {
+                        const signed =
+                            token &&
+                            buildEventMediaFileViewUrl(token, item.id, {
+                                caption: item.caption,
+                                filePath: item.file,
+                            });
+                        const displaySrc = signed || mediaUrl(item.file);
+                        return (
                         <div
                             key={item.id}
                             className="group relative aspect-square rounded-lg overflow-hidden bg-gray-100 shadow-sm hover:shadow-md transition-all"
                         >
                             {item.media_type === "VIDEO" ? (
                                 <video
-                                    src={mediaUrl(item.file)}
+                                    src={displaySrc}
                                     className="w-full h-full object-cover"
                                     preload="metadata"
                                     muted
@@ -242,10 +251,11 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
                                 />
                             ) : (
                                 <Image
-                                    src={mediaUrl(item.file)}
+                                    src={displaySrc}
                                     alt={item.caption || 'Event media'}
                                     fill
                                     className="object-cover"
+                                    unoptimized
                                 />
                             )}
                             {item.media_type === 'VIDEO' && (
@@ -273,7 +283,8 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
                                 </div>
                             )}
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

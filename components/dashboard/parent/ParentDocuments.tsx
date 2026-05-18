@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Download, Eye, FileText, Music, Play, Sparkles } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { mediaUrl } from "@/lib/api-client";
+import { openParentDocumentFile } from "@/lib/parent-document-file-open";
 
 type ParentDoc = {
     id: number;
@@ -39,7 +39,7 @@ export function ParentDocuments() {
     const [openId, setOpenId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [docs, setDocs] = useState<ParentDoc[]>([]);
-    const { authFetch } = useAuth();
+    const { authFetch, tokens, authFetchBlobResponse } = useAuth();
 
     const load = useCallback(async () => {
         try {
@@ -128,35 +128,36 @@ export function ParentDocuments() {
                                                 No files uploaded yet for this section.
                                             </li>
                                         )}
-                                        {cat.items.map((item) => {
-                                            const fileUrl = mediaUrl(item.file);
-                                            return (
+                                        {cat.items.map((item) => (
                                             <li key={item.id} className="flex flex-col gap-2 py-3 text-sm">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-lg" aria-hidden>🧸</span>
                                                     <span className="font-semibold text-[#1F2937]">{item.display_title || item.title}</span>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 pl-7">
-                                                    <a
+                                                    <button
+                                                        type="button"
                                                         className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
-                                                        href={fileUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
+                                                        onClick={() =>
+                                                            openParentDocumentFile(tokens?.access, authFetchBlobResponse, item)
+                                                        }
                                                     >
                                                         <Eye className="w-3.5 h-3.5" />
                                                         View
-                                                    </a>
-                                                    <a
+                                                    </button>
+                                                    <button
+                                                        type="button"
                                                         className="inline-flex items-center gap-2 rounded-full bg-[#FF922B] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
-                                                        href={fileUrl}
-                                                        download
+                                                        onClick={() =>
+                                                            openParentDocumentFile(tokens?.access, authFetchBlobResponse, item)
+                                                        }
                                                     >
                                                         <Download className="w-3.5 h-3.5" />
                                                         Download
-                                                    </a>
+                                                    </button>
                                                 </div>
                                             </li>
-                                        )})}
+                                        ))}
                                     </ul>
                                 </div>
                             </article>

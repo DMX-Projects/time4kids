@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { apiUrl, jsonHeaders, mediaUrl, toApiError } from "@/lib/api-client";
+import { buildEventMediaFileViewUrl } from "@/lib/event-media-url";
 import {
     mapApiGrade,
     mapApiStudent,
@@ -231,13 +232,22 @@ const mapEvent = (ev: ApiEvent): EventRecord => ({
     notes: ev.description || "",
 });
 
-const mapMedia = (media: ApiEventMedia, eventId?: string): EventMedia => ({
-    id: String(media.id),
-    type: (media.media_type || "image").toLowerCase() === "video" ? "video" : "image",
-    title: media.caption || "",
-    url: mediaUrl(media.file),
-    eventId,
-});
+const mapMedia = (media: ApiEventMedia, eventId?: string, accessToken?: string): EventMedia => {
+    const token = accessToken?.trim();
+    const signed =
+        token &&
+        buildEventMediaFileViewUrl(token, media.id, {
+            caption: media.caption,
+            filePath: media.file,
+        });
+    return {
+        id: String(media.id),
+        type: (media.media_type || "image").toLowerCase() === "video" ? "video" : "image",
+        title: media.caption || "",
+        url: signed || mediaUrl(media.file),
+        eventId,
+    };
+};
 
 const mapEnquiry = (enq: ApiEnquiry): Enquiry => {
     const source =
@@ -270,7 +280,7 @@ const mapAttendance = (raw: any): AttendanceRecord => ({
 });
 
 export function SchoolDataProvider({ children }: { children: React.ReactNode }) {
-    const { user, authFetch } = useAuth();
+    const { user, authFetch, tokens } = useAuth();
 
     const [parents, setParents] = useState<SchoolParent[]>([]);
     const [students, setStudents] = useState<SchoolStudent[]>([]);
@@ -401,7 +411,10 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
 
     const ingestEvents = (items: ApiEvent[]) => {
         const mappedEvents = items.map(mapEvent);
-        const flattenedMedia = items.flatMap((ev) => (ev.media || []).map((m) => mapMedia(m, String(ev.id))));
+        const access = tokens?.access;
+        const flattenedMedia = items.flatMap((ev) =>
+            (ev.media || []).map((m) => mapMedia(m, String(ev.id), access)),
+        );
         setEvents(mappedEvents);
         setEventMedia(flattenedMedia);
     };
@@ -518,7 +531,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             method: "POST",
             body: formData,
         });
-        setEventMedia((prev) => [mapMedia(saved, payload.eventId), ...prev]);
+        setEventMedia((prev) => [mapMedia(saved, payload.eventId, tokens?.access), ...prev]);
     };
 
     const addEventMedia = async (payload: AddEventMediaInput) => {

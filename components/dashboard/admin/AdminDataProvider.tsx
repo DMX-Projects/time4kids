@@ -292,10 +292,14 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
     const loadSavedLocations = useCallback(async () => {
         try {
-            const data = await authFetch<any>('/franchises/admin/franchise-locations/');
-            // Handle both paginated and list responses
+            const data = await authFetch<any>('/franchises/public/locations/');
             const items = Array.isArray(data) ? data : (data.results || []);
-            setSavedLocations(items);
+            setSavedLocations(
+                items.map((loc: { city_name?: string; city?: string; state?: string }) => ({
+                    city_name: loc.city_name || loc.city || '',
+                    state: loc.state || '',
+                })),
+            );
         } catch (err) {
             console.error("Failed to load saved locations", err);
         }
