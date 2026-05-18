@@ -5,9 +5,10 @@ const djangoFromEnv = (
     process.env.INTERNAL_API_URL ||
     ''
 ).replace(/\/$/, '');
-const djangoDevFallback = 'http://127.0.0.1:8000';
+const djangoPort = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
+const djangoDevFallback = `http://127.0.0.1:${djangoPort}`;
 /** Same-server production: gunicorn on localhost when INTERNAL_API_URL is unset. */
-const djangoProdFallback = 'http://127.0.0.1:8000';
+const djangoProdFallback = `http://127.0.0.1:${djangoPort}`;
 
 const nextConfig = {
     trailingSlash: true,
