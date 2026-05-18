@@ -379,10 +379,21 @@ export function GalleryMediaManager() {
 
                                     <FranchiseLocalFolderPicker
                                         files={files}
-                                        onFilesChange={setFiles}
+                                        onFilesChange={(next) => {
+                                            setFiles(next);
+                                            if (next.length > 0) {
+                                                showToast(`${next.length} file(s) ready — click “Upload file(s)” below`, "success");
+                                            }
+                                        }}
                                         disabled={uploading}
-                                        hint="Choose multiple files or a whole folder from your PC."
+                                        hint="1) Choose files or folder  2) Check the list  3) Click orange Upload button (folder does not upload by itself)."
                                     />
+
+                                    {files.length > 0 && !uploading && (
+                                        <p className="text-sm font-semibold text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                                            {files.length} file(s) selected — click <strong>Upload file(s)</strong> to send to the server.
+                                        </p>
+                                    )}
 
                                     {progress && <p className="text-xs text-gray-500">Uploading {progress}…</p>}
 

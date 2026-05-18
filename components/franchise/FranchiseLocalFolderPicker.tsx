@@ -75,7 +75,6 @@ export function FranchiseLocalFolderPicker({ files, onFilesChange, accept, disab
                 id={folderInputId}
                 type="file"
                 multiple
-                accept={accept}
                 className="sr-only"
                 disabled={disabled}
                 {...({ webkitdirectory: "", directory: "" } as React.InputHTMLAttributes<HTMLInputElement>)}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CmsImage from '@/components/ui/CmsImage';
-import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { buildFallbackGalleryFromMock } from '@/lib/mock-media-data';
 import { resolveFranchiseEmbedSrc } from '@/lib/franchise-embed-url';
@@ -392,14 +392,6 @@ export default function GalleryPage() {
                 >
                     {selectedMedia && (
                         <div className="relative w-full h-full flex flex-col items-center justify-center min-h-[50vh] rounded-xl overflow-hidden group/modal bg-black">
-                            {/* Close Button */}
-                            <button
-                                onClick={closeLightbox}
-                                className="absolute top-4 right-4 z-[60] p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors backdrop-blur-md"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-
                             {/* Navigation Buttons */}
                             {filteredMedia.length > 1 && (
                                 <>

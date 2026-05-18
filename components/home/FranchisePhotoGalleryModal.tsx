@@ -1,9 +1,8 @@
 import { useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { mediaUrl } from '@/lib/api-client';
+import { resolveHomeMediaAssetUrl } from '@/lib/api-client';
 
 export type FranchiseGalleryPhoto = { src: string; alt?: string };
 
@@ -16,7 +15,7 @@ type FranchisePhotoGalleryModalProps = {
 
 function resolvePhotoSrc(raw: string): string {
     const trimmed = raw.trim();
-    return mediaUrl(trimmed) || trimmed;
+    return resolveHomeMediaAssetUrl(trimmed) || trimmed;
 }
 
 export default function FranchisePhotoGalleryModal({
@@ -111,14 +110,12 @@ export default function FranchisePhotoGalleryModal({
                                     transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                                     className="relative h-full w-full min-h-[280px]"
                                 >
-                                    <Image
+                                    {/* Plain img — same as homepage blobs; avoids Next image URL issues on live */}
+                                    <img
                                         src={resolvePhotoSrc(photos[index]?.src ?? '')}
                                         alt={photos[index]?.alt || `Franchise photo ${index + 1}`}
-                                        fill
-                                        className="object-contain object-center"
-                                        sizes="96vw"
-                                        unoptimized
-                                        priority
+                                        className="absolute inset-0 h-full w-full object-contain object-center"
+                                        decoding="async"
                                     />
                                 </motion.div>
                             </AnimatePresence>

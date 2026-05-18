@@ -1,6 +1,6 @@
 'use client';
 
-import Image, { type ImageProps } from 'next/image';
+import Image, { type ImageProps } from 'next/image';import { useEffect, useState } from 'react';
 import { nextImageSrc } from '@/lib/api-client';
 
 type CmsImageProps = Omit<ImageProps, 'src'> & {
@@ -8,12 +8,42 @@ type CmsImageProps = Omit<ImageProps, 'src'> & {
 };
 
 /**
- * CMS / Django uploads (`/media/…` → `/cms-media/…`).
- * Uses `unoptimized` so the browser loads the file directly (no `/_next/image` proxy).
- * Fixes broken photos in incognito and when nginx does not serve `/media/`.
+ * CMS uploads (hero slider, etc.) — served via `/api/cms-files/…` on live.
  */
-export default function CmsImage({ src, alt = '', ...props }: CmsImageProps) {
+export default function CmsImage({ src, alt = '', className, fill, sizes, priority, ...props }: CmsImageProps) {
     const resolved = nextImageSrc(src);
+    const [failed, setFailed] = useState(false);
+
+    useEffect(() => {
+        setFailed(false);
+    }, [resolved]);
+
     if (!resolved) return null;
-    return <Image src={resolved} alt={alt} unoptimized {...props} />;
+
+    if (fill) {
+        return (
+            <img
+                src={resolved}
+                alt={alt}
+                className={typeof className === 'string' ? className : 'absolute inset-0 h-full w-full object-cover'}
+                decoding="async"
+                onError={() => setFailed(true)}
+                style={failed ? { display: 'none' } : undefined}
+                {...(props as React.ImgHTMLAttributes<HTMLImageElement>)}
+            />
+        );
+    }
+
+    return (
+        <Image
+            src={resolved}
+            alt={alt}
+            className={className}
+            sizes={sizes}
+            priority={priority}
+            unoptimized
+            onError={() => setFailed(true)}
+            {...props}
+        />
+    );
 }
