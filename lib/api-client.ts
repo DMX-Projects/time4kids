@@ -96,13 +96,26 @@ function derivedMediaBaseFromApiBase(): string {
     return `${b.replace(/\/$/, "")}/media`;
 }
 
+/** Media files live on the API host (`…/media/`), not always the Next page origin. */
+function mediaBaseFromResolvedApi(): string {
+    const fromEnv = derivedMediaBaseFromApiBase();
+    if (fromEnv) return fromEnv;
+    try {
+        const apiBase = resolvedApiBase().replace(/\/$/, "");
+        if (apiBase) return `${apiBase.replace(/\/api$/i, "")}/media`;
+    } catch {
+        /* ignore */
+    }
+    return "";
+}
+
 function resolvedMediaBase(): string {
     const pageOriginMedia = `${typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : getServerUrl()}/media`;
     const envMedia = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || "").trim();
-    const derived = derivedMediaBaseFromApiBase();
+    const derived = mediaBaseFromResolvedApi();
 
     if (typeof window !== "undefined") {
-        if (envMedia) return alignLoopbackDevOrigin(envMedia, pageOriginMedia);
+        if (envMedia) return alignLoopbackDevOrigin(envMedia, derived || pageOriginMedia);
         if (derived) return alignLoopbackDevOrigin(derived, pageOriginMedia);
         return pageOriginMedia;
     }
@@ -179,16 +192,8 @@ export const mediaUrl = (path?: string | null) => {
     if (path.startsWith(mediaBase)) return path;
     if (path.startsWith("/media")) return `${mediaBase}${path.replace(/^\/media/, "")}`;
     if (path.startsWith("/")) {
-        if (typeof window !== "undefined") {
-            return `${window.location.origin.replace(/\/$/, "")}${path}`;
-        }
-        const site = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || process.env.NEXT_PUBLIC_SERVER_URL || "")
-            .replace(/\/media\/?$/, "")
-            .replace(/\/$/, "");
-        if (site) return `${site}${path}`;
-        const derivedOrigin = derivedMediaBaseFromApiBase().replace(/\/media\/?$/, "");
-        if (derivedOrigin) return `${derivedOrigin.replace(/\/$/, "")}${path}`;
-        return path;
+        const base = mediaBase.replace(/\/$/, "");
+        return `${base}${path}`;
     }
     return `${mediaBase}/${path.replace(/^\/+/g, "")}`;
 };
@@ -205,6 +210,44 @@ export function resolveHomeMediaAssetUrl(path?: string | null): string {
         return publicAssetUrl(t) || mediaUrl(t) || t;
     }
     return mediaUrl(t) || publicAssetUrl(t) || t;
+}
+
+/** Strip host from API responses so we store `/media/...` paths only. */
+export function normalizeUploadedMediaPath(filePath: string): string {
+    const raw = filePath.trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw)) {
+        try {
+            return new URL(raw).pathname || raw;
+        } catch {
+            return raw;
+        }
+    }
+    return raw.startsWith("/") ? raw : `/${raw}`;
+}
+
+/**
+ * Best URL for CMS images in the browser (admin preview + homepage).
+ * Uses same-origin `/media/*` so Next.js can proxy to Django in dev.
+ */
+export function resolveCmsMediaUrl(path?: string | null): string {
+    const raw = (path || "").trim();
+    if (!raw) return "";
+
+    let pathname = normalizeUploadedMediaPath(raw);
+    if (/^https?:\/\//i.test(raw)) {
+        try {
+            pathname = new URL(raw).pathname;
+        } catch {
+            return resolveHomeMediaAssetUrl(raw);
+        }
+    }
+
+    if (typeof window !== "undefined" && pathname.startsWith("/media/")) {
+        return `${window.location.origin.replace(/\/$/, "")}${pathname}`;
+    }
+
+    return resolveHomeMediaAssetUrl(pathname || raw) || pathname;
 }
 
 export type ApiError = Error & { status?: number; details?: unknown };

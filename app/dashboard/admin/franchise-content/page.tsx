@@ -3,10 +3,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { jsonHeaders } from "@/lib/api-client";
+import { jsonHeaders, normalizeUploadedMediaPath, resolveCmsMediaUrl } from "@/lib/api-client";
 import { Building2, Plus, Trash2, Upload } from "lucide-react";
 import {
     DEFAULT_FRANCHISE_PAGE_DATA,
+    FRANCHISE_SUCCESS_STORY_DEFAULT_TITLE,
     mergeFranchisePageData,
     type FranchiseBenefit,
     type FranchisePageData,
@@ -79,7 +80,10 @@ export default function AdminFranchiseContentPage() {
             await authFetch("/common/page-content/franchise-opportunity/", {
                 method: "PUT",
                 headers: jsonHeaders(),
-                body: JSON.stringify(data),
+                body: JSON.stringify({
+                    ...data,
+                    testimonials: (data.testimonials ?? []).slice(0, 1),
+                }),
             });
             setMessage("Saved. Refresh /franchise to see changes.");
         } catch (e: unknown) {
@@ -120,18 +124,16 @@ export default function AdminFranchiseContentPage() {
         setData({ ...data, offerings: base.filter((_, j) => j !== i) });
     };
 
-    const updateTestimonial = (i: number, patch: Partial<FranchiseTestimonial>) => {
-        const next = [...testimonials];
-        next[i] = { ...next[i], ...patch };
-        setData({ ...data, testimonials: next });
+    const successStory: FranchiseTestimonial = testimonials[0] ?? {
+        title: FRANCHISE_SUCCESS_STORY_DEFAULT_TITLE,
+        author: "T.I.M.E. Kids",
+        location: "",
+        video_url: "",
+        thumbnail_url: "",
     };
-    const addTestimonial = () => {
-        setData({
-            ...data,
-            testimonials: [...testimonials, { title: "New story", author: "Franchise Partner", location: "City", video_url: "", thumbnail_url: "" }],
-        });
+    const patchSuccessStory = (patch: Partial<FranchiseTestimonial>) => {
+        setData({ ...data, testimonials: [{ ...successStory, ...patch }] });
     };
-    const removeTestimonial = (i: number) => setData({ ...data, testimonials: testimonials.filter((_, j) => j !== i) });
 
     const uploadMedia = async (key: string, opts: { title: string; media_type: "image" | "video"; file: File }) => {
         setError(null);
@@ -155,7 +157,7 @@ export default function AdminFranchiseContentPage() {
             if (!filePath || typeof filePath !== "string") {
                 throw new Error("Upload succeeded but server did not return a file path.");
             }
-            return filePath as string;
+            return normalizeUploadedMediaPath(filePath);
         } finally {
             setUploadingKey(null);
         }
@@ -656,88 +658,49 @@ export default function AdminFranchiseContentPage() {
                             <Plus className="w-4 h-4" /> Add highlight
                         </Button>
                     </Section>
-
-                    <Section title="7. Success stories (videos)">
-                        {testimonials.map((t, i) => (
-                            <div key={i} className="rounded-xl border border-slate-100 p-3 bg-slate-50/80 space-y-2">
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="text-sm font-semibold text-slate-800 truncate">{t.title?.trim() ? t.title : `Success story ${i + 1}`}</div>
-                                    <button type="button" className="text-red-600 hover:bg-red-50 p-1 rounded" onClick={() => removeTestimonial(i)}>
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div className="grid md:grid-cols-2 gap-3">
-                                    <div className="md:col-span-2">
-                                        <label className={labelClass}>Video URL (mp4 link)</label>
-                                        <div className="flex items-center gap-2">
+                    <Section title="7. Success story (one card on franchise page)">
+                        <p className="text-xs text-slate-600 mb-3 -mt-1">
+                            One video card on <strong>/franchise</strong> (same style as admission Happy Parents cards).
+                            Upload a <strong>thumbnail</strong> to preview, add a video for playback, then <strong>Save</strong>.
+                        </p>
+                        <div className="rounded-xl border border-slate-100 p-4 bg-slate-50/80 space-y-3">
+                            <div className="flex flex-wrap gap-4">
+                                <div className="min-w-0 flex-1 space-y-3">
+                                    <div>
+                                        <label className={labelClass}>Thumbnail image</label>
+                                        <div className="flex flex-wrap items-center gap-2 mt-1">
                                             <input
                                                 className={inputClass}
-                                                value={t.video_url ?? ""}
-                                                onChange={(e) => updateTestimonial(i, { video_url: e.target.value })}
+                                                value={successStory.thumbnail_url ?? ""}
+                                                onChange={(e) => patchSuccessStory({ thumbnail_url: e.target.value })}
+                                                placeholder="/media/… or /feature-annual-day-celebrations.png"
                                             />
                                             <label
                                                 className={`shrink-0 inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold ${
-                                                    uploadingKey === `t${i}-video` ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
+                                                    uploadingKey === "story-thumb"
+                                                        ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
+                                                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
                                                 }`}
-                                                title="Upload video and auto-fill URL"
-                                            >
-                                                <input
-                                                    type="file"
-                                                    accept="video/*"
-                                                    className="hidden"
-                                                    disabled={uploadingKey === `t${i}-video`}
-                                                    onChange={async (e) => {
-                                                        const file = e.target.files?.[0];
-                                                        e.target.value = "";
-                                                        if (!file) return;
-                                                        try {
-                                                            const url = await uploadMedia(`t${i}-video`, { title: `Franchise success story: ${t.title || `Story ${i + 1}`}`, media_type: "video", file });
-                                                            updateTestimonial(i, { video_url: url });
-                                                            setMessage("Video uploaded. Don’t forget to Save changes.");
-                                                        } catch (err: any) {
-                                                            setError(err?.message || "Video upload failed");
-                                                        }
-                                                    }}
-                                                />
-                                                <Upload className="w-4 h-4 mr-2" />
-                                                Upload
-                                            </label>
-                                        </div>
-                                        <div className="mt-1 text-[11px] text-slate-500 space-y-1">
-                                            <div>Video requirement: max <strong>20MB</strong>.</div>
-                                            {uploadInfo[`t${i}-video`] ? <div className="text-slate-600">Selected: {uploadInfo[`t${i}-video`]}</div> : null}
-                                        </div>
-                                    </div>
-
-                                    <div className="md:col-span-2">
-                                        <label className={labelClass}>Thumbnail image URL (optional)</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                className={inputClass}
-                                                value={t.thumbnail_url ?? ""}
-                                                onChange={(e) => updateTestimonial(i, { thumbnail_url: e.target.value })}
-                                            />
-                                            <label
-                                                className={`shrink-0 inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold ${
-                                                    uploadingKey === `t${i}-thumb` ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed" : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
-                                                }`}
-                                                title="Upload thumbnail and auto-fill URL"
                                             >
                                                 <input
                                                     type="file"
                                                     accept="image/*"
                                                     className="hidden"
-                                                    disabled={uploadingKey === `t${i}-thumb`}
+                                                    disabled={uploadingKey === "story-thumb"}
                                                     onChange={async (e) => {
                                                         const file = e.target.files?.[0];
                                                         e.target.value = "";
                                                         if (!file) return;
                                                         try {
-                                                            const url = await uploadMedia(`t${i}-thumb`, { title: `Franchise story thumbnail: ${t.title || `Story ${i + 1}`}`, media_type: "image", file });
-                                                            updateTestimonial(i, { thumbnail_url: url });
+                                                            const url = await uploadMedia("story-thumb", {
+                                                                title: `Franchise story thumbnail: ${successStory.title || "Story"}`,
+                                                                media_type: "image",
+                                                                file,
+                                                            });
+                                                            patchSuccessStory({ thumbnail_url: url });
                                                             setMessage("Thumbnail uploaded. Don’t forget to Save changes.");
-                                                        } catch (err: any) {
-                                                            setError(err?.message || "Thumbnail upload failed");
+                                                        } catch (err: unknown) {
+                                                            setError(err instanceof Error ? err.message : "Thumbnail upload failed");
                                                         }
                                                     }}
                                                 />
@@ -745,30 +708,80 @@ export default function AdminFranchiseContentPage() {
                                                 Upload
                                             </label>
                                         </div>
-                                        <div className="mt-1 text-[11px] text-slate-500 space-y-1">
-                                            <div>Thumbnail requirement: max <strong>5MB</strong>.</div>
-                                            {uploadInfo[`t${i}-thumb`] ? <div className="text-slate-600">Selected: {uploadInfo[`t${i}-thumb`]}</div> : null}
+                                        <p className="mt-1 text-[11px] text-slate-500">Max 5MB. JPG or PNG recommended.</p>
+                                    </div>
+                                    <div>
+                                        <label className={labelClass}>Video (MP4, YouTube, or iframe embed URL)</label>
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                                            <textarea
+                                                className={`${inputClass} min-h-[72px] flex-1 font-mono text-xs`}
+                                                value={successStory.video_url ?? ""}
+                                                onChange={(e) => patchSuccessStory({ video_url: e.target.value })}
+                                                placeholder="https://iframe.mediadelivery.net/embed/…"
+                                            />
+                                            <label
+                                                className={`shrink-0 inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold ${
+                                                    uploadingKey === "story-video"
+                                                        ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
+                                                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
+                                                }`}
+                                            >
+                                                <input
+                                                    type="file"
+                                                    accept="video/*"
+                                                    className="hidden"
+                                                    disabled={uploadingKey === "story-video"}
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        e.target.value = "";
+                                                        if (!file) return;
+                                                        try {
+                                                            const url = await uploadMedia("story-video", {
+                                                                title: `Franchise success story: ${successStory.title || "Story"}`,
+                                                                media_type: "video",
+                                                                file,
+                                                            });
+                                                            patchSuccessStory({ video_url: url });
+                                                            setMessage("Video uploaded. Don’t forget to Save changes.");
+                                                        } catch (err: unknown) {
+                                                            setError(err instanceof Error ? err.message : "Video upload failed");
+                                                        }
+                                                    }}
+                                                />
+                                                <Upload className="w-4 h-4 mr-2" />
+                                                Upload
+                                            </label>
                                         </div>
-                                    </div>
-
-                                    <div className="md:col-span-2">
-                                        <label className={labelClass}>Title</label>
-                                        <input className={inputClass} value={t.title} onChange={(e) => updateTestimonial(i, { title: e.target.value })} />
+                                        <p className="mt-1 text-[11px] text-slate-500">Max 20MB for uploaded MP4.</p>
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Author</label>
-                                        <input className={inputClass} value={t.author} onChange={(e) => updateTestimonial(i, { author: e.target.value })} />
+                                        <label className={labelClass}>Title (shown on card)</label>
+                                        <input
+                                            className={inputClass}
+                                            value={successStory.title}
+                                            onChange={(e) => patchSuccessStory({ title: e.target.value })}
+                                        />
                                     </div>
                                     <div>
-                                        <label className={labelClass}>Location</label>
-                                        <input className={inputClass} value={t.location} onChange={(e) => updateTestimonial(i, { location: e.target.value })} />
+                                        <label className={labelClass}>Subtitle (e.g. T.I.M.E. Kids)</label>
+                                        <input
+                                            className={inputClass}
+                                            value={successStory.author}
+                                            onChange={(e) => patchSuccessStory({ author: e.target.value })}
+                                        />
                                     </div>
                                 </div>
+                                {(successStory.thumbnail_url || "").trim() ? (
+                                    <div className="h-44 w-36 shrink-0 overflow-hidden rounded-2xl border-2 border-orange-200 bg-slate-100 shadow-inner">
+                                        <img
+                                            src={resolveCmsMediaUrl(successStory.thumbnail_url) || successStory.thumbnail_url}
+                                            alt="Thumbnail preview"
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                ) : null}
                             </div>
-                        ))}
-                        <Button type="button" size="sm" variant="outline" onClick={addTestimonial} className="inline-flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Add story
-                        </Button>
+                        </div>
                     </Section>
 
                     <Section title="8. Main branch (map + contact)">

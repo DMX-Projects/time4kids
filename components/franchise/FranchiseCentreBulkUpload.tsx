@@ -16,6 +16,7 @@ import {
     isPdfFile,
     uploadEventMediaFile,
     uploadFranchiseHubDocument,
+    uploadAdminFranchiseHubDocument,
     uploadParentDocument,
     validateFileSize,
     validateHubFileSize,
@@ -47,16 +48,18 @@ type Props = {
     compact?: boolean;
     /** Parent documents / showcase only (hide franchise hub option) */
     parentsOnly?: boolean;
+    /** Admin dashboard: centre resource hub via HO API (no franchise login) */
+    adminHub?: boolean;
     /** After successful upload */
     onComplete?: () => void;
 };
 
-export function FranchiseCentreBulkUpload({ compact, parentsOnly, onComplete }: Props) {
+export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onComplete }: Props) {
     const { authFetch, tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
     const { showToast } = useToast();
 
-    const [publishParents, setPublishParents] = useState(true);
-    const [publishHub, setPublishHub] = useState(!parentsOnly);
+    const [publishParents, setPublishParents] = useState(!adminHub);
+    const [publishHub, setPublishHub] = useState(adminHub || !parentsOnly);
     const [parentCategory, setParentCategory] = useState("NEWSLETTERS");
     const [hubCategory, setHubCategory] = useState("ACADEMIC_DOCUMENTS");
     const [eventId, setEventId] = useState("");
@@ -72,13 +75,18 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, onComplete }: 
 
     const isTimetable = parentCategory === "CLASS_TIMETABLE";
 
+    const hubListPath = adminHub ? "/documents/admin/franchise-documents/" : "/documents/franchise/centre-documents/";
+    const hubDeletePath = (id: number) =>
+        adminHub ? `/documents/admin/franchise-documents/${id}/` : `/documents/franchise/centre-documents/${id}/`;
+
     const refreshLists = useCallback(async () => {
         setLoadingLists(true);
         try {
-            const [p, h] = await Promise.all([
-                authFetch<ParentDoc[]>("/documents/franchise/parent-documents/"),
-                authFetch<FranchiseHubDoc[]>("/documents/franchise/centre-documents/"),
-            ]);
+            const parentPromise = adminHub
+                ? Promise.resolve([] as ParentDoc[])
+                : authFetch<ParentDoc[]>("/documents/franchise/parent-documents/");
+            const hubPromise = authFetch<FranchiseHubDoc[]>(hubListPath);
+            const [p, h] = await Promise.all([parentPromise, hubPromise]);
             setParentDocs(Array.isArray(p) ? p : []);
             setHubDocs(Array.isArray(h) ? h : []);
         } catch {
@@ -87,16 +95,20 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, onComplete }: 
         } finally {
             setLoadingLists(false);
         }
-    }, [authFetch]);
+    }, [authFetch, adminHub, hubListPath]);
 
     const loadEvents = useCallback(async () => {
+        if (adminHub) {
+            setEvents([]);
+            return;
+        }
         try {
             const data = await authFetch<unknown>("/events/franchise/");
             setEvents(normalizeApiList(data) as { id: number; title: string }[]);
         } catch {
             setEvents([]);
         }
-    }, [authFetch]);
+    }, [authFetch, adminHub]);
 
     useEffect(() => {
         void refreshLists();
@@ -174,7 +186,11 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, onComplete }: 
                         result.errors.push(hubErr);
                     } else {
                         try {
-                            await uploadFranchiseHubDocument(authFetch, file, { category: hubCategory });
+                            if (adminHub) {
+                                await uploadAdminFranchiseHubDocument(authFetch, file, { category: hubCategory });
+                            } else {
+                                await uploadFranchiseHubDocument(authFetch, file, { category: hubCategory });
+                            }
                             result.ok++;
                         } catch {
                             result.failed++;
@@ -215,12 +231,14 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, onComplete }: 
         <div className={compact ? "space-y-4" : "space-y-6 max-w-3xl"}>
             {!compact && (
                 <p className="text-sm text-[#374151]">
-                    Choose files or a whole folder from your PC. Files go live immediately for parents and/or your
-                    centre resource pages — no manual server folder needed.
+                    {adminHub
+                        ? "Choose files or a whole folder from your PC. Uploads go to centre resource pages (admin only)."
+                        : "Choose files or a whole folder from your PC. Files go live immediately for parents and/or your centre resource pages — no manual server folder needed."}
                 </p>
             )}
 
             <form onSubmit={onSubmit} className="bg-white border border-[#E5E7EB] rounded-2xl p-5 space-y-4 shadow-sm">
+                {!adminHub && (
                 <fieldset className="space-y-2">
                     <legend className="text-xs font-semibold text-[#4B5563] uppercase tracking-wide">
                         Publish to
@@ -248,8 +266,9 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, onComplete }: 
                         </label>
                     )}
                 </fieldset>
+                )}
 
-                {publishParents && (
+                {!adminHub && publishParents && (
                     <div className="grid gap-3 md:grid-cols-2 rounded-xl bg-[#FFF7ED] border border-[#FFEDD5] p-3">
                         <label className="text-xs font-semibold text-[#9A3412] block md:col-span-2">
                             Parent document category (PDFs, Word, audio…)
@@ -288,9 +307,9 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, onComplete }: 
                     </div>
                 )}
 
-                {publishHub && (
+                {(adminHub || publishHub) && (
                     <label className="text-xs font-semibold text-[#4B5563] block rounded-xl bg-[#F0F9FF] border border-[#BAE6FD] p-3">
-                        Franchise centre file category
+                        {adminHub ? "Centre resource file category" : "Franchise centre file category"}
                         <select
                             value={hubCategory}
                             onChange={(e) => setHubCategory(e.target.value)}
@@ -346,7 +365,7 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, onComplete }: 
                 </Button>
             </form>
 
-            {!compact && (
+            {!compact && !adminHub && (
                 <>
                     <ManageList
                         title="Parent documents (live)"
@@ -373,14 +392,29 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, onComplete }: 
                             sub: d.category_display,
                             onOpen: () => hubDocOpen(d),
                             onDelete: async () => {
-                                await authFetch(`/documents/franchise/centre-documents/${d.id}/`, {
-                                    method: "DELETE",
-                                });
+                                await authFetch(hubDeletePath(d.id), { method: "DELETE" });
                                 await refreshLists();
                             },
                         }))}
                     />
                 </>
+            )}
+            {!compact && adminHub && (
+                <ManageList
+                    title="Centre resource files (live)"
+                    loading={loadingLists}
+                    empty="No uploads yet."
+                    items={hubDocs.slice(0, 50).map((d) => ({
+                        id: d.id,
+                        label: d.display_title || d.title,
+                        sub: d.category_display,
+                        onOpen: () => hubDocOpen(d),
+                        onDelete: async () => {
+                            await authFetch(hubDeletePath(d.id), { method: "DELETE" });
+                            await refreshLists();
+                        },
+                    }))}
+                />
             )}
         </div>
     );

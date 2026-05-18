@@ -6,10 +6,31 @@ import { MapPin, Phone, Search, Navigation, Star, Sun, Facebook, Instagram, Yout
 import { useRouter, useSearchParams } from 'next/navigation';
 import { slugify, cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api-client';
-import { shouldCapLocateCentreResults, PRESENCE_SECTION_CITY_LIMIT } from '@/lib/site-location-presence';
 import { CentreMap } from '@/components/shared/CentreMap';
 
 export const dynamic = 'force-dynamic';
+
+/** Load every page from paginated franchise list API (locate-centre needs full lists). */
+async function fetchAllPublicFranchises(initialUrl: string): Promise<Record<string, unknown>[]> {
+    const all: Record<string, unknown>[] = [];
+    let nextUrl: string | null = initialUrl;
+
+    while (nextUrl) {
+        const response = await fetch(nextUrl);
+        if (!response.ok) throw new Error('Failed to fetch');
+
+        const json = await response.json();
+        if (Array.isArray(json)) return json as Record<string, unknown>[];
+
+        all.push(...((json.results as Record<string, unknown>[]) || []));
+
+        const next = json.next as string | null | undefined;
+        if (!next) break;
+        nextUrl = next.startsWith('http') ? next : apiUrl(next.startsWith('/') ? next : `/${next}`);
+    }
+
+    return all;
+}
 
 // --- 1. Interactive Bubbles ---
 const InteractiveBubbles = () => {
@@ -85,7 +106,6 @@ function LocateCentreContent() {
 
     const [states, setStates] = useState<State[]>([]);
     const [centres, setCentres] = useState<Centre[]>([]);
-    const [allCentres, setAllCentres] = useState<Centre[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSearching, setIsSearching] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
@@ -146,11 +166,7 @@ function LocateCentreContent() {
                     ? apiUrl(`/franchises/public/?${queryParams}`)
                     : apiUrl('/franchises/public/');
 
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('Failed to fetch');
-
-                const json = await response.json();
-                const data = Array.isArray(json) ? json : json.results || [];
+                const data = await fetchAllPublicFranchises(url);
 
                 const mappedCentres = data.map((item: any, index: number) => {
                     const style = STYLE_PRESETS[index % STYLE_PRESETS.length];
@@ -194,9 +210,6 @@ function LocateCentreContent() {
                 });
 
                 setCentres(mappedCentres);
-                if (!searchTerm && !selectedState && !selectedCity) {
-                    setAllCentres(mappedCentres);
-                }
             } catch (error) {
                 console.error('Error fetching centres:', error);
             } finally {
@@ -239,23 +252,27 @@ function LocateCentreContent() {
         });
     };
 
-    // Get unique cities from available locations, filtered by state
+    const selectedStateName = states.find((s) => s.code === selectedState)?.name?.toLowerCase();
+
+    // All cities in the selected state (no cap)
     const cities = Array.from(
         new Set(
             availableLocations
                 .filter((loc) => {
                     if (!selectedState) return true;
+                    const code = (loc.state || '').toLowerCase();
+                    const display = (loc.state_display || '').toLowerCase();
                     const sel = selectedState.toLowerCase();
                     return (
-                        loc.state?.toLowerCase() === sel ||
-                        loc.state_display?.toLowerCase() === sel ||
-                        loc.state?.toLowerCase() === sel
+                        code === sel ||
+                        display === sel ||
+                        (selectedStateName && (display === selectedStateName || code === selectedStateName))
                     );
                 })
                 .map((loc) => loc.city_name)
                 .filter(Boolean),
         ),
-    ).sort();
+    ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
     // Handle state change - reset city
     const handleStateChange = (newState: string) => {
@@ -263,17 +280,7 @@ function LocateCentreContent() {
         setSelectedCity(''); // Reset city when state changes
     };
 
-    // Determine if any filters are active
-    const isFiltered = !!(selectedState || selectedCity || debouncedSearchTerm);
-
-    // Filtered or limited centres to display (cap long lists in TG / AP / Bengaluru at 15 schools)
-    const displayedCentres = (() => {
-        let list = isFiltered ? centres : centres.slice(0, 4);
-        if (isFiltered && shouldCapLocateCentreResults(selectedState, selectedCity)) {
-            list = list.slice(0, PRESENCE_SECTION_CITY_LIMIT);
-        }
-        return list;
-    })();
+    const displayedCentres = centres;
 
     // Helper to format full address
     const formatAddress = (centre: Centre) => {

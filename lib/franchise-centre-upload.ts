@@ -149,6 +149,20 @@ export async function uploadFranchiseHubDocument(
     await authFetch("/documents/franchise/centre-documents/", { method: "POST", body: fd });
 }
 
+/** Head-office bulk upload to centre resource hub (admin dashboard only). */
+export async function uploadAdminFranchiseHubDocument(
+    authFetch: AuthFetchFn,
+    file: File,
+    opts: { category: string; title?: string },
+): Promise<void> {
+    const fd = new FormData();
+    fd.append("category", opts.category);
+    fd.append("title", opts.title?.trim() || titleFromFileName(file));
+    fd.append("description", relativePathLabel(file));
+    fd.append("file", file);
+    await authFetch("/documents/admin/franchise-documents/", { method: "POST", body: fd });
+}
+
 export async function uploadEventMediaFile(
     authFetch: AuthFetchFn,
     eventId: string,

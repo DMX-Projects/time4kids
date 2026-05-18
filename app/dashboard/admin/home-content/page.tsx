@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { jsonHeaders, mediaUrl, publicAssetUrl } from "@/lib/api-client";
+import { jsonHeaders, normalizeUploadedMediaPath, resolveCmsMediaUrl } from "@/lib/api-client";
+import { countWords, NEWS_TICKER_MAX_WORDS, truncateToWordLimit } from "@/lib/text-limit";
 import Link from "next/link";
 import { LayoutTemplate, Plus, Trash2, ChevronDown, Upload, ImageIcon, Film } from "lucide-react";
 import {
@@ -92,25 +93,31 @@ async function getImageDimensions(file: File): Promise<{ width: number; height: 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB
 const MAX_VIDEO_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB
 
-function previewMediaUrl(path: string): string {
-    const t = (path || "").trim();
-    if (!t) return "";
-    if (/^https?:\/\//i.test(t)) return t;
-    return mediaUrl(t) || publicAssetUrl(t) || t;
-}
 
 function BlobMediaPreview({ src, alt }: { src: string; alt: string }) {
-    const [ok, setOk] = useState(true);
-    const url = previewMediaUrl(src);
-    if (!url || !ok) return null;
+    const [failed, setFailed] = useState(false);
+    const url = resolveCmsMediaUrl(src);
+    useEffect(() => {
+        setFailed(false);
+    }, [src, url]);
+    if (!url) return null;
     return (
         <div className="mt-2 h-36 w-28 shrink-0 overflow-hidden rounded-2xl border-2 border-orange-200 bg-slate-100 shadow-inner">
-            <img
-                src={url}
-                alt={alt}
-                className="h-full w-full object-contain"
-                onError={() => setOk(false)}
-            />
+            {!failed ? (
+                <img
+                    src={url}
+                    alt={alt}
+                    className="h-full w-full object-contain"
+                    onError={() => setFailed(true)}
+                />
+            ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center text-[10px] text-amber-800">
+                    <span>Preview unavailable</span>
+                    <a href={url} target="_blank" rel="noreferrer" className="underline">
+                        Open file
+                    </a>
+                </div>
+            )}
         </div>
     );
 }
@@ -361,7 +368,7 @@ export default function AdminHomeContentPage() {
             if (!filePath || typeof filePath !== "string") {
                 throw new Error("Upload succeeded but server did not return a file path.");
             }
-            updateFranchisePhoto(index, { src: filePath });
+            updateFranchisePhoto(index, { src: normalizeUploadedMediaPath(filePath) });
             setMessage("Image uploaded. Don’t forget to Save changes.");
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : "Image upload failed");
@@ -417,7 +424,7 @@ export default function AdminHomeContentPage() {
             if (!filePath || typeof filePath !== "string") {
                 throw new Error("Upload succeeded but server did not return a file path.");
             }
-            updateFranchiseVideo(index, { poster: filePath });
+            updateFranchiseVideo(index, { poster: normalizeUploadedMediaPath(filePath) });
             setMessage("Image uploaded. Don’t forget to Save changes.");
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : "Image upload failed");
@@ -461,7 +468,7 @@ export default function AdminHomeContentPage() {
             }
 
             const next = [...data.programs_preview.programs];
-            next[programIndex] = { ...next[programIndex], image: filePath };
+            next[programIndex] = { ...next[programIndex], image: normalizeUploadedMediaPath(filePath) };
             setData({ ...data, programs_preview: { ...data.programs_preview, programs: next } });
             setMessage("Image uploaded. Don’t forget to Save changes.");
         } catch (e: unknown) {
@@ -506,7 +513,7 @@ export default function AdminHomeContentPage() {
             }
 
             const next = [...data.why_choose_us.features];
-            next[featureIndex] = { ...next[featureIndex], image: filePath };
+            next[featureIndex] = { ...next[featureIndex], image: normalizeUploadedMediaPath(filePath) };
             setData({ ...data, why_choose_us: { ...data.why_choose_us, features: next } });
             setMessage("Image uploaded. Don’t forget to Save changes.");
         } catch (e: unknown) {
@@ -703,7 +710,8 @@ export default function AdminHomeContentPage() {
                             <div>
                                 <p className="text-sm font-semibold text-slate-900">Latest news ticker (scrolling text)</p>
                                 <p className="text-xs text-slate-600 mt-1">
-                                    Shown under <strong>Latest News &amp; Updates</strong> on the home page. Each line scrolls continuously in one band (separated by •).
+                                    Shown under <strong>Latest News &amp; Updates</strong> on the home page. Each line scrolls continuously in one band (separated by •). Maximum{" "}
+                                    <strong>{NEWS_TICKER_MAX_WORDS} words</strong> per line.
                                 </p>
                             </div>
                             {(data.news_ticker_items ?? []).map((row, i) => (
@@ -713,9 +721,22 @@ export default function AdminHomeContentPage() {
                                         <textarea
                                             className={`${inputClass} min-h-[72px]`}
                                             value={row.text}
-                                            onChange={(e) => updateNewsTicker(i, { text: e.target.value })}
+                                            onChange={(e) =>
+                                                updateNewsTicker(i, {
+                                                    text: truncateToWordLimit(e.target.value, NEWS_TICKER_MAX_WORDS),
+                                                })
+                                            }
                                             placeholder="Announcement text…"
                                         />
+                                        <p
+                                            className={`mt-1 text-[11px] ${
+                                                countWords(row.text) >= NEWS_TICKER_MAX_WORDS
+                                                    ? "font-semibold text-amber-700"
+                                                    : "text-slate-500"
+                                            }`}
+                                        >
+                                            {countWords(row.text)} / {NEWS_TICKER_MAX_WORDS} words
+                                        </p>
                                     </div>
                                     <button
                                         type="button"
