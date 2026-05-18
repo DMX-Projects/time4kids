@@ -7,18 +7,32 @@ import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, X, Ch
 import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { buildFallbackGalleryFromMock } from '@/lib/mock-media-data';
 import { extractGalleryEventKey, formatGalleryEventName } from '@/lib/gallery-event-names';
+import { resolveFranchiseEmbedSrc } from '@/lib/franchise-embed-url';
 import Modal from '@/components/ui/Modal';
 
 interface MediaItem {
     id: number;
     file: string;
-    media_type: 'image' | 'video';
+    embed_url?: string;
+    media_type: 'image' | 'video' | 'embed';
     caption: string;
 }
 
 interface EventGroup {
     title: string;
     media: MediaItem[];
+}
+
+function embedSrcForItem(item: MediaItem): string | null {
+    if (item.media_type !== 'embed') return null;
+    return resolveFranchiseEmbedSrc(item.embed_url || '') || item.embed_url || null;
+}
+
+function thumbnailForEvent(media: MediaItem[]): MediaItem | null {
+    return media.find(m => m.media_type === 'image' && m.file)
+        ?? media.find(m => m.media_type === 'video' && m.file)
+        ?? media[0]
+        ?? null;
 }
 
 /** Public photo/video gallery. Lives at `/gallery/` so `/media/` stays free for Django uploaded files (avoids nginx 403 on live). */
@@ -51,9 +65,9 @@ export default function GalleryPage() {
                 const groupedEvents: { [key: string]: MediaItem[] } = {};
 
                 results.forEach((item: any) => {
-                    // Extract event name from title (before the dash)
-                    const eventName = extractGalleryEventKey(item.title);
-                    const formattedEventName = formatGalleryEventName(eventName);
+                    const sectionTitle = (item.section_title as string | undefined)?.trim();
+                    const eventName = sectionTitle || extractGalleryEventKey(item.title);
+                    const formattedEventName = sectionTitle || formatGalleryEventName(eventName);
 
                     if (!groupedEvents[formattedEventName]) {
                         groupedEvents[formattedEventName] = [];
@@ -61,9 +75,10 @@ export default function GalleryPage() {
 
                     groupedEvents[formattedEventName].push({
                         id: item.id,
-                        file: item.file,
+                        file: item.file || '',
+                        embed_url: item.embed_url || undefined,
                         media_type: item.media_type,
-                        caption: item.title,
+                        caption: item.caption || item.title,
                     });
                 });
 
@@ -93,6 +108,9 @@ export default function GalleryPage() {
     const filteredMedia = useMemo(() => {
         if (!selectedEvent) return [];
         if (filterMediaType === 'all') return selectedEvent.media;
+        if (filterMediaType === 'video') {
+            return selectedEvent.media.filter(m => m.media_type === 'video' || m.media_type === 'embed');
+        }
         return selectedEvent.media.filter(m => m.media_type === filterMediaType);
     }, [selectedEvent, filterMediaType]);
 
@@ -200,18 +218,41 @@ export default function GalleryPage() {
                                     >
                                         {/* Event Thumbnail (First Media Item) */}
                                         <div className="relative h-56 w-full overflow-hidden bg-gray-100">
-                                            {event.media && event.media.length > 0 ? (
+                                            {(() => {
+                                                const thumb = thumbnailForEvent(event.media);
+                                                if (!thumb) {
+                                                    return (
+                                                <div className="flex items-center justify-center h-full text-gray-300">
+                                                    <ImageIcon size={48} />
+                                                </div>
+                                                    );
+                                                }
+                                                if (thumb.media_type === 'embed') {
+                                                    return (
+                                                <div className="flex items-center justify-center h-full bg-slate-800 text-white">
+                                                    <Play size={48} className="opacity-80" />
+                                                </div>
+                                                    );
+                                                }
+                                                if (thumb.media_type === 'video') {
+                                                    return (
+                                                <video
+                                                    src={mediaUrl(thumb.file)}
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                    muted
+                                                    preload="metadata"
+                                                />
+                                                    );
+                                                }
+                                                return (
                                                 <Image
-                                                    src={mediaUrl(event.media[0].file)}
+                                                    src={mediaUrl(thumb.file)}
                                                     alt={event.title}
                                                     fill
                                                     className="object-cover transition-transform duration-700 group-hover:scale-110"
                                                 />
-                                            ) : (
-                                                <div className="flex items-center justify-center h-full text-gray-300">
-                                                    <ImageIcon size={48} />
-                                                </div>
-                                            )}
+                                                );
+                                            })()}
                                             <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-700 shadow-sm flex items-center gap-1">
                                                 <ImageIcon size={14} />
                                                 {event.media?.length || 0} Items
@@ -290,7 +331,11 @@ export default function GalleryPage() {
                                             className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all hover:scale-[1.02] bg-gray-200"
                                             onClick={() => handleMediaClick(item)}
                                         >
-                                            {item.media_type === 'video' ? (
+                                            {item.media_type === 'embed' ? (
+                                                <div className="w-full h-full flex items-center justify-center bg-slate-800 text-white">
+                                                    <Play className="w-10 h-10 opacity-90" />
+                                                </div>
+                                            ) : item.media_type === 'video' ? (
                                                 <video
                                                     src={mediaUrl(item.file)}
                                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -306,7 +351,7 @@ export default function GalleryPage() {
                                                     sizes="(max-width: 768px) 50vw, 33vw"
                                                 />
                                             )}
-                                            {item.media_type === 'video' && (
+                                            {(item.media_type === 'video' || item.media_type === 'embed') && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
                                                     <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                                                         <Play className="w-5 h-5 text-red-600 fill-current translate-x-0.5" />
@@ -365,7 +410,17 @@ export default function GalleryPage() {
                                 </>
                             )}
 
-                            {selectedMedia.media_type === 'video' ? (
+                            {selectedMedia.media_type === 'embed' ? (
+                                <div className="relative w-full aspect-video max-h-[70vh] bg-black rounded-lg overflow-hidden">
+                                    <iframe
+                                        src={embedSrcForItem(selectedMedia) || ''}
+                                        title={selectedMedia.caption || 'Gallery video'}
+                                        className="absolute inset-0 w-full h-full"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    />
+                                </div>
+                            ) : selectedMedia.media_type === 'video' ? (
                                 <video
                                     src={mediaUrl(selectedMedia.file)}
                                     controls

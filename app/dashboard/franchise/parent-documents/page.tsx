@@ -1,12 +1,14 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Trash2, Upload } from "lucide-react";
+import Link from "next/link";
+import { Download, Trash2, Upload, FolderUp } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
-import { mediaUrl } from "@/lib/api-client";
+import { FranchiseCentreBulkUpload } from "@/components/franchise/FranchiseCentreBulkUpload";
+import { openParentDocumentFile } from "@/lib/parent-document-file-open";
 
 type ParentDoc = {
     id: number;
@@ -37,7 +39,7 @@ const states = [
 ];
 
 export default function FranchiseParentDocumentsPage() {
-    const { authFetch } = useAuth();
+    const { authFetch, tokens, authFetchBlobResponse } = useAuth();
     const { showToast } = useToast();
     const searchParams = useSearchParams();
     const requestedCategory = searchParams.get("category") || "";
@@ -140,8 +142,24 @@ export default function FranchiseParentDocumentsPage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-semibold text-[#111827]">Parent Documents</h1>
-                <p className="text-sm text-[#374151]">Upload documents that parents will see in Parent Important Documents.</p>
+                <p className="text-sm text-[#374151]">
+                    Upload documents that parents will see in Parent Important Documents. For many files or a whole folder
+                    from your PC, use{" "}
+                    <Link href="/dashboard/franchise/upload-for-parents/" className="text-[#2563EB] font-semibold inline-flex items-center gap-1">
+                        <FolderUp className="w-3.5 h-3.5" />
+                        Upload for parents
+                    </Link>
+                    .
+                </p>
             </div>
+
+            <section className="bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl p-4">
+                <h2 className="text-sm font-semibold text-[#92400E] mb-1">Bulk upload from your PC folder</h2>
+                <p className="text-xs text-[#78350F] mb-3">
+                    Choose many files or an entire folder — same as Upload centre files, preset for parents.
+                </p>
+                <FranchiseCentreBulkUpload compact parentsOnly onComplete={load} />
+            </section>
 
             <form onSubmit={onSubmit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3">
                 <div className="grid md:grid-cols-2 gap-3">
@@ -231,10 +249,16 @@ export default function FranchiseParentDocumentsPage() {
                                         <p className="text-xs text-[#6B7280]">{new Date(d.created_at).toLocaleDateString()}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <a href={mediaUrl(d.file)} target="_blank" rel="noreferrer" className="text-[#2563EB] text-xs font-semibold inline-flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                openParentDocumentFile(tokens?.access, authFetchBlobResponse, d)
+                                            }
+                                            className="text-[#2563EB] text-xs font-semibold inline-flex items-center gap-1"
+                                        >
                                             <Download className="w-3.5 h-3.5" />
                                             Open
-                                        </a>
+                                        </button>
                                         <button
                                             type="button"
                                             onClick={() => onDelete(d.id)}

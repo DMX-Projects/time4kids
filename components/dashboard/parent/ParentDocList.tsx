@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download, FileText } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { mediaUrl } from "@/lib/api-client";
+import { openParentDocumentFile } from "@/lib/parent-document-file-open";
 
 type DocRow = { id: number; title: string; file: string };
 type ParentDocRow = DocRow & { category?: string };
@@ -30,7 +30,7 @@ export function ParentDocList({
     description: string;
     emptyMessage?: string;
 }) {
-    const { authFetch } = useAuth();
+    const { authFetch, tokens, authFetchBlobResponse } = useAuth();
     const [docs, setDocs] = useState<DocRow[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -79,15 +79,14 @@ export function ParentDocList({
                 {docs.map((d) => (
                     <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-100 bg-white p-4 shadow-sm">
                         <span className="font-medium text-orange-900 text-sm">{d.title}</span>
-                        <a
-                            href={mediaUrl(d.file)}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <button
+                            type="button"
+                            onClick={() => openParentDocumentFile(tokens?.access, authFetchBlobResponse, d)}
                             className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
                         >
                             <Download className="w-4 h-4" />
                             View / download
-                        </a>
+                        </button>
                     </li>
                 ))}
             </ul>

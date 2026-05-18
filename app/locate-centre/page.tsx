@@ -214,7 +214,9 @@ function LocateCentreContent() {
         if (cityFromUrl) setSelectedCity(cityFromUrl);
     }, [stateFromUrl, cityFromUrl]);
 
-    const [availableLocations, setAvailableLocations] = useState<{ city_name: string, state: string }[]>([]);
+    const [availableLocations, setAvailableLocations] = useState<
+        { city_name: string; state: string; state_display?: string; franchise_count?: number }[]
+    >([]);
 
     // Fetch available locations for dropdowns
     useEffect(() => {
@@ -238,11 +240,22 @@ function LocateCentreContent() {
     };
 
     // Get unique cities from available locations, filtered by state
-    const cities = Array.from(new Set(
-        availableLocations
-            .filter(loc => !selectedState || loc.state === selectedState)
-            .map(loc => loc.city_name)
-    )).sort();
+    const cities = Array.from(
+        new Set(
+            availableLocations
+                .filter((loc) => {
+                    if (!selectedState) return true;
+                    const sel = selectedState.toLowerCase();
+                    return (
+                        loc.state?.toLowerCase() === sel ||
+                        loc.state_display?.toLowerCase() === sel ||
+                        loc.state?.toLowerCase() === sel
+                    );
+                })
+                .map((loc) => loc.city_name)
+                .filter(Boolean),
+        ),
+    ).sort();
 
     // Handle state change - reset city
     const handleStateChange = (newState: string) => {

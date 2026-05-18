@@ -55,7 +55,11 @@ export default function SopPage() {
             )}
 
             <p className="text-xs text-[#6B7280]">
-                Shared by HO for your centre. Uploads and updates are managed by HO admin.
+                Includes HO global files and files you upload under{" "}
+                <a href="/dashboard/franchise/upload-for-parents/" className="text-[#2563EB] font-semibold">
+                    Upload centre files
+                </a>{" "}
+                (Franchise centre files).
             </p>
         </div>
     );
