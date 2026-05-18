@@ -27,6 +27,7 @@ import {
 export type FranchiseHubDoc = {
     id: number;
     category?: string;
+    category_display?: string;
     source_path?: string | null;
     title: string;
     description: string;
