@@ -9,7 +9,7 @@ import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { useForm } from 'react-hook-form';
-import EventMediaManager from '@/components/franchise/EventMediaManager';
+import { EventMediaManager } from '@/components/franchise/EventMediaManager';
 
 interface Event {
     id: number;
@@ -169,7 +169,7 @@ export default function ManageGallery() {
         return (
             <EventMediaManager
                 event={selectedEventForMedia}
-                onBack={() => {
+                onBackAction={() => {
                     setSelectedEventForMedia(null);
                     fetchEvents();
                 }}

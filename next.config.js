@@ -20,7 +20,10 @@ const nextConfig = {
             { protocol: 'http', hostname: '127.0.0.1' },
             { protocol: 'https', hostname: 'localhost' },
             { protocol: 'https', hostname: '127.0.0.1' },
-            { protocol: 'https', hostname: '**' },
+            { protocol: 'https', hostname: 'www.timekidspreschools.in', pathname: '/cms-media/**' },
+            { protocol: 'https', hostname: 'timekidspreschools.in', pathname: '/cms-media/**' },
+            { protocol: 'https', hostname: 'www.timekidspreschools.in', pathname: '/media/**' },
+            { protocol: 'https', hostname: 'timekidspreschools.in', pathname: '/media/**' },
             {
                 protocol: 'http',
                 hostname: '103.65.21.176',
@@ -81,6 +84,9 @@ const nextConfig = {
             { source: '/api/:path*', destination: `${djangoBase}/api/:path*` },
             { source: '/media/:path*/', destination: `${djangoBase}/media/:path*/` },
             { source: '/media/:path*', destination: `${djangoBase}/media/:path*` },
+            /** Public proxy when nginx does not serve `/media/` (live 404). Next → Django uploads. */
+            { source: '/cms-media/:path*/', destination: `${djangoBase}/media/:path*/` },
+            { source: '/cms-media/:path*', destination: `${djangoBase}/media/:path*` },
         ];
     },
 };

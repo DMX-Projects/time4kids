@@ -25,10 +25,10 @@ interface Event {
 
 interface EventMediaManagerProps {
     event: Event;
-    onBack: () => void;
+    onBackAction(): void;
 }
 
-export default function EventMediaManager({ event, onBack }: EventMediaManagerProps) {
+const EventMediaManager: React.FC<EventMediaManagerProps> = ({ event, onBackAction }) => {
     const { tokens } = useAuth();
     const { showToast } = useToast();
     const token = tokens?.access;
@@ -144,7 +144,7 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={onBack}
+                        onClick={onBackAction}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
                         <ArrowLeft className="w-6 h-6 text-gray-600" />
@@ -289,4 +289,6 @@ export default function EventMediaManager({ event, onBack }: EventMediaManagerPr
             )}
         </div>
     );
-}
+};
+
+export { EventMediaManager };

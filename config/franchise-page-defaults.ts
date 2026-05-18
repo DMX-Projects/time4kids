@@ -227,14 +227,17 @@ function ensureFranchiseShape(merged: FranchisePageData): FranchisePageData {
     if (!Array.isArray(merged.benefits)) merged.benefits = d.benefits;
     if (!Array.isArray(merged.offerings)) merged.offerings = d.offerings;
     if (!Array.isArray(merged.testimonials)) merged.testimonials = d.testimonials;
-    merged.testimonials = merged.testimonials.length > 0 ? [merged.testimonials[0]] : d.testimonials;
-    const story = merged.testimonials[0];
-    if (story) {
-        const t = (story.title || "").trim();
-        if (!t || t === "Annual Day Fun") {
-            story.title = FRANCHISE_SUCCESS_STORY_DEFAULT_TITLE;
-        }
-    }
+    merged.testimonials = merged.testimonials
+        .filter((t): t is FranchiseTestimonial => Boolean(t && typeof t === "object"))
+        .map((story, i) => {
+            const t = (story.title || "").trim();
+            if (!t || t === "Annual Day Fun") {
+                story.title = i === 0 ? FRANCHISE_SUCCESS_STORY_DEFAULT_TITLE : `Success story ${i + 1}`;
+            }
+            story.location = "";
+            return story;
+        });
+    if (merged.testimonials.length === 0) merged.testimonials = d.testimonials;
     if (!merged.hero || typeof merged.hero !== "object") merged.hero = d.hero;
     if (!Array.isArray(merged.hero.intro_paragraphs)) merged.hero.intro_paragraphs = d.hero.intro_paragraphs;
     if (!merged.benefits_section) merged.benefits_section = d.benefits_section;

@@ -10,7 +10,7 @@ import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { mediaUrl, resolveCmsMediaUrl, resolveHomeMediaAssetUrl } from '@/lib/api-client';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 import { FranchiseBlobThumbnail, FranchiseVideoBlob, getFranchiseVideoEmbedSrc } from '@/components/home/FranchiseVideoBlob';
-import { FranchiseVideoOpenContext } from '@/components/home/franchise-video-open-context';
+import { FranchiseVideoGalleryContext } from '@/components/home/franchise-video-open-context';
 import { FranchiseBlobShell } from '@/components/home/franchise-blob';
 import FranchisePhotoGalleryModal from '@/components/home/FranchisePhotoGalleryModal';
 import FranchiseVideoGalleryModal from '@/components/home/FranchiseVideoGalleryModal';
@@ -205,15 +205,13 @@ function FranchiseAdvantageVideosPanel({
     videos,
     carouselIndex,
     onCarouselIndexChange,
-    onOpenVideo,
 }: {
     videos: FranchiseAdvantageVideo[];
     carouselIndex: number;
     onCarouselIndexChange: React.Dispatch<React.SetStateAction<number>>;
-    onOpenVideo: (index: number) => void;
 }) {
     return (
-        <FranchiseVideoOpenContext.Provider value={{ openVideo: onOpenVideo }}>
+        <>
             {videos.length === 1 ? (
                 <FranchiseVideoBlob {...franchiseVideoBlobProps(videos[0], 0)} />
             ) : (
@@ -247,7 +245,7 @@ function FranchiseAdvantageVideosPanel({
                 ))}
         </FranchiseAdvantageCarousel>
             )}
-        </FranchiseVideoOpenContext.Provider>
+        </>
     );
 }
 
@@ -275,6 +273,22 @@ export default function BenefitsUpdates() {
     const [newsModalOpen, setNewsModalOpen] = useState(false);
     const [videoCarouselIndex, setVideoCarouselIndex] = useState(0);
     const [photoCarouselIndex, setPhotoCarouselIndex] = useState(0);
+
+    const franchiseVideoGallery = useMemo(
+        () => ({
+            activeIndex: modalVideoIndex,
+            openVideo: (index: number) => {
+                setVideoCarouselIndex(index);
+                setModalVideoIndex(index);
+            },
+            closeGallery: () => setModalVideoIndex(null),
+            setGalleryIndex: (index: number) => {
+                setModalVideoIndex(index);
+                setVideoCarouselIndex(index);
+            },
+        }),
+        [modalVideoIndex],
+    );
 
     const franchiseVideos = useMemo(() => {
         const raw =
@@ -338,6 +352,7 @@ export default function BenefitsUpdates() {
     }, []);
 
     return (
+        <FranchiseVideoGalleryContext.Provider value={franchiseVideoGallery}>
         <section
             ref={sectionRef}
             className="relative isolate overflow-hidden bg-[#fff8ec] py-16 font-sans md:py-20 xl:flex xl:min-h-screen xl:items-center xl:py-10"
@@ -447,10 +462,6 @@ export default function BenefitsUpdates() {
                                     videos={franchiseVideos}
                                     carouselIndex={videoCarouselIndex}
                                     onCarouselIndexChange={setVideoCarouselIndex}
-                                    onOpenVideo={(i) => {
-                                        setVideoCarouselIndex(i);
-                                        setModalVideoIndex(i);
-                                    }}
                                 />
                             ) : null}
                         </div>
@@ -514,15 +525,7 @@ export default function BenefitsUpdates() {
                 }}
             />
 
-            <FranchiseVideoGalleryModal
-                videos={franchiseVideos}
-                activeIndex={modalVideoIndex}
-                onClose={() => setModalVideoIndex(null)}
-                onIndexChange={(i) => {
-                    setModalVideoIndex(i);
-                    setVideoCarouselIndex(i);
-                }}
-            />
+            <FranchiseVideoGalleryModal videos={franchiseVideos} />
 
             <NewsUpdatesModal
                 items={newsTickerItems}
@@ -532,5 +535,6 @@ export default function BenefitsUpdates() {
             />
 
         </section>
+        </FranchiseVideoGalleryContext.Provider>
     );
 }

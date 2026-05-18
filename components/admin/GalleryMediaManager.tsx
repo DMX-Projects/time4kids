@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { Film, Link2, Plus, Trash2, Upload } from "lucide-react";
+import { ChevronDown, ChevronUp, Film, Link2, Plus, Trash2, Upload } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
@@ -28,8 +28,24 @@ type MediaRow = {
     media_type: "image" | "video" | "embed";
     section?: number | null;
     section_title?: string;
+    order?: number;
     created_at: string;
 };
+
+function sortByOrder(items: MediaRow[]): MediaRow[] {
+    return [...items].sort((a, b) => {
+        const oa = a.order ?? 0;
+        const ob = b.order ?? 0;
+        if (oa !== ob) return oa - ob;
+        return a.id - b.id;
+    });
+}
+
+function nextOrderForSection(items: MediaRow[], sectionId: number): number {
+    const inSection = items.filter((i) => i.section === sectionId);
+    if (!inSection.length) return 0;
+    return Math.max(...inSection.map((i) => i.order ?? 0)) + 1;
+}
 
 function detectMediaType(file: File): "image" | "video" {
     const ext = extensionOf(file);
@@ -53,6 +69,7 @@ export function GalleryMediaManager() {
     const [uploadAs, setUploadAs] = useState<"auto" | "image" | "video">("auto");
     const [embedInput, setEmbedInput] = useState("");
     const [embedTitle, setEmbedTitle] = useState("");
+    const [reorderingId, setReorderingId] = useState<number | null>(null);
 
     const selected = sections.find((s) => s.id === selectedId) ?? null;
 
@@ -138,6 +155,7 @@ export function GalleryMediaManager() {
         setUploading(true);
         let ok = 0;
         let fail = 0;
+        const baseOrder = nextOrderForSection(items, selected.id);
         try {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
@@ -149,7 +167,7 @@ export function GalleryMediaManager() {
                 fd.append("caption", titleFromFileName(file));
                 fd.append("category", "Events");
                 fd.append("media_type", kind);
-                fd.append("order", String(i));
+                fd.append("order", String(baseOrder + i));
                 fd.append("file", file);
                 try {
                     const res = await fetch(apiUrl("/media/"), {
@@ -185,6 +203,7 @@ export function GalleryMediaManager() {
             return;
         }
         try {
+            const order = nextOrderForSection(items, selected.id);
             await authFetch("/media/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -195,6 +214,7 @@ export function GalleryMediaManager() {
                     category: "Events",
                     media_type: "embed",
                     embed_url: embedSrc,
+                    order,
                 }),
             });
             setEmbedInput("");
@@ -217,14 +237,48 @@ export function GalleryMediaManager() {
         }
     };
 
-    const sectionItems = selectedId ? items.filter((i) => i.section === selectedId) : items;
+    const moveItem = async (id: number, direction: "up" | "down") => {
+        if (!selectedId) return;
+        const sorted = sortByOrder(items.filter((i) => i.section === selectedId));
+        const idx = sorted.findIndex((i) => i.id === id);
+        if (idx < 0) return;
+        const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+        if (swapIdx < 0 || swapIdx >= sorted.length) return;
+
+        const reordered = [...sorted];
+        [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+
+        setReorderingId(id);
+        try {
+            await Promise.all(
+                reordered.map((item, order) =>
+                    authFetch(`/media/${item.id}/`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ order }),
+                    }),
+                ),
+            );
+            await loadItems();
+            showToast("Order updated", "success");
+        } catch {
+            showToast("Could not reorder", "error");
+        } finally {
+            setReorderingId(null);
+        }
+    };
+
+    const sectionItems = selectedId
+        ? sortByOrder(items.filter((i) => i.section === selectedId))
+        : sortByOrder(items);
 
     return (
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold text-gray-800">Photo / Video Gallery (CMS)</h1>
                 <p className="text-sm text-gray-500 mt-1">
-                    Create headings (albums), then upload multiple photos, videos, or iframe embeds under each heading.
+                    Create headings (albums), then upload photos, videos, or iframe embeds under each heading only.
+                    Use event names like &quot;Annual Day 2025&quot; — not &quot;Franchise Videos and Posters&quot; (that name is used by home-page uploads).
                     Public page: <a href="/gallery" className="text-orange-600 font-semibold" target="_blank" rel="noreferrer">/gallery</a>
                 </p>
             </div>
@@ -353,20 +407,49 @@ export function GalleryMediaManager() {
                             </section>
 
                             <section className="bg-white rounded-2xl border border-gray-200 p-5">
-                                <h2 className="text-sm font-semibold text-gray-800 mb-3">
+                                <h2 className="text-sm font-semibold text-gray-800 mb-1">
                                     Items in this heading ({sectionItems.length})
                                 </h2>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Order is left to right, top to bottom (#1 first on the public gallery). Use arrows to
+                                    reorder; new uploads are added at the end in the order you selected files.
+                                </p>
                                 {loading ? (
                                     <p className="text-sm text-gray-500">Loading…</p>
                                 ) : sectionItems.length === 0 ? (
                                     <p className="text-sm text-gray-500">No items yet. Upload above.</p>
                                 ) : (
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        {sectionItems.map((item) => (
+                                        {sectionItems.map((item, index) => (
                                             <div
                                                 key={item.id}
                                                 className="relative group rounded-xl border overflow-hidden aspect-square bg-gray-100"
                                             >
+                                                <span className="absolute top-2 left-2 z-10 flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-black/70 px-1.5 text-[10px] font-bold text-white">
+                                                    #{index + 1}
+                                                </span>
+                                                <div className="absolute left-2 top-10 z-10 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        type="button"
+                                                        disabled={index === 0 || reorderingId === item.id}
+                                                        onClick={() => void moveItem(item.id, "up")}
+                                                        className="p-1 rounded-md bg-white/95 text-slate-700 shadow disabled:opacity-40"
+                                                        title="Move earlier"
+                                                        aria-label="Move earlier"
+                                                    >
+                                                        <ChevronUp className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={index === sectionItems.length - 1 || reorderingId === item.id}
+                                                        onClick={() => void moveItem(item.id, "down")}
+                                                        className="p-1 rounded-md bg-white/95 text-slate-700 shadow disabled:opacity-40"
+                                                        title="Move later"
+                                                        aria-label="Move later"
+                                                    >
+                                                        <ChevronDown className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                                 {item.media_type === "embed" ? (
                                                     <div className="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-white p-2">
                                                         <Film className="w-8 h-8 mb-1" />

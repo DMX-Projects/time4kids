@@ -96,6 +96,31 @@ function derivedMediaBaseFromApiBase(): string {
     return `${b.replace(/\/$/, "")}/media`;
 }
 
+/**
+ * Public URL prefix for Django uploads on the marketing site.
+ * Live nginx often does not serve `/media/*` (404); Next rewrites `/cms-media/*` → Django.
+ */
+export const PUBLIC_CMS_MEDIA_PREFIX = "/cms-media";
+
+/** Map stored `/media/…` paths to the public proxy prefix. */
+export function toPublicCmsMediaPath(pathname: string): string {
+    const raw = (pathname || "").trim();
+    if (!raw) return "";
+    let p = raw;
+    if (/^https?:\/\//i.test(raw)) {
+        try {
+            p = new URL(raw).pathname;
+        } catch {
+            return raw;
+        }
+    }
+    if (!p.startsWith("/")) p = `/${p}`;
+    if (p.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`)) return p;
+    if (p.startsWith("/media/")) return `${PUBLIC_CMS_MEDIA_PREFIX}${p.slice("/media".length)}`;
+    if (p === "/media") return PUBLIC_CMS_MEDIA_PREFIX;
+    return p;
+}
+
 /** Media files live on the API host (`…/media/`), not always the Next page origin. */
 function mediaBaseFromResolvedApi(): string {
     const fromEnv = derivedMediaBaseFromApiBase();
@@ -109,10 +134,19 @@ function mediaBaseFromResolvedApi(): string {
     return "";
 }
 
+function normalizePublicMediaBaseUrl(base: string): string {
+    const trimmed = base.replace(/\/$/, "");
+    if (!trimmed) return trimmed;
+    if (/\/media$/i.test(trimmed)) return trimmed.replace(/\/media$/i, PUBLIC_CMS_MEDIA_PREFIX);
+    return trimmed;
+}
+
 function resolvedMediaBase(): string {
-    const pageOriginMedia = `${typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : getServerUrl()}/media`;
-    const envMedia = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || "").trim();
-    const derived = mediaBaseFromResolvedApi();
+    const pageOrigin =
+        typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : getServerUrl();
+    const pageOriginMedia = `${pageOrigin}${PUBLIC_CMS_MEDIA_PREFIX}`;
+    const envMedia = normalizePublicMediaBaseUrl((process.env.NEXT_PUBLIC_MEDIA_BASE_URL || "").trim());
+    const derived = normalizePublicMediaBaseUrl(mediaBaseFromResolvedApi());
 
     if (typeof window !== "undefined") {
         if (envMedia) return alignLoopbackDevOrigin(envMedia, derived || pageOriginMedia);
@@ -175,14 +209,19 @@ if (typeof window === "undefined") {
 export const apiUrl = (path: string) => `${resolvedApiBase()}${normalizeApiPath(path)}`;
 
 export const mediaUrl = (path?: string | null) => {
-    const mediaBase = resolvedMediaBase();
     if (!path) return "";
+    const proxyPath = toPublicCmsMediaPath(path);
+    if (proxyPath.startsWith(PUBLIC_CMS_MEDIA_PREFIX)) {
+        return proxyPath;
+    }
+
+    const mediaBase = resolvedMediaBase();
     if (/^https?:\/\//i.test(path)) {
         const canonical = toCanonicalPublicHref(path);
         try {
             const u = new URL(canonical);
-            if (u.pathname.startsWith("/media/")) {
-                return `${mediaBase}${u.pathname.replace(/^\/media/, "")}`;
+            if (u.pathname.startsWith("/media/") || u.pathname.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`)) {
+                return toPublicCmsMediaPath(u.pathname);
             }
         } catch {
             /* ignore */
@@ -190,13 +229,17 @@ export const mediaUrl = (path?: string | null) => {
         return canonical;
     }
     if (path.startsWith(mediaBase)) return path;
-    if (path.startsWith("/media")) return `${mediaBase}${path.replace(/^\/media/, "")}`;
     if (path.startsWith("/")) {
         const base = mediaBase.replace(/\/$/, "");
         return `${base}${path}`;
     }
     return `${mediaBase}/${path.replace(/^\/+/g, "")}`;
 };
+
+/** Same as `mediaUrl` for CMS uploads; relative `/cms-media/…` works with `next/image` on live. */
+export function nextImageSrc(path?: string | null): string {
+    return mediaUrl(path);
+}
 
 /** CMS uploads (`/media/...`) and static blobs (`/franchise-gallery/...`) — always absolute for <img>. */
 export function resolveHomeMediaAssetUrl(path?: string | null): string {
@@ -243,8 +286,8 @@ export function resolveCmsMediaUrl(path?: string | null): string {
         }
     }
 
-    if (typeof window !== "undefined" && pathname.startsWith("/media/")) {
-        return `${window.location.origin.replace(/\/$/, "")}${pathname}`;
+    if (pathname.startsWith("/media/")) {
+        return toPublicCmsMediaPath(pathname);
     }
 
     return resolveHomeMediaAssetUrl(pathname || raw) || pathname;
