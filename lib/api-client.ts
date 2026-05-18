@@ -225,9 +225,33 @@ if (typeof window === "undefined") {
 
 export const apiUrl = (path: string) => `${resolvedApiBase()}${normalizeApiPath(path)}`;
 
+/** Django upload on disk → public URL via `/api/cms-files/…` (works when `/media/` 404s on live). */
+export function cmsFileUrl(path?: string | null): string {
+    if (!path) return "";
+    let pathname = (path || "").trim();
+    if (/^https?:\/\//i.test(pathname)) {
+        try {
+            pathname = new URL(toCanonicalPublicHref(pathname)).pathname;
+        } catch {
+            return toCanonicalPublicHref(pathname);
+        }
+    } else {
+        pathname = normalizeUploadedMediaPath(pathname);
+    }
+    if (pathname.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`)) {
+        pathname = `/media${pathname.slice(PUBLIC_CMS_MEDIA_PREFIX.length)}`;
+    }
+    if (!pathname.startsWith("/media/")) return "";
+    const rel = pathname.replace(/^\/media\/?/, "");
+    return rel ? apiUrl(`/cms-files/${rel}`) : "";
+}
+
 export const mediaUrl = (path?: string | null) => {
     if (!path) return "";
     const raw = path.trim();
+
+    const viaApi = cmsFileUrl(raw);
+    if (viaApi) return viaApi;
 
     let pathname = raw;
     if (/^https?:\/\//i.test(raw)) {
@@ -238,21 +262,6 @@ export const mediaUrl = (path?: string | null) => {
         }
     } else {
         pathname = normalizeUploadedMediaPath(raw);
-    }
-
-    if (
-        pathname.startsWith("/media/") ||
-        pathname.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`) ||
-        pathname === "/media" ||
-        pathname === PUBLIC_CMS_MEDIA_PREFIX
-    ) {
-        const suffix = cmsStorageSuffix(pathname);
-        const envBase = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || "").trim();
-        if (envBase) {
-            return `${normalizePublicMediaBaseUrl(envBase.replace(/\/$/, ""))}${suffix}`;
-        }
-        // Same-origin `/media/…` — Next rewrites to Django (default on live).
-        return `/media${suffix}`;
     }
 
     const base = resolvedMediaBase().replace(/\/$/, "");
@@ -312,7 +321,7 @@ export function resolveCmsMediaUrl(path?: string | null): string {
     }
 
     if (pathname.startsWith("/media/") || pathname.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`)) {
-        return mediaUrl(pathname);
+        return cmsFileUrl(pathname) || mediaUrl(pathname);
     }
 
     return resolveHomeMediaAssetUrl(pathname || raw) || pathname;

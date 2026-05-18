@@ -18,6 +18,8 @@ import {
 } from "@/config/home-page-defaults";
 import { franchiseVideoPosterUploadTitle, programsPreviewUploadTitle } from "@/lib/gallery-event-names";
 import { isVirtualTourNavItem } from "@/lib/virtual-tour";
+import { FranchiseLocalFolderPicker } from "@/components/franchise/FranchiseLocalFolderPicker";
+import { extensionOf, titleFromFileName } from "@/lib/franchise-centre-upload";
 
 const NAV_CLASS_OPTIONS = [
     { value: "nav-link1", label: "Orange bubble (Style 1)", swatch: "from-[#ECB248] to-[#DD6705]" },
@@ -204,6 +206,8 @@ export default function AdminHomeContentPage() {
     const [uploadingSpotlight, setUploadingSpotlight] = useState<number | null>(null);
     const [uploadingFranchisePhoto, setUploadingFranchisePhoto] = useState<number | null>(null);
     const [uploadingFranchiseVideo, setUploadingFranchiseVideo] = useState<number | null>(null);
+    const [bulkFolderFiles, setBulkFolderFiles] = useState<File[]>([]);
+    const [uploadingBulkFolder, setUploadingBulkFolder] = useState(false);
     const [programUploadInfo, setProgramUploadInfo] = useState<Record<number, string>>({});
     const [whyUploadInfo, setWhyUploadInfo] = useState<Record<number, string>>({});
     const load = useCallback(async () => {
@@ -402,6 +406,102 @@ export default function AdminHomeContentPage() {
             setError(e instanceof Error ? e.message : "Video upload failed");
         } finally {
             setUploadingFranchiseVideo(null);
+        }
+    };
+
+    const isVideoUpload = (file: File) => {
+        const ext = extensionOf(file);
+        return file.type.startsWith("video/") || [".mp4", ".webm", ".mov", ".m4v"].includes(ext);
+    };
+
+    const isImageUpload = (file: File) => {
+        const ext = extensionOf(file);
+        return file.type.startsWith("image/") || [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"].includes(ext);
+    };
+
+    const uploadMediaFile = async (file: File, title: string, mediaType: "image" | "video") => {
+        if (mediaType === "video" && file.size > MAX_VIDEO_UPLOAD_BYTES) {
+            throw new Error(`${file.name}: video too large (max ${formatMb(MAX_VIDEO_UPLOAD_BYTES)}).`);
+        }
+        if (mediaType === "image" && file.size > MAX_UPLOAD_BYTES) {
+            throw new Error(`${file.name}: image too large (max ${formatMb(MAX_UPLOAD_BYTES)}).`);
+        }
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("category", "Banner");
+        formData.append("media_type", mediaType);
+        formData.append("file", file);
+        const created = (await authFetch("/media/", { method: "POST", body: formData })) as { file?: string };
+        const filePath = created?.file;
+        if (!filePath || typeof filePath !== "string") {
+            throw new Error(`${file.name}: server did not return a file path.`);
+        }
+        return normalizeUploadedMediaPath(filePath);
+    };
+
+    const bulkUploadFranchiseFolder = async () => {
+        const picked = bulkFolderFiles.length ? [...bulkFolderFiles] : [];
+        if (!picked.length) {
+            setError("No files selected. Use Choose files or Choose folder, then click Upload to homepage.");
+            return;
+        }
+
+        setError(null);
+        setMessage(null);
+        setUploadingBulkFolder(true);
+        let ok = 0;
+        let skipped = 0;
+        let fail = 0;
+        const newVideos: FranchiseAdvantageVideoItem[] = [];
+        const newPhotos: FranchiseAdvantagePhotoItem[] = [];
+
+        try {
+            for (let i = 0; i < picked.length; i++) {
+                const file = picked[i]!;
+                const label = titleFromFileName(file);
+                try {
+                    if (isVideoUpload(file)) {
+                        const path = await uploadMediaFile(
+                            file,
+                            `Home franchise video ${data.franchise_advantage_videos.length + newVideos.length + 1}`,
+                            "video",
+                        );
+                        newVideos.push({ poster: "", src: path, alt: label });
+                        ok++;
+                    } else if (isImageUpload(file)) {
+                        const path = await uploadMediaFile(
+                            file,
+                            franchiseVideoPosterUploadTitle(
+                                (data.franchise_advantage_photos ?? []).length + newPhotos.length,
+                            ),
+                            "image",
+                        );
+                        newPhotos.push({ src: path, alt: label });
+                        ok++;
+                    } else {
+                        skipped++;
+                    }
+                } catch (e: unknown) {
+                    fail++;
+                    console.error(file.name, e);
+                }
+            }
+
+            if (newVideos.length || newPhotos.length) {
+                setData((prev) => ({
+                    ...prev,
+                    franchise_advantage_videos: [...prev.franchise_advantage_videos, ...newVideos],
+                    franchise_advantage_photos: [...(prev.franchise_advantage_photos ?? []), ...newPhotos],
+                }));
+            }
+
+            setBulkFolderFiles([]);
+            const parts = [`${ok} uploaded to homepage`];
+            if (skipped) parts.push(`${skipped} skipped (not image/video)`);
+            if (fail) parts.push(`${fail} failed`);
+            setMessage(`${parts.join(", ")}. Click Save changes at the top.`);
+        } finally {
+            setUploadingBulkFolder(false);
         }
     };
 
@@ -617,7 +717,35 @@ export default function AdminHomeContentPage() {
                             <Plus className="w-4 h-4" /> Add navigation item
                         </Button>
                     </Section>
-                    <Section title="2. Oval blob — video (top right)" defaultOpen>
+                    <Section title="2. Homepage videos & posters (bulk folder)" defaultOpen>
+                        <div className="rounded-xl border border-blue-200 bg-blue-50/80 px-3 py-2 text-xs text-slate-700 space-y-1">
+                            <p>
+                                <strong>Upload many at once:</strong> Choose a folder. <strong>MP4 / WebM</strong> → video slides (section 3).{" "}
+                                <strong>JPG / PNG</strong> → photo slides (section 4).
+                            </p>
+                            <p className="text-amber-900">
+                                This is for the <strong>homepage ovals</strong>, not the public Photo/Video Gallery.
+                            </p>
+                        </div>
+                        <FranchiseLocalFolderPicker
+                            files={bulkFolderFiles}
+                            onFilesChange={setBulkFolderFiles}
+                            disabled={uploadingBulkFolder}
+                            hint="Choose folder → check list → Upload to homepage → Save changes at top."
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={uploadingBulkFolder || bulkFolderFiles.length === 0}
+                            onClick={() => void bulkUploadFranchiseFolder()}
+                            className="inline-flex items-center gap-2 bg-orange-500 text-white border-orange-500 hover:bg-orange-600"
+                        >
+                            <Upload className="w-4 h-4" />
+                            {uploadingBulkFolder ? "Uploading folder…" : `Upload ${bulkFolderFiles.length || ""} file(s) to homepage`}
+                        </Button>
+                    </Section>
+                    <Section title="3. Oval blob — video (top right)" defaultOpen>
                         <div className="rounded-xl border border-orange-200 bg-orange-50/60 px-3 py-2 text-xs text-slate-700">
                             <strong>On the homepage:</strong> Top orange oval — thumbnail before play; video inside blob. Delete slide removes it. Save changes when done.
                         </div>
@@ -668,7 +796,7 @@ export default function AdminHomeContentPage() {
                         <Button type="button" variant="outline" size="sm" onClick={addFranchiseVideo} className="inline-flex items-center gap-2"><Plus className="w-4 h-4" /> Add video slide</Button>
                     </Section>
 
-                    <Section title="3. Oval blob — promotion photos (below video)" defaultOpen>
+                    <Section title="4. Oval blob — promotion photos (below video)" defaultOpen>
                         <div className="rounded-xl border border-orange-200 bg-orange-50/60 px-3 py-2 text-xs text-slate-700">
                             <strong>On the homepage:</strong> Lower oval photo carousel — only slides you keep here are shown (save after delete).
                         </div>
