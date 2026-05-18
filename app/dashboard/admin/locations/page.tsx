@@ -6,8 +6,10 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 
+type LocationId = number | string;
+
 interface FranchiseLocation {
-    id?: number | string;
+    id?: LocationId;
     city_name: string;
     state: string;
     state_display?: string;
@@ -22,7 +24,7 @@ export default function FranchiseLocationsPage() {
     const [locations, setLocations] = useState<FranchiseLocation[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<LocationId | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [formData, setFormData] = useState<FranchiseLocation>({
         city_name: '',
@@ -133,7 +135,7 @@ export default function FranchiseLocationsPage() {
         }
     };
 
-    const handleUpdate = async (id: number) => {
+    const handleUpdate = async (id: LocationId) => {
         try {
             const locationToUpdate = locations.find(loc => loc.id === id);
             if (!locationToUpdate) return;
@@ -151,7 +153,7 @@ export default function FranchiseLocationsPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: LocationId) => {
         if (!confirm('Are you sure you want to delete this location?')) return;
 
         try {
@@ -165,7 +167,7 @@ export default function FranchiseLocationsPage() {
         }
     };
 
-    const updateLocation = (id: number, field: keyof FranchiseLocation, value: any) => {
+    const updateLocation = (id: LocationId, field: keyof FranchiseLocation, value: unknown) => {
         setLocations(locations.map(loc =>
             loc.id === id ? { ...loc, [field]: value } : loc
         ));
