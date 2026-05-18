@@ -1,11 +1,10 @@
-'use client';
-
 import { useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { mediaUrl, resolveCmsMediaUrl, resolveHomeMediaAssetUrl } from '@/lib/api-client';
-import { getFranchiseVideoEmbedSrc } from '@/lib/franchise-embed-url';
+import { useFranchiseVideoGallery } from '@/components/home/franchise-video-open-context';
+import { buildModalEmbedSrc, getFranchiseVideoEmbedSrc } from '@/lib/franchise-embed-url';
 
 export type FranchiseGalleryVideo = {
     poster?: string;
@@ -31,33 +30,25 @@ function resolveVideos(videos: FranchiseGalleryVideo[]): ResolvedVideo[] {
     });
 }
 
-function embedWithAutoplay(src: string): string {
-    if (!src) return src;
-    try {
-        const url = new URL(src);
-        url.searchParams.set('autoplay', '1');
-        if (url.hostname.includes('youtube.com')) {
-            url.searchParams.set('rel', '0');
-        }
-        return url.toString();
-    } catch {
-        return src.includes('?') ? `${src}&autoplay=1` : `${src}?autoplay=1`;
-    }
-}
-
 type FranchiseVideoGalleryModalProps = {
     videos: FranchiseGalleryVideo[];
-    activeIndex: number | null;
-    onClose: () => void;
-    onIndexChange: (index: number) => void;
 };
 
-export default function FranchiseVideoGalleryModal({
-    videos,
-    activeIndex,
-    onClose,
-    onIndexChange,
-}: FranchiseVideoGalleryModalProps) {
+export default function FranchiseVideoGalleryModal({ videos }: FranchiseVideoGalleryModalProps) {
+    const gallery = useFranchiseVideoGallery();
+    const activeIndex = gallery?.activeIndex ?? null;
+
+    const onClose = useCallback(() => {
+        gallery?.closeGallery();
+    }, [gallery]);
+
+    const onIndexChange = useCallback(
+        (index: number) => {
+            gallery?.setGalleryIndex(index);
+        },
+        [gallery],
+    );
+
     const resolved = resolveVideos(videos);
     const isOpen = activeIndex !== null && resolved.length > 0;
     const index = activeIndex ?? 0;
@@ -87,7 +78,7 @@ export default function FranchiseVideoGalleryModal({
         };
     }, [isOpen, onClose, goPrev, goNext, count]);
 
-    if (typeof document === 'undefined') return null;
+    if (!gallery || typeof document === 'undefined') return null;
 
     const playable = Boolean(current?.embedSrc || current?.fileSrc);
 
@@ -145,7 +136,16 @@ export default function FranchiseVideoGalleryModal({
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-slate-900/95 px-5 py-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="absolute right-3 top-3 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white text-slate-900 shadow-lg transition hover:bg-orange-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+                            aria-label="Close video"
+                        >
+                            <X className="h-5 w-5" aria-hidden />
+                        </button>
+
+                        <div className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-slate-900/95 px-5 py-4 pr-14">
                             <div className="min-w-0">
                                 <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-400">
                                     Franchise video
@@ -159,22 +159,13 @@ export default function FranchiseVideoGalleryModal({
                                     </p>
                                 ) : null}
                             </div>
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-900 shadow-md transition hover:bg-orange-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
-                                aria-label="Close video"
-                            >
-                                <X className="h-5 w-5" aria-hidden />
-                                Close
-                            </button>
                         </div>
 
                         <div className="relative aspect-video w-full bg-black">
                             {playable && current.embedSrc ? (
                                 <iframe
                                     key={`${current.embedSrc}-${index}`}
-                                    src={embedWithAutoplay(current.embedSrc)}
+                                    src={buildModalEmbedSrc(current.embedSrc)}
                                     title={current.alt || `Franchise video ${index + 1}`}
                                     className="absolute inset-0 h-full w-full border-0"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

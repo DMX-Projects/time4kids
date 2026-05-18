@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import CmsImage from '@/components/ui/CmsImage';
 import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { buildFallbackGalleryFromMock } from '@/lib/mock-media-data';
-import { extractGalleryEventKey, formatGalleryEventName } from '@/lib/gallery-event-names';
 import { resolveFranchiseEmbedSrc } from '@/lib/franchise-embed-url';
 import Modal from '@/components/ui/Modal';
 
@@ -16,6 +15,7 @@ interface MediaItem {
     embed_url?: string;
     media_type: 'image' | 'video' | 'embed';
     caption: string;
+    order: number;
 }
 
 interface EventGroup {
@@ -58,35 +58,49 @@ export default function GalleryPage() {
                 if (!res.ok) throw new Error('Failed to fetch media');
 
                 const data = await res.json();
-                const results = Array.isArray(data) ? data : data.results || [];
+                const rawResults = Array.isArray(data) ? data : data.results || [];
+                // Only gallery CMS albums (heading + uploads). Excludes home/franchise Banner uploads.
+                const results = rawResults.filter(
+                    (item: { category?: string; section?: number | null; section_title?: string }) => {
+                        if ((item.category || '').trim() === 'Banner') return false;
+                        return item.section != null && Boolean((item.section_title || '').trim());
+                    },
+                );
 
-                // Group media by extracting event name from title
-                // e.g., "anuall day - 1" -> event: "Annual Day"
-                const groupedEvents: { [key: string]: MediaItem[] } = {};
+                // Group by gallery heading id so title collisions cannot merge other media in.
+                const albumBySectionId = new Map<number, EventGroup>();
 
-                results.forEach((item: any) => {
-                    const sectionTitle = (item.section_title as string | undefined)?.trim();
-                    const eventName = sectionTitle || extractGalleryEventKey(item.title);
-                    const formattedEventName = sectionTitle || formatGalleryEventName(eventName);
-
-                    if (!groupedEvents[formattedEventName]) {
-                        groupedEvents[formattedEventName] = [];
+                results.forEach((item: {
+                    id: number;
+                    section: number;
+                    section_title?: string;
+                    file?: string;
+                    embed_url?: string;
+                    media_type: MediaItem['media_type'];
+                    caption?: string;
+                    title?: string;
+                    order?: number;
+                }) => {
+                    const sectionId = item.section;
+                    const sectionTitle = (item.section_title || '').trim();
+                    if (!albumBySectionId.has(sectionId)) {
+                        albumBySectionId.set(sectionId, { title: sectionTitle, media: [] });
                     }
-
-                    groupedEvents[formattedEventName].push({
+                    albumBySectionId.get(sectionId)!.media.push({
                         id: item.id,
                         file: item.file || '',
                         embed_url: item.embed_url || undefined,
                         media_type: item.media_type,
-                        caption: item.caption || item.title,
+                        caption: item.caption || item.title || '',
+                        order: typeof item.order === 'number' ? item.order : 0,
                     });
                 });
 
-                // Convert to array of EventGroup
-                const eventGroups: EventGroup[] = Object.entries(groupedEvents).map(([title, media]) => ({
-                    title,
-                    media
-                }));
+                albumBySectionId.forEach((album) => {
+                    album.media.sort((a, b) => (a.order !== b.order ? a.order - b.order : a.id - b.id));
+                });
+
+                const eventGroups: EventGroup[] = Array.from(albumBySectionId.values());
 
                 if (eventGroups.length === 0) {
                     applyFallback();
@@ -245,8 +259,8 @@ export default function GalleryPage() {
                                                     );
                                                 }
                                                 return (
-                                                <Image
-                                                    src={mediaUrl(thumb.file)}
+                                                <CmsImage
+                                                    src={thumb.file}
                                                     alt={event.title}
                                                     fill
                                                     className="object-cover transition-transform duration-700 group-hover:scale-110"
@@ -343,8 +357,8 @@ export default function GalleryPage() {
                                                     muted
                                                 />
                                             ) : (
-                                                <Image
-                                                    src={mediaUrl(item.file)}
+                                                <CmsImage
+                                                    src={item.file}
                                                     alt={item.caption || "Event Media"}
                                                     fill
                                                     className="object-cover transition-transform duration-700 group-hover:scale-110"
@@ -429,8 +443,8 @@ export default function GalleryPage() {
                                 />
                             ) : (
                                 <div className="relative w-full h-[70vh] bg-black">
-                                    <Image
-                                        src={mediaUrl(selectedMedia.file)}
+                                    <CmsImage
+                                        src={selectedMedia.file}
                                         alt={selectedMedia.caption || "Gallery View"}
                                         fill
                                         className="object-contain"

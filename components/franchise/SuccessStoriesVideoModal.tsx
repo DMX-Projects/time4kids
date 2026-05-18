@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { mediaUrl, resolveCmsMediaUrl, resolveHomeMediaAssetUrl } from '@/lib/api-client';
-import { getFranchiseVideoEmbedSrc } from '@/lib/franchise-embed-url';
+import { buildModalEmbedSrc, parseEmbedInput, resolveFranchiseEmbedSrc } from '@/lib/franchise-embed-url';
 import type { FranchiseTestimonial } from '@/config/franchise-page-defaults';
 
 export type ResolvedSuccessStory = FranchiseTestimonial & {
@@ -18,7 +18,7 @@ export function resolveSuccessStories(items: FranchiseTestimonial[]): ResolvedSu
     return items
         .map((item) => {
             const raw = (item.video_url || '').trim();
-            const embedSrc = getFranchiseVideoEmbedSrc(raw);
+            const embedSrc = resolveFranchiseEmbedSrc(parseEmbedInput(raw));
             const fileSrc = embedSrc ? null : raw ? mediaUrl(raw) || raw : null;
             const thumb = (item.thumbnail_url || '').trim();
             const posterSrc =
@@ -26,18 +26,6 @@ export function resolveSuccessStories(items: FranchiseTestimonial[]): ResolvedSu
             return { ...item, embedSrc, fileSrc, posterSrc };
         })
         .filter((s) => Boolean(s.embedSrc || s.fileSrc || s.posterSrc));
-}
-
-function embedWithAutoplay(src: string): string {
-    if (!src) return src;
-    try {
-        const url = new URL(src);
-        url.searchParams.set('autoplay', '1');
-        if (url.hostname.includes('youtube.com')) url.searchParams.set('rel', '0');
-        return url.toString();
-    } catch {
-        return src.includes('?') ? `${src}&autoplay=1` : `${src}?autoplay=1`;
-    }
 }
 
 type Props = {
@@ -133,7 +121,16 @@ export default function SuccessStoriesVideoModal({ stories, activeIndex, onClose
                         transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-slate-900/95 px-5 py-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="absolute right-3 top-3 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white text-slate-900 shadow-lg transition hover:bg-orange-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ef5f5f]"
+                            aria-label="Close video"
+                        >
+                            <X className="h-5 w-5" aria-hidden />
+                        </button>
+
+                        <div className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-slate-900/95 px-5 py-4 pr-14">
                             <div className="min-w-0">
                                 <p className="text-xs font-black uppercase tracking-[0.2em] text-[#ef5f5f]">
                                     Franchisee success story
@@ -146,26 +143,16 @@ export default function SuccessStoriesVideoModal({ stories, activeIndex, onClose
                                 </h2>
                                 <p className="text-sm text-slate-400">
                                     {current.author}
-                                    {current.location ? ` · ${current.location}` : ''}
                                     {count > 1 ? ` · ${index + 1} / ${count}` : ''}
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-900 shadow-md transition hover:bg-orange-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
-                                aria-label="Close"
-                            >
-                                <X className="h-5 w-5" aria-hidden />
-                                Close
-                            </button>
                         </div>
 
                         <div className="relative aspect-video w-full bg-black">
                             {playable && current.embedSrc ? (
                                 <iframe
                                     key={`${current.embedSrc}-${index}`}
-                                    src={embedWithAutoplay(current.embedSrc)}
+                                    src={buildModalEmbedSrc(current.embedSrc)}
                                     title={current.title || `Success story ${index + 1}`}
                                     className="absolute inset-0 h-full w-full border-0"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

@@ -2,8 +2,10 @@
 export type GalleryMediaItem = {
     id: number;
     file: string;
-    media_type: "image" | "video";
+    media_type: "image" | "video" | "embed";
+    embed_url?: string;
     caption: string;
+    order: number;
 };
 
 export type GalleryEventGroup = { title: string; media: GalleryMediaItem[] };
@@ -77,6 +79,7 @@ export function buildFallbackGalleryFromMock(): GalleryEventGroup[] {
             file: m.src,
             media_type: "image",
             caption: m.title,
+            order: list.length,
         });
         byCategory.set(m.category, list);
     }

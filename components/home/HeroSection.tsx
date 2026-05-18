@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 
-import Image from 'next/image';
 import Slider from 'react-slick';
+import CmsImage from '@/components/ui/CmsImage';
 import { motion, AnimatePresence } from 'framer-motion';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import { mediaUrl, apiUrl } from '@/lib/api-client';
+import { apiUrl } from '@/lib/api-client';
 import Modal from '@/components/ui/Modal';
 import AdmissionForm from '@/components/admission/AdmissionForm';
 
@@ -233,8 +233,8 @@ export default function HeroSection() {
                             {heroSlides.map((slide: any, index: number) => {
                                 const SlideContent = () => (
                                     <div className="slide-content relative h-full w-full overflow-hidden">
-                                        <Image
-                                            src={mediaUrl(slide.image)}
+                                        <CmsImage
+                                            src={slide.image}
                                             alt={slide.alt_text || "T.I.M.E. Kids Slide"}
                                             fill
                                             sizes="100vw"

@@ -59,3 +59,24 @@ export function resolveFranchiseEmbedSrc(raw: string): string | null {
 export function isFranchiseEmbedUrl(raw: string | null | undefined): boolean {
     return Boolean(resolveFranchiseEmbedSrc(raw || ''));
 }
+
+/** Embed URL for full-screen modals (autoplay + minimal Bunny chrome when possible). */
+export function buildModalEmbedSrc(src: string): string {
+    if (!src) return src;
+    try {
+        const url = new URL(src);
+        url.searchParams.set('autoplay', 'true');
+        if (/mediadelivery\.net/i.test(url.hostname)) {
+            url.searchParams.set('compactControls', 'true');
+            url.searchParams.set('responsive', 'true');
+            url.searchParams.set('preload', 'true');
+        }
+        if (url.hostname.includes('youtube.com')) {
+            url.searchParams.set('rel', '0');
+            url.searchParams.set('modestbranding', '1');
+        }
+        return url.toString();
+    } catch {
+        return src.includes('?') ? `${src}&autoplay=true` : `${src}?autoplay=true`;
+    }
+}
