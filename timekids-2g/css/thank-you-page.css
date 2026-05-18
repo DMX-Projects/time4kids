@@ -1,0 +1,108 @@
+/* Static thank-you pages (`/thank-you.html`, `/thank-you-fb.html`) */
+.thank-you-header-logo {
+  text-align: center;
+  padding: 0.75rem 0;
+}
+
+.thank-you-header-logo .stat-logo img {
+  max-width: 220px;
+  height: auto;
+}
+
+.thank-you-message {
+  text-align: left;
+  padding: 0.5rem 0 1rem;
+}
+
+.thank-you-message__body {
+  color: #202020;
+  font-size: clamp(1.35rem, 3.2vw, 2.35rem);
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.thank-you-back {
+  margin-top: 1.5rem;
+}
+
+.thank-you-back a {
+  color: #083f88;
+  font-weight: 700;
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+  text-decoration: none;
+}
+
+.thank-you-back a:hover {
+  text-decoration: underline;
+}
+
+.thank-you-page--fb .thank-you-message {
+  border-top: 4px solid #1877f2;
+  padding-top: 1.25rem;
+}
+
+/* About block waves + footer (static pages do not use `app/globals.css`) */
+.legacy-thank-you__about-block .thank-you-wave--1,
+.legacy-thank-you__about-block .thank-you-wave--2,
+.legacy-thank-you__about-block .thank-you-wave--3 {
+  background: url("data:image/svg+xml,%3Csvg version='1.1' id='waveHorizontal1' class='wave1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' width='350px' height='20px' viewBox='0 0 350 20' enable-background='new 0 0 350 20' xml:space='preserve'%3E%3Cpath fill=' %23035392' d='M0,17.1C29.9,17.1,57.8,0,87.5,0c30.2,0,58.1,17.1,87.1,17.1c29.9,0,57.8-17.1,87.7-17.1 s57.8,17.1,87.7,17.1V20H0V17.1z'/%3E%3C/svg%3E%0A");
+  -webkit-animation-delay: -4s;
+  animation-delay: -4s;
+}
+
+.legacy-thank-you__about-block .thank-you-wave--1 {
+  background-size: 100px 100px;
+  opacity: 0.3;
+}
+
+.legacy-thank-you__about-block .thank-you-wave--2 {
+  -webkit-animation-delay: -2s;
+  animation-delay: -2s;
+  -webkit-animation-duration: 12s;
+  animation-duration: 12s;
+  opacity: 0.5;
+}
+
+.legacy-thank-you__about-block .thank-you-wave--3 {
+  -webkit-animation-delay: -4s;
+  animation-delay: -4s;
+  -webkit-animation-duration: 8s;
+  animation-duration: 8s;
+}
+
+.legacy-thank-you__footer-grid {
+  align-items: flex-start;
+}
+
+.legacy-thank-you__footer-heading {
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.legacy-thank-you__footer-text,
+.legacy-thank-you__footer-copy {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.legacy-thank-you__footer-link {
+  color: #fff000;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.legacy-thank-you__footer-link:hover {
+  text-decoration: underline;
+  color: #fff;
+}
+
+.legacy-thank-you__social .s-icon img {
+  height: 36px;
+  width: auto;
+  margin: 0 6px;
+}

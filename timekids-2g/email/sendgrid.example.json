@@ -1,0 +1,16 @@
+{
+  "personalizations": [
+    {
+      "to": [{ "email": "{{recipientEmail}}" }],
+      "cc": [{ "email": "admissionleads@timekidspreschools.com" }],
+      "subject": "Thank You for Your Interest in Timekids Preschool"
+    }
+  ],
+  "from": { "email": "info@timekidspreschools.com" },
+  "content": [
+    {
+      "type": "text/html",
+      "value": "Replace with rendered body.template.html"
+    }
+  ]
+}
