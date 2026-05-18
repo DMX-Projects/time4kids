@@ -74,6 +74,7 @@ function pathnameDashboardRole(): Role | null {
         if (r === "parent" || r === "franchise" || r === "admin" || r === "driver") return r as Role;
     }
     if (parts[0] === "driver") return "driver";
+    if (parts[0] === "leads") return "admin";
     return null;
 }
 

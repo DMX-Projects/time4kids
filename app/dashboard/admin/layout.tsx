@@ -21,6 +21,7 @@ const navItems: DashboardNavItem[] = [
     { label: "Franchise", href: "/dashboard/admin/add-franchise", icon: <Building2 className="w-5 h-5" /> },
     { label: "Careers", href: "/dashboard/admin/careers", icon: <Briefcase className="w-5 h-5" /> },
     { label: "Enquiries", href: "/dashboard/admin/enquiries", icon: <Inbox className="w-5 h-5" /> },
+    { label: "Landing leads", href: "/leads/all/", icon: <Inbox className="w-5 h-5" /> },
     { label: "Updates", href: "/dashboard/admin/updates", icon: <CalendarDays className="w-5 h-5" /> },
     { label: "Testimonials", href: "/dashboard/admin/testimonials", icon: <MessageSquareQuote className="w-5 h-5" /> },
     { label: "Profile", href: "/dashboard/admin/profile", icon: <UserCircle className="w-5 h-5" /> },
