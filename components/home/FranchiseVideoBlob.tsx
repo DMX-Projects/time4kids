@@ -29,7 +29,7 @@ function BlobFillImage({
     src,
     alt,
     className,
-    fallbackSrc = '/icon-media.svg',
+    fallbackSrc = '/franchise-gallery/franchise-promo-1.png',
 }: {
     src: string;
     alt: string;
