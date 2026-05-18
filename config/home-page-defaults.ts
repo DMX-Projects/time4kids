@@ -12,7 +12,7 @@ export type KeyNavItem = {
 };
 
 /** Default homepage franchise video thumbnail (`public/franchise-gallery/`). */
-export const DEFAULT_FRANCHISE_VIDEO_POSTER = "/franchise-gallery/franchise-video-poster.png";
+export const DEFAULT_FRANCHISE_VIDEO_POSTER = "/franchise-gallery/franchise-promo-1.png";
 
 export type FranchiseAdvantageVideoItem = {
     /** Thumbnail inside the blob (path, /media/…, or full URL). */

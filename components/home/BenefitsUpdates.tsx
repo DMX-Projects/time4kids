@@ -181,12 +181,11 @@ type FranchiseAdvantageVideo = { poster?: string; src: string; alt?: string };
 
 function franchiseVideoBlobProps(item: FranchiseAdvantageVideo, index: number) {
     const posterRaw = (item.poster || '').trim();
+    const defaultPoster =
+        resolveHomeMediaAssetUrl(DEFAULT_FRANCHISE_VIDEO_POSTER) || DEFAULT_FRANCHISE_VIDEO_POSTER;
     const posterSrc =
-        resolveCmsMediaUrl(posterRaw) ||
-        resolveCmsMediaUrl(DEFAULT_FRANCHISE_VIDEO_POSTER) ||
-        resolveHomeMediaAssetUrl(posterRaw) ||
-        resolveHomeMediaAssetUrl(DEFAULT_FRANCHISE_VIDEO_POSTER) ||
-        DEFAULT_FRANCHISE_VIDEO_POSTER;
+        (posterRaw ? resolveCmsMediaUrl(posterRaw) || resolveHomeMediaAssetUrl(posterRaw) : '') ||
+        defaultPoster;
     const srcRaw = item.src.trim();
     const embedSrc = getFranchiseVideoEmbedSrc(srcRaw);
     const fileSrc = embedSrc ? null : (srcRaw ? mediaUrl(srcRaw) || srcRaw : null);
