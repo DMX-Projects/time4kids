@@ -134,9 +134,26 @@ function mediaBaseFromResolvedApi(): string {
     return "";
 }
 
+/** When true, keep `NEXT_PUBLIC_MEDIA_BASE_URL=…/media` (nginx serves `/media/` directly). */
+function useDirectMediaUrls(): boolean {
+    return process.env.NEXT_PUBLIC_MEDIA_SERVE_DIRECT === "true";
+}
+
+/** `/media/gallery/x.jpg` → `/gallery/x.jpg` for joining with media base. */
+function cmsStorageSuffix(pathname: string): string {
+    const p = pathname.startsWith("/") ? pathname : `/${pathname}`;
+    if (p.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`)) {
+        return p.slice(PUBLIC_CMS_MEDIA_PREFIX.length) || "/";
+    }
+    if (p.startsWith("/media/")) return p.slice("/media".length) || "/";
+    return p;
+}
+
 function normalizePublicMediaBaseUrl(base: string): string {
     const trimmed = base.replace(/\/$/, "");
     if (!trimmed) return trimmed;
+    if (useDirectMediaUrls()) return trimmed;
+    if (trimmed.endsWith(PUBLIC_CMS_MEDIA_PREFIX)) return trimmed;
     if (/\/media$/i.test(trimmed)) return trimmed.replace(/\/media$/i, PUBLIC_CMS_MEDIA_PREFIX);
     return trimmed;
 }
@@ -210,30 +227,28 @@ export const apiUrl = (path: string) => `${resolvedApiBase()}${normalizeApiPath(
 
 export const mediaUrl = (path?: string | null) => {
     if (!path) return "";
-    const proxyPath = toPublicCmsMediaPath(path);
-    if (proxyPath.startsWith(PUBLIC_CMS_MEDIA_PREFIX)) {
-        return proxyPath;
-    }
+    const raw = path.trim();
+    const base = resolvedMediaBase().replace(/\/$/, "");
 
-    const mediaBase = resolvedMediaBase();
-    if (/^https?:\/\//i.test(path)) {
-        const canonical = toCanonicalPublicHref(path);
+    if (/^https?:\/\//i.test(raw)) {
         try {
-            const u = new URL(canonical);
+            const u = new URL(toCanonicalPublicHref(raw));
             if (u.pathname.startsWith("/media/") || u.pathname.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`)) {
-                return toPublicCmsMediaPath(u.pathname);
+                return `${base}${cmsStorageSuffix(u.pathname)}`;
             }
         } catch {
             /* ignore */
         }
-        return canonical;
+        return toCanonicalPublicHref(raw);
     }
-    if (path.startsWith(mediaBase)) return path;
-    if (path.startsWith("/")) {
-        const base = mediaBase.replace(/\/$/, "");
-        return `${base}${path}`;
+
+    const normalized = normalizeUploadedMediaPath(raw);
+    if (normalized.startsWith("/media/") || normalized.startsWith(`${PUBLIC_CMS_MEDIA_PREFIX}/`)) {
+        return `${base}${cmsStorageSuffix(normalized)}`;
     }
-    return `${mediaBase}/${path.replace(/^\/+/g, "")}`;
+    if (raw.startsWith(base)) return raw;
+    if (normalized.startsWith("/")) return `${base}${normalized}`;
+    return `${base}/${normalized.replace(/^\/+/g, "")}`;
 };
 
 /** Same as `mediaUrl` for CMS uploads; relative `/cms-media/…` works with `next/image` on live. */

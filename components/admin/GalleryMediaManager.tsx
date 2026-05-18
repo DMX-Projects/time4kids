@@ -175,10 +175,22 @@ export function GalleryMediaManager() {
                         headers: { Authorization: `Bearer ${tokens.access}` },
                         body: fd,
                     });
-                    if (res.ok) ok++;
-                    else fail++;
-                } catch {
+                    if (res.ok) {
+                        ok++;
+                    } else {
+                        fail++;
+                        let detail = res.statusText;
+                        try {
+                            const err = (await res.json()) as { detail?: string };
+                            if (err?.detail) detail = String(err.detail);
+                        } catch {
+                            /* ignore */
+                        }
+                        console.error(`Upload failed for ${file.name}:`, detail);
+                    }
+                } catch (err) {
                     fail++;
+                    console.error(`Upload failed for ${file.name}:`, err);
                 }
             }
             showToast(`${ok} uploaded${fail ? `, ${fail} failed` : ""}`, ok ? "success" : "error");
