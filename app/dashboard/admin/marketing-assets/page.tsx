@@ -128,11 +128,17 @@ export default function AdminMarketingAssetsPage() {
             const existing = getAsset(cfg.slug);
             const fd = new FormData();
             fd.append("title", form.title.trim() || cfg.defaultTitle);
-            fd.append("is_active", form.is_active ? "true" : "false");
-            fd.append("link", form.link.trim());
+            fd.append("is_active", form.is_active ? "1" : "0");
 
             const picked = files[cfg.slug];
-            if (picked) fd.append("file", picked);
+            if (cfg.acceptPdf) {
+                if (picked) {
+                    fd.append("link", "");
+                    fd.append("file", picked, picked.name);
+                }
+            } else {
+                fd.append("link", form.link.trim());
+            }
 
             if (existing?.id) {
                 await authFetch(`/common/marketing-assets/${existing.id}/`, {
@@ -151,7 +157,8 @@ export default function AdminMarketingAssetsPage() {
             await load();
         } catch (e) {
             console.error(e);
-            showToast("Save failed. Try again or use a smaller PDF.", "error");
+            const msg = e instanceof Error ? e.message : "Save failed.";
+            showToast(msg || "Save failed. Try again or use a smaller PDF.", "error");
         } finally {
             setSavingSlug(null);
         }
