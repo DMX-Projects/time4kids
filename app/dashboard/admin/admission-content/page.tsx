@@ -6,6 +6,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders } from "@/lib/api-client";
 import { GraduationCap, Plus, Trash2, Upload } from "lucide-react";
 import { DEFAULT_ADMISSION_PAGE_DATA, mergeAdmissionPageData, type AdmissionFaq, type AdmissionPageData, type AdmissionSkill, type AdmissionVideoCard } from "@/config/admission-page-defaults";
+import { MarketingBrochureUploader } from "@/components/admin/MarketingBrochureUploader";
+import { ADMISSION_BROCHURE_PDF_URL } from "@/config/site-public";
 
 const inputClass =
     "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100";
@@ -173,8 +175,8 @@ export default function AdminAdmissionContentPage() {
                     Edit CMS content on <strong>/admission</strong>. Use <strong>Save</strong> when finished.
                 </p>
                 <p className="text-xs text-slate-500 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    Not editable here (fixed in the page layout): top hero headline, enquiry form, infrastructure cards, NEP block, and download corner (brochure / virtual tour use{" "}
-                    <strong>Marketing assets</strong> in Django admin).
+                    Not editable here (fixed in the page layout): top hero headline, enquiry form, infrastructure cards, and NEP block. Upload the admission brochure PDF below, or use{" "}
+                    <strong>Brochures &amp; PDFs</strong> in the sidebar.
                 </p>
             </div>
 
@@ -182,6 +184,16 @@ export default function AdminAdmissionContentPage() {
                 <p className="text-slate-500">Loading…</p>
             ) : (
                 <div className="space-y-4">
+                    <Section title="Admission brochure PDF">
+                        <MarketingBrochureUploader
+                            slug="admission-brochure"
+                            defaultTitle="Admission Brochure"
+                            fallbackUrl={ADMISSION_BROCHURE_PDF_URL}
+                            description="Shown on /admission and the home page Admission Brochure download."
+                            compact
+                        />
+                    </Section>
+
                     <Section title="1. Why Preschool? (list)">
                         {whyPreschool.map((t, i) => (
                             <div key={i} className="rounded-xl border border-slate-100 p-3 bg-slate-50/80 space-y-2">

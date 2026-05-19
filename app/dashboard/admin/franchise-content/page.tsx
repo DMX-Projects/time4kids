@@ -15,6 +15,8 @@ import {
     type FranchisePageData,
     type FranchiseTestimonial,
 } from "@/config/franchise-page-defaults";
+import { MarketingBrochureUploader } from "@/components/admin/MarketingBrochureUploader";
+import { FRANCHISE_BROCHURE_PDF_URL } from "@/config/site-public";
 
 const inputClass =
     "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100";
@@ -1098,7 +1100,14 @@ export default function AdminFranchiseContentPage() {
                     </Section>
 
                     <Section title="9. Brochure (bottom section)">
-                        <div className="grid md:grid-cols-2 gap-3">
+                        <MarketingBrochureUploader
+                            slug="franchise-brochure"
+                            defaultTitle="Franchise Brochure"
+                            fallbackUrl={FRANCHISE_BROCHURE_PDF_URL}
+                            description="PDF for the download button on /franchise and the home page Franchise Brochure tile."
+                            compact
+                        />
+                        <div className="grid md:grid-cols-2 gap-3 mt-4">
                             <div className="md:col-span-2">
                                 <label className={labelClass}>Heading</label>
                                 <input className={inputClass} value={data.brochure.heading} onChange={(e) => setData({ ...data, brochure: { ...data.brochure, heading: e.target.value } })} />
@@ -1107,24 +1116,9 @@ export default function AdminFranchiseContentPage() {
                                 <label className={labelClass}>Subtitle</label>
                                 <input className={inputClass} value={data.brochure.subtitle} onChange={(e) => setData({ ...data, brochure: { ...data.brochure, subtitle: e.target.value } })} />
                             </div>
-                            <div>
+                            <div className="md:col-span-2">
                                 <label className={labelClass}>Button label</label>
                                 <input className={inputClass} value={data.brochure.button_label} onChange={(e) => setData({ ...data, brochure: { ...data.brochure, button_label: e.target.value } })} />
-                            </div>
-                            <div>
-                                <label className={labelClass}>Fallback PDF URL</label>
-                                <input className={inputClass} value={data.brochure.fallback_url} onChange={(e) => setData({ ...data, brochure: { ...data.brochure, fallback_url: e.target.value } })} />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className={labelClass}>Marketing asset slug (optional)</label>
-                                <input
-                                    className={inputClass}
-                                    value={data.brochure.marketing_asset_slug}
-                                    onChange={(e) => setData({ ...data, brochure: { ...data.brochure, marketing_asset_slug: e.target.value } })}
-                                />
-                                <p className="mt-1 text-[11px] text-slate-500">
-                                    If a Marketing Asset with this slug exists, its file/title will be used for the button.
-                                </p>
                             </div>
                         </div>
                     </Section>

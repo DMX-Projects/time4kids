@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import CmsImage from '@/components/ui/CmsImage';
-import { Play, ArrowLeft, Calendar, AlertCircle, Image as ImageIcon, Hand, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, ArrowLeft, AlertCircle, Image as ImageIcon, Hand, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { buildFallbackGalleryFromMock } from '@/lib/mock-media-data';
 import { resolveFranchiseEmbedSrc } from '@/lib/franchise-embed-url';
-import Modal from '@/components/ui/Modal';
 
 interface MediaItem {
     id: number;
@@ -161,7 +161,7 @@ export default function GalleryPage() {
         setSelectedMedia(filteredMedia[newIndex]);
     }, [selectedMedia, filteredMedia]);
 
-    // Keyboard navigation effect
+    // Keyboard navigation + lock body scroll while lightbox is open
     useEffect(() => {
         if (!selectedMedia) return;
 
@@ -175,8 +175,12 @@ export default function GalleryPage() {
             }
         };
 
+        document.body.style.overflow = 'hidden';
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        return () => {
+            document.body.style.overflow = '';
+            window.removeEventListener('keydown', handleKeyDown);
+        };
     }, [selectedMedia, navigateMedia]);
 
     return (
@@ -375,75 +379,108 @@ export default function GalleryPage() {
                     )}
                 </AnimatePresence>
 
-                {/* Media Lightbox Modal */}
-                <Modal
-                    isOpen={!!selectedMedia}
-                    onClose={closeLightbox}
-                    size="xl"
-                >
-                    {selectedMedia && (
-                        <div className="relative w-full h-full flex flex-col items-center justify-center min-h-[50vh] rounded-xl overflow-hidden group/modal bg-black">
-                            {/* Navigation Buttons */}
-                            {filteredMedia.length > 1 && (
-                                <>
+                {/* Full-screen lightbox — entire image visible on mobile */}
+                {typeof document !== 'undefined' &&
+                    createPortal(
+                        <AnimatePresence>
+                            {selectedMedia ? (
+                                <motion.div
+                                    key="gallery-lightbox"
+                                    className="fixed inset-0 z-[9999] flex flex-col bg-slate-950/95 backdrop-blur-sm"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-label="Gallery photo viewer"
+                                >
                                     <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigateMedia('prev');
-                                        }}
-                                        className="absolute left-4 top-1/2 -translate-y-1/2 z-[60] p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all backdrop-blur-md hover:scale-110"
+                                        type="button"
+                                        onClick={closeLightbox}
+                                        className="absolute right-3 top-3 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition hover:bg-white/25 sm:right-5 sm:top-5"
+                                        aria-label="Close"
                                     >
-                                        <ChevronLeft className="w-8 h-8" />
+                                        <X className="h-5 w-5" />
                                     </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigateMedia('next');
-                                        }}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 z-[60] p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all backdrop-blur-md hover:scale-110"
-                                    >
-                                        <ChevronRight className="w-8 h-8" />
-                                    </button>
-                                </>
-                            )}
 
-                            {selectedMedia.media_type === 'embed' ? (
-                                <div className="relative w-full aspect-video max-h-[70vh] bg-black rounded-lg overflow-hidden">
-                                    <iframe
-                                        src={embedSrcForItem(selectedMedia) || ''}
-                                        title={selectedMedia.caption || 'Gallery video'}
-                                        className="absolute inset-0 w-full h-full"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                    />
-                                </div>
-                            ) : selectedMedia.media_type === 'video' ? (
-                                <video
-                                    src={mediaUrl(selectedMedia.file)}
-                                    controls
-                                    autoPlay
-                                    className="max-w-full max-h-[70vh] rounded-lg shadow-2xl"
-                                />
-                            ) : (
-                                <div className="relative w-full h-[70vh] bg-black">
-                                    <CmsImage
-                                        src={selectedMedia.file}
-                                        alt={selectedMedia.caption || "Gallery View"}
-                                        fill
-                                        className="object-contain"
-                                        priority
-                                    />
-                                </div>
-                            )}
+                                    {filteredMedia.length > 1 ? (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => navigateMedia('prev')}
+                                                className="absolute left-2 top-1/2 z-50 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-lg transition hover:scale-105 sm:left-4"
+                                                aria-label="Previous"
+                                            >
+                                                <ChevronLeft className="h-6 w-6" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => navigateMedia('next')}
+                                                className="absolute right-2 top-1/2 z-50 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-lg transition hover:scale-105 sm:right-4"
+                                                aria-label="Next"
+                                            >
+                                                <ChevronRight className="h-6 w-6" />
+                                            </button>
+                                        </>
+                                    ) : null}
 
-                            {selectedMedia.caption && (
-                                <div className="mt-4 p-4 text-center w-full z-50">
-                                    <p className="text-white font-bold text-lg">{selectedMedia.caption}</p>
-                                </div>
-                            )}
-                        </div>
+                                    <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto overscroll-contain px-3 pb-4 pt-14 sm:px-12 sm:pb-8 sm:pt-16">
+                                        <AnimatePresence mode="wait">
+                                            {selectedMedia.media_type === 'embed' ? (
+                                                <motion.div
+                                                    key={`embed-${selectedMedia.id}`}
+                                                    initial={{ opacity: 0, scale: 0.98 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.98 }}
+                                                    className="relative aspect-video w-full max-w-4xl overflow-hidden rounded-lg bg-black"
+                                                    style={{ maxHeight: 'min(80dvh, 720px)' }}
+                                                >
+                                                    <iframe
+                                                        src={embedSrcForItem(selectedMedia) || ''}
+                                                        title={selectedMedia.caption || 'Gallery video'}
+                                                        className="absolute inset-0 h-full w-full"
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                        allowFullScreen
+                                                    />
+                                                </motion.div>
+                                            ) : selectedMedia.media_type === 'video' ? (
+                                                <motion.video
+                                                    key={`video-${selectedMedia.id}`}
+                                                    initial={{ opacity: 0, scale: 0.98 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.98 }}
+                                                    src={mediaUrl(selectedMedia.file)}
+                                                    controls
+                                                    autoPlay
+                                                    playsInline
+                                                    className="mx-auto block max-h-[min(80dvh,calc(100dvh-8rem))] max-w-[min(96vw,56rem)] w-auto rounded-lg shadow-2xl"
+                                                />
+                                            ) : (
+                                                <motion.img
+                                                    key={`img-${selectedMedia.id}`}
+                                                    initial={{ opacity: 0, scale: 0.98 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.98 }}
+                                                    src={mediaUrl(selectedMedia.file)}
+                                                    alt={selectedMedia.caption || 'Gallery photo'}
+                                                    className="mx-auto block h-auto w-auto max-h-[min(88dvh,calc(100dvh-7rem))] max-w-[min(96vw,calc(100vw-1.5rem))] select-none object-contain object-center"
+                                                    decoding="async"
+                                                    draggable={false}
+                                                />
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
+                                    {selectedMedia.caption ? (
+                                        <p className="shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center text-sm font-semibold text-white/90 sm:text-base">
+                                            {selectedMedia.caption}
+                                        </p>
+                                    ) : null}
+                                </motion.div>
+                            ) : null}
+                        </AnimatePresence>,
+                        document.body,
                     )}
-                </Modal>
             </div>
         </div>
     );
