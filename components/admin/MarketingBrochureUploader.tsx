@@ -5,7 +5,7 @@ import { ExternalLink, Upload } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { mediaUrl } from "@/lib/api-client";
+import { mediaUrl, toApiError } from "@/lib/api-client";
 import { marketingAssetHref } from "@/lib/marketing-assets";
 
 type MarketingAsset = {
@@ -76,8 +76,9 @@ export function MarketingBrochureUploader({ slug, defaultTitle, description, fal
         try {
             const fd = new FormData();
             fd.append("title", title.trim() || defaultTitle);
-            fd.append("is_active", "true");
-            fd.append("file", file);
+            fd.append("is_active", "1");
+            fd.append("link", "");
+            fd.append("file", file, file.name);
 
             if (asset?.id) {
                 await authFetch(`/common/marketing-assets/${asset.id}/`, {
@@ -96,7 +97,8 @@ export function MarketingBrochureUploader({ slug, defaultTitle, description, fal
             await load();
         } catch (e) {
             console.error(e);
-            showToast("Upload failed. Try again or use a smaller PDF.", "error");
+            const msg = e instanceof Error ? e.message : "Upload failed.";
+            showToast(msg || "Upload failed. Try again or use a smaller PDF.", "error");
         } finally {
             setSaving(false);
         }
