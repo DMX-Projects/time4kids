@@ -19,6 +19,7 @@ import {
     LayoutGrid,
     LifeBuoy,
     FileText,
+    FolderOpen,
 } from "lucide-react";
 import type { DashboardNavItem } from "@/components/layout/DashboardShell";
 
@@ -27,6 +28,11 @@ export const SHOW_FRANCHISE_SIDEBAR_NAV = true;
 
 const FRANCHISE_SIDEBAR_NAV_ALL: DashboardNavItem[] = [
     { label: "Dashboard", href: "/dashboard/franchise/", icon: <LayoutDashboard className="w-4 h-4" /> },
+    {
+        label: "Center Page",
+        href: "/dashboard/franchise/#center-page",
+        icon: <FolderOpen className="w-4 h-4" />,
+    },
     { label: "Parent Records", href: "/dashboard/franchise/parents/", icon: <ClipboardList className="w-4 h-4" /> },
     { label: "Students", href: "/dashboard/franchise/students/", icon: <UserCircle className="w-4 h-4" /> },
     { label: "Attendance", href: "/dashboard/franchise/attendance/", icon: <CalendarDays className="w-4 h-4" /> },

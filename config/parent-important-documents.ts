@@ -100,19 +100,19 @@ export const PARENT_IMPORTANT_DOCUMENTS: ParentImportantDocumentItem[] = [
         resourceLinks: [
             {
                 label: "Students Kit — PP1 (AY 2026-27)",
-                href: "http://103.65.21.245:8080/uploads/pc/Students%20Kit-PP1-AY-2026-27.pdf",
+                href: "/StudentskitPP1",
             },
             {
                 label: "Students Kit — Play Group (AY 2026-27)",
-                href: "http://103.65.21.245:8080/uploads/pc/Students%20Kit-Play%20Group-AY-2026-27.pdf",
+                href: "/StudentskitPlayGroup",
             },
             {
                 label: "Students Kit — Nursery (AY 2026-27)",
-                href: "http://103.65.21.245:8080/uploads/pc/Students%20Kit-Nursery-AY-2026-27.pdf",
+                href: "/StudentskitNursery",
             },
             {
                 label: "Students Kit — PP2 (AY 2026-27)",
-                href: "http://103.65.21.245:8080/uploads/pc/Students%20Kit-PP2-AY-2026-27.pdf",
+                href: "/StudentskitPP2",
             },
         ],
     },
