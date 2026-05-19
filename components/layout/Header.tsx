@@ -77,14 +77,14 @@ export default function Header() {
                     <div className="header-top-content">
                         <p>T.I.M.E. Kids pre-schools is a chain of pre-schools launched by T.I.M.E.</p>
                         <ul className="header-top-nav">
-                            <li><Link href="/"><Home className="inline-block w-5 h-5 mr-1" />HOME</Link></li>
-                            <li><Link href="/careers"><Briefcase className="inline-block w-5 h-5 mr-1" />CAREERS</Link></li>
+                            <li><Link href="/"><Home className="h-[1.125rem] w-[1.125rem] shrink-0" aria-hidden />HOME</Link></li>
+                            <li><Link href="/careers"><Briefcase className="h-[1.125rem] w-[1.125rem] shrink-0" aria-hidden />CAREERS</Link></li>
                             <li className="header-top-contact-social">
-                                <Link href="/contact"><Phone className="inline-block w-5 h-5 mr-1" />CONTACT US</Link>
+                                <Link href="/contact"><Phone className="h-[1.125rem] w-[1.125rem] shrink-0" aria-hidden />CONTACT US</Link>
                                 <span className="header-top-social-icons" aria-label="Social media">
-                                    <SocialBrandLink platform="facebook" href={footer.social.facebook} size="xs" />
-                                    <SocialBrandLink platform="instagram" href={footer.social.instagram} size="xs" />
-                                    <SocialBrandLink platform="youtube" href={footer.social.youtube} size="xs" />
+                                    <SocialBrandLink platform="facebook" href={footer.social.facebook} size="sm" />
+                                    <SocialBrandLink platform="instagram" href={footer.social.instagram} size="sm" />
+                                    <SocialBrandLink platform="youtube" href={footer.social.youtube} size="sm" />
                                 </span>
                             </li>
                         </ul>
@@ -96,7 +96,7 @@ export default function Header() {
             <header className={`header ${isSticky ? 'header-sticky' : ''}`}>
                 <div className="container-fluid mx-auto px-4 max-w-[1550px]">
                     <div className="header-inner">
-                        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                             {showPublicBack ? <PublicPageBackLink /> : null}
                             {/* Logo - Left Side */}
                             <div className="logo flex-shrink-0">
@@ -113,10 +113,8 @@ export default function Header() {
                         </div>
 
                         {/* Desktop: horizontal nav */}
-                        <div className="hidden min-w-0 flex-1 items-center justify-end pl-2 sm:pl-4 lg:flex">
-                            <div className="max-w-full min-w-0 overflow-x-auto overflow-y-visible [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                <AnimatedNavBar />
-                            </div>
+                        <div className="ml-auto hidden min-w-0 shrink items-center pl-4 lg:flex">
+                            <AnimatedNavBar />
                         </div>
 
                         {/* Mobile / tablet: hamburger + drawer (all links + login without horizontal scroll) */}
@@ -183,15 +181,17 @@ export default function Header() {
                     justify-content: space-between;
                     position: relative;
                     z-index: 999;
-                    padding: 3px 0;
+                    padding: 8px 0;
+                    min-height: 48px;
                 }
 
                 .header-top p {
                     margin: 0;
                     padding: 0;
                     color: #fff;
-                    line-height: 30px;
-                    font-size: 13px;
+                    line-height: 1.4;
+                    font-size: 15px;
+                    font-weight: 500;
                 }
 
                 .header-top-nav {
@@ -203,42 +203,52 @@ export default function Header() {
                     align-items: center;
                     justify-content: flex-end;
                     gap: 0;
-                    line-height: 30px;
+                    line-height: 1.4;
+                    font-size: 14px;
+                    font-weight: 700;
                 }
 
                 .header-top-nav li {
                     display: inline-flex;
                     align-items: center;
-                    padding-left: 15px;
                     position: relative;
                 }
 
-                .header-top-nav li::before {
-                    content: '|';
-                    color: #fff;
-                    padding-right: 15px;
+                .header-top-nav li:not(:first-child) {
+                    margin-left: 16px;
+                    padding-left: 16px;
+                    border-left: 1px solid rgba(255, 255, 255, 0.85);
                 }
 
-                .header-top-nav li:first-child::before {
+                .header-top-nav li::before {
                     display: none;
                 }
 
                 .header-top-contact-social {
                     display: inline-flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 14px;
                 }
 
                 .header-top-contact-social :global(a:first-of-type) {
                     display: inline-flex;
                     align-items: center;
+                    gap: 6px;
                     white-space: nowrap;
+                    line-height: 1;
                 }
 
                 .header-top-nav li :global(a) {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    line-height: 1;
                     color: #fff;
                     text-decoration: none;
                     transition: all 0.5s ease;
+                    font-size: 14px;
+                    font-weight: 700;
+                    letter-spacing: 0.02em;
                 }
 
                 .header-top-nav li :global(a:hover) {
@@ -258,7 +268,7 @@ export default function Header() {
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 10px;
+                    gap: 12px;
                     flex-shrink: 0;
                 }
 
@@ -269,7 +279,7 @@ export default function Header() {
                     padding: 8px 0;
                     position: fixed;
                     width: 100%;
-                    top: 36px; /* Offset for header-top */
+                    top: 48px; /* Offset for header-top */
                     z-index: 1001;
                     transition: all 0.4s ease;
                 }

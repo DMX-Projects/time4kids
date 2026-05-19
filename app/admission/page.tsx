@@ -14,6 +14,7 @@ import TestimonialVideo from '@/components/shared/TestimonialVideo';
 import { apiUrl } from '@/lib/api-client';
 import { findMarketingAsset, marketingAssetHref } from '@/lib/marketing-assets';
 import { mediaUrl } from '@/lib/api-client';
+import { ADMISSION_BROCHURE_PDF_URL } from '@/config/site-public';
 import { DEFAULT_ADMISSION_PAGE_DATA, mergeAdmissionPageData } from '@/config/admission-page-defaults';
 import VirtualTourModal from '@/components/home/VirtualTourModal';
 
@@ -112,7 +113,7 @@ export default function AdmissionPage() {
     const virtualTour = findMarketingAsset(assets, 'virtual-tour');
     const admissionBrochureHref = marketingAssetHref(
         admissionBrochure,
-        mediaUrl('pc/admission-brochure/admission-brochure.pdf'),
+        mediaUrl('pc/admission-brochure/admission-brochure.pdf') || ADMISSION_BROCHURE_PDF_URL,
     );
 
     const faqSection = pageData?.faq_section || DEFAULT_ADMISSION_PAGE_DATA.faq_section;

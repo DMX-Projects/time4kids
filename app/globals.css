@@ -1218,3 +1218,85 @@ body {
   background-size: 100% 100%;
   position: relative;
 }
+
+/* Franchise page — regional offices (state / city / phone columns) */
+.tk-regional-offices-host .tk-regional-offices,
+.tk-regional-offices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.tk-regional-offices__row {
+  display: grid;
+  grid-template-columns: 1.125rem minmax(10.5rem, 1.45fr) minmax(6.75rem, 1fr) minmax(11rem, auto);
+  column-gap: 0.625rem;
+  align-items: baseline;
+}
+
+.tk-regional-offices__dot {
+  color: #e67e22;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tk-regional-offices__state strong {
+  font-weight: 600;
+  color: #111827;
+}
+
+.tk-regional-offices__city {
+  color: #4b5563;
+}
+
+.tk-regional-offices__phone {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  color: #4b5563;
+  min-width: 0;
+}
+
+.tk-regional-offices__label {
+  flex-shrink: 0;
+  color: #6b7280;
+}
+
+.tk-regional-offices__numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.tk-regional-offices__number {
+  display: block;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.tk-regional-offices__row--sub .tk-regional-offices__dot {
+  visibility: hidden;
+}
+
+@media (max-width: 640px) {
+  .tk-regional-offices__row {
+    grid-template-columns: 1.125rem 1fr;
+    row-gap: 0.125rem;
+  }
+
+  .tk-regional-offices__state,
+  .tk-regional-offices__city,
+  .tk-regional-offices__phone {
+    grid-column: 2;
+  }
+
+  .tk-regional-offices__row--sub .tk-regional-offices__state {
+    display: none;
+  }
+}

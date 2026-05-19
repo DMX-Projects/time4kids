@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders, normalizeUploadedMediaPath, resolveCmsMediaUrl } from "@/lib/api-client";
-import { Building2, Link2, Plus, Trash2, Upload } from "lucide-react";
+import { EmbedVideoDraftPanel } from "@/components/admin/EmbedVideoDraftPanel";
+import { Building2, Plus, Trash2, Upload } from "lucide-react";
 import { parseEmbedInput, resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
 import {
     DEFAULT_FRANCHISE_PAGE_DATA,
@@ -28,8 +29,8 @@ function formatMb(bytes: number): string {
 function CardPreview({ title, description }: { title: string; description: string }) {
     return (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-            <div className="text-sm font-semibold text-slate-900">{title || "—"}</div>
-            <div className="text-xs text-slate-600 mt-1 line-clamp-3 whitespace-pre-wrap">{description || "—"}</div>
+            <div className="text-sm font-semibold text-slate-900">{title || "?"}</div>
+            <div className="text-xs text-slate-600 mt-1 line-clamp-3 whitespace-pre-wrap">{description || "?"}</div>
         </div>
     );
 }
@@ -184,7 +185,7 @@ export default function AdminFranchiseContentPage() {
         setMessage(null);
         const embedSrc = resolveFranchiseEmbedSrc(parseEmbedInput(embedDraftInput));
         if (!embedSrc) {
-            setError("Paste a valid YouTube / MediaDelivery link or full <iframe …> code.");
+            setError("Paste a valid YouTube / MediaDelivery link or full <iframe ?> code.");
             return;
         }
         setData({
@@ -233,7 +234,7 @@ export default function AdminFranchiseContentPage() {
         setMessage(null);
         setUploadingKey(key);
         try {
-            setUploadInfo((prev) => ({ ...prev, [key]: `${opts.file.name} • ${formatMb(opts.file.size)}` }));
+            setUploadInfo((prev) => ({ ...prev, [key]: `${opts.file.name} ? ${formatMb(opts.file.size)}` }));
             return await uploadMediaFile(opts);
         } finally {
             setUploadingKey(null);
@@ -300,7 +301,7 @@ export default function AdminFranchiseContentPage() {
             </div>
 
             {loading ? (
-                <p className="text-slate-500">Loading…</p>
+                <p className="text-slate-500">Loading?</p>
             ) : (
                 <div className="space-y-4">
                     <Section title="1. Hero (top heading)">
@@ -782,94 +783,37 @@ export default function AdminFranchiseContentPage() {
                             <Plus className="w-4 h-4" /> Add highlight
                         </Button>
                     </Section>
-                    <Section title="7. Success stories — multiple videos (/franchise)">
+                    <Section title="7. Success stories ? multiple videos (/franchise)">
                         <p className="text-xs text-slate-600 mb-3 -mt-1">
                             <strong>Franchisee Success Stories</strong> on <strong>/franchise</strong> is one rectangular
-                            slider. Add MP4 uploads, or iframe / YouTube / MediaDelivery links — order here is
-                            play order in the slider (Video 1, 2, 3…). Click a video on the site to open the popup player.
+                            slider. Add MP4 uploads, or iframe / YouTube / MediaDelivery links ? order here is
+                            play order in the slider (Video 1, 2, 3?). Click a video on the site to open the popup player.
                         </p>
-                        <div className="rounded-xl border border-blue-100 bg-blue-50/80 p-4 mb-4 space-y-3">
-                            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                                <Link2 className="w-4 h-4 text-blue-600" />
-                                Add iframe / YouTube / MediaDelivery video
-                            </h3>
-                            <input
-                                className={inputClass}
-                                value={embedDraftTitle}
-                                onChange={(e) => setEmbedDraftTitle(e.target.value)}
-                                placeholder="Video title (optional)"
-                            />
-                            <div>
-                                <label className={labelClass}>Thumbnail image (optional)</label>
-                                <div className="flex flex-wrap items-start gap-3 mt-1">
-                                    <div className="min-w-0 flex-1 space-y-2">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <input
-                                                className={inputClass}
-                                                value={embedDraftThumbnail}
-                                                onChange={(e) => setEmbedDraftThumbnail(e.target.value)}
-                                                placeholder="/media/… or upload an image"
-                                            />
-                                            <label
-                                                className={`shrink-0 inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold ${
-                                                    uploadingKey === "embed-draft-thumb"
-                                                        ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
-                                                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
-                                                }`}
-                                            >
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    disabled={uploadingKey === "embed-draft-thumb"}
-                                                    onChange={async (e) => {
-                                                        const file = e.target.files?.[0];
-                                                        e.target.value = "";
-                                                        if (!file) return;
-                                                        try {
-                                                            const url = await uploadMedia("embed-draft-thumb", {
-                                                                title: `Franchise embed thumbnail: ${embedDraftTitle.trim() || "Story"}`,
-                                                                media_type: "image",
-                                                                file,
-                                                            });
-                                                            setEmbedDraftThumbnail(url);
-                                                            setMessage("Thumbnail uploaded. Add embed code, then add to carousel.");
-                                                        } catch (err: unknown) {
-                                                            setError(
-                                                                err instanceof Error ? err.message : "Thumbnail upload failed",
-                                                            );
-                                                        }
-                                                    }}
-                                                />
-                                                <Upload className="w-4 h-4 mr-2" />
-                                                Upload
-                                            </label>
-                                        </div>
-                                        <p className="text-[11px] text-slate-500">Max 5MB. JPG or PNG — shown on the slider before play.</p>
-                                    </div>
-                                    {embedDraftThumbnail.trim() ? (
-                                        <div className="h-24 w-20 shrink-0 overflow-hidden rounded-lg border-2 border-blue-200 bg-slate-100 shadow-inner">
-                                            <img
-                                                src={
-                                                    resolveCmsMediaUrl(embedDraftThumbnail) || embedDraftThumbnail
-                                                }
-                                                alt="Thumbnail preview"
-                                                className="h-full w-full object-cover"
-                                            />
-                                        </div>
-                                    ) : null}
-                                </div>
-                            </div>
-                            <textarea
-                                className={`${inputClass} min-h-[80px] font-mono text-xs`}
-                                value={embedDraftInput}
-                                onChange={(e) => setEmbedDraftInput(e.target.value)}
-                                placeholder="Paste embed URL or full <iframe src=&quot;…&quot; …> code"
-                            />
-                            <Button type="button" size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={addEmbedSuccessStory}>
-                                Add embedded video to carousel
-                            </Button>
-                        </div>
+                        <EmbedVideoDraftPanel
+                            className="mb-4"
+                            draftTitle={embedDraftTitle}
+                            onDraftTitleChange={setEmbedDraftTitle}
+                            draftThumbnail={embedDraftThumbnail}
+                            onDraftThumbnailChange={setEmbedDraftThumbnail}
+                            draftEmbedInput={embedDraftInput}
+                            onDraftEmbedInputChange={setEmbedDraftInput}
+                            uploadingThumbnail={uploadingKey === "embed-draft-thumb"}
+                            onThumbnailFileSelect={async (file) => {
+                                try {
+                                    const url = await uploadMedia("embed-draft-thumb", {
+                                        title: `Franchise embed thumbnail: ${embedDraftTitle.trim() || "Story"}`,
+                                        media_type: "image",
+                                        file,
+                                    });
+                                    setEmbedDraftThumbnail(url);
+                                    setMessage("Thumbnail uploaded. Paste embed code, then add to carousel.");
+                                } catch (err: unknown) {
+                                    setError(err instanceof Error ? err.message : "Thumbnail upload failed");
+                                }
+                            }}
+                            onSubmit={addEmbedSuccessStory}
+                            submitLabel="Add embedded video to carousel"
+                        />
                         <div className="flex flex-wrap items-center gap-3 mb-4 p-3 rounded-xl bg-orange-50 border border-orange-100">
                             <span className="text-sm font-semibold text-orange-900">
                                 {successStories.length} video{successStories.length === 1 ? "" : "s"} in section
@@ -902,7 +846,7 @@ export default function AdminFranchiseContentPage() {
                                     }}
                                 />
                                 <Upload className="w-4 h-4 mr-2" />
-                                {uploadingKey === "story-bulk" ? "Uploading…" : "Upload multiple videos"}
+                                {uploadingKey === "story-bulk" ? "Uploading?" : "Upload multiple videos"}
                             </label>
                         </div>
                         {uploadInfo["story-bulk"] ? (
@@ -913,7 +857,7 @@ export default function AdminFranchiseContentPage() {
                                 <div className="flex items-center justify-between gap-2">
                                     <span className="text-sm font-semibold text-slate-800">
                                         Video {i + 1}
-                                        {story.title?.trim() ? ` — ${story.title}` : ""}
+                                        {story.title?.trim() ? ` ? ${story.title}` : ""}
                                     </span>
                                     <button
                                         type="button"
@@ -933,7 +877,7 @@ export default function AdminFranchiseContentPage() {
                                                     className={inputClass}
                                                     value={story.thumbnail_url ?? ""}
                                                     onChange={(e) => updateSuccessStory(i, { thumbnail_url: e.target.value })}
-                                                    placeholder="/media/… or /feature-annual-day-celebrations.png"
+                                                    placeholder="/media/? or /feature-annual-day-celebrations.png"
                                                 />
                                                 <label
                                                     className={`shrink-0 inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold ${
@@ -958,7 +902,7 @@ export default function AdminFranchiseContentPage() {
                                                                     file,
                                                                 });
                                                                 updateSuccessStory(i, { thumbnail_url: url });
-                                                                setMessage("Thumbnail uploaded. Don’t forget to Save changes.");
+                                                                setMessage("Thumbnail uploaded. Don?t forget to Save changes.");
                                                             } catch (err: unknown) {
                                                                 setError(err instanceof Error ? err.message : "Thumbnail upload failed");
                                                             }
@@ -972,11 +916,11 @@ export default function AdminFranchiseContentPage() {
                                         </div>
                                         <div>
                                             <label className={labelClass}>
-                                                Video — MP4 path, or iframe / YouTube / MediaDelivery URL
+                                                Video ? MP4 path, or iframe / YouTube / MediaDelivery URL
                                             </label>
                                             {resolveFranchiseEmbedSrc(parseEmbedInput(story.video_url || "")) ? (
                                                 <p className="text-[11px] font-semibold text-blue-700 mb-1">
-                                                    Iframe embed detected — plays in popup on /franchise
+                                                    Iframe embed detected ? plays in popup on /franchise
                                                 </p>
                                             ) : null}
                                             <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
@@ -990,7 +934,7 @@ export default function AdminFranchiseContentPage() {
                                                             updateSuccessStory(i, { video_url: normalized });
                                                         }
                                                     }}
-                                                    placeholder="https://iframe.mediadelivery.net/embed/… or paste <iframe …> code"
+                                                    placeholder="https://iframe.mediadelivery.net/embed/? or paste <iframe ?> code"
                                                 />
                                                 <label
                                                     className={`shrink-0 inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold ${
@@ -1015,7 +959,7 @@ export default function AdminFranchiseContentPage() {
                                                                     file,
                                                                 });
                                                                 updateSuccessStory(i, { video_url: url });
-                                                                setMessage("Video uploaded. Don’t forget to Save changes.");
+                                                                setMessage("Video uploaded. Don?t forget to Save changes.");
                                                             } catch (err: unknown) {
                                                                 setError(err instanceof Error ? err.message : "Video upload failed");
                                                             }
@@ -1069,7 +1013,7 @@ export default function AdminFranchiseContentPage() {
                         </div>
                     </Section>
 
-                    <Section title="8. Main branch (map + contact)">
+                    <Section title="8. Connect with representative (map + contact)">
                         <div className="grid md:grid-cols-2 gap-3">
                             <div>
                                 <label className={labelClass}>Heading prefix</label>
@@ -1087,13 +1031,40 @@ export default function AdminFranchiseContentPage() {
                                 <label className={labelClass}>Google map embed URL</label>
                                 <input className={inputClass} value={data.main_branch.map_embed_url} onChange={(e) => setData({ ...data, main_branch: { ...data.main_branch, map_embed_url: e.target.value } })} />
                             </div>
-                            <div className="md:col-span-2">
-                                <label className={labelClass}>Office title</label>
+                            <div>
+                                <label className={labelClass}>Corporate office title (left card)</label>
                                 <input className={inputClass} value={data.main_branch.office_title} onChange={(e) => setData({ ...data, main_branch: { ...data.main_branch, office_title: e.target.value } })} />
                             </div>
+                            <div>
+                                <label className={labelClass}>Regional offices title (right card)</label>
+                                <input
+                                    className={inputClass}
+                                    value={data.main_branch.regional_office_title ?? ""}
+                                    onChange={(e) =>
+                                        setData({
+                                            ...data,
+                                            main_branch: { ...data.main_branch, regional_office_title: e.target.value },
+                                        })
+                                    }
+                                />
+                            </div>
                             <div className="md:col-span-2">
-                                <label className={labelClass}>Address (HTML allowed, use &lt;br /&gt; for new lines)</label>
+                                <label className={labelClass}>Corporate office address ? left card (HTML allowed, use &lt;br /&gt; for new lines)</label>
                                 <textarea className={`${inputClass} min-h-[96px]`} value={data.main_branch.address_html} onChange={(e) => setData({ ...data, main_branch: { ...data.main_branch, address_html: e.target.value } })} />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className={labelClass}>Regional offices address ? right card</label>
+                                <textarea
+                                    className={`${inputClass} min-h-[180px]`}
+                                    value={data.main_branch.regional_address_html ?? ""}
+                                    onChange={(e) =>
+                                        setData({
+                                            ...data,
+                                            main_branch: { ...data.main_branch, regional_address_html: e.target.value },
+                                        })
+                                    }
+                                    placeholder="Uses tk-regional-offices grid HTML (state / city / phone columns). Leave blank to reset to default."
+                                />
                             </div>
                             <div>
                                 <label className={labelClass}>Phone</label>
@@ -1165,7 +1136,7 @@ export default function AdminFranchiseContentPage() {
 
             <div className="flex flex-wrap gap-3 pt-4 mt-4 border-t border-slate-200">
                 <Button size="sm" onClick={save} disabled={saving || loading}>
-                    {saving ? "Saving…" : "Save changes"}
+                    {saving ? "Saving?" : "Save changes"}
                 </Button>
                 <Button size="sm" variant="outline" onClick={load} disabled={saving || loading}>
                     Reload from server

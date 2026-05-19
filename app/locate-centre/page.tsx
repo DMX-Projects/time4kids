@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { gsap } from 'gsap';
 import { MapPin, Phone, Search, Navigation, Star, Sun, Facebook, Instagram, Youtube } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { slugify, cn } from '@/lib/utils';
+import { slugify, cn, franchisePublicLocationLine } from '@/lib/utils';
 import { apiUrl } from '@/lib/api-client';
 import { fetchAllPublicFranchises } from '@/lib/public-franchises';
 import { CentreMap } from '@/components/shared/CentreMap';
@@ -291,6 +291,11 @@ function LocateCentreContent() {
         return parts.filter(Boolean).join(', ');
     };
 
+    const centreAddressHasHtml = (text: string) => /<\/?[a-z][\s\S]*>/i.test(text);
+
+    const sanitizeCentreAddressHtml = (text: string) =>
+        text.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '');
+
     return (
         <div className="min-h-screen relative bg-slate-50 font-sans selection:bg-pink-200 overflow-x-hidden">
             <InteractiveBubbles />
@@ -322,7 +327,7 @@ function LocateCentreContent() {
             {/* Search Filters Section */}
             <section className="relative z-20 pb-12">
                 <div className="container mx-auto px-4">
-                    <div className="max-w-5xl mx-auto bg-white p-10 rounded-[50px] border-4 border-slate-100 shadow-xl relative transition-all duration-300 hover:scale-[1.01]">
+                    <div className="max-w-5xl mx-auto bg-white p-5 sm:p-8 md:p-10 rounded-[2rem] sm:rounded-[50px] border-4 border-slate-100 shadow-xl relative transition-all duration-300 md:hover:scale-[1.01]">
                         <div className="absolute -top-6 -left-6 w-16 h-16 bg-yellow-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
                         <div className="absolute -bottom-6 -right-6 w-16 h-16 bg-pink-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
 
@@ -431,38 +436,83 @@ function LocateCentreContent() {
                             viewMode === 'map' ? (
                                 <CentreMap centres={displayedCentres as any} />
                             ) : (
-                            <div className="grid md:grid-cols-2 gap-10 lg:gap-14">
-                                {displayedCentres.map((centre) => (
+                            <div className="mx-auto grid w-full max-w-6xl grid-cols-1 justify-items-center gap-8 sm:gap-8 md:grid-cols-2 md:justify-items-stretch md:gap-10 lg:gap-14">
+                                {displayedCentres.map((centre) => {
+                                    const displayName =
+                                        franchisePublicLocationLine(centre.name, {
+                                            city: centre.city,
+                                            state: centre.state,
+                                        }) || centre.name;
+                                    const blobShape = centre.shape;
+                                    const addressText = formatAddress(centre);
+                                    const addressIsHtml = centreAddressHasHtml(addressText);
+
+                                    return (
                                     <div
                                         key={centre.id}
                                         onClick={() => router.push(`/locations/${encodeURIComponent(centre.city)}/${centre.slug ?? slugify(centre.name)}`)}
-                                        className={`group relative transition-all duration-300 transform ${centre.rotate} hover:scale-[1.03] hover:z-20 cursor-pointer`}
+                                        className={cn(
+                                            'group relative w-full max-w-[min(100%,22rem)] cursor-pointer transition-all duration-300 sm:max-w-full',
+                                            centre.rotate,
+                                            'max-sm:rotate-0 hover:scale-[1.01] sm:hover:scale-[1.03] hover:z-20',
+                                        )}
                                     >
-                                        <div className={`absolute top-3 left-3 right-0 bottom-0 ${centre.color.split(' ')[0].replace('100', '200')} ${centre.shape} opacity-100 -z-10 transition-transform duration-300 group-hover:translate-x-1 group-hover:translate-y-1`}></div>
-                                        <div className={`relative ${centre.bgColor} ${centre.shape} p-10 md:p-14 shadow-sm border-[4px] ${centre.borderColor} h-full flex flex-col justify-center min-h-[260px]`}>
-                                            <div className="flex items-start gap-6">
-                                                <div className={`w-16 h-16 bg-white rounded-full flex items-center justify-center flex-shrink-0 shadow-sm group-hover:rotate-12 transition-transform duration-500 border-2 ${centre.borderColor}`}>
-                                                    <MapPin className={`w-8 h-8 ${centre.color.split(' ')[1]}`} />
+                                        <div
+                                            className={cn(
+                                                'absolute top-2 left-2 right-2 bottom-2 sm:top-3 sm:left-3 sm:right-0 sm:bottom-0',
+                                                centre.color.split(' ')[0].replace('100', '200'),
+                                                blobShape,
+                                                'opacity-100 -z-10 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:translate-y-0.5 sm:group-hover:translate-x-1 sm:group-hover:translate-y-1',
+                                            )}
+                                        />
+                                        <div
+                                            className={cn(
+                                                'relative box-border w-full overflow-hidden',
+                                                centre.bgColor,
+                                                blobShape,
+                                                'px-5 pt-7 pb-14 sm:px-8 sm:pt-8 sm:pb-12 md:p-10 lg:p-12',
+                                                'min-h-[19rem] sm:min-h-[17.5rem] md:min-h-0',
+                                                'border-[3px] shadow-sm sm:border-4',
+                                                centre.borderColor,
+                                                'flex flex-col justify-center',
+                                            )}
+                                        >
+                                            <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:gap-5 sm:text-left md:gap-6">
+                                                <div
+                                                    className={cn(
+                                                        'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-500 group-hover:rotate-12 sm:h-14 sm:w-14 md:h-16 md:w-16',
+                                                        'border-2',
+                                                        centre.borderColor,
+                                                    )}
+                                                >
+                                                    <MapPin className={cn('h-5 w-5 sm:h-7 sm:w-7 md:h-8 md:w-8', centre.color.split(' ')[1])} />
                                                 </div>
-                                                <div className="flex-1 min-w-0 pt-1">
-                                                    <h3 className="font-display font-black text-2xl mb-2 text-slate-800 group-hover:text-pink-600 transition-colors break-words leading-tight">
-                                                        {centre.name}
+                                                <div className="min-w-0 w-full flex-1">
+                                                    <h3 className="font-display mb-2 break-words text-lg font-black leading-tight text-slate-800 transition-colors group-hover:text-pink-600 sm:text-2xl">
+                                                        {displayName}
                                                     </h3>
-                                                    <p className="text-slate-600 font-medium text-base mb-3 leading-relaxed break-words">
-                                                        {formatAddress(centre)}
-                                                    </p>
-                                                    <div className="flex items-center gap-2 mb-5 flex-wrap">
-                                                        <span className="bg-white/80 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide border border-white/50 shadow-sm">
+                                                    {addressIsHtml ? (
+                                                        <p
+                                                            className="mb-3 break-words text-sm font-medium leading-relaxed text-slate-600 [overflow-wrap:anywhere] sm:text-base [&_sup]:align-super [&_sup]:text-[0.7em]"
+                                                            dangerouslySetInnerHTML={{ __html: sanitizeCentreAddressHtml(addressText) }}
+                                                        />
+                                                    ) : (
+                                                        <p className="mb-3 break-words text-sm font-medium leading-relaxed text-slate-600 [overflow-wrap:anywhere] sm:text-base">
+                                                            {addressText}
+                                                        </p>
+                                                    )}
+                                                    <div className="mb-3 flex flex-wrap items-center justify-center gap-2 sm:mb-4 sm:justify-start">
+                                                        <span className="rounded-full border border-white/50 bg-white/80 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-slate-600 shadow-sm">
                                                             {centre.city}
                                                         </span>
                                                     </div>
-                                                    <div className="flex flex-col gap-2">
-                                                        <div className="flex flex-wrap gap-2">
+                                                    <div className="flex w-full min-w-0 flex-col items-center gap-2 sm:items-start">
+                                                        <div className="flex max-w-full flex-wrap justify-center gap-2 sm:justify-start">
                                                         {centre.phone?.trim() ? (
                                                         <a
                                                             href={`tel:${centre.phone.replace(/[^\d+]/g, '')}`}
                                                             onClick={(e) => e.stopPropagation()}
-                                                            className="inline-flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-slate-700 transition-all shadow-md hover:shadow-lg whitespace-nowrap group-hover:scale-105"
+                                                            className="inline-flex items-center gap-2 rounded-full bg-slate-800 px-3 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-slate-700 hover:shadow-lg sm:px-4 sm:group-hover:scale-105"
                                                         >
                                                             <Phone className="w-3.5 h-3.5" />
                                                             Call
@@ -474,7 +524,7 @@ function LocateCentreContent() {
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 onClick={(e) => e.stopPropagation()}
-                                                                className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-full text-xs font-bold hover:bg-blue-100 transition-all shadow-sm hover:shadow-md whitespace-nowrap group-hover:scale-105"
+                                                                className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-600 shadow-sm transition-all hover:bg-blue-100 hover:shadow-md sm:px-4 sm:group-hover:scale-105"
                                                             >
                                                                 <MapPin className="w-3.5 h-3.5" />
                                                                 Map
@@ -495,10 +545,10 @@ function LocateCentreContent() {
                                                             <a
                                                                 href={`tel:${centre.phone.replace(/[^\d+]/g, '')}`}
                                                                 onClick={(e) => e.stopPropagation()}
-                                                                className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-pink-600 transition-colors"
+                                                                className="hidden max-w-full items-start gap-2 text-xs font-bold text-slate-700 transition-colors [overflow-wrap:anywhere] hover:text-pink-600 sm:inline-flex sm:text-sm"
                                                             >
-                                                                <Phone className="w-4 h-4 shrink-0 text-slate-500" aria-hidden />
-                                                                {centre.phone}
+                                                                <Phone className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+                                                                <span className="min-w-0 break-all">{centre.phone}</span>
                                                             </a>
                                                         ) : null}
                                                     </div>
@@ -506,7 +556,8 @@ function LocateCentreContent() {
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                             )
                         ) : (
