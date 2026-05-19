@@ -314,7 +314,7 @@ function LocateCentreContent() {
             <InteractiveBubbles />
 
             {/* Hero Section */}
-            <section className="relative pt-16 pb-12 z-10 text-center">
+            <section className="relative pt-24 pb-12 z-10 text-center md:pt-28">
                 <div className="absolute top-10 right-10 animate-bounce-slow opacity-60 hidden md:block"><Star className="text-yellow-400 w-12 h-12 fill-current" /></div>
                 <div className="absolute top-20 left-10 animate-pulse opacity-60 hidden md:block"><Sun className="text-orange-400 w-16 h-16" /></div>
 

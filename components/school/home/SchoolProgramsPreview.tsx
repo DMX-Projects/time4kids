@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { formatAgeGroupLabel } from '@/lib/format-age-group';
+import { programsSectionHref } from '@/lib/program-section-slugs';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -56,11 +57,11 @@ const SchoolProgramsPreview = () => {
                         {programs.map((program, index) => (
                             <div
                                 key={index}
-                                className="flex min-w-0 flex-col items-center px-1 text-center sm:px-2"
-                                style={{ transform: `translateY(${program.yOffset})` }}
+                                className="program-preview-card flex min-w-0 flex-col items-center px-1 text-center sm:px-2"
+                                style={{ ['--program-y-offset' as string]: program.yOffset }}
                             >
                                 <Link
-                                    href="/programs"
+                                    href={programsSectionHref(program.programName)}
                                     className="group relative mb-4 mx-auto block w-full max-w-[12rem] rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-4 focus-visible:ring-offset-[#FFFAF5] sm:mb-6 sm:max-w-[13rem] lg:max-w-[11rem]"
                                     aria-label={`${program.programName.replace(/\n/g, ' ')} — view programs`}
                                 >
@@ -90,7 +91,7 @@ const SchoolProgramsPreview = () => {
                                 <p className="mb-3 px-0 text-xs font-medium leading-relaxed text-gray-500 sm:mb-4 sm:px-1 sm:text-sm">
                                     {program.description}
                                 </p>
-                                <Link href="/programs" className="inline-flex items-center gap-2 font-black text-[10px] uppercase tracking-widest" style={{ color: program.color }}>JOIN THE FUN <span className="text-lg">→</span></Link>
+                                <Link href={programsSectionHref(program.programName)} className="inline-flex items-center gap-2 font-black text-[10px] uppercase tracking-widest" style={{ color: program.color }}>JOIN THE FUN <span className="text-lg">→</span></Link>
                             </div>
                         ))}
                     </div>

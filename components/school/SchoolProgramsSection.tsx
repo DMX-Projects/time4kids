@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { mediaUrl } from '@/lib/api-client';
 import { formatAgeGroupLabel } from '@/lib/format-age-group';
+import { programsSectionHref } from '@/lib/program-section-slugs';
 import {
     Music,
     Palette,
@@ -190,14 +191,18 @@ const SchoolProgramsSection = ({ selectedPrograms, programCards }: SchoolProgram
                 {/* Programs Horizontal List */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
                     {filteredPrograms.map((program, index) => (
-                        <motion.div
+                        <Link
                             key={program.id}
+                            href={programsSectionHref(program.title)}
+                            className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 rounded-[3.5rem]"
+                        >
+                        <motion.div
                             initial={{ opacity: 0, y: 50 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.1, duration: 0.6 }}
                             whileHover={{ y: -10 }}
-                            className={`flex flex-col rounded-[3.5rem] border-[3px] ${program.borderColor} ${program.bgColor} overflow-hidden shadow-[0_15px_40px_-15px_rgba(0,0,0,0.1)] transition-all h-full bg-white/60 backdrop-blur-sm`}
+                            className={`flex h-full flex-col rounded-[3.5rem] border-[3px] ${program.borderColor} ${program.bgColor} overflow-hidden shadow-[0_15px_40px_-15px_rgba(0,0,0,0.1)] transition-all bg-white/60 backdrop-blur-sm`}
                         >
                             {/* Center Image with Inset look */}
                             <div className="mx-4 mt-8 relative aspect-[4/3] rounded-[2.5rem] overflow-hidden border-[6px] border-white shadow-inner bg-gray-100">
@@ -230,6 +235,7 @@ const SchoolProgramsSection = ({ selectedPrograms, programCards }: SchoolProgram
                                 </p>
                             </div>
                         </motion.div>
+                        </Link>
                     ))}
                 </div>
             </div>

@@ -157,8 +157,8 @@ const Footer = () => {
                             <SocialBrandLink platform="youtube" href={footer.social.youtube} size="sm" />
                         </div>
                     </div>
+                    </div>
                 </div>
-            </div>
             </footer>
 
             {/* Copyright — outside <footer> (sibling); wrapped in fragment for valid JSX */}
