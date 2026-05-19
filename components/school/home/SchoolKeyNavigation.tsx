@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import VirtualTourModal from '@/components/home/VirtualTourModal';
+import { FRANCHISE_BROCHURE_PDF_URL } from '@/config/site-public';
 
 export default function SchoolKeyNavigation() {
     const [virtualTourOpen, setVirtualTourOpen] = useState(false);
@@ -70,7 +71,7 @@ export default function SchoolKeyNavigation() {
                                     </span>
                                 </figure>
                                 <a
-                                    href="https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf"
+                                    href={FRANCHISE_BROCHURE_PDF_URL}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >

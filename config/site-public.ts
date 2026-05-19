@@ -6,6 +6,10 @@ export const CANONICAL_SITE_ORIGIN = (
     process.env.NEXT_PUBLIC_CANONICAL_SITE_URL || "https://www.timekidspreschools.in"
 ).replace(/\/$/, "");
 
+/** Public PDFs served via Django `/api/cms-files/…` on live. */
+export const ADMISSION_BROCHURE_PDF_URL = `${CANONICAL_SITE_ORIGIN}/api/cms-files/pc/admission-brochure/admission-brochure.pdf`;
+export const FRANCHISE_BROCHURE_PDF_URL = `${CANONICAL_SITE_ORIGIN}/api/cms-files/pc/franchise-brochure/franchise-brochure.pdf`;
+
 /** Hostnames that should never appear in user-facing links. */
 const STAGING_HOST_PATTERNS = [/^timekids1\.t4e\.in$/i, /\.t4e\.in$/i];
 

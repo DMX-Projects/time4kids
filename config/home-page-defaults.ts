@@ -1,6 +1,7 @@
 /** Mirrors `common/home_page_defaults.py` — used when API is down or keys are missing. */
 
 import { NEWS_TICKER_MAX_WORDS, truncateToWordLimit } from "@/lib/text-limit";
+import { FRANCHISE_BROCHURE_PDF_URL } from "@/config/site-public";
 
 export type KeyNavItem = {
     icon: string;
@@ -97,7 +98,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
         {
             icon: "/icon-brochure.png",
             alt: "Download Brochure",
-            href: "https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf",
+            href: FRANCHISE_BROCHURE_PDF_URL,
             label: "Download Brochure",
             nav_class: "nav-link2",
             external: true,

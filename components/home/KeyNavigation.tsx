@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 import VirtualTourModal from '@/components/home/VirtualTourModal';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
+import { ADMISSION_BROCHURE_PDF_URL, FRANCHISE_BROCHURE_PDF_URL } from '@/config/site-public';
 import { findMarketingAsset, marketingAssetHref, type MarketingAssetRecord } from '@/lib/marketing-assets';
 import { isVirtualTourNavItem } from '@/lib/virtual-tour';
 import { fixKeyNavItem, type KeyNavItem } from '@/config/home-page-defaults';
@@ -56,10 +57,8 @@ const formatNavLabel = (label: string) => {
 
 const DEFAULT_BROCHURE_HREFS = {
     admission:
-        mediaUrl('pc/admission-brochure/admission-brochure.pdf') ||
-        '/media/pc/admission-brochure/admission-brochure.pdf',
-    franchise:
-        'https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf',
+        mediaUrl('pc/admission-brochure/admission-brochure.pdf') || ADMISSION_BROCHURE_PDF_URL,
+    franchise: mediaUrl('pc/franchise-brochure/franchise-brochure.pdf') || FRANCHISE_BROCHURE_PDF_URL,
 };
 
 const getNavIcon = (item: NavItem) => {

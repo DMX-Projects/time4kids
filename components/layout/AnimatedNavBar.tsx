@@ -45,7 +45,7 @@ export default function AnimatedNavBar({
                     : 'bg-transparent px-2'
             }`}
         >
-            <ul className={`flex ${mobile ? 'flex-col gap-0.5 w-full' : 'flex-nowrap items-center gap-4 lg:gap-6'} m-0 p-0 list-none relative z-10`}>
+            <ul className={`flex ${mobile ? 'flex-col gap-0.5 w-full' : 'flex-nowrap items-center justify-end gap-3 xl:gap-5'} m-0 p-0 list-none relative z-10`}>
                 {navItems.map((item) => {
                     const isActive = activeTab === item.path;
                     const isLogin = item.name === 'Login';
@@ -62,7 +62,7 @@ export default function AnimatedNavBar({
                                         : 'inline-flex items-center p-0 shrink-0'
                                     : mobile
                                         ? 'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] w-full font-semibold text-left text-slate-800 normal-case tracking-tight hover:bg-orange-50/90 active:bg-orange-100/80'
-                                        : 'block text-sm tracking-wide uppercase font-bold'
+                                        : 'block text-xs tracking-wide uppercase font-bold xl:text-sm'
                                     } transition-all duration-300 ${!isLogin && isActive
                                         ? mobile
                                             ? 'bg-orange-50 text-slate-900 ring-1 ring-orange-200/80'
@@ -86,9 +86,9 @@ export default function AnimatedNavBar({
                                         </span>
                                     )
                                 ) : (
-                                    <div className="relative flex min-w-0 flex-nowrap items-center gap-3">
+                                    <div className="relative flex min-w-0 flex-nowrap items-center gap-2 xl:gap-2.5">
                                         <span
-                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isActive ? 'bg-orange-100 text-slate-900' : 'bg-slate-100/80 text-slate-600'}`}
+                                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg xl:h-9 xl:w-9 ${isActive ? 'bg-orange-100 text-slate-900' : 'bg-slate-100/80 text-slate-600'}`}
                                             aria-hidden
                                         >
                                             <item.icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'stroke-[2.25px]' : 'stroke-2'}`} />

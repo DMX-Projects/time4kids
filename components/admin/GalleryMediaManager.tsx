@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, Film, Link2, Plus, Trash2, Upload } from "lucid
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
+import { EmbedVideoDraftPanel } from "@/components/admin/EmbedVideoDraftPanel";
 import { FranchiseLocalFolderPicker } from "@/components/franchise/FranchiseLocalFolderPicker";
 import { apiUrl, mediaUrl } from "@/lib/api-client";
 import { resolveFranchiseEmbedSrc, parseEmbedInput } from "@/lib/franchise-embed-url";
@@ -69,6 +70,9 @@ export function GalleryMediaManager() {
     const [uploadAs, setUploadAs] = useState<"auto" | "image" | "video">("auto");
     const [embedInput, setEmbedInput] = useState("");
     const [embedTitle, setEmbedTitle] = useState("");
+    const [embedThumbnail, setEmbedThumbnail] = useState("");
+    const [embedThumbnailFile, setEmbedThumbnailFile] = useState<File | null>(null);
+    const [uploadingEmbedThumb, setUploadingEmbedThumb] = useState(false);
     const [reorderingId, setReorderingId] = useState<number | null>(null);
 
     const selected = sections.find((s) => s.id === selectedId) ?? null;
@@ -202,8 +206,17 @@ export function GalleryMediaManager() {
         }
     };
 
-    const addEmbed = async (e: FormEvent) => {
-        e.preventDefault();
+    const stageEmbedThumbnail = (file: File) => {
+        if (file.size > 5 * 1024 * 1024) {
+            showToast("Thumbnail must be 5MB or less", "error");
+            return;
+        }
+        setEmbedThumbnailFile(file);
+        setEmbedThumbnail(URL.createObjectURL(file));
+        showToast("Thumbnail ready — add embed URL and submit", "success");
+    };
+
+    const addEmbed = async () => {
         if (!selected) {
             showToast("Select a heading first", "error");
             return;
@@ -214,23 +227,34 @@ export function GalleryMediaManager() {
             showToast("Paste a valid YouTube / MediaDelivery link or iframe code", "error");
             return;
         }
+        if (!tokens?.access) {
+            showToast("Please sign in again", "error");
+            return;
+        }
         try {
             const order = nextOrderForSection(items, selected.id);
-            await authFetch("/media/", {
+            const title = embedTitle.trim() || `${selected.title} - Video`;
+            const fd = new FormData();
+            fd.append("section", String(selected.id));
+            fd.append("title", title);
+            fd.append("caption", title);
+            fd.append("category", "Events");
+            fd.append("media_type", "embed");
+            fd.append("embed_url", embedSrc);
+            fd.append("order", String(order));
+            if (embedThumbnailFile) {
+                fd.append("file", embedThumbnailFile);
+            }
+            const postRes = await fetch(apiUrl("/media/"), {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    section: selected.id,
-                    title: embedTitle.trim() || `${selected.title} - Video`,
-                    caption: embedTitle.trim() || "Embedded video",
-                    category: "Events",
-                    media_type: "embed",
-                    embed_url: embedSrc,
-                    order,
-                }),
+                headers: { Authorization: `Bearer ${tokens.access}` },
+                body: fd,
             });
+            if (!postRes.ok) throw new Error("Could not add embed");
             setEmbedInput("");
             setEmbedTitle("");
+            setEmbedThumbnail("");
+            setEmbedThumbnailFile(null);
             await refresh();
             showToast("Iframe video added — live on gallery", "success");
         } catch {
@@ -404,30 +428,18 @@ export function GalleryMediaManager() {
                                 </form>
                             </section>
 
-                            <section className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
-                                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                                    <Link2 className="w-5 h-5 text-blue-600" />
-                                    Add iframe / YouTube / MediaDelivery video
-                                </h2>
-                                <form onSubmit={addEmbed} className="space-y-3">
-                                    <input
-                                        value={embedTitle}
-                                        onChange={(e) => setEmbedTitle(e.target.value)}
-                                        placeholder="Video title (optional)"
-                                        className="w-full rounded-lg border px-3 py-2 text-sm"
-                                    />
-                                    <textarea
-                                        value={embedInput}
-                                        onChange={(e) => setEmbedInput(e.target.value)}
-                                        rows={3}
-                                        placeholder="Paste embed URL or full <iframe …> code"
-                                        className="w-full rounded-lg border px-3 py-2 text-sm font-mono"
-                                    />
-                                    <Button type="submit" className="bg-blue-600">
-                                        Add embedded video
-                                    </Button>
-                                </form>
-                            </section>
+                            <EmbedVideoDraftPanel
+                                draftTitle={embedTitle}
+                                onDraftTitleChange={setEmbedTitle}
+                                draftThumbnail={embedThumbnail}
+                                onDraftThumbnailChange={setEmbedThumbnail}
+                                draftEmbedInput={embedInput}
+                                onDraftEmbedInputChange={setEmbedInput}
+                                uploadingThumbnail={uploadingEmbedThumb}
+                                onThumbnailFileSelect={stageEmbedThumbnail}
+                                onSubmit={() => void addEmbed()}
+                                submitLabel="Add embedded video"
+                            />
 
                             <section className="bg-white rounded-2xl border border-gray-200 p-5">
                                 <h2 className="text-sm font-semibold text-gray-800 mb-1">

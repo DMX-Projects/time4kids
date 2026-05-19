@@ -1,5 +1,7 @@
 /** Mirrors `common/home_page_defaults.py` FRANCHISE_PAGE_DATA. */
 
+import { FRANCHISE_BROCHURE_PDF_URL } from "@/config/site-public";
+
 export type FranchiseBenefit = { icon: string; title: string; description: string };
 export type FranchiseTestimonial = { title: string; author: string; location: string; video_url?: string; thumbnail_url?: string };
 
@@ -58,6 +60,8 @@ export type FranchisePageData = {
         subtitle: string;
         map_embed_url: string;
         office_title: string;
+        regional_office_title: string;
+        regional_address_html: string;
         address_html: string;
         phone: string;
         fax: string;
@@ -75,6 +79,116 @@ export type FranchisePageData = {
         marketing_asset_slug: string;
     };
 };
+
+type RegionalOfficeSubCity = { city: string; phone: string };
+
+type RegionalOfficeEntry = {
+    state: string;
+    city: string;
+    phone: string;
+    subCities?: RegionalOfficeSubCity[];
+};
+
+const REGIONAL_OFFICE_ENTRIES: RegionalOfficeEntry[] = [
+    { state: "Bihar & Jharkhand", city: "Patna", phone: "7979833564" },
+    {
+        state: "Kerala",
+        city: "Kochin",
+        phone: "9074586895 / 8089001116",
+        subCities: [
+            { city: "Thiruananthpuram", phone: "9074586895 / 8089001116" },
+            { city: "Calicut", phone: "7907467952" },
+        ],
+    },
+    { state: "Maharashtra", city: "Pune", phone: "9958546677" },
+    { state: "Odissa & Chattisgarh", city: "Bhuvaneshwar", phone: "8917320143" },
+    { state: "Tamilnadu", city: "Chennai", phone: "9566349498" },
+    { state: "Telangana & Andhra Pradesh", city: "Hyderabad", phone: "7989281696" },
+    { state: "West Bengal", city: "Kolkata", phone: "8335807272" },
+];
+
+function escapeRegionalHtml(text: string): string {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function regionalPhoneHtml(phone: string): string {
+    const parts = phone
+        .split(/\s*\/\s*/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+    const numbers =
+        parts.length > 1
+            ? parts
+                  .map((n) => `<span class="tk-regional-offices__number">${escapeRegionalHtml(n)}</span>`)
+                  .join("")
+            : `<span class="tk-regional-offices__number">${escapeRegionalHtml(parts[0] ?? phone)}</span>`;
+
+    return (
+        `<span class="tk-regional-offices__phone">` +
+        `<span class="tk-regional-offices__label">Cell :</span>` +
+        `<span class="tk-regional-offices__numbers">${numbers}</span>` +
+        `</span>`
+    );
+}
+
+function regionalOfficeRowHtml(city: string, phone: string, state?: string): string {
+    const isSub = !state;
+    const stateCell = state
+        ? `<span class="tk-regional-offices__state"><strong>${escapeRegionalHtml(state)}</strong></span>`
+        : `<span class="tk-regional-offices__state" aria-hidden="true"></span>`;
+    const rowClass = isSub ? "tk-regional-offices__row tk-regional-offices__row--sub" : "tk-regional-offices__row";
+    const dot = isSub
+        ? `<span class="tk-regional-offices__dot" aria-hidden="true"></span>`
+        : `<span class="tk-regional-offices__dot" aria-hidden="true">•</span>`;
+
+    return (
+        `<li class="${rowClass}">` +
+        `${dot}${stateCell}` +
+        `<span class="tk-regional-offices__city">${escapeRegionalHtml(city)}</span>` +
+        regionalPhoneHtml(phone) +
+        `</li>`
+    );
+}
+
+/** Regional office lines for the right contact card (aligned state / city / phone grid). */
+export function buildRegionalOfficesAddressHtml(entries: RegionalOfficeEntry[] = REGIONAL_OFFICE_ENTRIES): string {
+    const rows: string[] = [];
+    for (const entry of entries) {
+        rows.push(regionalOfficeRowHtml(entry.city, entry.phone, entry.state));
+        for (const sub of entry.subCities ?? []) {
+            rows.push(regionalOfficeRowHtml(sub.city, sub.phone));
+        }
+    }
+    return `<ul class="tk-regional-offices">${rows.join("")}</ul>`;
+}
+
+export const DEFAULT_REGIONAL_ADDRESS_HTML = buildRegionalOfficesAddressHtml();
+
+const LEGACY_REGIONAL_ADDRESS_VALUES = [
+    "Telangana & Andhra Pradesh - Hyderabad - 7989281696",
+    "Telangana & Andhra Pradesh - Hyderabad - Cell : 7989281696",
+];
+
+function shouldMigrateRegionalAddress(html: string | undefined): boolean {
+    const trimmed = (html ?? "").trim();
+    if (!trimmed) return true;
+    if (!trimmed.includes("tk-regional-offices")) return true;
+    if (!trimmed.includes("tk-regional-offices__numbers")) return true;
+    if (LEGACY_REGIONAL_ADDRESS_VALUES.includes(trimmed)) return true;
+    if (trimmed.includes("Kids Early Education")) return true;
+    if (trimmed.includes("→")) return true;
+    if ((trimmed.match(/Kerala/g) ?? []).length > 1) return true;
+    if (trimmed.includes("<br />")) return true;
+    if (!trimmed.includes("Tamilnadu")) return true;
+    const telanganaPos = trimmed.indexOf("Telangana");
+    const biharPos = trimmed.indexOf("Bihar");
+    if (telanganaPos >= 0 && biharPos >= 0 && telanganaPos < biharPos) return true;
+    return false;
+}
 
 export const DEFAULT_FRANCHISE_PAGE_DATA: FranchisePageData = {
     hero: {
@@ -182,17 +296,19 @@ export const DEFAULT_FRANCHISE_PAGE_DATA: FranchisePageData = {
         },
     ],
     main_branch: {
-        heading_prefix: "Visit Our",
-        heading_accent: "Main Branch",
+        heading_prefix: "Connect with Our",
+        heading_accent: "Representative",
         subtitle: "Come meet our team and explore our flagship centre",
         map_embed_url:
             "https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=Siddamsetty+Complex+Parklane+Secunderabad+500003&zoom=15",
         office_title: "T.I.M.E. Kids Corporate Office",
+        regional_office_title: "T.I.M.E. Kids Regional Offices",
+        regional_address_html: DEFAULT_REGIONAL_ADDRESS_HTML,
         address_html:
-            "Triumphant Institute of Management Education Pvt. (T.I.M.E.)<br />95B, Second Floor<br />Siddamsetty Complex<br />Parklane, Secunderabad<br />500003",
+            "Kids Early Education Pvt. Ltd.<br />95B, Second Floor<br />Siddamsetty Complex<br />Parklane, Secunderabad<br />500003",
         phone: "040-40088300",
         fax: "040-27847334",
-        email: "info@timekidspreschools.com",
+        email: "admissions@timekidspreschools.com",
         franchise_email: "franchise@timekidspreschools.com",
         cell: "8096355335",
         directions_url: "https://www.google.com/maps/dir/?api=1&destination=Siddamsetty+Complex+Secunderabad+500003",
@@ -202,7 +318,7 @@ export const DEFAULT_FRANCHISE_PAGE_DATA: FranchisePageData = {
         heading: "Download Franchise Brochure",
         subtitle: "Get detailed information about investment, support, and franchise benefits",
         button_label: "Download Brochure (PDF)",
-        fallback_url: "https://www.timekidspreschools.in/uploads/pc/TIME-Kids-Franchise%20Brochure.pdf",
+        fallback_url: FRANCHISE_BROCHURE_PDF_URL,
         marketing_asset_slug: "franchise-brochure",
     },
 };
@@ -245,6 +361,28 @@ function ensureFranchiseShape(merged: FranchisePageData): FranchisePageData {
     if (!merged.getting_started?.items || !Array.isArray(merged.getting_started.items)) merged.getting_started = d.getting_started;
     if (!merged.closing?.paragraphs || !Array.isArray(merged.closing.paragraphs)) merged.closing = d.closing;
     if (!merged.quick_highlights?.items || !Array.isArray(merged.quick_highlights.items)) merged.quick_highlights = d.quick_highlights;
+    if (!merged.main_branch || typeof merged.main_branch !== "object") merged.main_branch = d.main_branch;
+    if (!merged.main_branch.regional_office_title?.trim()) {
+        merged.main_branch.regional_office_title = d.main_branch.regional_office_title;
+    }
+    if (shouldMigrateRegionalAddress(merged.main_branch.regional_address_html)) {
+        merged.main_branch.regional_address_html = d.main_branch.regional_address_html;
+    } else if (merged.main_branch.regional_address_html === merged.main_branch.address_html) {
+        merged.main_branch.regional_address_html = d.main_branch.regional_address_html;
+    }
+    if (
+        merged.main_branch.heading_prefix === "Visit Our" &&
+        merged.main_branch.heading_accent === "Main Branch"
+    ) {
+        merged.main_branch.heading_prefix = d.main_branch.heading_prefix;
+        merged.main_branch.heading_accent = d.main_branch.heading_accent;
+    }
+    if (merged.main_branch.address_html?.includes("Triumphant Institute of Management Education")) {
+        merged.main_branch.address_html = d.main_branch.address_html;
+    }
+    if (merged.main_branch.email === "info@timekidspreschools.com") {
+        merged.main_branch.email = d.main_branch.email;
+    }
     return merged;
 }
 
