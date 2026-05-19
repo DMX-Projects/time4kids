@@ -75,11 +75,7 @@
                      </div>
 					 <input type="hidden" name="source" id="source" value="Youtube">
 
-					 <div class="lf-outer mb-3">
-                        <select name="city" id="city" class="form-control">
-                           <option value="">Select City</option>
-                        </select>
-                     </div>
+					 <input type="hidden" name="city" id="city" value="">
 
 					 <div class="lf-outer mb-3">
                         <select name="Location" id="Location" class="form-control">
@@ -539,8 +535,7 @@
 		}
 
 		if (!city) {
-		  alert('Please select a city.');
-		  $('#city').focus();
+		  alert('City is missing from this page link. Please open the ad link again (URL should include ?city=...).');
 		  return false;
 		}
 
@@ -600,40 +595,12 @@
 		  });
 		}
 
-		function loadCities(preselect) {
-		  $.ajax({
-			url: '/api/cities/',
-			type: 'GET',
-			dataType: 'json',
-			success: function (data) {
-			  var results = (data && data.results) ? data.results : [];
-			  var html = '<option value="">Select City</option>';
-			  results.forEach(function (row) {
-				var cityName = row && row.name ? String(row.name).trim() : '';
-				if (!cityName) return;
-				html += '<option value="' + escapeHtml(cityName) + '">' + escapeHtml(cityName) + '</option>';
-			  });
-			  $('#city').html(html);
-			  if (preselect) {
-				$('#city').val(preselect);
-				loadLocationsByCity(preselect);
-			  }
-			},
-			error: function () {
-			  $('#city').html('<option value="">Could not load cities</option>');
-			}
-		  });
-		}
-
-		$('#city').on('change', function () {
-		  loadLocationsByCity($.trim($(this).val()));
-		});
-
 		var cityFromUrl = getQueryParamCaseInsensitive('city');
 		if (cityFromUrl) {
 		  cityFromUrl = $.trim(decodeURIComponent(cityFromUrl.replace(/\+/g, ' ')));
+		  $('#city').val(cityFromUrl);
+		  loadLocationsByCity(cityFromUrl);
 		}
-		loadCities(cityFromUrl || '');
 	  });
 	  </script>
 	  
