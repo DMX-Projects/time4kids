@@ -73,15 +73,17 @@
                      <div class="lf-outer mb-3">
                         <input class="form-control" type="text" name="email" id="email"  placeholder="Email" />
                      </div>
-					 <input type="hidden" name="city" id="city" value="">
 					 <input type="hidden" name="source" id="source" value="Youtube">
-                     
-					 
-					 
+
 					 <div class="lf-outer mb-3">
-                        <select  name="Location" id="Location" class="form-control">
-                           <option>Select Location</option>
-                           
+                        <select name="city" id="city" class="form-control">
+                           <option value="">Select City</option>
+                        </select>
+                     </div>
+
+					 <div class="lf-outer mb-3">
+                        <select name="Location" id="Location" class="form-control">
+                           <option value="">Select Location</option>
                         </select>
                      </div>
 					 
@@ -503,10 +505,19 @@
 	  
 	  <script>
 
+	  function normalizePhone(raw) {
+		var digits = String(raw || '').replace(/\D/g, '');
+		if (digits.length === 12 && digits.indexOf('91') === 0) digits = digits.slice(2);
+		else if (digits.length === 11 && digits.charAt(0) === '0') digits = digits.slice(1);
+		else if (digits.length > 10) digits = digits.slice(-10);
+		return digits;
+	  }
+
 	  function validate() {
 		var name = $.trim($('#name').val());
-		var phone = $.trim($('#telephone').val());
+		var phone = normalizePhone($('#telephone').val());
 		var email = $.trim($('#email').val());
+		var city = $.trim($('#city').val());
 		var location = $.trim($('#Location').val());
 
 		if (!name || name.length < 2) {
@@ -527,7 +538,13 @@
 		  return false;
 		}
 
-		if (!location || location === 'Select Location') {
+		if (!city) {
+		  alert('Please select a city.');
+		  $('#city').focus();
+		  return false;
+		}
+
+		if (!location) {
 		  alert('Please select a location.');
 		  $('#Location').focus();
 		  return false;
@@ -536,19 +553,16 @@
 		return true;
 	  }
 
-
 	  $(document).ready(function () {
 		function getQueryParamCaseInsensitive(param) {
 		  var params = new URLSearchParams(window.location.search);
 		  var target = String(param || '').toLowerCase();
 		  var value = null;
-
 		  params.forEach(function (paramValue, paramKey) {
 			if (String(paramKey).toLowerCase() === target && value === null) {
 			  value = paramValue;
 			}
 		  });
-
 		  return value;
 		}
 
@@ -561,56 +575,65 @@
 		}
 
 		function loadLocationsByCity(city) {
+		  $('#Location').html('<option value="">Loading locations…</option>');
 		  if (!city) {
+			$('#Location').html('<option value="">Select Location</option>');
 			return;
 		  }
-
 		  $.ajax({
 			url: '/api/centers/?city=' + encodeURIComponent(city),
 			type: 'GET',
 			dataType: 'json',
 			success: function (data) {
 			  var results = (data && data.results) ? data.results : [];
-			  var html = '<option>Select Location</option>';
+			  var html = '<option value="">Select Location</option>';
 			  results.forEach(function (row) {
-				var name = row && row.name ? String(row.name).trim() : '';
-				if (!name) {
-				  return;
-				}
-				html += '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>';
+				var centreName = row && row.name ? String(row.name).trim() : '';
+				if (!centreName) return;
+				html += '<option value="' + escapeHtml(centreName) + '">' + escapeHtml(centreName) + '</option>';
 			  });
 			  $('#Location').html(html);
 			},
-			error: function (_xhr, status, err) {
-			  console.warn('loadLocationsByCity failed:', status, err);
+			error: function () {
+			  $('#Location').html('<option value="">Could not load locations</option>');
 			}
 		  });
 		}
 
-		$("#state").change(function () {
-		  var state = $(this).val();
-
+		function loadCities(preselect) {
 		  $.ajax({
-			url: '/timekids-2g/backend/getCitiesonSource.php',
-			type: 'POST',
-			data: { state: state },
-			success: function (response) {
-			  $('#city').html(response);
+			url: '/api/cities/',
+			type: 'GET',
+			dataType: 'json',
+			success: function (data) {
+			  var results = (data && data.results) ? data.results : [];
+			  var html = '<option value="">Select City</option>';
+			  results.forEach(function (row) {
+				var cityName = row && row.name ? String(row.name).trim() : '';
+				if (!cityName) return;
+				html += '<option value="' + escapeHtml(cityName) + '">' + escapeHtml(cityName) + '</option>';
+			  });
+			  $('#city').html(html);
+			  if (preselect) {
+				$('#city').val(preselect);
+				loadLocationsByCity(preselect);
+			  }
+			},
+			error: function () {
+			  $('#city').html('<option value="">Could not load cities</option>');
 			}
 		  });
-		});
+		}
 
-		$("#city").change(function () {
-		  var city = $.trim($(this).val());
-		  loadLocationsByCity(city);
+		$('#city').on('change', function () {
+		  loadLocationsByCity($.trim($(this).val()));
 		});
 
 		var cityFromUrl = getQueryParamCaseInsensitive('city');
 		if (cityFromUrl) {
 		  cityFromUrl = $.trim(decodeURIComponent(cityFromUrl.replace(/\+/g, ' ')));
-		  $('#city').val(cityFromUrl);
-		  loadLocationsByCity(cityFromUrl);
 		}
+		loadCities(cityFromUrl || '');
 	  });
 	  </script>
 	  
