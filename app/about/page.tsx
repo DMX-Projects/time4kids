@@ -155,7 +155,7 @@ export default function AboutPage() {
             </div>
 
             {/* Hero Section */}
-            <section className="bg-gradient-to-br from-primary-50 via-purple-50 to-secondary-50 section-gap relative overflow-hidden">
+            <section className="bg-gradient-to-br from-primary-50 via-purple-50 to-secondary-50 section-gap relative overflow-hidden pt-24 md:pt-28">
                 <TwinklingStars count={20} />
 
                 {/* Animated Floating Shapes */}

@@ -11,6 +11,11 @@ import {
     UserCircle,
 } from "lucide-react";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
+import { FranchiseCenterPageAccordion } from "@/components/dashboard/franchise/FranchiseCenterPageAccordion";
+import {
+    FRANCHISE_CENTER_PAGE_BLOCK_A,
+    FRANCHISE_CENTER_PAGE_BLOCK_B,
+} from "@/config/franchise-center-page-nav";
 import { FRANCHISE_DASHBOARD_RIGHT_ACTION_URLS } from "@/config/franchise-dashboard-side-actions";
 
 function SideActionButton({ href, label }: { href: string; label: string }) {
@@ -83,10 +88,10 @@ export default function FranchiseDashboardPage() {
                 ))}
             </section>
 
-            <p className="text-xs text-slate-500">
-                Centre resource files from head office are available on each section page (e.g. SOP, formats) via the
-                sidebar — not on this home screen.
-            </p>
+            <FranchiseCenterPageAccordion
+                sections={[FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B]}
+                mode="franchise"
+            />
         </div>
     );
 }

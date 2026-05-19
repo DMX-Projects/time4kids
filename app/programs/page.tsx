@@ -10,6 +10,8 @@ import { gsap } from 'gsap';
 import { apiUrl } from '@/lib/api-client';
 import { DEFAULT_PROGRAMS_PAGE_DATA, mergeProgramsPageData, type ProgramsPageProgram } from '@/config/programs-page-defaults';
 import { formatAgeGroupLabel } from '@/lib/format-age-group';
+import { getProgramSectionSlug } from '@/lib/program-section-slugs';
+import { useScrollToHash } from '@/hooks/use-scroll-to-hash';
 
 // --- Interactive Bubbles Component ---
 const InteractiveBubbles = () => {
@@ -171,6 +173,8 @@ export default function ProgramsPage() {
         };
     }, []);
 
+    useScrollToHash([pageData.programs.length]);
+
     const themeByIndex = (index: number) => {
         const themes = [
             { colorStart: 'from-[#FF9A9E]', colorEnd: 'to-[#FECFEF]', accent: 'text-pink-500', bg: 'bg-pink-50', icon: Music },
@@ -198,7 +202,7 @@ export default function ProgramsPage() {
             <div className="fixed top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 pointer-events-none z-[-1]"></div>
 
             {/* Hero Section */}
-            <section className="relative section-gap overflow-visible">
+            <section className="relative section-gap overflow-visible pt-24 md:pt-28">
                 {/* Decorative Elements */}
                 <div className="absolute top-20 left-[10%] w-24 h-24 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
                 <div className="absolute top-24 right-[15%] w-32 h-32 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
@@ -232,7 +236,7 @@ export default function ProgramsPage() {
             </section>
 
             {/* Cloud Divider */}
-            <div className="relative -mt-32 md:-mt-56 z-20">
+            <div className="relative -mt-16 md:-mt-56 z-20">
                 <CloudDivider />
             </div>
 
@@ -248,14 +252,20 @@ export default function ProgramsPage() {
                                 program.description,
                                 isSummerPrograms,
                             );
+                            const sectionId = getProgramSectionSlug(program.name);
 
                             return (
-                                <React.Fragment key={index}>
+                                <section
+                                    key={sectionId}
+                                    id={sectionId}
+                                    className="scroll-mt-28"
+                                    aria-labelledby={`${sectionId}-title`}
+                                >
                                 <header className={`mb-6 w-full text-center md:mb-8 lg:mb-10 ${index % 2 === 0 ? 'md:text-left' : 'md:text-right'}`}>
                                     <p className={`text-xs font-bold uppercase tracking-widest text-slate-500 sm:text-sm ${theme.accent}`}>
                                         {formatAgeGroupLabel(program.ageGroup)}
                                     </p>
-                                    <h2 className="mt-2 font-display font-black text-4xl leading-tight tracking-tight text-slate-800 drop-shadow-sm sm:text-5xl md:text-6xl lg:text-7xl">
+                                    <h2 id={`${sectionId}-title`} className="mt-2 font-display font-black text-3xl leading-tight tracking-tight text-slate-800 drop-shadow-sm sm:text-4xl md:text-6xl lg:text-7xl">
                                         {program.name}
                                     </h2>
                                     <div className={`mt-3 flex items-center justify-center gap-2 text-base font-bold text-slate-500 sm:text-lg md:gap-3 ${index % 2 === 0 ? 'md:justify-start' : 'md:justify-end'}`}>
@@ -352,7 +362,7 @@ export default function ProgramsPage() {
                                         aria-hidden
                                     />
                                 )}
-                                </React.Fragment>
+                                </section>
                             );
                         })}
                     </div>

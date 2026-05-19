@@ -172,6 +172,13 @@ body {
     }
   }
 
+  /* Home programs preview: staggered offsets only on md+ (avoids overlap on mobile) */
+  @media (min-width: 768px) {
+    .program-preview-card {
+      transform: translateY(var(--program-y-offset, 0));
+    }
+  }
+
   /* Card padding rule - 15px to 30px (Req #8) */
   .card-padding {
     padding: 15px;

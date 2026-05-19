@@ -40,7 +40,7 @@ const TABS = [
 export default function FloatingSideTabs() {
     return (
         <aside
-            className="fixed right-0 top-1/2 z-[8000] flex -translate-y-1/2 flex-col gap-2 pointer-events-none sm:gap-2.5"
+            className="fixed right-0 top-1/2 z-[8000] hidden -translate-y-1/2 flex-col gap-2 pointer-events-none sm:flex sm:gap-2.5"
             aria-label="Quick links"
         >
             {TABS.map((tab) => (

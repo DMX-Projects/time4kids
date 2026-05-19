@@ -141,7 +141,7 @@ export default function AdmissionPage() {
             <InteractiveBubbles />
 
             {/* HERO SECTION */}
-            <section className="relative pt-12 pb-32 md:pb-48 overflow-visible z-10">
+            <section className="relative pt-24 pb-32 md:pb-48 overflow-visible z-10 md:pt-28">
                 <div className="absolute top-20 right-10 animate-bounce-slow opacity-60 hidden md:block"><Star className="text-yellow-400 w-12 h-12 fill-current" /></div>
                 <div className="absolute top-40 left-10 animate-pulse opacity-60 hidden md:block"><Music className="text-orange-400 w-10 h-10" /></div>
                 <div className="container mx-auto px-4 relative z-10 text-center">
