@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '@/lib/api-client';
+import { fetchAllPublicFranchises } from '@/lib/public-franchises';
 
 import Card from '@/components/ui/Card';
 import TwinklingStars from '@/components/animations/TwinklingStars';
@@ -32,13 +33,11 @@ export default function CityLocationsPage({ params }: { params: { city: string }
         const fetchCentres = async () => {
             try {
                 const queryParams = new URLSearchParams({ city });
-                const res = await fetch(apiUrl(`/franchises/public/?${queryParams.toString()}`));
-                if (!res.ok) throw new Error('Failed to fetch data');
-                const data = await res.json();
-                const rawData = Array.isArray(data) ? data : (data.results || []);
+                const data = await fetchAllPublicFranchises(
+                    apiUrl(`/franchises/public/?${queryParams.toString()}`),
+                );
 
-                // Map API fields and filter
-                const mappedData: Centre[] = rawData.map((item: any) => ({
+                const mappedData: Centre[] = data.map((item: any) => ({
                     id: item.id,
                     name: item.name,
                     slug: item.slug, // Ensure slug is also mapped if available

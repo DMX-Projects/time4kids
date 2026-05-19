@@ -47,6 +47,8 @@ const nextConfig = {
         return [
             { source: '/media', destination: '/gallery/', permanent: true },
             { source: '/media/', destination: '/gallery/', permanent: true },
+            { source: '/tv-commercial', destination: '/gallery/', permanent: true },
+            { source: '/tv-commercial/', destination: '/gallery/', permanent: true },
         ];
     },
     experimental: {

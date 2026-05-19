@@ -1,8 +1,8 @@
 "use client";
 
 import { CalendarDays, ClipboardList, Sparkles, User } from "lucide-react";
-import { ParentImportantDocumentsAccordion } from "@/components/dashboard/parent/ParentImportantDocumentsAccordion";
 import { ParentDashboardQuickLinks } from "@/components/dashboard/parent/ParentDashboardQuickLinks";
+import { ParentDocuments } from "@/components/dashboard/parent/ParentDocuments";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -153,7 +153,9 @@ export default function ParentDashboardPage() {
                 />
             </div>
 
-            <ParentImportantDocumentsAccordion />
+            <div id="parent-documents" className="scroll-mt-24">
+                <ParentDocuments />
+            </div>
 
             {achievements.length > 0 && (
                 <p className="text-xs text-[#6B7280] text-center">

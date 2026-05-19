@@ -6,31 +6,10 @@ import { MapPin, Phone, Search, Navigation, Star, Sun, Facebook, Instagram, Yout
 import { useRouter, useSearchParams } from 'next/navigation';
 import { slugify, cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api-client';
+import { fetchAllPublicFranchises } from '@/lib/public-franchises';
 import { CentreMap } from '@/components/shared/CentreMap';
 
 export const dynamic = 'force-dynamic';
-
-/** Load every page from paginated franchise list API (locate-centre needs full lists). */
-async function fetchAllPublicFranchises(initialUrl: string): Promise<Record<string, unknown>[]> {
-    const all: Record<string, unknown>[] = [];
-    let nextUrl: string | null = initialUrl;
-
-    while (nextUrl) {
-        const response = await fetch(nextUrl);
-        if (!response.ok) throw new Error('Failed to fetch');
-
-        const json = await response.json();
-        if (Array.isArray(json)) return json as Record<string, unknown>[];
-
-        all.push(...((json.results as Record<string, unknown>[]) || []));
-
-        const next = json.next as string | null | undefined;
-        if (!next) break;
-        nextUrl = next.startsWith('http') ? next : apiUrl(next.startsWith('/') ? next : `/${next}`);
-    }
-
-    return all;
-}
 
 // --- 1. Interactive Bubbles ---
 const InteractiveBubbles = () => {
@@ -150,10 +129,13 @@ function LocateCentreContent() {
                 setIsLoading(true);
                 setIsSearching(true);
 
-                // Build query parameters
+                // Build query parameters — city alone is enough (state is for the dropdown only)
                 const queryParams = new URLSearchParams();
-                if (selectedState) queryParams.set('state', selectedState);
-                if (selectedCity) queryParams.set('city', selectedCity);
+                if (selectedCity) {
+                    queryParams.set('city', selectedCity);
+                } else if (selectedState) {
+                    queryParams.set('state', selectedState);
+                }
 
                 // Only search if 3+ characters or empty (show all)
                 if (debouncedSearchTerm) {

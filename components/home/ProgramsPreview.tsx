@@ -159,12 +159,12 @@ const ProgramsPreview = () => {
                         </image>
                     </svg>
 
-                    {/* Program cards — responsive grid, no horizontal scroll */}
-                    <div className="mx-auto grid max-w-[1600px] grid-cols-2 gap-x-3 gap-y-10 pb-32 pt-10 sm:gap-x-4 sm:gap-y-12 md:grid-cols-3 md:gap-x-6 lg:grid-cols-5 lg:gap-x-3 lg:gap-y-10 xl:gap-x-4">
+                    {/* Mobile: stacked. md+: all 5 in one row along the adventure path. */}
+                    <div className="mx-auto grid max-w-[1600px] grid-cols-1 justify-items-center gap-y-10 pb-32 pt-10 md:grid-cols-5 md:items-start md:gap-x-3 md:gap-y-0 lg:gap-x-3 xl:gap-x-4">
                         {programs.map((program, index) => (
                             <div
                                 key={index}
-                                className="program-preview-card flex min-w-0 flex-col items-center px-1 text-center sm:px-2"
+                                className="program-preview-card flex w-full max-w-[18rem] min-w-0 flex-col items-center px-1 text-center md:max-w-none md:px-2"
                                 style={{ ['--program-y-offset' as string]: program.yOffset }}
                             >
                                 <Link

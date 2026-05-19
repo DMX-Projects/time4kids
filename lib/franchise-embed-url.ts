@@ -60,23 +60,27 @@ export function isFranchiseEmbedUrl(raw: string | null | undefined): boolean {
     return Boolean(resolveFranchiseEmbedSrc(raw || ''));
 }
 
-/** Embed URL for full-screen modals (autoplay + minimal Bunny chrome when possible). */
-export function buildModalEmbedSrc(src: string): string {
+/** Embed URL for full-screen modals (visible controls; optional autoplay). */
+export function buildModalEmbedSrc(src: string, options?: { autoplay?: boolean }): string {
     if (!src) return src;
+    const autoplay = options?.autoplay ?? true;
     try {
         const url = new URL(src);
-        url.searchParams.set('autoplay', 'true');
+        url.searchParams.set('autoplay', autoplay ? 'true' : 'false');
         if (/mediadelivery\.net/i.test(url.hostname)) {
-            url.searchParams.set('compactControls', 'true');
+            url.searchParams.set('compactControls', 'false');
+            url.searchParams.set('controls', 'true');
             url.searchParams.set('responsive', 'true');
             url.searchParams.set('preload', 'true');
         }
         if (url.hostname.includes('youtube.com')) {
             url.searchParams.set('rel', '0');
             url.searchParams.set('modestbranding', '1');
+            url.searchParams.set('controls', '1');
         }
         return url.toString();
     } catch {
-        return src.includes('?') ? `${src}&autoplay=true` : `${src}?autoplay=true`;
+        const join = src.includes('?') ? '&' : '?';
+        return `${src}${join}autoplay=${autoplay ? 'true' : 'false'}`;
     }
 }

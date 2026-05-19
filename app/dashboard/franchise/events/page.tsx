@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarRange, Eye, MapPin, Pencil, Search, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -127,8 +126,11 @@ export default function FranchiseEventsPage() {
         <div className="space-y-6">
             <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-semibold text-orange-900">Events</h1>
-                    <p className="text-sm text-orange-700">Create, update, and showcase events with rich media.</p>
+                    <h1 className="text-2xl font-semibold text-orange-900">Events & gallery</h1>
+                    <p className="text-sm text-orange-700">
+                        Create events and upload photos/videos. They appear on your public centre page under
+                        &ldquo;Life at [your centre]&rdquo;.
+                    </p>
                 </div>
                 <div className="relative w-full md:w-80">
                     <Search className="w-4 h-4 text-orange-500 absolute left-3 top-3" />
@@ -148,12 +150,8 @@ export default function FranchiseEventsPage() {
                         <h2 className="text-lg font-semibold text-orange-900">{editingId ? "Update event details" : "Create a new event"}</h2>
                         {editingId && (
                             <p className="text-xs text-orange-600 mt-1">
-                                Update title, date, venue, and notes below. Remove individual files from the gallery under this event, or add more in{" "}
-                                <strong>Add Media</strong>. You can also use{" "}
-                                <Link href="/dashboard/franchise/gallery/" className="font-semibold underline hover:text-orange-800">
-                                    Centre Gallery
-                                </Link>{" "}
-                                for the full-screen manager.
+                                Update title, date, venue, and notes below. Remove photos or videos in the grid below, or add more in{" "}
+                                <strong>Add Media</strong>.
                             </p>
                         )}
                     </div>
@@ -395,28 +393,12 @@ export default function FranchiseEventsPage() {
                             <p className="text-xs font-semibold uppercase tracking-wide text-orange-700 mb-2">Photos & videos</p>
                             {mediaForViewing.length === 0 ? (
                                 <p className="text-sm text-orange-700">
-                                    No media uploaded yet. Open{" "}
-                                    <Link
-                                        href="/dashboard/franchise/gallery/"
-                                        className="font-semibold text-orange-800 underline hover:text-orange-950"
-                                        onClick={() => setViewId(null)}
-                                    >
-                                        Centre Gallery
-                                    </Link>{" "}
-                                    for this centre, pick the event, then use <strong>Manage Media</strong> to upload or delete files.
+                                    No media uploaded yet. Use <strong>Add Media</strong> above, or tap <strong>Edit</strong> on this event.
                                 </p>
                             ) : (
                                 <>
                                     <p className="text-xs text-orange-700 mb-3">
-                                        To <strong>remove</strong> a photo or video, go to{" "}
-                                        <Link
-                                            href="/dashboard/franchise/gallery/"
-                                            className="font-semibold underline hover:text-orange-900"
-                                            onClick={() => setViewId(null)}
-                                        >
-                                            Centre Gallery
-                                        </Link>{" "}
-                                        → <strong>Manage Media</strong> → hover a thumbnail and tap the trash icon.
+                                        Tap the trash icon on a thumbnail to remove it from this event.
                                     </p>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                         {mediaForViewing.map((m) => (
@@ -430,6 +412,27 @@ export default function FranchiseEventsPage() {
                                                     // eslint-disable-next-line @next/next/no-img-element
                                                     <img src={m.url} alt={m.title || "Event"} className="h-full w-full object-cover" />
                                                 )}
+                                                <button
+                                                    type="button"
+                                                    disabled={deletingMediaId !== null}
+                                                    onClick={async () => {
+                                                        if (!viewing?.id || !confirm("Remove this photo or video from the event?")) return;
+                                                        setDeletingMediaId(m.id);
+                                                        setError(null);
+                                                        try {
+                                                            await deleteEventMedia(viewing.id, m.id);
+                                                        } catch (err: unknown) {
+                                                            setError(err instanceof Error ? err.message : "Could not remove media");
+                                                        } finally {
+                                                            setDeletingMediaId(null);
+                                                        }
+                                                    }}
+                                                    className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 disabled:opacity-50 transition-colors"
+                                                    title="Remove from event"
+                                                    aria-label="Remove from event"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
                                                 {(m.title || m.description) && (
                                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 to-transparent px-2 py-2">
                                                         <p className="text-[11px] text-white truncate">{m.description || m.title}</p>
@@ -446,12 +449,6 @@ export default function FranchiseEventsPage() {
                             <Button size="sm" onClick={() => setViewId(null)}>
                                 Close
                             </Button>
-                            <Link
-                                href="/dashboard/franchise/gallery/"
-                                className="font-semibold inline-flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-lg border-2 border-primary-500 text-primary-600 hover:bg-primary-50 transition-all"
-                            >
-                                Open Centre Gallery
-                            </Link>
                         </div>
                     </div>
                 </Modal>

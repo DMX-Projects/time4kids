@@ -144,7 +144,7 @@ function FranchiseAdvantageCarousel({
     return (
         <>
             {controlsOutside && slideCount > 1 ? (
-                <motion.div className="flex items-center gap-2 sm:gap-3">
+                <div className="mx-auto flex w-full max-w-[min(100%,26rem)] items-center justify-center gap-2 sm:gap-3">
                     <button type="button" onClick={onPrev} className={sideNavClass} aria-label={prevLabel}>
                         <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
                     </button>
@@ -152,9 +152,9 @@ function FranchiseAdvantageCarousel({
                     <button type="button" onClick={onNext} className={sideNavClass} aria-label={nextLabel}>
                         <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
                     </button>
-                </motion.div>
+                </div>
             ) : (
-                slideTrack
+                <div className="mx-auto w-full max-w-[min(100%,26rem)]">{slideTrack}</div>
             )}
             {slideCount > 1 ? (
                 <div className="mt-2 flex justify-center gap-2" role="tablist" aria-label={dotsLabel}>
@@ -235,12 +235,12 @@ function FranchiseAdvantageVideosPanel({
             prevLabel="Previous video"
             nextLabel="Next video"
             dotsLabel="Video slides"
-            controlsOutside
+            controlsOutside={false}
         >
             {videos.map((v, vi) => (
-                    <motion.div key={`${v.poster}-${v.src}-${vi}`} className="w-full shrink-0 basis-full">
+                    <div key={`${v.poster}-${v.src}-${vi}`} className="flex w-full shrink-0 basis-full justify-center">
                         <FranchiseVideoBlob {...franchiseVideoBlobProps(v, vi)} />
-                    </motion.div>
+                    </div>
                 ))}
         </FranchiseAdvantageCarousel>
             )}
@@ -379,7 +379,7 @@ export default function BenefitsUpdates() {
                         whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                         viewport={{ once: true, margin: '-80px' }}
                         transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-                        className="order-2 space-y-10 lg:order-1 lg:col-span-8"
+                        className="order-1 space-y-10 lg:col-span-8"
                     >
                         <div className="relative w-full max-w-3xl lg:max-w-none">
                             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-4 py-2 shadow-lg shadow-orange-200/20 backdrop-blur-xl">
@@ -442,7 +442,7 @@ export default function BenefitsUpdates() {
                         whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                         viewport={{ once: true, margin: '-80px' }}
                         transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-                        className="order-1 flex w-full flex-col items-stretch gap-8 lg:order-2 lg:col-span-4 lg:items-end lg:self-start lg:gap-10 lg:pt-1"
+                        className="order-2 flex w-full flex-col items-center gap-8 lg:col-span-4 lg:items-end lg:self-start lg:gap-10 lg:pt-1"
                     >
                         <div className="flex justify-center lg:justify-end">
                             <Link
@@ -455,19 +455,17 @@ export default function BenefitsUpdates() {
                                 </span>
                             </Link>
                         </div>
-                        <div className="relative w-full max-w-[min(100%,24rem)] sm:mx-auto lg:mx-0 lg:max-w-[26rem]">
-                            {franchiseVideos.length > 0 ? (
+                        {franchiseVideos.length > 0 ? (
+                            <div className="relative mx-auto w-full max-w-[min(100%,22rem)] sm:max-w-[24rem] lg:max-w-[26rem]">
                                 <FranchiseAdvantageVideosPanel
                                     videos={franchiseVideos}
                                     carouselIndex={videoCarouselIndex}
                                     onCarouselIndexChange={setVideoCarouselIndex}
                                 />
-                            ) : null}
-                        </div>
+                            </div>
+                        ) : null}
                         {franchisePhotos.length > 0 ? (
-                            <motion.div
-                                className="relative w-full max-w-[min(100%,24rem)] sm:mx-auto lg:mx-0 lg:max-w-[26rem]"
-                            >
+                            <div className="relative mx-auto w-full max-w-[min(100%,22rem)] sm:max-w-[24rem] lg:max-w-[26rem]">
                                 <FranchiseAdvantageCarousel
                                     slideCount={franchisePhotos.length}
                                     activeIndex={photoCarouselIndex}
@@ -487,14 +485,14 @@ export default function BenefitsUpdates() {
                                     prevLabel="Previous photo"
                                     nextLabel="Next photo"
                                     dotsLabel="Photo slides"
-                                    controlsOutside
+                                    controlsOutside={false}
                                 >
                                     {franchisePhotos.map((item, i) => {
                                         const srcRaw = (item.src || '').trim();
                                         const imageSrc =
                                             resolveCmsMediaUrl(srcRaw) || resolveHomeMediaAssetUrl(srcRaw) || srcRaw;
                                         return (
-                                            <div key={`${srcRaw}-${i}`} className="min-w-full shrink-0 px-1 sm:px-2">
+                                            <div key={`${srcRaw}-${i}`} className="flex min-w-full shrink-0 justify-center px-1 sm:px-2">
                                                 <FranchisePhotoBlob
                                                     variant={i}
                                                     surfaceSrc={imageSrc}
@@ -508,7 +506,7 @@ export default function BenefitsUpdates() {
                                         );
                                     })}
                                 </FranchiseAdvantageCarousel>
-                            </motion.div>
+                            </div>
                         ) : null}
                     </motion.div>
                 </div>

@@ -18,11 +18,10 @@ import {
     LifeBuoy,
     Settings,
     CalendarCheck,
-    FileText,
 } from "lucide-react";
 import type { DashboardNavItem } from "@/components/layout/DashboardShell";
 
-/** When `true`, hides the main parent portal links (see filter set below). Dashboard + Important documents stay. */
+/** When `true`, hides the main parent portal links (see filter set below). Dashboard stays. */
 export const HIDE_PARENT_SIDEBAR_MAIN_LINKS = false;
 
 const HIDDEN_WHEN_FLAG: ReadonlySet<string> = new Set([
@@ -41,11 +40,6 @@ const HIDDEN_WHEN_FLAG: ReadonlySet<string> = new Set([
 
 const PARENT_SIDEBAR_NAV_ALL: DashboardNavItem[] = [
     { label: "Dashboard", href: "/dashboard/parent", icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
-    {
-        label: "Important documents",
-        href: "/dashboard/parent#parent-important-documents",
-        icon: <FileText className="w-[18px] h-[18px]" />,
-    },
     { label: "My details", href: "/dashboard/parent/student-profile", icon: <User className="w-[18px] h-[18px]" /> },
     { label: "Homework", href: "/dashboard/parent/homework", icon: <BookOpen className="w-[18px] h-[18px]" /> },
     { label: "Notifications", href: "/dashboard/parent/notifications", icon: <Bell className="w-[18px] h-[18px]" /> },

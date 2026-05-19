@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -19,6 +19,7 @@ type ResolvedVideo = FranchiseGalleryVideo & {
 };
 
 const SWIPE_THRESHOLD_PX = 48;
+const MOBILE_MAX_WIDTH_PX = 639;
 
 function resolveVideos(videos: FranchiseGalleryVideo[]): ResolvedVideo[] {
     return videos.map((v) => {
@@ -40,6 +41,7 @@ export default function FranchiseVideoGalleryModal({ videos }: FranchiseVideoGal
     const gallery = useFranchiseVideoGallery();
     const activeIndex = gallery?.activeIndex ?? null;
     const touchStart = useRef<{ x: number; y: number } | null>(null);
+    const [isMobileViewport, setIsMobileViewport] = useState(false);
 
     const onClose = useCallback(() => {
         gallery?.closeGallery();
@@ -67,6 +69,14 @@ export default function FranchiseVideoGalleryModal({ videos }: FranchiseVideoGal
     const goNext = useCallback(() => {
         goToIndex(index + 1);
     }, [goToIndex, index]);
+
+    useEffect(() => {
+        const mq = window.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH_PX}px)`);
+        const update = () => setIsMobileViewport(mq.matches);
+        update();
+        mq.addEventListener('change', update);
+        return () => mq.removeEventListener('change', update);
+    }, []);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -100,9 +110,16 @@ export default function FranchiseVideoGalleryModal({ videos }: FranchiseVideoGal
     if (!gallery || typeof document === 'undefined') return null;
 
     const playable = Boolean(current?.embedSrc || current?.fileSrc);
+    const title = current?.alt || `Video ${index + 1}`;
+
+    const chromeButtonClass =
+        'touch-manipulation flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg transition active:scale-95';
 
     const navButtonClass =
-        'pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.35)] backdrop-blur-sm transition active:scale-90 sm:h-12 sm:w-12';
+        'touch-manipulation pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-[0_4px_20px_rgba(0,0,0,0.35)] backdrop-blur-sm transition active:scale-90 sm:h-12 sm:w-12';
+
+    const modalEmbedSrc =
+        current?.embedSrc && buildModalEmbedSrc(current.embedSrc, { autoplay: !isMobileViewport });
 
     return createPortal(
         <AnimatePresence>
@@ -118,7 +135,7 @@ export default function FranchiseVideoGalleryModal({ videos }: FranchiseVideoGal
                 >
                     <button
                         type="button"
-                        className="absolute inset-0 hidden bg-slate-900/80 backdrop-blur-sm sm:block"
+                        className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm sm:bg-slate-900/80"
                         aria-label="Close video"
                         onClick={onClose}
                     />
@@ -133,33 +150,72 @@ export default function FranchiseVideoGalleryModal({ videos }: FranchiseVideoGal
                         onTouchStart={onTouchStart}
                         onTouchEnd={onTouchEnd}
                     >
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="absolute right-3 top-3 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg transition active:scale-95 sm:right-3 sm:top-3"
-                            aria-label="Close video"
-                        >
-                            <X className="h-5 w-5" aria-hidden />
-                        </button>
+                        {/* Mobile: toolbar above video (iframes steal touches from overlaid buttons) */}
+                        <div className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-slate-900 px-2 py-2 sm:hidden">
+                            {count > 1 ? (
+                                <button
+                                    type="button"
+                                    onClick={goPrev}
+                                    className={chromeButtonClass}
+                                    aria-label="Previous video"
+                                >
+                                    <ChevronLeft className="h-6 w-6" strokeWidth={2.25} aria-hidden />
+                                </button>
+                            ) : (
+                                <span className="h-11 w-11 shrink-0" aria-hidden />
+                            )}
+                            <p className="min-w-0 flex-1 truncate text-center text-sm font-bold text-white">
+                                {title}
+                                {count > 1 ? ` (${index + 1}/${count})` : ''}
+                            </p>
+                            {count > 1 ? (
+                                <button
+                                    type="button"
+                                    onClick={goNext}
+                                    className={chromeButtonClass}
+                                    aria-label="Next video"
+                                >
+                                    <ChevronRight className="h-6 w-6" strokeWidth={2.25} aria-hidden />
+                                </button>
+                            ) : (
+                                <span className="h-11 w-11 shrink-0" aria-hidden />
+                            )}
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className={chromeButtonClass}
+                                aria-label="Close video"
+                            >
+                                <X className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+                            </button>
+                        </div>
 
-                        <div className="hidden shrink-0 items-center gap-3 border-b border-white/10 bg-slate-900/95 px-5 py-4 pr-14 sm:flex">
+                        <div className="relative hidden shrink-0 items-center gap-3 border-b border-white/10 bg-slate-900/95 px-5 py-4 pr-14 sm:flex">
                             <div className="min-w-0">
                                 <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-400">
                                     Franchise video
                                 </p>
                                 <p className="mt-0.5 truncate font-display text-lg font-black text-white sm:text-xl">
-                                    {current.alt || `Video ${index + 1}`}
+                                    {title}
                                 </p>
                             </div>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg transition active:scale-95"
+                                aria-label="Close video"
+                            >
+                                <X className="h-5 w-5" aria-hidden />
+                            </button>
                         </div>
 
                         <div className="relative min-h-0 flex-1 bg-black sm:aspect-video sm:flex-none">
-                            {playable && current.embedSrc ? (
+                            {playable && modalEmbedSrc ? (
                                 <iframe
-                                    key={`${current.embedSrc}-${index}`}
-                                    src={buildModalEmbedSrc(current.embedSrc)}
-                                    title={current.alt || `Franchise video ${index + 1}`}
-                                    className="pointer-events-auto absolute inset-0 z-0 h-full w-full border-0"
+                                    key={`${modalEmbedSrc}-${index}`}
+                                    src={modalEmbedSrc}
+                                    title={title}
+                                    className="absolute inset-0 z-0 h-full w-full border-0"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                     allowFullScreen
                                 />
@@ -168,9 +224,9 @@ export default function FranchiseVideoGalleryModal({ videos }: FranchiseVideoGal
                                     key={`${current.fileSrc}-${index}`}
                                     src={current.fileSrc}
                                     controls
-                                    autoPlay
+                                    autoPlay={!isMobileViewport}
                                     playsInline
-                                    className="pointer-events-auto absolute inset-0 z-0 h-full w-full object-contain sm:object-contain"
+                                    className="absolute inset-0 z-0 h-full w-full object-contain"
                                 />
                             ) : (
                                 <div className="flex h-full min-h-[240px] items-center justify-center p-8 text-center text-slate-400">
@@ -195,7 +251,7 @@ export default function FranchiseVideoGalleryModal({ videos }: FranchiseVideoGal
                                             e.stopPropagation();
                                             goPrev();
                                         }}
-                                        className={`absolute left-2 top-1/2 z-40 -translate-y-1/2 sm:left-3 ${navButtonClass}`}
+                                        className={`absolute left-2 top-1/2 z-40 hidden -translate-y-1/2 sm:left-3 sm:flex ${navButtonClass}`}
                                         aria-label="Previous video"
                                     >
                                         <ChevronLeft className="h-6 w-6" strokeWidth={2.25} />
@@ -207,7 +263,7 @@ export default function FranchiseVideoGalleryModal({ videos }: FranchiseVideoGal
                                             e.stopPropagation();
                                             goNext();
                                         }}
-                                        className={`absolute right-2 top-1/2 z-40 -translate-y-1/2 sm:right-3 ${navButtonClass}`}
+                                        className={`absolute right-2 top-1/2 z-40 hidden -translate-y-1/2 sm:right-3 sm:flex ${navButtonClass}`}
                                         aria-label="Next video"
                                     >
                                         <ChevronRight className="h-6 w-6" strokeWidth={2.25} />
@@ -229,14 +285,15 @@ export default function FranchiseVideoGalleryModal({ videos }: FranchiseVideoGal
                                         role="tab"
                                         aria-selected={i === index}
                                         onClick={() => goToIndex(i)}
-                                        className={`h-2 rounded-full transition-all ${
-                                            i === index ? 'w-7 bg-orange-500' : 'w-2 bg-slate-500'
+                                        className={`touch-manipulation h-2.5 rounded-full transition-all ${
+                                            i === index ? 'w-7 bg-orange-500' : 'w-2.5 bg-slate-500'
                                         }`}
                                         aria-label={`View video ${i + 1}`}
                                     />
                                 ))}
                             </div>
                         ) : null}
+
                     </motion.div>
                 </motion.div>
             ) : null}

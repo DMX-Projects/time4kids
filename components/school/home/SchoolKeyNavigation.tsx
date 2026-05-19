@@ -80,14 +80,10 @@ export default function SchoolKeyNavigation() {
                             <li className="nav-link3">
                                 <figure>
                                     <span>
-                                        <Image src="/icon-television.png" alt="TV Commercial" width={38} height={38} className="key-nav-icon" />
+                                        <Image src="/icon-media.svg" alt="Media" width={38} height={38} className="key-nav-icon" />
                                     </span>
                                 </figure>
-                                <a href="/tv-commercial">
-                                    TV
-                                    <br />
-                                    Commercial
-                                </a>
+                                <a href="/gallery">Media</a>
                             </li>
                         </ul>
                     </div>

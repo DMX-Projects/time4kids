@@ -47,29 +47,33 @@ const Footer = () => {
     return (
         <div ref={footerRef}>
             <footer
-                className="relative overflow-hidden font-sans text-gray-800 bg-[url('/footer.jpg.jpeg')] bg-cover bg-no-repeat bg-[center_bottom] pb-[150px]"
+                className="relative overflow-hidden font-sans text-gray-800 bg-[url('/footer.jpg.jpeg')] bg-cover bg-no-repeat bg-[center_top] pb-8 md:bg-[center_bottom] md:pb-[150px]"
             >
+                <div
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/95 via-white/90 to-white/95 md:from-transparent md:via-transparent md:to-transparent"
+                    aria-hidden
+                />
                 <Image
                     src="/footer-img1.png"
                     alt=""
                     width={1398}
                     height={121}
-                    className="block h-auto w-full select-none object-cover"
+                    className="relative z-[1] block h-auto w-full select-none object-cover"
                     priority={false}
                 />
 
                 {/* Main Footer Content */}
-                <div className="relative z-10 container mx-auto px-8 md:px-16 lg:px-24 py-12">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="relative z-10 container mx-auto px-4 py-10 sm:px-8 md:px-16 md:py-12 lg:px-24">
+                    <div className="mx-auto grid max-w-lg grid-cols-1 gap-10 text-center md:max-w-none md:grid-cols-2 md:gap-8 md:text-left lg:grid-cols-4">
                     {/* Column 1: Logo & Description */}
                     <div className="space-y-4">
-                        <div className="relative w-40 h-16">
+                        <div className="relative mx-auto h-16 w-40 md:mx-0">
                             <Image
                                 src="/time-kids-logo-new.png"
                                 alt="Time Kids Logo"
                                 fill
                                 sizes="160px"
-                                className="object-contain object-left"
+                                className="object-contain object-center md:object-left"
                             />
                         </div>
                         <p className="text-gray-900 text-sm leading-relaxed font-medium">{footer.about_text}</p>
@@ -77,7 +81,7 @@ const Footer = () => {
 
                     {/* Column 2: Quick Links */}
                     <div>
-                        <h3 className="font-bold text-lg mb-6 text-gray-900">Quick Links</h3>
+                        <h3 className="mb-4 text-lg font-bold text-gray-900 md:mb-6">Quick Links</h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link href="/about" className="text-gray-800 hover:text-blue-600 transition-colors text-sm font-medium">
@@ -119,29 +123,29 @@ const Footer = () => {
 
                     {/* Column 3: Contact Us */}
                     <div>
-                        <h3 className="font-bold text-lg mb-6 text-gray-900">Contact Us</h3>
-                        <ul className="space-y-4">
-                            <li className="flex items-start space-x-3">
-                                <Mail className="w-5 h-5 text-gray-900 mt-0.5 flex-shrink-0" />
+                        <h3 className="mb-4 text-lg font-bold text-gray-900 md:mb-6">Contact Us</h3>
+                        <ul className="mx-auto flex w-fit max-w-full flex-col gap-3 text-left md:mx-0 md:w-full md:gap-4">
+                            <li className="flex items-start gap-3">
+                                <Mail className="mt-0.5 h-5 w-5 shrink-0 text-gray-900" aria-hidden />
                                 <a
                                     href={`mailto:${footer.contact.email}`}
-                                    className="text-gray-800 hover:text-blue-600 transition-colors text-sm font-medium"
+                                    className="min-w-0 break-all text-sm font-medium text-gray-800 transition-colors hover:text-blue-600"
                                 >
                                     {footer.contact.email}
                                 </a>
                             </li>
-                            <li className="flex items-start space-x-3">
-                                <Phone className="w-5 h-5 text-gray-900 mt-0.5 flex-shrink-0" />
+                            <li className="flex items-start gap-3">
+                                <Phone className="mt-0.5 h-5 w-5 shrink-0 text-gray-900" aria-hidden />
                                 <a
                                     href={footerPhoneTel}
-                                    className="text-gray-800 hover:text-blue-600 transition-colors text-sm font-medium"
+                                    className="text-sm font-medium text-gray-800 transition-colors hover:text-blue-600"
                                 >
                                     {footerPhone}
                                 </a>
                             </li>
-                            <li className="flex items-start space-x-3">
-                                <MapPin className="w-5 h-5 text-gray-900 mt-0.5 flex-shrink-0" />
-                                <span className="text-gray-800 text-sm font-medium">
+                            <li className="flex items-start gap-3">
+                                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-gray-900" aria-hidden />
+                                <span className="text-sm font-medium text-gray-800">
                                     {footer.contact.location_label}
                                 </span>
                             </li>
@@ -150,8 +154,8 @@ const Footer = () => {
 
                     {/* Column 4: Connect With Us */}
                     <div>
-                        <h3 className="font-bold text-lg mb-6 text-gray-900">Connect With Us</h3>
-                        <div className="flex gap-3">
+                        <h3 className="mb-4 text-lg font-bold text-gray-900 md:mb-6">Connect With Us</h3>
+                        <div className="flex justify-center gap-3 md:justify-start">
                             <SocialBrandLink platform="facebook" href={footer.social.facebook} size="sm" />
                             <SocialBrandLink platform="instagram" href={footer.social.instagram} size="sm" />
                             <SocialBrandLink platform="youtube" href={footer.social.youtube} size="sm" />

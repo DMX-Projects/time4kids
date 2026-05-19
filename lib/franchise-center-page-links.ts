@@ -21,15 +21,15 @@ export const FRANCHISE_CATEGORY_HUB_PATH: Record<string, string> = {
     HOLIDAY_LISTS: "/dashboard/franchise/academic-documents",
     WELCOME_LETTERS: "/dashboard/franchise/academic-documents",
     SUMMER_CAMP: "/dashboard/franchise/refresher-course",
-    SOCIAL_MEDIA_SUPPORT: "/dashboard/franchise/updates",
-    WATCH_HEAR_LEARN: "/dashboard/franchise/parent-documents",
+    SOCIAL_MEDIA_SUPPORT: "/dashboard/franchise/#center-page",
+    WATCH_HEAR_LEARN: "/dashboard/franchise/parent-portal/",
     ADMISSION_COUNSELLING: "/dashboard/franchise/enquiries",
-    ARTWORKS_MARKETING: "/dashboard/franchise/gallery",
-    CONCEPT_ROOM_DISPLAYS: "/dashboard/franchise/gallery",
+    ARTWORKS_MARKETING: "/dashboard/franchise/events/",
+    CONCEPT_ROOM_DISPLAYS: "/dashboard/franchise/events/",
     REPORT_CARD_COMMENTS: "/dashboard/franchise/add-grades",
-    PARENT_ORIENTATION: "/dashboard/franchise/parent-documents",
+    PARENT_ORIENTATION: "/dashboard/franchise/parent-portal/",
     COUNSELLING_TOOLS: "/dashboard/franchise/enquiries",
-    PARENTING_TIPS: "/dashboard/franchise/parent-documents",
+    PARENTING_TIPS: "/dashboard/franchise/parent-portal/",
 };
 
 const LEGACY_UPLOAD_HOSTS = ["103.65.21.245", "www.timekidspreschools.in", "timekidspreschools.in"];

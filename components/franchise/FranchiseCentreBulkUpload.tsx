@@ -13,27 +13,14 @@ import { normalizeApiList } from "@/lib/parent-school-api";
 import {
     classifyParentUploadFile,
     ensureShowcaseEventId,
-    isPdfFile,
     uploadEventMediaFile,
     uploadFranchiseHubDocument,
     uploadAdminFranchiseHubDocument,
-    uploadParentDocument,
     validateFileSize,
     validateHubFileSize,
     type BulkUploadResult,
 } from "@/lib/franchise-centre-upload";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
-
-const PARENT_DOC_CATEGORIES = [
-    { value: "PRESCHOOL_POLICIES", label: "Preschool Policies (PDF)" },
-    { value: "CLASS_TIMETABLE", label: "Class Timetable (PDF)" },
-    { value: "HOLIDAY_LISTS", label: "Holiday Lists" },
-    { value: "AUDIO_RHYMES", label: "Audio Rhymes" },
-    { value: "VIDEOS", label: "Watch • Hear • Learn" },
-    { value: "NEWSLETTERS", label: "Newsletters" },
-    { value: "STUDENTS_KIT", label: "Students Kit" },
-    { value: "PARENTING_TIPS", label: "Parenting Tips & Articles" },
-];
 
 type ParentDoc = {
     id: number;
@@ -58,9 +45,8 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
     const { authFetch, tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
     const { showToast } = useToast();
 
-    const [publishParents, setPublishParents] = useState(!adminHub);
+    const [publishShowcase, setPublishShowcase] = useState(!adminHub);
     const [publishHub, setPublishHub] = useState(adminHub || !parentsOnly);
-    const [parentCategory, setParentCategory] = useState("NEWSLETTERS");
     const [hubCategory, setHubCategory] = useState("ACADEMIC_DOCUMENTS");
     const [eventId, setEventId] = useState("");
     const [events, setEvents] = useState<{ id: number; title: string }[]>([]);
@@ -72,8 +58,6 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
     const [parentDocs, setParentDocs] = useState<ParentDoc[]>([]);
     const [hubDocs, setHubDocs] = useState<FranchiseHubDoc[]>([]);
     const [loadingLists, setLoadingLists] = useState(true);
-
-    const isTimetable = parentCategory === "CLASS_TIMETABLE";
 
     const hubListPath = adminHub ? "/documents/admin/franchise-documents/" : "/documents/franchise/centre-documents/";
     const hubDeletePath = (id: number) =>
@@ -115,7 +99,7 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
         void loadEvents();
     }, [refreshLists, loadEvents]);
 
-    const canSubmit = files.length > 0 && (publishParents || publishHub) && !uploading;
+    const canSubmit = files.length > 0 && (publishShowcase || publishHub) && !uploading;
 
     const onSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -123,8 +107,8 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
             showToast("Choose files or a folder from your computer", "error");
             return;
         }
-        if (!publishParents && !publishHub) {
-            showToast("Select at least one destination: Parents and/or Franchise centre files", "error");
+        if (!publishShowcase && !publishHub) {
+            showToast("Select at least one destination: Showcase and/or Franchise centre files", "error");
             return;
         }
 
@@ -139,7 +123,7 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
                 setProgress(`${i + 1} / ${files.length}: ${file.name}`);
                 const kind = classifyParentUploadFile(file);
 
-                if (publishParents) {
+                if (publishShowcase) {
                     if (kind === "image" || kind === "video") {
                         const sizeErr = validateFileSize(file, kind);
                         if (sizeErr) {
@@ -155,25 +139,14 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
                                 result.ok++;
                             } catch {
                                 result.failed++;
-                                result.errors.push(`${file.name}: parent photo/video upload failed`);
+                                result.errors.push(`${file.name}: showcase photo/video upload failed`);
                             }
                         }
                     } else if (kind === "document") {
-                        const sizeErr = validateFileSize(file, "document");
-                        if (sizeErr) {
-                            result.failed++;
-                            result.errors.push(sizeErr);
-                        } else if (isTimetable && !isPdfFile(file)) {
-                            result.skipped++;
-                        } else {
-                            try {
-                                await uploadParentDocument(authFetch, file, { category: parentCategory });
-                                result.ok++;
-                            } catch {
-                                result.failed++;
-                                result.errors.push(`${file.name}: parent document upload failed`);
-                            }
-                        }
+                        result.skipped++;
+                        result.errors.push(
+                            `${file.name}: parent PDFs/docs are uploaded by head office (Admin → Parent app documents)`,
+                        );
                     } else if (kind === "skip") {
                         result.skipped++;
                     }
@@ -233,7 +206,7 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
                 <p className="text-sm text-[#374151]">
                     {adminHub
                         ? "Choose files or a whole folder from your PC. Uploads go to centre resource pages (admin only)."
-                        : "Choose files or a whole folder from your PC. Files go live immediately for parents and/or your centre resource pages — no manual server folder needed."}
+                        : "Choose files or a folder. Photos/videos can go to parent Showcase; centre resource files go to your hub pages. Parent PDFs (timetable, holidays) are head-office only."}
                 </p>
             )}
 
@@ -246,12 +219,12 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
                     <label className="flex items-center gap-2 text-sm text-[#1F2937]">
                         <input
                             type="checkbox"
-                            checked={publishParents}
-                            onChange={(e) => setPublishParents(e.target.checked)}
+                            checked={publishShowcase}
+                            onChange={(e) => setPublishShowcase(e.target.checked)}
                             disabled={uploading}
                             className="rounded border-gray-300"
                         />
-                        Parents app (documents + Showcase photos/videos)
+                        Parents app — Showcase photos/videos only
                     </label>
                     {!parentsOnly && (
                         <label className="flex items-center gap-2 text-sm text-[#1F2937]">
@@ -268,26 +241,8 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
                 </fieldset>
                 )}
 
-                {!adminHub && publishParents && (
+                {!adminHub && publishShowcase && (
                     <div className="grid gap-3 md:grid-cols-2 rounded-xl bg-[#FFF7ED] border border-[#FFEDD5] p-3">
-                        <label className="text-xs font-semibold text-[#9A3412] block md:col-span-2">
-                            Parent document category (PDFs, Word, audio…)
-                            <select
-                                value={parentCategory}
-                                onChange={(e) => setParentCategory(e.target.value)}
-                                className="mt-1 w-full rounded-xl border px-3 py-2 text-sm bg-white"
-                                disabled={uploading}
-                            >
-                                {PARENT_DOC_CATEGORIES.map((c) => (
-                                    <option key={c.value} value={c.value}>
-                                        {c.label}
-                                    </option>
-                                ))}
-                            </select>
-                            {isTimetable && (
-                                <span className="block mt-1 text-[11px]">Timetable: non-PDF files are skipped.</span>
-                            )}
-                        </label>
                         <label className="text-xs font-semibold text-[#9A3412] block md:col-span-2">
                             Showcase event for photos/videos (optional)
                             <select
@@ -368,7 +323,7 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
             {!compact && !adminHub && (
                 <>
                     <ManageList
-                        title="Parent documents (live)"
+                        title="Parent documents (head office — view only)"
                         loading={loadingLists}
                         empty="Nothing for parents yet."
                         items={parentDocs.slice(0, 25).map((d) => ({
@@ -376,10 +331,6 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
                             label: d.display_title || d.title,
                             sub: d.category_display,
                             onOpen: () => openParentDocumentFile(tokens?.access, authFetchBlobResponse, d),
-                            onDelete: async () => {
-                                await authFetch(`/documents/franchise/parent-documents/${d.id}/`, { method: "DELETE" });
-                                await refreshLists();
-                            },
                         }))}
                     />
                     <ManageList
@@ -429,7 +380,7 @@ function ManageList({
     title: string;
     loading: boolean;
     empty: string;
-    items: { id: number; label: string; sub?: string; onOpen: () => void; onDelete: () => Promise<void> }[];
+    items: { id: number; label: string; sub?: string; onOpen: () => void; onDelete?: () => Promise<void> }[];
 }) {
     const { showToast } = useToast();
     return (
@@ -456,19 +407,21 @@ function ManageList({
                                 <Download className="w-3.5 h-3.5" />
                                 Open
                             </button>
-                            <button
-                                type="button"
-                                className="text-red-600 text-xs font-semibold inline-flex items-center gap-1"
-                                onClick={() => {
-                                    void item.onDelete().then(
-                                        () => showToast("Deleted", "success"),
-                                        () => showToast("Delete failed", "error"),
-                                    );
-                                }}
-                            >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                Delete
-                            </button>
+                            {item.onDelete && (
+                                <button
+                                    type="button"
+                                    className="text-red-600 text-xs font-semibold inline-flex items-center gap-1"
+                                    onClick={() => {
+                                        void item.onDelete!().then(
+                                            () => showToast("Deleted", "success"),
+                                            () => showToast("Delete failed", "error"),
+                                        );
+                                    }}
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Delete
+                                </button>
+                            )}
                         </span>
                     </li>
                 ))}

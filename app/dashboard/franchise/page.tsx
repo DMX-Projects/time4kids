@@ -1,15 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import {
-    CalendarDays,
-    CalendarRange,
-    ClipboardList,
-    FileText,
-    LayoutGrid,
-    MessageSquare,
-    UserCircle,
-} from "lucide-react";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
 import { FranchiseCenterPageAccordion } from "@/components/dashboard/franchise/FranchiseCenterPageAccordion";
 import {
@@ -43,16 +33,6 @@ function SideActionButton({ href, label }: { href: string; label: string }) {
     );
 }
 
-const quickLinks = [
-    { href: "/dashboard/franchise/parents/", label: "Parent records", icon: ClipboardList },
-    { href: "/dashboard/franchise/students/", label: "Students", icon: UserCircle },
-    { href: "/dashboard/franchise/attendance/", label: "Attendance", icon: CalendarDays },
-    { href: "/dashboard/franchise/parent-portal/", label: "Parent portal", icon: LayoutGrid },
-    { href: "/dashboard/franchise/parent-documents/", label: "Parent documents", icon: FileText },
-    { href: "/dashboard/franchise/enquiries/", label: "Enquiries", icon: MessageSquare },
-    { href: "/dashboard/franchise/events/", label: "Events", icon: CalendarRange },
-];
-
 export default function FranchiseDashboardPage() {
     const { profile } = useFranchiseData();
     const { indentsPlacing } = FRANCHISE_DASHBOARD_RIGHT_ACTION_URLS;
@@ -64,11 +44,9 @@ export default function FranchiseDashboardPage() {
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
                     <p className="mt-1 text-sm text-slate-600">
-                        Welcome to <span className="font-semibold text-slate-800">{centreName}</span>. Open{" "}
-                        <a href="#center-page" className="font-semibold text-primary-700 underline-offset-2 hover:underline">
-                            Center Page
-                        </a>{" "}
-                        below for head-office documents (SOP, academic files, formats, and more).
+                        Welcome to <span className="font-semibold text-slate-800">{centreName}</span>. Use the
+                        sidebar for day-to-day tasks. Head-office documents (SOP, academic files, formats, and
+                        more) are below.
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2 sm:justify-end shrink-0">
@@ -81,21 +59,6 @@ export default function FranchiseDashboardPage() {
                     sections={[FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B]}
                     mode="franchise"
                 />
-            </section>
-
-            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {quickLinks.map(({ href, label, icon: Icon }) => (
-                    <Link
-                        key={href}
-                        href={href}
-                        className="flex items-center gap-3 rounded-2xl border border-orange-100 bg-white p-4 shadow-sm transition hover:border-orange-300 hover:shadow-md"
-                    >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
-                            <Icon className="h-5 w-5" />
-                        </span>
-                        <span className="text-sm font-semibold text-slate-800">{label}</span>
-                    </Link>
-                ))}
             </section>
         </div>
     );

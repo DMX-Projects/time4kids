@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
 import VirtualTourModal from '@/components/home/VirtualTourModal';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
 import { findMarketingAsset, marketingAssetHref, type MarketingAssetRecord } from '@/lib/marketing-assets';
 import { isVirtualTourNavItem } from '@/lib/virtual-tour';
+import { fixKeyNavItem, type KeyNavItem } from '@/config/home-page-defaults';
+import { HOME_SHORTCUTS_HASH } from '@/components/layout/PublicPageBackLink';
 
 // --- Types & Constants ---
 interface NavItem {
@@ -20,6 +21,17 @@ interface NavItem {
     alt: string;
     external?: boolean;
 }
+
+const toNavItem = (item: KeyNavItem): NavItem => {
+    const fixed = fixKeyNavItem(item);
+    return {
+        label: fixed.label,
+        href: fixed.href,
+        icon: fixed.icon,
+        alt: fixed.alt,
+        external: fixed.external,
+    };
+};
 
 const THEMES = [
     { primary: "#F15A29", light: "#ff825c" },
@@ -51,7 +63,10 @@ const DEFAULT_BROCHURE_HREFS = {
 };
 
 const getNavIcon = (item: NavItem) => {
-    if (/^tv\s*commercial$/i.test(item.label.replace(/\n/g, ' ')) || item.href === '/tv-commercial') {
+    if (/^media$/i.test(item.label.replace(/\n/g, ' ')) || item.href === '/gallery' && item.icon.includes('icon-media')) {
+        return '/icon-media.svg';
+    }
+    if (/^tv\s*commercial$/i.test(item.label.replace(/\n/g, ' ')) || /tv-commercial/i.test(item.href)) {
         return '/icon-media.svg';
     }
 
@@ -59,7 +74,7 @@ const getNavIcon = (item: NavItem) => {
 };
 
 const getNavAlt = (item: NavItem) => {
-    if (/^tv\s*commercial$/i.test(item.label.replace(/\n/g, ' ')) || item.href === '/tv-commercial') {
+    if (/^media$/i.test(item.label.replace(/\n/g, ' ')) || /tv-commercial/i.test(item.href)) {
         return 'Media';
     }
 
@@ -105,54 +120,11 @@ const NavigationCard = ({
     brochureOpen?: boolean,
     onBrochureToggle?: () => void,
 }) => {
-    const brochureMenuRef = useRef<HTMLDivElement>(null);
-    const brochureButtonRef = useRef<HTMLButtonElement>(null);
-    const [brochureMenuPos, setBrochureMenuPos] = useState<{ top: number; left: number } | null>(null);
     const theme = THEMES[index % THEMES.length];
     const displayLabel = formatNavLabel(item.label);
     const virtualTour = isVirtualTourNavItem(item);
     const isBrochure = Boolean(brochureLinks);
     const external = !virtualTour && !isBrochure && isExternalHref(item);
-
-    useEffect(() => {
-        if (!brochureOpen || !brochureButtonRef.current) {
-            setBrochureMenuPos(null);
-            return;
-        }
-        const updatePosition = () => {
-            const el = brochureButtonRef.current;
-            if (!el) return;
-            const rect = el.getBoundingClientRect();
-            setBrochureMenuPos({
-                top: rect.bottom + 8,
-                left: rect.left + rect.width / 2,
-            });
-        };
-        updatePosition();
-        window.addEventListener('resize', updatePosition);
-        window.addEventListener('scroll', updatePosition, true);
-        return () => {
-            window.removeEventListener('resize', updatePosition);
-            window.removeEventListener('scroll', updatePosition, true);
-        };
-    }, [brochureOpen]);
-
-    useEffect(() => {
-        if (!brochureOpen || !onBrochureToggle) return;
-        const onPointerDown = (e: MouseEvent) => {
-            const target = e.target as Node;
-            if (brochureMenuRef.current?.contains(target)) return;
-            if (brochureButtonRef.current?.contains(target)) return;
-            onBrochureToggle();
-        };
-        const timer = window.setTimeout(() => {
-            document.addEventListener('mousedown', onPointerDown);
-        }, 0);
-        return () => {
-            clearTimeout(timer);
-            document.removeEventListener('mousedown', onPointerDown);
-        };
-    }, [brochureOpen, onBrochureToggle]);
     const ariaLabel = virtualTour
         ? `${getNavAlt(item)}, opens virtual tour`
         : `${getNavAlt(item)}${external ? ', opens in a new tab' : ''}`;
@@ -268,72 +240,53 @@ const NavigationCard = ({
     );
 
     return (
-        <motion.div layout className="relative flex flex-col items-center group">
+            <motion.div layout className="relative mx-auto flex w-full max-w-[11.5rem] flex-col items-center group md:max-w-none">
             {isBrochure && brochureLinks ? (
                 <>
                     <button
-                        ref={brochureButtonRef}
                         type="button"
                         onClick={(e) => {
                             e.preventDefault();
-                            e.stopPropagation();
                             onBrochureToggle?.();
                         }}
                         className={linkClass}
                         aria-label="Download brochure — choose admission or franchise"
                         aria-expanded={brochureOpen}
-                        aria-haspopup="menu"
+                        aria-haspopup="true"
                     >
                         {cardBody}
-                        <span
-                            className="absolute right-3 top-3 z-30 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm"
-                            aria-hidden
-                        >
-                            <ChevronDown
-                                className={`h-4 w-4 transition-transform duration-200 ${brochureOpen ? 'rotate-180' : ''}`}
-                            />
-                        </span>
                     </button>
-                    {typeof document !== 'undefined' &&
-                        createPortal(
-                            <AnimatePresence>
-                                {brochureOpen && brochureMenuPos ? (
-                                    <motion.div
-                                        ref={brochureMenuRef}
-                                        role="menu"
-                                        initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                                        transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                                        className="fixed z-[10050] w-56 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-slate-200/90 bg-white py-1.5 shadow-[0_20px_50px_rgba(15,23,42,0.18)]"
-                                        style={{ top: brochureMenuPos.top, left: brochureMenuPos.left }}
-                                    >
-                                        <a
-                                            role="menuitem"
-                                            href={brochureLinks.admission}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="block px-4 py-3 text-sm font-bold text-slate-800 transition hover:bg-violet-50 hover:text-violet-800"
-                                            onClick={() => onBrochureToggle?.()}
-                                        >
-                                            Admission Brochure
-                                        </a>
-                                        <div className="mx-3 border-t border-slate-100" aria-hidden />
-                                        <a
-                                            role="menuitem"
-                                            href={brochureLinks.franchise}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="block px-4 py-3 text-sm font-bold text-slate-800 transition hover:bg-violet-50 hover:text-violet-800"
-                                            onClick={() => onBrochureToggle?.()}
-                                        >
-                                            Franchise Brochure
-                                        </a>
-                                    </motion.div>
-                                ) : null}
-                            </AnimatePresence>,
-                            document.body,
-                        )}
+                    <AnimatePresence initial={false}>
+                        {brochureOpen ? (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                                className="mt-2 w-full min-w-[12rem] max-w-[14rem] overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+                            >
+                                <a
+                                    href={brochureLinks.admission}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block px-4 py-3 text-sm font-bold text-slate-800 transition hover:bg-violet-50 hover:text-violet-800"
+                                    onClick={() => onBrochureToggle?.()}
+                                >
+                                    Admission Brochure
+                                </a>
+                                <div className="mx-3 border-t border-slate-100" aria-hidden />
+                                <a
+                                    href={brochureLinks.franchise}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block px-4 py-3 text-sm font-bold text-slate-800 transition hover:bg-violet-50 hover:text-violet-800"
+                                    onClick={() => onBrochureToggle?.()}
+                                >
+                                    Franchise Brochure
+                                </a>
+                            </motion.div>
+                        ) : null}
+                    </AnimatePresence>
                 </>
             ) : virtualTour ? (
                 <button
@@ -368,19 +321,56 @@ const NavigationCard = ({
 // --- Main Component ---
 export default function KeyNavigation() {
     const home = useHomePageContent();
-    const items = home.key_navigation?.length ? home.key_navigation : [];
+    const items = (home.key_navigation?.length ? home.key_navigation : []).map(toNavItem);
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [virtualTourOpen, setVirtualTourOpen] = useState(false);
-    const [brochureMenuOpen, setBrochureMenuOpen] = useState(false);
     const [brochureHrefs, setBrochureHrefs] = useState<BrochureLinks>(DEFAULT_BROCHURE_HREFS);
     const [marketingTourUrl, setMarketingTourUrl] = useState<string | null>(null);
+    const [mobileIndex, setMobileIndex] = useState(0);
+    const [openBrochureIndex, setOpenBrochureIndex] = useState<number | null>(null);
     const tourItem = items.find((item) => isVirtualTourNavItem(item));
-    const brochureIndex = items.findIndex((item) => isBrochureNavItem(item));
     const tourEmbedUrl = (() => {
         const cms = (tourItem?.href || "").trim();
         const marketing = (marketingTourUrl || "").trim();
         return marketing || cms || null;
     })();
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (window.location.hash !== `#${HOME_SHORTCUTS_HASH}`) return;
+        const el = document.getElementById(HOME_SHORTCUTS_HASH);
+        if (!el) return;
+        const t = window.setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+        return () => window.clearTimeout(t);
+    }, []);
+
+    useEffect(() => {
+        if (items.length === 0) {
+            setMobileIndex(0);
+            return;
+        }
+        setMobileIndex((i) => Math.min(i, items.length - 1));
+    }, [items.length]);
+
+    useEffect(() => {
+        setOpenBrochureIndex(null);
+    }, [mobileIndex]);
+
+    const toggleBrochureMenu = (index: number) => {
+        setOpenBrochureIndex((cur) => (cur === index ? null : index));
+    };
+
+    const goMobilePrev = () => {
+        setOpenBrochureIndex(null);
+        setMobileIndex((i) => Math.max(0, i - 1));
+    };
+
+    const goMobileNext = () => {
+        setOpenBrochureIndex(null);
+        setMobileIndex((i) => Math.min(items.length - 1, i + 1));
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -415,7 +405,7 @@ export default function KeyNavigation() {
     }, []);
 
     return (
-        <section className="relative bg-white pb-5 pt-9 font-jakarta md:pt-11">
+        <section id="home-shortcuts" className="relative scroll-mt-28 bg-white pb-5 pt-9 font-jakarta md:pt-11 md:scroll-mt-32">
             {/* Background Architecture */}
             <div className="pointer-events-none absolute inset-0 z-0 opacity-40">
                 <div className="absolute left-0 top-0 h-full w-full bg-gradient-to-b from-slate-50/80 to-white" />
@@ -423,31 +413,102 @@ export default function KeyNavigation() {
             </div>
 
             <div className="relative z-10 mx-auto w-full min-w-0 px-3 sm:px-4 md:container md:px-4">
-                <p className="mb-2 text-center text-xs font-semibold tracking-wide text-slate-400 md:hidden">
-                    Swipe sideways to see all shortcuts →
-                </p>
-                <div className="relative">
-                    {!brochureMenuOpen ? (
-                        <div
-                            className="pointer-events-none absolute right-0 top-4 bottom-6 z-20 w-16 bg-gradient-to-l from-white via-white/95 to-transparent md:hidden"
-                            aria-hidden
-                        />
-                    ) : null}
-                    <div
+                {items.length > 0 ? (
+                    <motion.div className="md:hidden">
+                        <motion.div
+                            role="region"
+                            aria-label="Quick links"
+                            className="flex items-center justify-center gap-1 pb-2 pt-2 sm:gap-2"
+                        >
+                            <button
+                                type="button"
+                                onClick={goMobilePrev}
+                                disabled={mobileIndex === 0}
+                                aria-label="Previous shortcut"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                                <ChevronLeft className="h-6 w-6" aria-hidden />
+                            </button>
+                            <AnimatePresence mode="wait" initial={false}>
+                                <motion.div
+                                    key={mobileIndex}
+                                    initial={{ opacity: 0, x: 16 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -16 }}
+                                    transition={{ duration: 0.2 }}
+                                    className={`flex min-w-0 flex-1 flex-col items-center justify-center ${openBrochureIndex === mobileIndex ? 'relative z-20' : ''}`}
+                                    onMouseEnter={() => setHoveredIndex(mobileIndex)}
+                                    onFocus={() => setHoveredIndex(mobileIndex)}
+                                    onBlur={() => setHoveredIndex(null)}
+                                >
+                                    <NavigationCard
+                                        item={items[mobileIndex]}
+                                        index={mobileIndex}
+                                        isActive={
+                                            mobileIndex === hoveredIndex || openBrochureIndex === mobileIndex
+                                        }
+                                        onOpenVirtualTour={() => setVirtualTourOpen(true)}
+                                        brochureLinks={
+                                            isBrochureNavItem(items[mobileIndex]) ? brochureHrefs : null
+                                        }
+                                        brochureOpen={openBrochureIndex === mobileIndex}
+                                        onBrochureToggle={() => toggleBrochureMenu(mobileIndex)}
+                                    />
+                                </motion.div>
+                            </AnimatePresence>
+                            <button
+                                type="button"
+                                onClick={goMobileNext}
+                                disabled={mobileIndex >= items.length - 1}
+                                aria-label="Next shortcut"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35"
+                            >
+                                <ChevronRight className="h-6 w-6" aria-hidden />
+                            </button>
+                        </motion.div>
+                        {items.length > 1 ? (
+                            <motion.div
+                                className="flex justify-center gap-1.5 pb-4"
+                                role="tablist"
+                                aria-label="Shortcut pages"
+                            >
+                                {items.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={i === mobileIndex}
+                                        aria-label={`Shortcut ${i + 1} of ${items.length}`}
+                                        onClick={() => setMobileIndex(i)}
+                                        className={`h-2 rounded-full transition-all ${
+                                            i === mobileIndex ? 'w-5 bg-[#F15A29]' : 'w-2 bg-slate-200'
+                                        }`}
+                                    />
+                                ))}
+                            </motion.div>
+                        ) : (
+                            <motion.div className="pb-4" aria-hidden />
+                        )}
+                    </motion.div>
+                ) : null}
+
+                <motion.div className="relative hidden md:block">
+                    <motion.div
                         role="region"
                         aria-label="Quick links"
-                        className={`key-nav-track no-scrollbar max-w-full min-w-0 touch-pan-x overscroll-x-contain scroll-smooth pb-4 pt-2 snap-x snap-mandatory scroll-px-4 md:snap-proximity md:pt-6 ${
-                            brochureMenuOpen ? 'overflow-visible' : 'overflow-x-auto overflow-y-visible'
+                        className={`key-nav-track no-scrollbar max-w-full min-w-0 pb-4 pt-6 ${
+                            openBrochureIndex != null ? 'overflow-visible' : 'overflow-x-auto overflow-y-visible'
                         }`}
                         onMouseLeave={() => {
-                            if (!brochureMenuOpen) setHoveredIndex(null);
+                            setHoveredIndex(null);
+                            setOpenBrochureIndex(null);
                         }}
                     >
-                        <div className="flex w-max min-w-full flex-nowrap items-center justify-start gap-2 scroll-px-4 sm:gap-2 md:mx-auto md:justify-center md:gap-3 lg:gap-4 xl:gap-5">
+                        <motion.div className="mx-auto flex w-max min-w-full flex-nowrap items-center justify-center gap-3 lg:gap-4 xl:gap-5">
                             {items.map((item, index) => (
                                 <motion.div
                                     key={`${item.href}-${index}`}
-                                    className={`shrink-0 snap-start ${brochureMenuOpen && index === brochureIndex ? 'relative z-[100]' : ''}`}
+                                    className={`shrink-0 ${openBrochureIndex === index ? 'relative z-20' : ''}`}
                                     onMouseEnter={() => setHoveredIndex(index)}
                                     onFocus={() => setHoveredIndex(index)}
                                     onBlur={() => setHoveredIndex(null)}
@@ -455,21 +516,17 @@ export default function KeyNavigation() {
                                     <NavigationCard
                                         item={item}
                                         index={index}
-                                        isActive={index === hoveredIndex || (brochureMenuOpen && index === brochureIndex)}
+                                        isActive={index === hoveredIndex || openBrochureIndex === index}
                                         onOpenVirtualTour={() => setVirtualTourOpen(true)}
                                         brochureLinks={isBrochureNavItem(item) ? brochureHrefs : null}
-                                        brochureOpen={brochureMenuOpen && index === brochureIndex}
-                                        onBrochureToggle={
-                                            isBrochureNavItem(item)
-                                                ? () => setBrochureMenuOpen((open) => !open)
-                                                : undefined
-                                        }
+                                        brochureOpen={openBrochureIndex === index}
+                                        onBrochureToggle={() => toggleBrochureMenu(index)}
                                     />
                                 </motion.div>
                             ))}
-                        </div>
-                    </div>
-                </div>
+                        </motion.div>
+                    </motion.div>
+                </motion.div>
             </div>
 
             {/* Subtle Aurora background particles */}

@@ -121,10 +121,17 @@ export async function ensureShowcaseEventId(authFetch: AuthFetchFn): Promise<str
     return String(created.id);
 }
 
-export async function uploadParentDocument(
+/** Head office only — parent mobile app documents (global or per-centre). */
+export async function uploadAdminParentDocument(
     authFetch: AuthFetchFn,
     file: File,
-    opts: { category: string; title?: string; academicYear?: string; state?: string },
+    opts: {
+        category: string;
+        title?: string;
+        academicYear?: string;
+        state?: string;
+        franchiseId?: number | null;
+    },
 ): Promise<void> {
     const fd = new FormData();
     fd.append("category", opts.category);
@@ -133,7 +140,8 @@ export async function uploadParentDocument(
     fd.append("file", file);
     if (opts.academicYear?.trim()) fd.append("academic_year", opts.academicYear.trim());
     if (opts.state?.trim()) fd.append("state", opts.state.trim());
-    await authFetch("/documents/franchise/parent-documents/", { method: "POST", body: fd });
+    if (opts.franchiseId != null) fd.append("franchise", String(opts.franchiseId));
+    await authFetch("/documents/admin/parent-documents/", { method: "POST", body: fd });
 }
 
 export async function uploadFranchiseHubDocument(

@@ -2,9 +2,11 @@
 
 import { Calendar } from "lucide-react";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
+import { filterCalendarEvents } from "@/lib/showcase-events";
 
 export default function ParentCalendarPage() {
     const { events } = useSchoolData();
+    const calendarEvents = filterCalendarEvents(events);
 
     return (
         <div className="space-y-6">
@@ -19,7 +21,7 @@ export default function ParentCalendarPage() {
                     </div>
                 </div>
                 <div className="flex flex-col gap-3 text-sm text-orange-800">
-                    {events.map((ev) => (
+                    {calendarEvents.map((ev) => (
                         <div key={ev.id} className="flex items-center justify-between bg-white border border-orange-100 rounded-lg px-3 py-2 shadow-sm">
                             <div>
                                 <p className="font-semibold text-orange-900">{ev.title}</p>
@@ -31,7 +33,7 @@ export default function ParentCalendarPage() {
                             </div>
                         </div>
                     ))}
-                    {events.length === 0 && (
+                    {calendarEvents.length === 0 && (
                         <p className="text-sm text-orange-700">No events published yet. Your centre will add dates here.</p>
                     )}
                 </div>

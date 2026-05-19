@@ -62,16 +62,17 @@ export default function FranchisePage() {
     return (
         <div className="min-h-screen">
             {/* Hero Section - Cloud Theme */}
-            <section className="bg-gradient-to-br from-primary-50 to-secondary-50 section-gap relative overflow-hidden pt-24 md:pt-32">
+            <section className="relative overflow-visible bg-gradient-to-br from-primary-50 to-secondary-50 pb-8 pt-[7.5rem] md:pb-12 md:pt-36">
                 {/* Kid-Friendly Animations - Business Dreams */}
                 <AnimatedNumbers />
 
                 <TwinklingStars count={15} />
 
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="max-w-4xl mx-auto text-center">
-                        <h1 className="font-luckiest text-5xl md:text-6xl mb-6 text-[#003366] tracking-wider">
-                            <span className="text-[#E67E22]">{hero.title_prefix}</span> {hero.title_accent}
+                <div className="container relative z-20 mx-auto px-4 sm:px-6">
+                    <div className="mx-auto w-full max-w-4xl px-1 text-center">
+                        <h1 className="font-luckiest mx-auto mb-6 flex w-full max-w-full flex-col items-center gap-0.5 text-[1.75rem] leading-tight tracking-normal text-[#003366] sm:block sm:max-w-3xl sm:text-4xl sm:leading-snug md:text-6xl md:leading-tight md:tracking-wider">
+                            <span className="block text-[#E67E22] sm:inline">{hero.title_prefix}</span>
+                            <span className="block sm:inline">{hero.title_accent}</span>
                         </h1>
                     </div>
                 </div>
