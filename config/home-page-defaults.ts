@@ -102,7 +102,7 @@ export const DEFAULT_HOME_PAGE_DATA: HomePageData = {
             nav_class: "nav-link2",
             external: true,
         },
-        { icon: "/icon-media.svg", alt: "Media", href: "/tv-commercial", label: "Media", nav_class: "nav-link3" },
+        { icon: "/icon-media.svg", alt: "Media", href: "/gallery", label: "Media", nav_class: "nav-link3" },
     ],
     franchise_benefits: [
         "Low Investment High Returns",
@@ -409,6 +409,23 @@ function dedupeKeyNavBySlot(rows: KeyNavItem[]): KeyNavItem[] {
     return out;
 }
 
+/** Legacy home quick-link: “Media” / “TV Commercial” → public gallery. */
+export function fixKeyNavItem(item: KeyNavItem): KeyNavItem {
+    const href = (item.href || "").trim();
+    const slot = keyNavSlot(item);
+    if (slot === "media" || /tv-commercial/i.test(href)) {
+        return {
+            ...item,
+            href: "/gallery",
+            icon: item.icon?.includes("icon-media") || item.icon?.includes("icon-television") ? item.icon : "/icon-media.svg",
+            alt: item.alt || "Media",
+            label: /^tv\s*commercial$/i.test((item.label || "").replace(/\s+/g, " ").trim()) ? "Media" : item.label || "Media",
+            external: false,
+        };
+    }
+    return item;
+}
+
 /** CMS often drops the last quick-link (e.g. Media / TV commercial). Append defaults only for empty slots. */
 export function normalizeKeyNavigation(rows: unknown): KeyNavItem[] {
     const defaults = DEFAULT_HOME_PAGE_DATA.key_navigation;
@@ -419,21 +436,23 @@ export function normalizeKeyNavigation(rows: unknown): KeyNavItem[] {
     for (const r of rows) {
         if (!r || typeof r !== "object" || Array.isArray(r)) continue;
         const o = r as Record<string, unknown>;
-        out.push({
-            icon: String(o.icon ?? ""),
-            alt: String(o.alt ?? ""),
-            href: String(o.href ?? ""),
-            label: String(o.label ?? ""),
-            nav_class: String(o.nav_class ?? "nav-link1"),
-            external: Boolean(o.external),
-        });
+        out.push(
+            fixKeyNavItem({
+                icon: String(o.icon ?? ""),
+                alt: String(o.alt ?? ""),
+                href: String(o.href ?? ""),
+                label: String(o.label ?? ""),
+                nav_class: String(o.nav_class ?? "nav-link1"),
+                external: Boolean(o.external),
+            }),
+        );
     }
     let merged = dedupeKeyNavBySlot(out);
     const seenSlots = new Set(merged.map(keyNavSlot));
     for (const d of defaults) {
         const slot = keyNavSlot(d);
         if (seenSlots.has(slot)) continue;
-        merged.push(d);
+        merged.push(fixKeyNavItem(d));
         seenSlots.add(slot);
     }
     return sortKeyNavByDisplayOrder(dedupeKeyNavBySlot(merged));

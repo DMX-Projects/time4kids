@@ -1,0 +1,43 @@
+/** Parent mobile app document categories (matches Django DocumentCategory). */
+export const PARENT_DOCUMENT_CATEGORIES = [
+    { value: "PRESCHOOL_POLICIES", label: "Preschool Policies (PDF)" },
+    { value: "CLASS_TIMETABLE", label: "Class Timetable (PDF)" },
+    { value: "HOLIDAY_LISTS", label: "Holiday Lists" },
+    { value: "AUDIO_RHYMES", label: "Audio Rhymes" },
+    { value: "VIDEOS", label: "Watch • Hear • Learn" },
+    { value: "NEWSLETTERS", label: "Newsletters" },
+    { value: "STUDENTS_KIT", label: "Students Kit" },
+    { value: "PARENTING_TIPS", label: "Parenting Tips & Articles" },
+] as const;
+
+/** Indian states for holiday list uploads (matches ParentDocument.State). */
+export const PARENT_DOCUMENT_STATES = [
+    { value: "AP", label: "Andhra Pradesh" },
+    { value: "AR", label: "Arunachal Pradesh" },
+    { value: "AS", label: "Assam" },
+    { value: "BR", label: "Bihar" },
+    { value: "CG", label: "Chhattisgarh" },
+    { value: "GA", label: "Goa" },
+    { value: "GJ", label: "Gujarat" },
+    { value: "HR", label: "Haryana" },
+    { value: "HP", label: "Himachal Pradesh" },
+    { value: "JH", label: "Jharkhand" },
+    { value: "KA", label: "Karnataka" },
+    { value: "KL", label: "Kerala" },
+    { value: "MP", label: "Madhya Pradesh" },
+    { value: "MH", label: "Maharashtra" },
+    { value: "MN", label: "Manipur" },
+    { value: "ML", label: "Meghalaya" },
+    { value: "MZ", label: "Mizoram" },
+    { value: "NL", label: "Nagaland" },
+    { value: "OD", label: "Odisha" },
+    { value: "PB", label: "Punjab" },
+    { value: "RJ", label: "Rajasthan" },
+    { value: "SK", label: "Sikkim" },
+    { value: "TN", label: "Tamil Nadu" },
+    { value: "TS", label: "Telangana" },
+    { value: "TR", label: "Tripura" },
+    { value: "UP", label: "Uttar Pradesh" },
+    { value: "UK", label: "Uttarakhand" },
+    { value: "WB", label: "West Bengal" },
+] as const;

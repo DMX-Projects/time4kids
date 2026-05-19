@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getFranchiseBySlug } from '@/lib/api/franchises';
+import { fetchGlobalCentreProgramCards, mergeCentreProgramCards } from '@/lib/centre-program-cards';
 import SchoolIntroSection from '@/components/school/home/SchoolIntroSection';
-import SchoolKeyNavigation from '@/components/school/home/SchoolKeyNavigation';
 import SchoolProgramsSection from '@/components/school/SchoolProgramsSection';
 import GallerySection from '@/components/school/GallerySection';
 import ContactSection from '@/components/school/ContactSection';
@@ -24,16 +24,19 @@ export default async function SchoolPage({ params }: PageProps) {
         /* keep raw segment */
     }
 
-    // Fetch franchise data
-    const franchise = await getFranchiseBySlug(school);
+    const [franchise, globalProgramCards] = await Promise.all([
+        getFranchiseBySlug(school),
+        fetchGlobalCentreProgramCards(),
+    ]);
 
     if (!franchise) {
         notFound();
     }
 
+    const programCards = mergeCentreProgramCards(globalProgramCards, franchise.school_program_cards);
+
     return (
         <main className="min-h-screen bg-slate-50">
-            {/* Welcome / About — first on load */}
             <div className="bg-[#fffaf0]">
                 <SchoolIntroSection
                     schoolName={franchise.name}
@@ -43,8 +46,6 @@ export default async function SchoolPage({ params }: PageProps) {
                     urlCityFallback={urlCityFallback}
                 />
             </div>
-
-            <SchoolKeyNavigation />
 
             {/* Contact — second */}
             <div className="border-t border-slate-200/80 bg-[#f7fcff]">
@@ -57,7 +58,7 @@ export default async function SchoolPage({ params }: PageProps) {
 
             {/* Our Classes — third (internal id="programs") */}
             <div className="border-t border-slate-200/80 bg-[#f9fff7]">
-                <SchoolProgramsSection selectedPrograms={franchise.programs} programCards={franchise.school_program_cards} />
+                <SchoolProgramsSection selectedPrograms={franchise.programs} programCards={programCards} />
             </div>
 
             {/* Updates Section */}

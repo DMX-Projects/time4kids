@@ -531,10 +531,23 @@ body {
   }
 }
 
-/* Marquee content optimization */
+/* Marquee track: animate the row, not each segment (seamless loop) */
+.marquee-track {
+  animation: marquee 30s linear infinite;
+}
+
+/* Legacy alias */
 .marquee-content {
   will-change: transform;
   animation: marquee 30s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .marquee-content {
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 /* Animation utility classes */

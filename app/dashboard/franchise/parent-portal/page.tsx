@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
+import { SHOWCASE_AUTO_DESCRIPTION, isShowcasePlaceholderEvent } from "@/lib/showcase-events";
 import { jsonHeaders } from "@/lib/api-client";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import dynamic from "next/dynamic";
@@ -81,11 +82,7 @@ export default function ParentPortalAdminPage() {
                     <Link href="/dashboard/franchise/parent-tickets" className="text-blue-600 underline font-medium">
                         Parent support tickets
                     </Link>
-                    . Upload PDFs under{" "}
-                    <Link href="/dashboard/franchise/parent-documents" className="text-blue-600 underline font-medium">
-                        Parent documents
-                    </Link>
-                    .
+                    . Timetable and holiday PDFs are uploaded by head office.
                 </p>
             </div>
 
@@ -119,21 +116,16 @@ function DocsHintPanel({ variant }: { variant: "timetable" | "holidays" }) {
         variant === "timetable"
             ? {
                   title: "Timetable",
-                  body: "Upload weekly timetable PDFs from Parent documents. They will appear for parents under Timetable.",
-                  href: "/dashboard/franchise/parent-documents?category=CLASS_TIMETABLE",
+                  body: "Weekly timetable PDFs for parents are uploaded and maintained by head office.",
               }
             : {
                   title: "Holiday list",
-                  body: "Upload term breaks and public holiday PDFs from Parent documents. They will appear for parents under Holiday list.",
-                  href: "/dashboard/franchise/parent-documents?category=HOLIDAY_LISTS",
+                  body: "Holiday PDFs for parents are uploaded and maintained by head office.",
               };
     return (
         <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 space-y-3 max-w-2xl">
             <h3 className="font-semibold text-[#111827]">{copy.title}</h3>
             <p className="text-sm text-[#374151]">{copy.body}</p>
-            <Link href={copy.href} className="inline-flex text-[#2563EB] font-medium underline">
-                Open uploader
-            </Link>
         </div>
     );
 }
@@ -204,7 +196,7 @@ function ShowcaseTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToa
                     headers: jsonHeaders(),
                     body: JSON.stringify({
                         title: inferredTitle,
-                        description: "Auto-created from Showcase upload",
+                        description: SHOWCASE_AUTO_DESCRIPTION,
                         start_date: today,
                         end_date: today,
                         location: "Showcase",
@@ -246,7 +238,10 @@ function ShowcaseTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToa
         <div className="space-y-4 max-w-3xl">
             <form onSubmit={submit} className="rounded-2xl border border-[#E5E7EB] bg-white p-6 space-y-3">
                 <h3 className="font-semibold text-[#111827]">Showcase upload</h3>
-                <p className="text-sm text-[#374151]">Upload event media here. Parents will see this in Showcase.</p>
+                <p className="text-sm text-[#374151]">
+                    Upload event media here. Parents will see this in Showcase. If you don&apos;t pick an existing event, we create a
+                    hidden <strong>Showcase</strong> entry so your photos don&apos;t clutter the school calendar.
+                </p>
                 <label className="text-xs font-semibold text-[#4B5563] block">
                     Event (optional)
                     <select
@@ -332,11 +327,8 @@ function ShowcaseTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToa
             </div>
 
             <div className="flex flex-wrap gap-4 text-sm">
-                <Link href="/dashboard/franchise/gallery" className="text-[#2563EB] font-medium underline">
-                    Centre gallery
-                </Link>
-                <Link href="/dashboard/franchise/hero-slider" className="text-[#2563EB] font-medium underline">
-                    Home page photos
+                <Link href="/dashboard/franchise/events/" className="text-[#2563EB] font-medium underline">
+                    Events & gallery
                 </Link>
             </div>
         </div>
@@ -353,7 +345,10 @@ function FranchiseCalendarTab({ authFetch }: { authFetch: AuthFetchFn }) {
             try {
                 const raw = await authFetch<unknown>("/events/franchise/");
                 const list = Array.isArray(raw) ? raw : (raw as { results?: unknown[] }).results ?? [];
-                if (!cancelled) setRows(list as typeof rows);
+                const filtered = (list as Array<{ id: number; title: string; start_date?: string; location?: string; description?: string }>).filter(
+                    (ev) => !isShowcasePlaceholderEvent({ venue: ev.location, notes: ev.description }),
+                );
+                if (!cancelled) setRows(filtered);
             } catch {
                 if (!cancelled) setRows([]);
             } finally {

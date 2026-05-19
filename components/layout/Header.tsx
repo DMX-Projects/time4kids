@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Home, Briefcase, Phone, Menu, X } from 'lucide-react';
 import AnimatedNavBar from './AnimatedNavBar';
+import PublicPageBackLink, { shouldShowPublicBack } from './PublicPageBackLink';
 import { useFooterContent } from '@/components/layout/FooterContentProvider';
 import { SocialBrandLink } from '@/components/ui/SocialBrandIcons';
 
@@ -66,6 +67,8 @@ export default function Header() {
         };
     }, [mobileMenuOpen]);
 
+    const showPublicBack = shouldShowPublicBack(pathname ?? '');
+
     return (
         <>
             {/* HEADER TOP */}
@@ -93,18 +96,20 @@ export default function Header() {
             <header className={`header ${isSticky ? 'header-sticky' : ''}`}>
                 <div className="container-fluid mx-auto px-4 max-w-[1550px]">
                     <div className="header-inner">
-                        {/* Logo - Left Side */}
-                        {/* Logo - Left Side */}
-                        <div className="logo flex-shrink-0">
-                            <Link href="/">
-                                <Image
-                                    src="/time-kids-logo-new.png"
-                                    alt="T.I.M.E. Kids Logo"
-                                    width={200}
-                                    height={80}
-                                    priority
-                                />
-                            </Link>
+                        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                            {showPublicBack ? <PublicPageBackLink /> : null}
+                            {/* Logo - Left Side */}
+                            <div className="logo flex-shrink-0">
+                                <Link href="/">
+                                    <Image
+                                        src="/time-kids-logo-new.png"
+                                        alt="T.I.M.E. Kids Logo"
+                                        width={200}
+                                        height={80}
+                                        priority
+                                    />
+                                </Link>
+                            </div>
                         </div>
 
                         {/* Desktop: horizontal nav */}
@@ -130,6 +135,7 @@ export default function Header() {
                     </div>
                 </div>
             </header>
+
 
             {/* Mobile menu overlay */}
             {mobileMenuOpen && (

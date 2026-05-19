@@ -42,14 +42,11 @@ export default function GalleryPage() {
     const [filterMediaType, setFilterMediaType] = useState<'all' | 'image' | 'video'>('all');
     const [loading, setLoading] = useState(true);
     const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
-    const [usingFallback, setUsingFallback] = useState(false);
-
     // Fetch media from API and group by title; use local sample data if API is empty or unavailable
     useEffect(() => {
         const fetchMedia = async () => {
             const applyFallback = () => {
                 setEvents(buildFallbackGalleryFromMock());
-                setUsingFallback(true);
             };
 
             try {
@@ -106,7 +103,6 @@ export default function GalleryPage() {
                     applyFallback();
                 } else {
                     setEvents(eventGroups);
-                    setUsingFallback(false);
                 }
                 setLoading(false);
             } catch {
@@ -201,11 +197,6 @@ export default function GalleryPage() {
                     <p className="text-xl text-gray-500 max-w-2xl mx-auto font-medium italic">
                         Capturing the smiles, learning, and unforgettable moments at T.I.M.E. Kids.
                     </p>
-                    {usingFallback && (
-                        <p className="mt-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 max-w-2xl mx-auto">
-                            Showing sample gallery from bundled images. When the media API returns items, live content will appear here automatically.
-                        </p>
-                    )}
                 </div>
 
                 <AnimatePresence mode="wait">
