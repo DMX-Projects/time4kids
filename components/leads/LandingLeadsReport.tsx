@@ -9,22 +9,25 @@ import { apiUrl, toApiError } from "@/lib/api-client";
 import { getStoredReportKey, persistReportKey, withReportKey } from "@/lib/landing-leads-auth";
 import { slugify } from "@/lib/utils";
 
+/** Matches ``public.kids_enquiry`` columns exactly. */
 export type LandingLead = {
     id: number;
     name: string;
-    mobileno: string;
     mobile: string | null;
+    mobileno: string;
     email: string | null;
     state: string | null;
     city: string | null;
     location: string | null;
     enquiry_type: string;
+    created_date: string;
     source: string | null;
     centre_name: string | null;
     centre_phone: string | null;
     centre_email: string | null;
     email_status: string | null;
-    created_date: string;
+    whatsapp_status: string | null;
+    raw_payload: Record<string, unknown>;
 };
 
 type LandingLeadsResponse = {
