@@ -470,7 +470,39 @@ export default function HeroSection() {
                     }
 
                     .slide {
-                        height: 300px;
+                        height: clamp(220px, 52vw, 380px);
+                        background-color: #fff8ec;
+                    }
+
+                    .slide-content {
+                        height: 100%;
+                        min-height: inherit;
+                    }
+
+                    /* Match image box to slide; show full banner (no cover crop) on small screens */
+                    .slide-image {
+                        position: absolute;
+                        inset: 0;
+                        width: 100%;
+                        height: 100% !important;
+                        max-height: none;
+                        object-fit: contain;
+                        object-position: center center;
+                    }
+
+                    .banner-slider :global(.slick-slide) {
+                        height: clamp(220px, 52vw, 380px);
+                    }
+
+                    .banner-slider :global(.slick-slide > div) {
+                        height: 100%;
+                    }
+
+                    .banner-slider :global(.slick-slide img) {
+                        width: 100%;
+                        height: 100% !important;
+                        object-fit: contain;
+                        object-position: center center;
                     }
                 }
             `}</style>

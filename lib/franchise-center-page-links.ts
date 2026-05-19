@@ -1,4 +1,5 @@
 import type { CenterPageLink } from "@/config/franchise-center-page-nav";
+import { isStudentsKitPublicPath } from "@/config/students-kit-public-pages";
 import { mediaUrl } from "@/lib/api-client";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
 
@@ -243,6 +244,9 @@ export function resolveCenterPageLinkMeta(
     }
 
     const trimmed = link.href.trim();
+    if (isStudentsKitPublicPath(trimmed)) {
+        return { href: trimmed.replace(/\/$/, "") || trimmed };
+    }
     if (trimmed.startsWith("/media/")) {
         return { href: mediaUrl(trimmed.replace(/^\/media\/?/, "")) };
     }

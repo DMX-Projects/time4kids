@@ -10,6 +10,7 @@ const navItems: DashboardNavItem[] = [
     { label: "Slider Images", href: "/dashboard/admin/hero-slides", icon: <Images className="w-5 h-5" /> },
     { label: "Media Files", href: "/dashboard/admin/media", icon: <Images className="w-5 h-5" /> },
     { label: "Centre page documents", href: "/dashboard/admin/franchise-documents", icon: <FileText className="w-5 h-5" /> },
+    { label: "Students kit pages", href: "/dashboard/admin/students-kit-pages", icon: <GraduationCap className="w-5 h-5" /> },
     { label: "Home page content", href: "/dashboard/admin/home-content", icon: <LayoutTemplate className="w-5 h-5" /> },
     { label: "Programs page content", href: "/dashboard/admin/programs-content", icon: <LayoutList className="w-5 h-5" /> },
     { label: "Franchise page content", href: "/dashboard/admin/franchise-content", icon: <BadgeDollarSign className="w-5 h-5" /> },

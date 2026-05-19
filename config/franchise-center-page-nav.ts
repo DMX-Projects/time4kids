@@ -592,25 +592,25 @@ export const FRANCHISE_CENTER_PAGE_BLOCK_A: CenterPageTopItem[] = [
         directLinks: [
             {
                 label: "Students Kit-Play Group-AY-2026-27",
-                href: "http://103.65.21.245:8080/uploads/pc/Students%20Kit-Play%20Group-AY-2026-27.pdf",
+                href: "/StudentskitPlayGroup",
                 adminCategory: "STUDENTS_KIT",
                 rowKey: "students-kit-pg-2026-27",
             },
             {
                 label: "Students Kit-Nursery-AY-2026-27",
-                href: "http://103.65.21.245:8080/uploads/pc/Students%20Kit-Nursery-AY-2026-27.pdf",
+                href: "/StudentskitNursery",
                 adminCategory: "STUDENTS_KIT",
                 rowKey: "students-kit-nursery-2026-27",
             },
             {
                 label: "Students Kit-PP1-AY-2026-27",
-                href: "http://103.65.21.245:8080/uploads/pc/Students%20Kit-PP1-AY-2026-27.pdf",
+                href: "/StudentskitPP1",
                 adminCategory: "STUDENTS_KIT",
                 rowKey: "students-kit-pp1-2026-27",
             },
             {
                 label: "Students Kit-PP2-AY-2026-27",
-                href: "http://103.65.21.245:8080/uploads/pc/Students%20Kit-PP2-AY-2026-27.pdf",
+                href: "/StudentskitPP2",
                 adminCategory: "STUDENTS_KIT",
                 rowKey: "students-kit-pp2-2026-27",
             },

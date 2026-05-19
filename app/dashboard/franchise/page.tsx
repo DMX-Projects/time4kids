@@ -64,14 +64,24 @@ export default function FranchiseDashboardPage() {
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
                     <p className="mt-1 text-sm text-slate-600">
-                        Welcome to <span className="font-semibold text-slate-800">{centreName}</span>. Use the menu on
-                        the left for day-to-day tasks.
+                        Welcome to <span className="font-semibold text-slate-800">{centreName}</span>. Open{" "}
+                        <a href="#center-page" className="font-semibold text-primary-700 underline-offset-2 hover:underline">
+                            Center Page
+                        </a>{" "}
+                        below for head-office documents (SOP, academic files, formats, and more).
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2 sm:justify-end shrink-0">
                     <SideActionButton href={indentsPlacing} label="Indents Placing" />
                 </div>
             </div>
+
+            <section id="center-page" className="scroll-mt-6">
+                <FranchiseCenterPageAccordion
+                    sections={[FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B]}
+                    mode="franchise"
+                />
+            </section>
 
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {quickLinks.map(({ href, label, icon: Icon }) => (
@@ -87,11 +97,6 @@ export default function FranchiseDashboardPage() {
                     </Link>
                 ))}
             </section>
-
-            <FranchiseCenterPageAccordion
-                sections={[FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B]}
-                mode="franchise"
-            />
         </div>
     );
 }
