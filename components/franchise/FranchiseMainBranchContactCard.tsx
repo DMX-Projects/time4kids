@@ -27,7 +27,9 @@ export default function FranchiseMainBranchContactCard({
     const address = addressHtml?.trim() || branch.address_html;
     return (
         <Card className="flex h-full flex-col justify-center">
-            <h3 className="font-bubblegum mb-6 text-2xl tracking-wide text-gray-900">{title}</h3>
+            <h3 className="mb-6 w-full text-center font-bubblegum text-2xl leading-snug tracking-wide text-gray-900">
+                {title}
+            </h3>
 
             <div className="space-y-4">
                 <div className="flex items-start space-x-3">

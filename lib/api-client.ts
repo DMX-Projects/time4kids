@@ -272,7 +272,23 @@ export const mediaUrl = (path?: string | null) => {
 
 /** Same as `mediaUrl` for CMS uploads; relative `/cms-media/…` works with `next/image` on live. */
 export function nextImageSrc(path?: string | null): string {
-    return mediaUrl(path);
+    return schoolGalleryMediaUrl(path);
+}
+
+/**
+ * Public centre “Life at …” gallery — same-origin `/cms-media/…` (Next rewrites to Django on live).
+ * Prefer over `/api/cms-files/…` so `next/image` and `<video>` load reliably on the marketing site.
+ */
+export function schoolGalleryMediaUrl(path?: string | null): string {
+    const raw = (path || "").trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw) && !raw.includes("/media/") && !raw.includes(PUBLIC_CMS_MEDIA_PREFIX)) {
+        return raw;
+    }
+    const pathname = normalizeUploadedMediaPath(raw);
+    const cms = toPublicCmsMediaPath(pathname);
+    if (cms.startsWith(PUBLIC_CMS_MEDIA_PREFIX)) return cms;
+    return mediaUrl(raw);
 }
 
 /** CMS uploads (`/media/...`) and static blobs (`/franchise-gallery/...`) — always absolute for <img>. */

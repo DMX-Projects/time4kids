@@ -14,6 +14,9 @@ interface PageProps {
     };
 }
 
+/** Always load events/gallery from Django on each request (no static cache of centre data). */
+export const dynamic = "force-dynamic";
+
 export default async function SchoolPage({ params }: PageProps) {
     const { school, city: cityParam } = params;
 

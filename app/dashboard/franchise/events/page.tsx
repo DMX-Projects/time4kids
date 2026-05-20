@@ -4,12 +4,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarRange, Eye, MapPin, Pencil, Search, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
+import { centrePublicPagePath } from "@/lib/centre-public-url";
 
 const pastelCard = "bg-white border border-orange-100 rounded-xl shadow-sm";
 
 export default function FranchiseEventsPage() {
+    const { profile } = useFranchiseData();
     const { events, eventMedia, addEvent, updateEvent, deleteEvent, addEventMedia, deleteEventMedia } = useSchoolData();
+    const publicCentrePath =
+        profile.slug && profile.city ? centrePublicPagePath(profile.city, profile.slug) : null;
 
     const editSectionRef = useRef<HTMLElement>(null);
     const [query, setQuery] = useState("");
@@ -131,6 +136,26 @@ export default function FranchiseEventsPage() {
                         Create events and upload photos/videos. They appear on your public centre page under
                         &ldquo;Life at [your centre]&rdquo;.
                     </p>
+                    {publicCentrePath && (
+                        <p className="text-sm text-orange-800 mt-2">
+                            Public page:{" "}
+                            <a
+                                href={publicCentrePath}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold underline hover:text-orange-950"
+                            >
+                                View centre page
+                            </a>
+                            {" "}
+                            (scroll to the gallery — refresh after uploading).
+                        </p>
+                    )}
+                    {events.length === 0 && (
+                        <p className="text-sm text-amber-800 mt-1">
+                            No events saved for this centre yet. Add an event, then upload at least one photo or video in Add Media.
+                        </p>
+                    )}
                 </div>
                 <div className="relative w-full md:w-80">
                     <Search className="w-4 h-4 text-orange-500 absolute left-3 top-3" />

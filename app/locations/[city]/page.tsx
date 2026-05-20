@@ -25,7 +25,6 @@ interface Centre {
 export default function CityLocationsPage({ params }: { params: { city: string } }) {
     const city = decodeURIComponent(params.city);
 
-    // Filter centres for the selected city
     const [centres, setCentres] = useState<Centre[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -40,11 +39,11 @@ export default function CityLocationsPage({ params }: { params: { city: string }
                 const mappedData: Centre[] = data.map((item: any) => ({
                     id: item.id,
                     name: item.name,
-                    slug: item.slug, // Ensure slug is also mapped if available
+                    slug: item.slug,
                     address: item.address,
                     city: item.city,
                     state: item.state,
-                    phone: item.contact_phone || item.phone || '', // Use 'phone' field
+                    phone: item.contact_phone || item.phone || '',
                 }));
                 setCentres(mappedData);
             } catch (err) {

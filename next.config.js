@@ -23,6 +23,8 @@ const nextConfig = {
             { protocol: 'https', hostname: '127.0.0.1' },
             { protocol: 'https', hostname: 'www.timekidspreschools.in', pathname: '/cms-media/**' },
             { protocol: 'https', hostname: 'timekidspreschools.in', pathname: '/cms-media/**' },
+            { protocol: 'https', hostname: 'www.timekidspreschools.in', pathname: '/api/cms-files/**' },
+            { protocol: 'https', hostname: 'timekidspreschools.in', pathname: '/api/cms-files/**' },
             { protocol: 'https', hostname: 'www.timekidspreschools.in', pathname: '/media/**' },
             { protocol: 'https', hostname: 'timekidspreschools.in', pathname: '/media/**' },
             {
