@@ -280,6 +280,12 @@ const PUBLIC_STATIC_BY_BASENAME: Record<string, string> = {
     "faq-sidebar-teacher.png": "/faq-sidebar-teacher.png",
     "faq-girl-image.jpg": "/faq-girl-image.jpg",
     "17.png": "/17.png",
+    "1.png": "/1.png",
+    "2.png": "/2.png",
+    "2 (1).png": "/2 (1).png",
+    "11.png": "/11.png",
+    "16.png": "/16.png",
+    "day care.png": "/day care.png",
 };
 
 /** Stem (filename without ext) → public path for hero_slides uploads with random `_abc123` suffix. */
@@ -318,11 +324,50 @@ export function publicStaticFallbackForMediaPath(path?: string | null): string |
     return null;
 }
 
+/**
+ * Centre pages + Next `<Image>` — never use absolute `https://…/media/…` (404 on live).
+ * - `/1.png` → as-is (public/)
+ * - `/media/1.png` → `/1.png` when single-segment (Our Classes card CMS mistake)
+ * - `/media/hero_slides/…` → `/cms-media/…` or public fallback
+ */
+export function resolveCentrePageImageSrc(path?: string | null): string {
+    const raw = (path || "").trim();
+    if (!raw) return "";
+
+    let pathname = raw;
+    if (/^https?:\/\//i.test(raw)) {
+        try {
+            pathname = new URL(toCanonicalPublicHref(raw)).pathname;
+        } catch {
+            return raw;
+        }
+    } else {
+        pathname = normalizeUploadedMediaPath(raw);
+    }
+
+    if (
+        pathname.startsWith("/") &&
+        !pathname.startsWith("/media/") &&
+        !pathname.startsWith(PUBLIC_CMS_MEDIA_PREFIX) &&
+        !pathname.startsWith("/api/")
+    ) {
+        return pathname;
+    }
+
+    const staticFb = publicStaticFallbackForMediaPath(pathname);
+    if (staticFb) return staticFb;
+
+    const singleMedia = pathname.match(/^\/media\/([^/]+)$/i);
+    if (singleMedia?.[1]) {
+        return `/${singleMedia[1]}`;
+    }
+
+    return schoolGalleryMediaUrl(pathname);
+}
+
 /** Same as `mediaUrl` for CMS uploads; relative `/cms-media/…` works with `next/image` on live. */
 export function nextImageSrc(path?: string | null): string {
-    const fallback = publicStaticFallbackForMediaPath(path);
-    if (fallback) return fallback;
-    return schoolGalleryMediaUrl(path);
+    return resolveCentrePageImageSrc(path);
 }
 
 /**
