@@ -129,19 +129,17 @@ function LocateCentreContent() {
                 setIsLoading(true);
                 setIsSearching(true);
 
-                // Build query parameters — city alone is enough (state is for the dropdown only)
+                // Search replaces dropdown filters (avoids city search + state filter showing wrong centres).
                 const queryParams = new URLSearchParams();
-                if (selectedCity) {
+                const searchActive =
+                    debouncedSearchTerm.trim().length >= 3;
+
+                if (searchActive) {
+                    queryParams.set('search', debouncedSearchTerm.trim());
+                } else if (selectedCity) {
                     queryParams.set('city', selectedCity);
                 } else if (selectedState) {
                     queryParams.set('state', selectedState);
-                }
-
-                // Only search if 3+ characters or empty (show all)
-                if (debouncedSearchTerm) {
-                    if (debouncedSearchTerm.length >= 3) {
-                        queryParams.set('search', debouncedSearchTerm);
-                    }
                 }
 
                 const url = queryParams.toString()

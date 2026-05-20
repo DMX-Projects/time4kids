@@ -12,11 +12,13 @@ export async function fetchAllPublicFranchises(
         if (!response.ok) throw new Error("Failed to fetch franchises");
 
         const json = await response.json();
-        if (Array.isArray(json)) return json as Record<string, unknown>[];
+        if (Array.isArray(json)) {
+            all.push(...(json as Record<string, unknown>[]));
+        } else {
+            all.push(...((json.results as Record<string, unknown>[]) || []));
+        }
 
-        all.push(...((json.results as Record<string, unknown>[]) || []));
-
-        const next = json.next as string | null | undefined;
+        const next = !Array.isArray(json) ? (json.next as string | null | undefined) : null;
         if (!next) break;
         nextUrl = next.startsWith("http") ? next : apiUrl(next.startsWith("/") ? next : `/${next}`);
     }

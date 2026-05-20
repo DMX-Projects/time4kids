@@ -10,6 +10,7 @@ export type FranchiseParent = { id: string; name: string; student: string; email
 export type FranchiseEvent = { id: string; title: string; date: string; venue: string; notes: string };
 export type FranchiseProfile = {
     name: string;
+    slug: string;
     email: string;
     phone: string;
     centre: string;
@@ -64,6 +65,7 @@ type ApiEvent = {
 type ApiProfile = {
     id: number;
     name: string;
+    slug?: string;
     about?: string;
     city?: string;
     contact_email?: string;
@@ -99,6 +101,7 @@ const mapEvent = (event: ApiEvent): FranchiseEvent => ({
 
 const mapProfile = (profile: ApiProfile): FranchiseProfile => ({
     name: profile.name,
+    slug: profile.slug || "",
     email: profile.contact_email || "",
     phone: profile.contact_phone || "",
     centre: profile.name,
@@ -123,6 +126,7 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
     const [events, setEvents] = useState<FranchiseEvent[]>([]);
     const [profile, setProfile] = useState<FranchiseProfile>({
         name: "",
+        slug: "",
         email: "",
         phone: "",
         centre: "",

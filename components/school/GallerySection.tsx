@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Play, Hand, Clock, ArrowLeft, Calendar, MapPin, AlertCircle, Image as ImageIcon, X, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { mediaUrl } from '@/lib/api-client';
+import { schoolGalleryMediaUrl } from '@/lib/api-client';
 import { franchisePublicLocationLine } from '@/lib/utils';
 import Modal from '@/components/ui/Modal';
 
@@ -45,6 +45,42 @@ interface GallerySectionProps {
     events?: EventItem[];
 }
 
+/** Legacy franchise gallery rows (pre–Events & gallery migration). */
+function galleryItemsAsEvents(items: OldGalleryItem[]): EventItem[] {
+    return items
+        .map((item) => {
+            const year =
+                parseInt(String(item.academic_year || "").trim(), 10) ||
+                (item.created_at ? new Date(item.created_at).getFullYear() : new Date().getFullYear());
+            const media: MediaItem[] = [];
+            if (item.media_type === "video" && item.video_link?.trim()) {
+                media.push({
+                    id: item.id,
+                    file: item.video_link.trim(),
+                    media_type: "VIDEO",
+                    caption: item.title || "",
+                });
+            } else if (item.image?.trim()) {
+                media.push({
+                    id: item.id,
+                    file: item.image.trim(),
+                    media_type: "IMAGE",
+                    caption: item.title || "",
+                });
+            }
+            if (media.length === 0) return null;
+            return {
+                id: -item.id,
+                title: item.title || item.event_category || "Gallery",
+                description: item.event_category || "",
+                start_date: item.created_at || `${year}-01-01`,
+                year,
+                media,
+            };
+        })
+        .filter((e): e is EventItem => e !== null);
+}
+
 export default function GallerySection({
     schoolName,
     city,
@@ -61,17 +97,22 @@ export default function GallerySection({
     const lifeAtCentreName = franchisePublicLocationLine(schoolName ?? '', { city, state, urlCityFallback });
     const lifeAtHeading = lifeAtCentreName ? `Life at ${lifeAtCentreName}` : 'Life at T.I.M.E. Kids';
 
+    const displayEvents = useMemo(() => {
+        if (events.length > 0) return events;
+        return galleryItemsAsEvents(galleryItems);
+    }, [events, galleryItems]);
+
     // Extract Years from Events
     const eventYears = useMemo(() => {
-        const years = new Set(events.map(e => e.year || new Date(e.start_date).getFullYear()));
+        const years = new Set(displayEvents.map(e => e.year || new Date(e.start_date).getFullYear()));
         return Array.from(years).sort().reverse();
-    }, [events]);
+    }, [displayEvents]);
 
     // Filter Events by Year
     const filteredEvents = useMemo(() => {
-        if (!filterYear) return events;
-        return events.filter(e => (e.year || new Date(e.start_date).getFullYear()).toString() === filterYear);
-    }, [events, filterYear]);
+        if (!filterYear) return displayEvents;
+        return displayEvents.filter(e => (e.year || new Date(e.start_date).getFullYear()).toString() === filterYear);
+    }, [displayEvents, filterYear]);
 
     // Filter Media within Selected Event
     const filteredMedia = useMemo(() => {
@@ -258,7 +299,7 @@ export default function GallerySection({
                                                     if (!thumb) return null;
                                                     return thumb.media_type === "VIDEO" ? (
                                                         <video
-                                                            src={mediaUrl(thumb.file)}
+                                                            src={schoolGalleryMediaUrl(thumb.file)}
                                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                             preload="metadata"
                                                             muted
@@ -266,7 +307,7 @@ export default function GallerySection({
                                                         />
                                                     ) : (
                                                         <Image
-                                                            src={mediaUrl(thumb.file)}
+                                                            src={schoolGalleryMediaUrl(thumb.file)}
                                                             alt={event.title}
                                                             fill
                                                             className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -308,7 +349,11 @@ export default function GallerySection({
                                     <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300">
                                         <AlertCircle size={48} />
                                     </div>
-                                    <p className="text-gray-400 text-xl font-bold">No events found for {filterYear || 'all time'}.</p>
+                                    <p className="text-gray-400 text-xl font-bold">
+                                        {displayEvents.length === 0
+                                            ? "Photos and videos from your centre will appear here once uploaded in Events & gallery."
+                                            : `No events found for ${filterYear}.`}
+                                    </p>
                                 </div>
                             )}
                         </motion.div>
@@ -361,7 +406,7 @@ export default function GallerySection({
                                         >
                                             {item.media_type === "VIDEO" ? (
                                                 <video
-                                                    src={mediaUrl(item.file)}
+                                                    src={schoolGalleryMediaUrl(item.file)}
                                                     className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
                                                     preload="metadata"
                                                     muted
@@ -369,7 +414,7 @@ export default function GallerySection({
                                                 />
                                             ) : (
                                                 <Image
-                                                    src={mediaUrl(item.file)}
+                                                    src={schoolGalleryMediaUrl(item.file)}
                                                     alt={item.caption || "Event Media"}
                                                     fill
                                                     className="object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
@@ -436,7 +481,7 @@ export default function GallerySection({
 
                             {selectedMedia.media_type === 'VIDEO' ? (
                                 <video
-                                    src={mediaUrl(selectedMedia.file)}
+                                    src={schoolGalleryMediaUrl(selectedMedia.file)}
                                     controls
                                     autoPlay
                                     className="max-w-full max-h-full rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.3)]"
@@ -444,7 +489,7 @@ export default function GallerySection({
                             ) : (
                                 <div className="relative w-full h-full p-4">
                                     <Image
-                                        src={mediaUrl(selectedMedia.file)}
+                                        src={schoolGalleryMediaUrl(selectedMedia.file)}
                                         alt={selectedMedia.caption || "Gallery View"}
                                         fill
                                         className="object-contain drop-shadow-2xl"
