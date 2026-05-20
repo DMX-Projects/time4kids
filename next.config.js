@@ -89,9 +89,7 @@ const nextConfig = {
             { source: '/api/:path*', destination: `${djangoBase}/api/:path*` },
             { source: '/media/:path*/', destination: `${djangoBase}/media/:path*/` },
             { source: '/media/:path*', destination: `${djangoBase}/media/:path*` },
-            /** Public proxy when nginx does not serve `/media/` (live 404). Next → Django uploads. */
-            { source: '/cms-media/:path*/', destination: `${djangoBase}/media/:path*/` },
-            { source: '/cms-media/:path*', destination: `${djangoBase}/media/:path*` },
+            /** `/cms-media/*` is served by `app/cms-media/[[...path]]/route.ts` (Django proxy + public fallbacks). */
         ];
     },
 };

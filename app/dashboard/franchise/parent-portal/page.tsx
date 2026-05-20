@@ -279,7 +279,7 @@ function ShowcaseTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToa
                     <input
                         required
                         type="file"
-                        accept={form.mediaType === "VIDEO" ? "video/*" : "image/*"}
+                        accept={form.mediaType === "VIDEO" ? "video/*,.mp4,.webm,.mov,.m4v" : "image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.heic,.heif,.tif,.tiff,.avif"}
                         onChange={(e) => setForm((p) => ({ ...p, file: e.target.files?.[0] || null }))}
                         className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
                     />

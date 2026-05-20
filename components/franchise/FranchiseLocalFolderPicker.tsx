@@ -77,7 +77,11 @@ export function FranchiseLocalFolderPicker({ files, onFilesChange, accept, disab
                 multiple
                 className="sr-only"
                 disabled={disabled}
-                {...({ webkitdirectory: "", directory: "" } as React.InputHTMLAttributes<HTMLInputElement>)}
+                {...({
+                    webkitdirectory: "",
+                    directory: "",
+                    mozdirectory: "",
+                } as React.InputHTMLAttributes<HTMLInputElement>)}
                 onChange={(e) => {
                     mergeFiles(e.target.files);
                     e.target.value = "";

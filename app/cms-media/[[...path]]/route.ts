@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readFile } from "fs/promises";
+import path from "path";
+import { publicStaticFallbackForMediaPath } from "@/lib/api-client";
 
 /**
  * Serve Django uploads at `/cms-media/*` (same origin as the marketing site).
@@ -37,6 +40,32 @@ export async function GET(
     }
 
     if (!upstreamRes.ok) {
+        const staticPath = publicStaticFallbackForMediaPath(`/media/${relPath}`);
+        if (staticPath) {
+            try {
+                const filePath = path.join(process.cwd(), "public", staticPath.replace(/^\//, ""));
+                const body = await readFile(filePath);
+                const ext = path.extname(filePath).toLowerCase();
+                const contentType =
+                    ext === ".png"
+                        ? "image/png"
+                        : ext === ".jpg" || ext === ".jpeg"
+                          ? "image/jpeg"
+                          : ext === ".webp"
+                            ? "image/webp"
+                            : "application/octet-stream";
+                return new NextResponse(body, {
+                    status: 200,
+                    headers: {
+                        "Content-Type": contentType,
+                        "Cache-Control": "public, max-age=86400",
+                    },
+                });
+            } catch {
+                const url = new URL(staticPath, request.nextUrl.origin);
+                return NextResponse.redirect(url, 307);
+            }
+        }
         return new NextResponse(upstreamRes.body, {
             status: upstreamRes.status,
             statusText: upstreamRes.statusText,

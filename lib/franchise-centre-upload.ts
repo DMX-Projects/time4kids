@@ -6,8 +6,30 @@ import { jsonHeaders } from "@/lib/api-client";
 
 export type ParentUploadKind = "document" | "image" | "video" | "skip";
 
-const IMAGE_EXT = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg", ".heic", ".heif"]);
-const VIDEO_EXT = new Set([".mp4", ".webm", ".mov", ".m4v", ".avi", ".mkv"]);
+const IMAGE_EXT = new Set([
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".bmp",
+    ".svg",
+    ".heic",
+    ".heif",
+    ".tif",
+    ".tiff",
+    ".avif",
+    ".jfif",
+    ".pjpeg",
+    ".ico",
+]);
+const VIDEO_EXT = new Set([".mp4", ".webm", ".mov", ".m4v", ".avi", ".mkv", ".mpeg", ".mpg", ".3gp"]);
+
+/** File picker `accept` — all common image types from any local folder. */
+export const IMAGE_FILE_ACCEPT =
+    "image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff,.avif,.jfif,.pjpeg,.heic,.heif,.ico,.svg";
+
+export const VIDEO_FILE_ACCEPT = "video/*,.mp4,.webm,.mov,.m4v,.avi,.mkv,.mpeg,.mpg,.3gp";
 const DOC_EXT = new Set([
     ".pdf",
     ".doc",
@@ -47,10 +69,29 @@ export function relativePathLabel(file: File): string {
     return rel?.trim() ? rel.replace(/\\/g, "/") : file.name;
 }
 
-export function classifyParentUploadFile(file: File): ParentUploadKind {
+/** True when the file is a photo, including folder picks with empty MIME (common on Windows). */
+export function isImageUploadFile(file: File): boolean {
     const ext = extensionOf(file);
-    if (file.type.startsWith("image/") || IMAGE_EXT.has(ext)) return "image";
-    if (file.type.startsWith("video/") || VIDEO_EXT.has(ext)) return "video";
+    if (IMAGE_EXT.has(ext)) return true;
+    const mime = (file.type || "").toLowerCase();
+    if (mime.startsWith("image/")) return true;
+    if (!mime || mime === "application/octet-stream") return IMAGE_EXT.has(ext);
+    return false;
+}
+
+export function isVideoUploadFile(file: File): boolean {
+    const ext = extensionOf(file);
+    if (VIDEO_EXT.has(ext)) return true;
+    const mime = (file.type || "").toLowerCase();
+    if (mime.startsWith("video/")) return true;
+    if (!mime || mime === "application/octet-stream") return VIDEO_EXT.has(ext);
+    return false;
+}
+
+export function classifyParentUploadFile(file: File): ParentUploadKind {
+    if (isImageUploadFile(file)) return "image";
+    if (isVideoUploadFile(file)) return "video";
+    const ext = extensionOf(file);
     if (DOC_EXT.has(ext) || file.type.startsWith("audio/")) return "document";
     if (file.type === "application/pdf" || file.type.includes("document") || file.type.includes("sheet")) {
         return "document";
@@ -78,14 +119,14 @@ export function isPdfFile(file: File): boolean {
     return file.type === "application/pdf" || extensionOf(file) === ".pdf";
 }
 
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 export const MAX_DOC_BYTES = 25 * 1024 * 1024;
 export const MAX_HUB_FILE_BYTES = 50 * 1024 * 1024;
 
 export function validateFileSize(file: File, kind: ParentUploadKind): string | null {
     if (kind === "image" && file.size > MAX_IMAGE_BYTES) {
-        return `${file.name}: image too large (max 5 MB).`;
+        return `${file.name}: image too large (max 15 MB).`;
     }
     if (kind === "video" && file.size > MAX_VIDEO_BYTES) {
         return `${file.name}: video too large (max 50 MB).`;

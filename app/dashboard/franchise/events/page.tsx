@@ -7,6 +7,13 @@ import Modal from "@/components/ui/Modal";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 import { centrePublicPagePath } from "@/lib/centre-public-url";
+import {
+    IMAGE_FILE_ACCEPT,
+    VIDEO_FILE_ACCEPT,
+    isImageUploadFile,
+    isVideoUploadFile,
+    MAX_IMAGE_BYTES,
+} from "@/lib/franchise-centre-upload";
 
 const pastelCard = "bg-white border border-orange-100 rounded-xl shadow-sm";
 
@@ -92,6 +99,19 @@ export default function FranchiseEventsPage() {
             let ok = 0;
             let failed = 0;
             for (const file of mediaFiles) {
+                const isImage = mediaType === "image";
+                if (isImage && !isImageUploadFile(file)) {
+                    failed++;
+                    continue;
+                }
+                if (!isImage && !isVideoUploadFile(file)) {
+                    failed++;
+                    continue;
+                }
+                if (isImage && file.size > MAX_IMAGE_BYTES) {
+                    failed++;
+                    continue;
+                }
                 try {
                     await addEventMedia({
                         eventId: mediaEventId,
@@ -106,9 +126,13 @@ export default function FranchiseEventsPage() {
                 }
             }
             if (failed > 0 && ok === 0) {
-                setError("Unable to upload media. Please try again.");
+                setError(
+                    mediaType === "image"
+                        ? "Unable to upload. Use JPG, PNG, WEBP, GIF, HEIC, or other image files (max 15 MB each)."
+                        : "Unable to upload. Use MP4, WEBM, MOV, or other video files.",
+                );
             } else if (failed > 0) {
-                setError(`Uploaded ${ok} file(s); ${failed} failed.`);
+                setError(`Uploaded ${ok} file(s); ${failed} failed (wrong type, too large, or server error).`);
             }
             setMediaCaption("");
             setMediaFiles([]);
@@ -276,7 +300,7 @@ export default function FranchiseEventsPage() {
                             <input
                                 key={mediaFileInputKey}
                                 type="file"
-                                accept={mediaType === "image" ? "image/*" : "video/*"}
+                                accept={mediaType === "image" ? IMAGE_FILE_ACCEPT : VIDEO_FILE_ACCEPT}
                                 multiple
                                 onChange={(e) => setMediaFiles(Array.from(e.target.files || []))}
                                 className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
