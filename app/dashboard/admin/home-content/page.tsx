@@ -13,19 +13,11 @@ import {
     type FranchiseAdvantagePhotoItem,
     type FranchiseAdvantageVideoItem,
     type HomePageData,
-    type KeyNavItem,
     type NewsTickerItem,
 } from "@/config/home-page-defaults";
 import { franchiseVideoPosterUploadTitle, programsPreviewUploadTitle } from "@/lib/gallery-event-names";
-import { isVirtualTourNavItem } from "@/lib/virtual-tour";
 import { FranchiseLocalFolderPicker } from "@/components/franchise/FranchiseLocalFolderPicker";
 import { extensionOf, titleFromFileName } from "@/lib/franchise-centre-upload";
-
-const NAV_CLASS_OPTIONS = [
-    { value: "nav-link1", label: "Orange bubble (Style 1)", swatch: "from-[#ECB248] to-[#DD6705]" },
-    { value: "nav-link2", label: "Green bubble (Style 2)", swatch: "from-[#B0CD67] to-[#789F35]" },
-    { value: "nav-link3", label: "Red bubble (Style 3)", swatch: "from-[#D36655] to-[#BD2B13]" },
-];
 
 function Section({
     title,
@@ -128,49 +120,6 @@ function formatMb(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(2)}MB`;
 }
 
-function MiniPreviewKeyNav({ items }: { items: HomePageData["key_navigation"] }) {
-    const list = items ?? [];
-    return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
-            <div className="grid grid-cols-3 gap-2">
-                {list.slice(0, 6).map((item, i) => {
-                    const opt = NAV_CLASS_OPTIONS.find((o) => o.value === item.nav_class) ?? NAV_CLASS_OPTIONS[0];
-                    return (
-                        <div key={`${item.href}-${i}`} className="rounded-xl border border-slate-100 p-2 bg-slate-50">
-                            <div className={`h-8 rounded-xl bg-gradient-to-br ${opt.swatch}`} />
-                            <div className="mt-1 text-[11px] font-semibold text-slate-800 leading-snug line-clamp-2">
-                                {item.label || "—"}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
-
-function MiniPreviewWhy({ why }: { why: HomePageData["why_choose_us"] }) {
-    return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
-            <div className="text-sm font-semibold text-slate-900">
-                {why.heading_prefix}
-                <span className="text-orange-600">{why.heading_accent}</span>
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-                {why.features.slice(0, 4).map((f, i) => (
-                    <div key={i} className="rounded-xl border border-slate-100 p-2" style={{ background: f.color || "#F8FAFC" }}>
-                        <div className="text-[11px] font-semibold text-slate-900 line-clamp-2">{f.title || "—"}</div>
-                        <div className="text-[11px] text-slate-700 line-clamp-2 mt-0.5">{f.desc || "—"}</div>
-                        <div className="mt-1 h-1.5 w-10 rounded-full" style={{ background: f.accent || "#111827" }} />
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
 function MiniPreviewPrograms({ programs }: { programs: HomePageData["programs_preview"]["programs"] }) {
     return (
         <div className="rounded-2xl border border-slate-200 bg-white p-3">
@@ -260,35 +209,6 @@ export default function AdminHomeContentPage() {
         } finally {
             setSaving(false);
         }
-    };
-
-    const updateKeyNav = (i: number, patch: Partial<KeyNavItem>) => {
-        const next = [...data.key_navigation];
-        next[i] = { ...next[i], ...patch };
-        setData({ ...data, key_navigation: next });
-    };
-
-    const addKeyNav = () => {
-        setData({
-            ...data,
-            key_navigation: [
-                ...data.key_navigation,
-                {
-                    icon: "/icon-tour.png",
-                    alt: "",
-                    href: "/",
-                    label: "New link",
-                    nav_class: "nav-link1",
-                },
-            ],
-        });
-    };
-
-    const removeKeyNav = (i: number) => {
-        setData({
-            ...data,
-            key_navigation: data.key_navigation.filter((_, j) => j !== i),
-        });
     };
 
     const updateFranchiseVideo = (i: number, patch: Partial<FranchiseAdvantageVideoItem>) => {
@@ -601,7 +521,7 @@ export default function AdminHomeContentPage() {
 
             const title = data.why_choose_us.features[featureIndex]?.title || `Card ${featureIndex + 1}`;
             const formData = new FormData();
-            formData.append("title", `Homepage Why Choose Us: ${title}`);
+            formData.append("title", `Homepage why parents love timekids: ${title}`);
             formData.append("category", "Banner");
             formData.append("media_type", "image");
             formData.append("file", file);
@@ -631,8 +551,7 @@ export default function AdminHomeContentPage() {
                     Home page content
                 </h1>
                 <p className="text-sm text-slate-600">
-                    Edit the sections below. Each section shows a <strong>Preview</strong> first, and the edit fields are below it. Use{" "}
-                    <strong>Save</strong> when finished.
+                    Edit the sections below. Use <strong>Save</strong> when finished.
                 </p>
             </div>
 
@@ -641,87 +560,11 @@ export default function AdminHomeContentPage() {
             ) : (
                 <div className="grid gap-6 max-w-6xl">
                     <div className="space-y-4 min-w-0">
-                    <div id="key-nav" className="scroll-mt-24" />
-                    <Section title="1. Key navigation (icons under the hero)">
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                            <strong>Where it shows:</strong> Home page → directly under the main hero banner.
-                        </div>
-                        <MiniPreviewKeyNav items={data.key_navigation} />
-                        <p className="text-xs text-slate-500">
-                            Icons use the site’s bundled images; edit link URL, text, alt text, and “open in new tab” below.
-                        </p>
-                        {data.key_navigation.map((row, i) => (
-                            <div key={i} className="rounded-xl border border-slate-100 p-3 space-y-2 bg-slate-50/80">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium text-slate-700">Link {i + 1}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeKeyNav(i)}
-                                        className="text-red-600 hover:bg-red-50 p-1 rounded"
-                                        aria-label="Remove"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div className="grid gap-2">
-                                    <div>
-                                        <label className={labelClass}>Alt text (accessibility)</label>
-                                        <input className={inputClass} value={row.alt} onChange={(e) => updateKeyNav(i, { alt: e.target.value })} />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>
-                                            {isVirtualTourNavItem(row) ? "Virtual tour iframe URL" : "Link URL"}
-                                        </label>
-                                        <input
-                                            className={inputClass}
-                                            value={row.href}
-                                            onChange={(e) => updateKeyNav(i, { href: e.target.value })}
-                                            placeholder={
-                                                isVirtualTourNavItem(row)
-                                                    ? "https://iframe.mediadelivery.net/embed/…"
-                                                    : undefined
-                                            }
-                                        />
-                                        {isVirtualTourNavItem(row) ? (
-                                            <p className="mt-1 text-xs text-amber-900/90">
-                                                Paste the <strong>embed URL</strong> from your server (or full{" "}
-                                                <code className="rounded bg-amber-50 px-1">&lt;iframe src=&quot;…&quot;&gt;</code>
-                                                ). Opens in the Virtual Tour popup on the homepage. Also check Django admin{" "}
-                                                <strong>Marketing assets</strong> → slug <code className="rounded bg-amber-50 px-1">virtual-tour</code>{" "}
-                                                if you set the link there instead.
-                                            </p>
-                                        ) : null}
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Link text (use Enter for a new line)</label>
-                                        <textarea
-                                            className={`${inputClass} min-h-[60px]`}
-                                            value={row.label}
-                                            onChange={(e) => updateKeyNav(i, { label: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="flex items-end pb-2">
-                                        <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={!!row.external}
-                                                onChange={(e) => updateKeyNav(i, { external: e.target.checked })}
-                                            />
-                                            Open in new tab (for PDFs / external sites)
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        <Button type="button" variant="outline" size="sm" onClick={addKeyNav} className="inline-flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Add navigation item
-                        </Button>
-                    </Section>
-                    <Section title="2. Homepage videos & posters (bulk folder)" defaultOpen>
+                    <Section title="1. Homepage videos & posters (bulk folder)" defaultOpen>
                         <div className="rounded-xl border border-blue-200 bg-blue-50/80 px-3 py-2 text-xs text-slate-700 space-y-1">
                             <p>
-                                <strong>Upload many at once:</strong> Choose a folder. <strong>MP4 / WebM</strong> → video slides (section 3).{" "}
-                                <strong>JPG / PNG</strong> → photo slides (section 4).
+                                <strong>Upload many at once:</strong> Choose a folder. <strong>MP4 / WebM</strong> → video slides (section 2).{" "}
+                                <strong>JPG / PNG</strong> → photo slides (section 3).
                             </p>
                             <p className="text-amber-900">
                                 This is for the <strong>homepage ovals</strong>, not the public Photo/Video Gallery.
@@ -745,7 +588,7 @@ export default function AdminHomeContentPage() {
                             {uploadingBulkFolder ? "Uploading folder…" : `Upload ${bulkFolderFiles.length || ""} file(s) to homepage`}
                         </Button>
                     </Section>
-                    <Section title="3. Oval blob — video (top right)" defaultOpen>
+                    <Section title="2. Oval blob — video (top right)" defaultOpen>
                         <div className="rounded-xl border border-orange-200 bg-orange-50/60 px-3 py-2 text-xs text-slate-700">
                             <strong>On the homepage:</strong> Top orange oval — thumbnail before play; video inside blob. Delete slide removes it. Save changes when done.
                         </div>
@@ -796,7 +639,7 @@ export default function AdminHomeContentPage() {
                         <Button type="button" variant="outline" size="sm" onClick={addFranchiseVideo} className="inline-flex items-center gap-2"><Plus className="w-4 h-4" /> Add video slide</Button>
                     </Section>
 
-                    <Section title="4. Oval blob — promotion photos (below video)" defaultOpen>
+                    <Section title="3. Oval blob — promotion photos (below video)" defaultOpen>
                         <div className="rounded-xl border border-orange-200 bg-orange-50/60 px-3 py-2 text-xs text-slate-700">
                             <strong>On the homepage:</strong> Lower oval photo carousel — only slides you keep here are shown (save after delete).
                         </div>
@@ -890,11 +733,10 @@ export default function AdminHomeContentPage() {
                     </Section>
 
                     <div id="why" className="scroll-mt-24" />
-                    <Section title='4. Why Choose Us (cards with photos)'>
+                    <Section title="4. Why parents love timekids">
                         <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                            <strong>Where it shows:</strong> Home page → “Why Choose T.I.M.E. Kids?” cards section.
+                            <strong>Where it shows:</strong> Home page → “Why Parents Love” cards section (with photos).
                         </div>
-                        <MiniPreviewWhy why={data.why_choose_us} />
                         <div className="grid sm:grid-cols-2 gap-2">
                             <div>
                                 <label className={labelClass}>Heading (first part)</label>

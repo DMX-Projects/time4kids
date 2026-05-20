@@ -74,7 +74,7 @@ export default function ParentPortalAdminPage() {
             <div>
                 <h1 className="text-2xl font-semibold text-[#111827] flex items-center gap-2">
                     <LayoutGrid className="w-7 h-7 text-orange-500" />
-                    Parent portal (content)
+                    Parent App
                 </h1>
                 <p className="text-sm text-[#374151] mt-1">
                     Publish content for the parent app (homework through holidays). <strong className="text-[#111827]">Support</strong> and{" "}

@@ -14,7 +14,7 @@ export function StudentList({ students, onStatusChange, activeTrip, tripType }: 
     if (students.length === 0) {
         return (
             <p className="rounded-xl bg-orange-50 p-4 text-sm text-orange-800 border border-orange-100">
-                No students assigned yet. Ask the centre to assign students in Franchise &gt; Parent portal &gt; Transport.
+                No students assigned yet. Ask the centre to assign students in Franchise &gt; Parent App &gt; Transport.
             </p>
         );
     }

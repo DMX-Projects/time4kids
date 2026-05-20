@@ -70,6 +70,8 @@ export default function AdminFranchiseDocumentsPage() {
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+    const [deletingAll, setDeletingAll] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -236,6 +238,29 @@ export default function AdminFranchiseDocumentsPage() {
         }
     };
 
+    const confirmDeleteAll = async () => {
+        if (items.length === 0) return;
+        setDeletingAll(true);
+        let ok = 0;
+        let failed = 0;
+        for (const row of items) {
+            try {
+                await authFetch(`/documents/admin/franchise-documents/${row.id}/`, { method: "DELETE" });
+                ok++;
+            } catch {
+                failed++;
+            }
+        }
+        setDeletingAll(false);
+        setDeleteAllOpen(false);
+        if (failed === 0) {
+            showToast(`Removed ${ok} document(s).`, "success");
+        } else {
+            showToast(`Removed ${ok}; ${failed} failed.`, ok > 0 ? "success" : "error");
+        }
+        void load();
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -306,6 +331,19 @@ export default function AdminFranchiseDocumentsPage() {
                     >
                         Clear filter (show all)
                     </button>
+                ) : null}
+                {items.length > 0 ? (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-red-200 text-red-700 hover:bg-red-50"
+                        disabled={deletingAll}
+                        onClick={() => setDeleteAllOpen(true)}
+                    >
+                        <Trash2 className="w-4 h-4 mr-1 inline" />
+                        Delete all ({items.length})
+                    </Button>
                 ) : null}
             </div>
 
@@ -536,6 +574,20 @@ export default function AdminFranchiseDocumentsPage() {
                 title="Delete document?"
                 description="This removes the file from the resource hub. Franchises will no longer see it."
                 confirmText="Delete"
+                variant="danger"
+            />
+
+            <ConfirmModal
+                isOpen={deleteAllOpen}
+                onClose={() => !deletingAll && setDeleteAllOpen(false)}
+                onConfirm={confirmDeleteAll}
+                title="Delete all listed documents?"
+                description={
+                    categoryFilter
+                        ? `This permanently deletes all ${items.length} row(s) in the current category filter. Franchises will no longer see them.`
+                        : `This permanently deletes all ${items.length} centre page document(s) in the table (every category). Franchises will no longer see them.`
+                }
+                confirmText={deletingAll ? "Deleting…" : "Delete all"}
                 variant="danger"
             />
         </div>

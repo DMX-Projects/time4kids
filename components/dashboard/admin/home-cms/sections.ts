@@ -6,13 +6,11 @@ import {
     ImageIcon,
     LayoutGrid,
     Megaphone,
-    MousePointerClick,
     Sparkles,
 } from "lucide-react";
 
 export type HomeCmsSectionId =
     | "hero"
-    | "quick-links"
     | "programs"
     | "franchise"
     | "why-choose"
@@ -37,46 +35,39 @@ export const HOME_CMS_SECTIONS: HomeCmsSection[] = [
         pageOrder: 0,
     },
     {
-        id: "quick-links",
-        label: "Quick links",
-        description: "Icon row under the hero (Virtual tour, Gallery, etc.).",
-        icon: MousePointerClick,
-        pageOrder: 1,
-    },
-    {
         id: "programs",
         label: "Programs",
         description: "“Our Programs” circles on the home page.",
         icon: GraduationCap,
-        pageOrder: 2,
+        pageOrder: 1,
     },
     {
         id: "franchise",
         label: "Franchise & news",
         description: "Why Partner section: videos, photos, and empty-state text for updates.",
         icon: Handshake,
-        pageOrder: 3,
+        pageOrder: 2,
     },
     {
         id: "why-choose",
-        label: "Why choose us",
+        label: "Why parents love timekids",
         description: "Feature cards with images and colours.",
         icon: Sparkles,
-        pageOrder: 4,
+        pageOrder: 3,
     },
     {
         id: "welcome",
         label: "Welcome text",
         description: "Intro copy (used on centre pages and legacy blocks).",
         icon: Megaphone,
-        pageOrder: 5,
+        pageOrder: 4,
     },
     {
         id: "methodology",
         label: "Methodology",
         description: "Value-based methodology icon row.",
         icon: LayoutGrid,
-        pageOrder: 6,
+        pageOrder: 5,
     },
 ];
 

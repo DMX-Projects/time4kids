@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { resolveCmsMediaUrl } from '@/lib/api-client';
 import { getFranchiseVideoEmbedSrc } from '@/lib/franchise-embed-url';
 
 interface TestimonialVideoProps {
@@ -32,21 +33,34 @@ const TestimonialVideo: React.FC<TestimonialVideoProps> = ({
     const [activeIndex, setActiveIndex] = useState(0);
 
     const sources = useMemo(() => {
-        const raw = videoUrls?.length ? videoUrls : videoUrl ? [videoUrl] : [];
-        return raw.map((url) => url.trim()).filter(Boolean);
+        const extras = (videoUrls ?? []).map((url) => url.trim()).filter(Boolean);
+        const primary = (videoUrl ?? "").trim();
+        if (extras.length) {
+            return primary && !extras.includes(primary) ? [primary, ...extras] : extras;
+        }
+        return primary ? [primary] : [];
     }, [videoUrl, videoUrls]);
 
-    const embedSources = useMemo(
+    const resolvedSources = useMemo(
         () =>
-            sources
-                .map((url) => ({ url, embed: getFranchiseVideoEmbedSrc(url) }))
-                .filter((s): s is { url: string; embed: string } => Boolean(s.embed)),
+            sources.map((url) => {
+                if (getFranchiseVideoEmbedSrc(url)) return url;
+                return resolveCmsMediaUrl(url) || url;
+            }),
         [sources],
     );
 
+    const embedSources = useMemo(
+        () =>
+            resolvedSources
+                .map((url) => ({ url, embed: getFranchiseVideoEmbedSrc(url) }))
+                .filter((s): s is { url: string; embed: string } => Boolean(s.embed)),
+        [resolvedSources],
+    );
+
     const fileSources = useMemo(
-        () => sources.filter((url) => !getFranchiseVideoEmbedSrc(url)),
-        [sources],
+        () => resolvedSources.filter((url) => !getFranchiseVideoEmbedSrc(url)),
+        [resolvedSources],
     );
 
     const hasEmbeds = embedSources.length > 0;
@@ -165,7 +179,7 @@ const TestimonialVideo: React.FC<TestimonialVideoProps> = ({
                     <>
                         {thumbnailUrl ? (
                             <Image
-                                src={thumbnailUrl}
+                                src={resolveCmsMediaUrl(thumbnailUrl) || thumbnailUrl}
                                 alt={title}
                                 fill
                                 className="object-cover opacity-90 transition-opacity"

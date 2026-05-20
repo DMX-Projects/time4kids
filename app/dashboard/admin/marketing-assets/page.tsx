@@ -167,7 +167,7 @@ export default function AdminMarketingAssetsPage() {
     return (
         <div className="mx-auto max-w-3xl space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-slate-900">Brochures &amp; downloads</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Brochures &amp; Downloads</h1>
                 <p className="mt-2 text-sm text-slate-600">
                     Upload admission and franchise PDFs here. They appear on the public site after you save.
                     You do not need Django <code className="rounded bg-slate-100 px-1">/admin/</code>.

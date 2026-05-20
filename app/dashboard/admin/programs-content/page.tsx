@@ -159,7 +159,7 @@ export default function AdminProgramsContentPage() {
 
             const title = programs[i]?.name || `Program ${i + 1}`;
             const formData = new FormData();
-            formData.append("title", `Programs page: ${title}`);
+            formData.append("title", `Our programs: ${title}`);
             formData.append("category", "Banner");
             formData.append("media_type", "image");
             formData.append("file", file);
@@ -184,7 +184,7 @@ export default function AdminProgramsContentPage() {
             <div className="space-y-2">
                 <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
                     <LayoutList className="w-7 h-7 text-orange-500" />
-                    Programs page content
+                    Our programs
                 </h1>
                 <p className="text-sm text-slate-600">Edit the cards shown on the public <strong>/programs</strong> page. Use <strong>Save</strong> when finished.</p>
             </div>
