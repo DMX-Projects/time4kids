@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { mediaUrl } from '@/lib/api-client';
+import { resolveCentrePageImageSrc } from '@/lib/api-client';
 import { formatAgeGroupLabel } from '@/lib/format-age-group';
 import { programsSectionHref } from '@/lib/program-section-slugs';
 import {
@@ -104,13 +104,9 @@ interface SchoolProgramsSectionProps {
     programCards?: Array<{ id: number; image: string }> | null;
 }
 
-/** Uploaded card images are stored as `/media/...` or old dev URLs; resolve for prod (no Next dev rewrites). */
+/** Our Classes card images — `/media/1.png` in CMS → `/1.png` on live (avoids broken `/_next/image?url=…/media/…`). */
 function programImageSrc(raw: string): string {
-    const s = (raw || '').trim();
-    if (!s) return '';
-    const loopbackMedia = s.match(/^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(\/media\/.+)/i);
-    if (loopbackMedia) return mediaUrl(loopbackMedia[1]);
-    return mediaUrl(s);
+    return resolveCentrePageImageSrc(raw);
 }
 
 const SchoolProgramsSection = ({ selectedPrograms, programCards }: SchoolProgramsSectionProps) => {

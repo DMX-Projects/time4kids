@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Play, Hand, Clock, ArrowLeft, Calendar, MapPin, AlertCircle, Image as ImageIcon, X, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { schoolGalleryMediaUrl } from '@/lib/api-client';
+import { resolveCentrePageImageSrc } from '@/lib/api-client';
 import { franchisePublicLocationLine } from '@/lib/utils';
 import Modal from '@/components/ui/Modal';
 
@@ -299,7 +299,7 @@ export default function GallerySection({
                                                     if (!thumb) return null;
                                                     return thumb.media_type === "VIDEO" ? (
                                                         <video
-                                                            src={schoolGalleryMediaUrl(thumb.file)}
+                                                            src={resolveCentrePageImageSrc(thumb.file)}
                                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                             preload="metadata"
                                                             muted
@@ -307,7 +307,7 @@ export default function GallerySection({
                                                         />
                                                     ) : (
                                                         <Image
-                                                            src={schoolGalleryMediaUrl(thumb.file)}
+                                                            src={resolveCentrePageImageSrc(thumb.file)}
                                                             alt={event.title}
                                                             fill
                                                             className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -406,7 +406,7 @@ export default function GallerySection({
                                         >
                                             {item.media_type === "VIDEO" ? (
                                                 <video
-                                                    src={schoolGalleryMediaUrl(item.file)}
+                                                    src={resolveCentrePageImageSrc(item.file)}
                                                     className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
                                                     preload="metadata"
                                                     muted
@@ -414,7 +414,7 @@ export default function GallerySection({
                                                 />
                                             ) : (
                                                 <Image
-                                                    src={schoolGalleryMediaUrl(item.file)}
+                                                    src={resolveCentrePageImageSrc(item.file)}
                                                     alt={item.caption || "Event Media"}
                                                     fill
                                                     className="object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
@@ -481,7 +481,7 @@ export default function GallerySection({
 
                             {selectedMedia.media_type === 'VIDEO' ? (
                                 <video
-                                    src={schoolGalleryMediaUrl(selectedMedia.file)}
+                                    src={resolveCentrePageImageSrc(selectedMedia.file)}
                                     controls
                                     autoPlay
                                     className="max-w-full max-h-full rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.3)]"
@@ -489,7 +489,7 @@ export default function GallerySection({
                             ) : (
                                 <div className="relative w-full h-full p-4">
                                     <Image
-                                        src={schoolGalleryMediaUrl(selectedMedia.file)}
+                                        src={resolveCentrePageImageSrc(selectedMedia.file)}
                                         alt={selectedMedia.caption || "Gallery View"}
                                         fill
                                         className="object-contain drop-shadow-2xl"
