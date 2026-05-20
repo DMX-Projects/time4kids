@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { jsonHeaders } from "@/lib/api-client";
+import { jsonHeaders, resolveCmsMediaUrl } from "@/lib/api-client";
+import { parseEmbedInput } from "@/lib/franchise-embed-url";
 import { GraduationCap, Plus, Trash2, Upload } from "lucide-react";
 import { DEFAULT_ADMISSION_PAGE_DATA, mergeAdmissionPageData, type AdmissionFaq, type AdmissionPageData, type AdmissionSkill, type AdmissionVideoCard } from "@/config/admission-page-defaults";
 import { MarketingBrochureUploader } from "@/components/admin/MarketingBrochureUploader";
@@ -118,6 +119,11 @@ export default function AdminAdmissionContentPage() {
     };
     const addFaq = () => setData({ ...data, faqs: [...faqs, { question: "New question", answer: "Answer" }] });
     const removeFaq = (i: number) => setData({ ...data, faqs: faqs.filter((_, j) => j !== i) });
+    const clearAllFaqs = () => {
+        if (!faqs.length) return;
+        if (!confirm(`Remove all ${faqs.length} FAQ questions from the admission page?`)) return;
+        setData({ ...data, faqs: [] });
+    };
 
     const updateHappyParent = (i: number, patch: Partial<AdmissionVideoCard>) => {
         const next = [...happyParents];
@@ -176,7 +182,7 @@ export default function AdminAdmissionContentPage() {
                 </p>
                 <p className="text-xs text-slate-500 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                     Not editable here (fixed in the page layout): top hero headline, enquiry form, infrastructure cards, and NEP block. Upload the admission brochure PDF below, or use{" "}
-                    <strong>Brochures &amp; PDFs</strong> in the sidebar.
+                    <strong>Brochures &amp; Downloads</strong> in the sidebar.
                 </p>
             </div>
 
@@ -264,9 +270,14 @@ export default function AdminAdmissionContentPage() {
                         </Button>
                     </Section>
 
-                    <Section title="4. FAQs section (title + image + questions)">
+                    <Section title="4. Got Questions? — FAQs & photo">
+                        <div className="rounded-xl border border-amber-100 bg-amber-50/80 px-3 py-2 text-xs text-slate-700">
+                            <strong>Where it shows:</strong> Admission page (<code className="rounded bg-white px-1">/admission</code>) → yellow
+                            “Got Questions?” box (left photo + title) and the FAQ accordion list on the right. Edit text, upload or remove the
+                            photo, and add / edit / delete each question below. Click <strong>Save changes</strong> at the bottom when done.
+                        </div>
                         <div className="rounded-xl border border-slate-100 p-3 bg-slate-50/80 space-y-3">
-                            <div className="text-sm font-semibold text-slate-800">“Got Questions?” box</div>
+                            <div className="text-sm font-semibold text-slate-800">Left box — heading &amp; photo</div>
                             <div className="grid md:grid-cols-2 gap-3">
                                 <div>
                                     <label className={labelClass}>Title (first word)</label>
@@ -293,12 +304,13 @@ export default function AdminAdmissionContentPage() {
                                     />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className={labelClass}>Image path</label>
-                                    <div className="flex items-center gap-2">
+                                    <label className={labelClass}>Photo (left side of FAQ block)</label>
+                                    <div className="flex flex-wrap items-center gap-2">
                                         <input
-                                            className={inputClass}
+                                            className={`${inputClass} min-w-[200px] flex-1`}
                                             value={faqSection?.image ?? ""}
                                             onChange={(e) => setData({ ...data, faq_section: { ...faqSection, image: e.target.value } } as any)}
+                                            placeholder="/2.png or /media/…"
                                         />
                                         <label
                                             className={`shrink-0 inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold ${
@@ -327,15 +339,47 @@ export default function AdminAdmissionContentPage() {
                                                 }}
                                             />
                                             <Upload className="w-4 h-4 mr-2" />
-                                            Upload
+                                            {uploadingKey === `faq-img` ? "Uploading…" : "Upload photo"}
                                         </label>
+                                        {(faqSection?.image ?? "").trim() ? (
+                                            <button
+                                                type="button"
+                                                className="shrink-0 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
+                                                onClick={() => setData({ ...data, faq_section: { ...faqSection, image: "" } } as any)}
+                                            >
+                                                Remove photo
+                                            </button>
+                                        ) : null}
                                     </div>
                                     <div className="mt-1 text-[11px] text-slate-500 space-y-1">
-                                        <div>Image requirement: max <strong>5MB</strong>.</div>
+                                        <div>Image requirement: max <strong>5MB</strong> (JPG, PNG, WebP).</div>
                                         {uploadInfo[`faq-img`] ? <div className="text-slate-600">Selected: {uploadInfo[`faq-img`]}</div> : null}
                                     </div>
+                                    {(faqSection?.image ?? "").trim() ? (
+                                        <div className="mt-3 relative h-40 w-full max-w-xs overflow-hidden rounded-xl border border-slate-200 bg-white">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={resolveCmsMediaUrl(faqSection.image) || faqSection.image}
+                                                alt="FAQ section preview"
+                                                className="h-full w-full object-contain"
+                                            />
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            <div className="text-sm font-semibold text-slate-800">FAQ questions (accordion on the right)</div>
+                            {faqs.length > 0 ? (
+                                <button
+                                    type="button"
+                                    className="text-xs font-semibold text-red-600 hover:bg-red-50 px-2 py-1 rounded"
+                                    onClick={clearAllFaqs}
+                                >
+                                    Delete all FAQs ({faqs.length})
+                                </button>
+                            ) : null}
                         </div>
 
                         {faqs.map((f, i) => (
@@ -361,7 +405,15 @@ export default function AdminAdmissionContentPage() {
                         </Button>
                     </Section>
 
-                    <Section title="5. Happy Parents (videos)">
+                    <Section title="5. Happy Parents — parent videos">
+                        <div className="rounded-xl border border-blue-100 bg-blue-50/80 px-3 py-2 text-xs text-slate-700 space-y-1">
+                            <p>
+                                <strong>Any video source:</strong> upload an <strong>MP4 / WebM</strong> file, paste a{" "}
+                                <strong>YouTube</strong> link, a <strong>Bunny / MediaDelivery</strong> embed URL, or full{" "}
+                                <code className="rounded bg-white px-1">&lt;iframe src=&quot;…&quot;&gt;</code> code. Use{" "}
+                                <strong>extra links</strong> (one per line) for a carousel inside one card.
+                            </p>
+                        </div>
                         {happyParents.map((v: any, i: number) => (
                             <div key={i} className="rounded-xl border border-slate-100 p-3 bg-slate-50/80 space-y-2">
                                 <div className="flex items-center justify-between gap-2">
@@ -373,20 +425,33 @@ export default function AdminAdmissionContentPage() {
 
                                 <div className="grid md:grid-cols-2 gap-3">
                                     <div className="md:col-span-2">
-                                        <label className={labelClass}>Video URL (mp4 link)</label>
-                                        <div className="flex items-center gap-2">
-                                            <input className={inputClass} value={v.video_url ?? ""} onChange={(e) => updateHappyParent(i, { video_url: e.target.value })} />
+                                        <label className={labelClass}>Video link (YouTube, Bunny / MediaDelivery, or uploaded file path)</label>
+                                        <textarea
+                                            className={`${inputClass} min-h-[88px] font-mono text-xs`}
+                                            value={v.video_url ?? ""}
+                                            onChange={(e) => updateHappyParent(i, { video_url: e.target.value })}
+                                            onBlur={(e) => {
+                                                const parsed = parseEmbedInput(e.target.value);
+                                                if (parsed && parsed !== e.target.value.trim()) {
+                                                    updateHappyParent(i, { video_url: parsed });
+                                                }
+                                            }}
+                                            placeholder={
+                                                "https://www.youtube.com/watch?v=…\nhttps://iframe.mediadelivery.net/embed/…\nOr upload MP4 below"
+                                            }
+                                        />
+                                        <div className="mt-2 flex flex-wrap items-center gap-2">
                                             <label
-                                                className={`shrink-0 inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold ${
+                                                className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold ${
                                                     uploadingKey === `hp${i}-video`
                                                         ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
                                                         : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
                                                 }`}
-                                                title="Upload video and auto-fill URL"
+                                                title="Upload MP4/WebM and auto-fill path"
                                             >
                                                 <input
                                                     type="file"
-                                                    accept="video/*"
+                                                    accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
                                                     className="hidden"
                                                     disabled={uploadingKey === `hp${i}-video`}
                                                     onChange={async (e) => {
@@ -394,7 +459,11 @@ export default function AdminAdmissionContentPage() {
                                                         e.target.value = "";
                                                         if (!file) return;
                                                         try {
-                                                            const url = await uploadMedia(`hp${i}-video`, { title: `Admission happy parent: ${v.title || `Video ${i + 1}`}`, media_type: "video", file });
+                                                            const url = await uploadMedia(`hp${i}-video`, {
+                                                                title: `Admission happy parent: ${v.title || `Video ${i + 1}`}`,
+                                                                media_type: "video",
+                                                                file,
+                                                            });
                                                             updateHappyParent(i, { video_url: url });
                                                             setMessage("Video uploaded. Don’t forget to Save changes.");
                                                         } catch (err: any) {
@@ -403,13 +472,35 @@ export default function AdminAdmissionContentPage() {
                                                     }}
                                                 />
                                                 <Upload className="w-4 h-4 mr-2" />
-                                                Upload
+                                                {uploadingKey === `hp${i}-video` ? "Uploading…" : "Upload video file"}
                                             </label>
                                         </div>
                                         <div className="mt-1 text-[11px] text-slate-500 space-y-1">
-                                            <div>Video requirement: max <strong>20MB</strong>.</div>
+                                            <div>
+                                                Uploaded file: max <strong>20MB</strong> (MP4/WebM). For longer clips use YouTube or Bunny embed
+                                                instead.
+                                            </div>
                                             {uploadInfo[`hp${i}-video`] ? <div className="text-slate-600">Selected: {uploadInfo[`hp${i}-video`]}</div> : null}
                                         </div>
+                                    </div>
+
+                                    <div className="md:col-span-2">
+                                        <label className={labelClass}>Extra video links in this card (optional, one per line)</label>
+                                        <textarea
+                                            className={`${inputClass} min-h-[72px] font-mono text-xs`}
+                                            value={(Array.isArray(v.video_urls) ? v.video_urls : []).join("\n")}
+                                            onChange={(e) => {
+                                                const urls = e.target.value
+                                                    .split("\n")
+                                                    .map((line) => parseEmbedInput(line.trim()))
+                                                    .filter(Boolean);
+                                                updateHappyParent(i, { video_urls: urls.length ? urls : undefined });
+                                            }}
+                                            placeholder="https://iframe.mediadelivery.net/embed/…&#10;https://youtu.be/…"
+                                        />
+                                        <p className="mt-1 text-[11px] text-slate-500">
+                                            Adds a carousel on the admission page when this card has more than one playable link.
+                                        </p>
                                     </div>
 
                                     <div className="md:col-span-2">
@@ -450,6 +541,16 @@ export default function AdminAdmissionContentPage() {
                                             <div>Thumbnail requirement: max <strong>5MB</strong>.</div>
                                             {uploadInfo[`hp${i}-thumb`] ? <div className="text-slate-600">Selected: {uploadInfo[`hp${i}-thumb`]}</div> : null}
                                         </div>
+                                        {(v.thumbnail_url ?? "").trim() ? (
+                                            <div className="mt-2 h-20 w-28 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={resolveCmsMediaUrl(v.thumbnail_url) || v.thumbnail_url}
+                                                    alt="Thumbnail preview"
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            </div>
+                                        ) : null}
                                     </div>
 
                                     <div className="md:col-span-2">

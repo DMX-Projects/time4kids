@@ -116,7 +116,7 @@ export default function AdminStudentAchievementsPage() {
     };
 
     const onDelete = async (id: number) => {
-        if (!confirm("Remove this achievement from the parent portal?")) return;
+        if (!confirm("Remove this achievement from the Parent App?")) return;
         try {
             await authFetch(`/students/admin/achievements/${id}/`, { method: "DELETE" });
             showToast("Deleted", "success");

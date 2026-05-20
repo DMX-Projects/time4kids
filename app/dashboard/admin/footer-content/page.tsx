@@ -200,15 +200,6 @@ export default function AdminFooterContentPage() {
                     </div>
                 </div>
             </Section>
-
-            <Section title="QR code">
-                <label className={labelClass}>Scan to connect - URL</label>
-                <input
-                    className={inputClass}
-                    value={data.qr_code_url}
-                    onChange={(e) => setData((p) => ({ ...p, qr_code_url: e.target.value }))}
-                />
-            </Section>
         </div>
     );
 }

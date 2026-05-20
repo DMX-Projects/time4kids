@@ -23,7 +23,7 @@ const copy: Record<
     parent: {
         title: "Parent sign in",
         subtitle: "Use the email and password from your centre",
-        leftTitle: "Parent portal",
+        leftTitle: "Parent App",
         leftBody: "View your child’s progress, marks, and centre updates.",
     },
     franchise: {

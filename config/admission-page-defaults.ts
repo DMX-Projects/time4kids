@@ -1,5 +1,7 @@
 /** Mirrors `common/home_page_defaults.py` ADMISSION_PAGE_DATA. */
 
+import { parseEmbedInput } from "@/lib/franchise-embed-url";
+
 export type AdmissionSkill = {
     title: string;
     desc: string;
@@ -176,14 +178,18 @@ function normalizeHappyParentVideoCard(v: Record<string, unknown>): AdmissionVid
         };
     }
 
+    const video_url = parseEmbedInput(String(v?.video_url || ""));
+    const extra = Array.isArray(v?.video_urls)
+        ? (v.video_urls as unknown[]).map((u) => parseEmbedInput(String(u || ""))).filter(Boolean)
+        : [];
+    const video_urls = extra.filter((u) => u && u !== video_url);
+
     return {
         title,
         author,
         location,
-        video_url: String(v?.video_url || ""),
-        video_urls: Array.isArray(v?.video_urls)
-            ? (v.video_urls as unknown[]).map((u) => String(u || "")).filter(Boolean)
-            : undefined,
+        video_url,
+        video_urls: video_urls.length ? video_urls : undefined,
         thumbnail_url: v?.thumbnail_url != null ? String(v.thumbnail_url) : undefined,
     };
 }

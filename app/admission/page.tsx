@@ -11,9 +11,8 @@ import {
 import AdmissionForm from '@/components/admission/AdmissionForm';
 import FAQAccordion from '@/components/admission/FAQAccordion';
 import TestimonialVideo from '@/components/shared/TestimonialVideo';
-import { apiUrl } from '@/lib/api-client';
+import { apiUrl, mediaUrl, resolveCmsMediaUrl } from '@/lib/api-client';
 import { findMarketingAsset, marketingAssetHref } from '@/lib/marketing-assets';
-import { mediaUrl } from '@/lib/api-client';
 import { ADMISSION_BROCHURE_PDF_URL } from '@/config/site-public';
 import { DEFAULT_ADMISSION_PAGE_DATA, mergeAdmissionPageData } from '@/config/admission-page-defaults';
 import VirtualTourModal from '@/components/home/VirtualTourModal';
@@ -326,7 +325,13 @@ export default function AdmissionPage() {
                                 </h2>
                                 <p className="text-lg text-slate-600 font-bold mb-8">{faqSection?.subtitle || "We have answers! Here is everything you need to know."}</p>
                                 <div className="hidden lg:block relative h-64 w-full animate-float">
-                                    <Image src={faqSection?.image || "/2.png"} alt="Questions" fill className="object-contain drop-shadow-lg" unoptimized />
+                                    <Image
+                                        src={resolveCmsMediaUrl(faqSection?.image) || faqSection?.image || "/2.png"}
+                                        alt="Questions"
+                                        fill
+                                        className="object-contain drop-shadow-lg"
+                                        unoptimized
+                                    />
                                 </div>
                             </div>
                         </div>

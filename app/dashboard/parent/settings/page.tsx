@@ -34,7 +34,7 @@ export default function ParentSettingsPage() {
                     </div>
                     <div>
                         <h1 className="text-lg font-semibold text-orange-900">Settings</h1>
-                        <p className="text-sm text-orange-700">Logout and notification preferences for this portal.</p>
+                        <p className="text-sm text-orange-700">Logout and notification preferences for Parent App.</p>
                     </div>
                 </div>
             </section>

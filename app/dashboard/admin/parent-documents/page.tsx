@@ -58,6 +58,8 @@ export default function AdminParentDocumentsPage() {
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+    const [deletingAll, setDeletingAll] = useState(false);
 
     const isHoliday = form.category === "HOLIDAY_LISTS";
     const isTimetable = form.category === "CLASS_TIMETABLE";
@@ -209,6 +211,29 @@ export default function AdminParentDocumentsPage() {
         }
     };
 
+    const onDeleteAll = async () => {
+        if (items.length === 0) return;
+        setDeletingAll(true);
+        let ok = 0;
+        let failed = 0;
+        for (const row of items) {
+            try {
+                await authFetch(`/documents/admin/parent-documents/${row.id}/`, { method: "DELETE" });
+                ok++;
+            } catch {
+                failed++;
+            }
+        }
+        setDeletingAll(false);
+        setDeleteAllOpen(false);
+        if (failed === 0) {
+            showToast(`Removed ${ok} document(s).`, "success");
+        } else {
+            showToast(`Removed ${ok}; ${failed} failed.`, ok > 0 ? "success" : "error");
+        }
+        await load();
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -258,6 +283,19 @@ export default function AdminParentDocumentsPage() {
                         ))}
                     </select>
                 </label>
+                {items.length > 0 ? (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="self-end border-red-200 text-red-700 hover:bg-red-50"
+                        disabled={deletingAll}
+                        onClick={() => setDeleteAllOpen(true)}
+                    >
+                        <Trash2 className="w-4 h-4 mr-1 inline" />
+                        Delete all ({items.length})
+                    </Button>
+                ) : null}
             </div>
 
             {loading && <p className="text-sm text-slate-500">Loading…</p>}
@@ -432,6 +470,16 @@ export default function AdminParentDocumentsPage() {
                 title="Delete document?"
                 description="Parents will no longer see this file."
                 confirmText="Delete"
+                variant="danger"
+            />
+
+            <ConfirmModal
+                isOpen={deleteAllOpen}
+                onClose={() => !deletingAll && setDeleteAllOpen(false)}
+                onConfirm={onDeleteAll}
+                title="Delete all parent app documents?"
+                description={`This permanently deletes all ${items.length} document(s) currently listed (respects category and centre filters). Parents will no longer see them in the app.`}
+                confirmText={deletingAll ? "Deleting…" : "Delete all"}
                 variant="danger"
             />
         </div>

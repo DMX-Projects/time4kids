@@ -49,7 +49,7 @@ export default function ParentDashboardPage() {
                     <div className="space-y-3">
                         <div className="inline-flex items-center gap-2 rounded-full bg-[#FFF4CC] px-3 py-1 text-xs font-semibold text-[#1F2937]">
                             <Sparkles className="w-4 h-4" />
-                            Parent portal
+                            Parent App
                         </div>
                         <h1 className="text-2xl md:text-3xl font-bold text-[#1F2937] leading-tight">
                             Welcome, {welcomeName}

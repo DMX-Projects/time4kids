@@ -40,7 +40,7 @@ export const FRANCHISE_DASHBOARD_SECTIONS: FranchiseResourceSection[] = [
             { title: "Indent Documents (Inside & Outside AP)", description: "Regional indent formats and submission steps.", actions: [{ label: "View", href: "/dashboard/franchise/indent-documents" }] },
             { title: "Ordering Documents (IK & SM)", description: "Ordering flows for IK & SM along with SLAs.", actions: [{ label: "Download", href: "/dashboard/franchise/ordering-documents" }] },
             { title: "Student Transfer Policy", description: "Policy pack and approval workflow for student transfers.", actions: [{ label: "View", href: "/dashboard/franchise/student-transfer-policy" }] },
-            { title: "Parenting Tips & Articles", description: "Curated articles for parent engagement (managed by head office).", actions: [{ label: "Open portal", href: "/dashboard/franchise/parent-portal/" }] },
+            { title: "Parenting Tips & Articles", description: "Curated articles for parent engagement (managed by head office).", actions: [{ label: "Open Parent App", href: "/dashboard/franchise/parent-portal/" }] },
         ],
     },
     {
@@ -53,7 +53,7 @@ export const FRANCHISE_DASHBOARD_SECTIONS: FranchiseResourceSection[] = [
             { title: "Refresher Course", description: "Facilitator refresher guides and assessments.", actions: [{ label: "View", href: "/dashboard/franchise/refresher-course" }] },
             { title: "Counselling Tools & Report Cards", description: "Session trackers, counselling forms, and report formats.", actions: [{ label: "Manage", href: "/dashboard/franchise/enquiries" }] },
             { title: "Aksharabhyasam Support Sheets", description: "Support worksheets and practice trackers.", actions: [{ label: "Download", href: "/dashboard/franchise/aksharabhyasam-support-sheets" }] },
-            { title: "Parents Orientation Videos", description: "Orientation decks and curated videos (managed by head office).", actions: [{ label: "Open portal", href: "/dashboard/franchise/parent-portal/" }] },
+            { title: "Parents Orientation Videos", description: "Orientation decks and curated videos (managed by head office).", actions: [{ label: "Open Parent App", href: "/dashboard/franchise/parent-portal/" }] },
             { title: "Students Kit", description: "Checklists, inventory, and distribution guidelines.", actions: [{ label: "View", href: "/dashboard/franchise/students-kit" }] },
         ],
     },
@@ -89,7 +89,7 @@ export const FRANCHISE_DASHBOARD_SECTIONS: FranchiseResourceSection[] = [
         items: [
             { title: "Admission Counselling", description: "Scripts, objection handlers, and follow-up cadences.", actions: [{ label: "Manage", href: "/dashboard/franchise/enquiries" }] },
             { title: "Counselling Tools & Report Cards", description: "Session packs and report templates for counsellors.", actions: [{ label: "Manage", href: "/dashboard/franchise/add-grades" }] },
-            { title: "Parents Orientation Videos", description: "Orientation videos and agenda templates (managed by head office).", actions: [{ label: "Open portal", href: "/dashboard/franchise/parent-portal/" }] },
+            { title: "Parents Orientation Videos", description: "Orientation videos and agenda templates (managed by head office).", actions: [{ label: "Open Parent App", href: "/dashboard/franchise/parent-portal/" }] },
             { title: "Report Card Comments", description: "Comment bank for admissions follow-ups.", actions: [{ label: "Manage", href: "/dashboard/franchise/add-grades" }] },
         ],
     },
