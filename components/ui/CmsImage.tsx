@@ -1,7 +1,8 @@
 'use client';
 
-import Image, { type ImageProps } from 'next/image';import { useEffect, useState } from 'react';
-import { nextImageSrc } from '@/lib/api-client';
+import Image, { type ImageProps } from 'next/image';
+import { useEffect, useState } from 'react';
+import { nextImageSrc, publicStaticFallbackForMediaPath } from '@/lib/api-client';
 
 type CmsImageProps = Omit<ImageProps, 'src'> & {
     src?: string | null;
@@ -11,12 +12,14 @@ type CmsImageProps = Omit<ImageProps, 'src'> & {
  * CMS uploads (hero slider, etc.) — served via `/api/cms-files/…` on live.
  */
 export default function CmsImage({ src, alt = '', className, fill, sizes, priority, ...props }: CmsImageProps) {
-    const resolved = nextImageSrc(src);
     const [failed, setFailed] = useState(false);
+    const [errorFallback, setErrorFallback] = useState<string | null>(null);
+    const resolved = errorFallback || nextImageSrc(src);
 
     useEffect(() => {
         setFailed(false);
-    }, [resolved]);
+        setErrorFallback(null);
+    }, [src]);
 
     if (!resolved) return null;
 
@@ -27,7 +30,11 @@ export default function CmsImage({ src, alt = '', className, fill, sizes, priori
                 alt={alt}
                 className={typeof className === 'string' ? className : 'absolute inset-0 h-full w-full object-cover'}
                 decoding="async"
-                onError={() => setFailed(true)}
+                onError={() => {
+                    const fb = publicStaticFallbackForMediaPath(src);
+                    if (fb && errorFallback !== fb) setErrorFallback(fb);
+                    else setFailed(true);
+                }}
                 style={failed ? { display: 'none' } : undefined}
                 {...(props as React.ImgHTMLAttributes<HTMLImageElement>)}
             />
@@ -42,7 +49,11 @@ export default function CmsImage({ src, alt = '', className, fill, sizes, priori
             sizes={sizes}
             priority={priority}
             unoptimized
-            onError={() => setFailed(true)}
+            onError={() => {
+                const fb = publicStaticFallbackForMediaPath(src);
+                if (fb && errorFallback !== fb) setErrorFallback(fb);
+                else setFailed(true);
+            }}
             {...props}
         />
     );

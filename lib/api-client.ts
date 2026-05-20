@@ -270,8 +270,26 @@ export const mediaUrl = (path?: string | null) => {
     return `${base}/${pathname.replace(/^\/+/g, "")}`;
 };
 
+/**
+ * Static files in `/public` that were saved in CMS as `/media/hero_slides/…` without a real upload on disk.
+ * (e.g. hero slide id 2 → `faq-banner-new-2.png` 404s under `/cms-media/hero_slides/`.)
+ */
+const PUBLIC_STATIC_BY_BASENAME: Record<string, string> = {
+    "faq-banner-new-1.png": "/faq-banner-new-1.png",
+    "faq-banner-new-2.png": "/faq-banner-new-2.png",
+};
+
+export function publicStaticFallbackForMediaPath(path?: string | null): string | null {
+    const raw = (path || "").trim();
+    if (!raw) return null;
+    const base = raw.split("/").pop() || "";
+    return PUBLIC_STATIC_BY_BASENAME[base] ?? null;
+}
+
 /** Same as `mediaUrl` for CMS uploads; relative `/cms-media/…` works with `next/image` on live. */
 export function nextImageSrc(path?: string | null): string {
+    const fallback = publicStaticFallbackForMediaPath(path);
+    if (fallback) return fallback;
     return schoolGalleryMediaUrl(path);
 }
 

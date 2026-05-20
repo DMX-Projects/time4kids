@@ -230,7 +230,7 @@ export default function GallerySection({
                             <Hand className="w-6 h-6 text-white -rotate-12" fill="white" />
                         </div>
                         <span className="bg-pink-50 text-pink-500 px-6 py-2 rounded-full text-xs font-black uppercase tracking-[0.2em] border border-pink-100 flex items-center">
-                            Gallery
+                            Our Event Gallery
                         </span>
                     </div>
 
