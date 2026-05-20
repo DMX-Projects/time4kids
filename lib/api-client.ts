@@ -271,19 +271,51 @@ export const mediaUrl = (path?: string | null) => {
 };
 
 /**
- * Static files in `/public` that were saved in CMS as `/media/hero_slides/…` without a real upload on disk.
- * (e.g. hero slide id 2 → `faq-banner-new-2.png` 404s under `/cms-media/hero_slides/`.)
+ * Static files in `/public` when CMS `hero_slides/` rows point at missing Django uploads.
+ * Handles exact names and Django suffixes (`faq-sidebar-teacher_ttzJ7w0.png` → `/faq-sidebar-teacher.png`).
  */
 const PUBLIC_STATIC_BY_BASENAME: Record<string, string> = {
     "faq-banner-new-1.png": "/faq-banner-new-1.png",
     "faq-banner-new-2.png": "/faq-banner-new-2.png",
+    "faq-sidebar-teacher.png": "/faq-sidebar-teacher.png",
+    "faq-girl-image.jpg": "/faq-girl-image.jpg",
+    "17.png": "/17.png",
+};
+
+/** Stem (filename without ext) → public path for hero_slides uploads with random `_abc123` suffix. */
+const PUBLIC_STATIC_BY_STEM: Record<string, string> = {
+    "faq-banner-new-1": "/faq-banner-new-1.png",
+    "faq-banner-new-2": "/faq-banner-new-2.png",
+    "faq-sidebar-teacher": "/faq-sidebar-teacher.png",
+    "faq-girl-image": "/faq-girl-image.jpg",
+    "17": "/17.png",
 };
 
 export function publicStaticFallbackForMediaPath(path?: string | null): string | null {
     const raw = (path || "").trim();
     if (!raw) return null;
     const base = raw.split("/").pop() || "";
-    return PUBLIC_STATIC_BY_BASENAME[base] ?? null;
+    const exact = PUBLIC_STATIC_BY_BASENAME[base];
+    if (exact) return exact;
+
+    const dot = base.lastIndexOf(".");
+    if (dot <= 0) return null;
+    const stem = base.slice(0, dot);
+    const ext = base.slice(dot + 1).toLowerCase();
+
+    if (PUBLIC_STATIC_BY_STEM[stem]) return PUBLIC_STATIC_BY_STEM[stem];
+
+    const underscore = stem.lastIndexOf("_");
+    if (underscore > 0) {
+        const prefix = stem.slice(0, underscore);
+        const suffix = stem.slice(underscore + 1);
+        if (/^[a-zA-Z0-9]{6,12}$/.test(suffix) && PUBLIC_STATIC_BY_STEM[prefix]) {
+            const publicPath = PUBLIC_STATIC_BY_STEM[prefix];
+            if (publicPath.endsWith(`.${ext}`)) return publicPath;
+        }
+    }
+
+    return null;
 }
 
 /** Same as `mediaUrl` for CMS uploads; relative `/cms-media/…` works with `next/image` on live. */

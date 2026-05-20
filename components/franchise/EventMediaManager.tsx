@@ -191,7 +191,7 @@ const EventMediaManager: React.FC<EventMediaManagerProps> = ({ event, onBackActi
                             </label>
                             <input
                                 type="file"
-                                accept={mediaType === 'IMAGE' ? 'image/*' : 'video/*'}
+                                accept={mediaType === 'IMAGE' ? 'image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.heic,.heif,.tif,.tiff,.avif' : 'video/*,.mp4,.webm,.mov,.m4v'}
                                 multiple
                                 onChange={(e) => setSelectedFiles(e.target.files)}
                                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"

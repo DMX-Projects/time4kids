@@ -287,7 +287,7 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
                     files={files}
                     onFilesChange={setFiles}
                     disabled={uploading}
-                    hint="Use Choose folder to upload everything inside a local directory (any file type for centre files)."
+                    hint="Choose folder uploads all files inside that directory (subfolders included). Photos are detected by file type (.jpg, .png, .heic, etc.) even when Windows does not set MIME type."
                 />
 
                 {progress && <p className="text-xs text-[#6B7280] animate-pulse">Uploading {progress}…</p>}
