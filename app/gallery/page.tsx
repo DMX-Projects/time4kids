@@ -190,12 +190,12 @@ export default function GalleryPage() {
                     <div className="flex items-center justify-center gap-3 mb-4">
                         <Hand className="w-8 h-8 text-yellow-400 -rotate-12 animate-wave" fill="currentColor" />
                         <span className="inline-block py-2 px-6 rounded-full bg-pink-50 text-pink-500 font-bold text-sm uppercase tracking-widest border border-pink-100">
-                            Gallery
+                            Our Event Gallery
                         </span>
                     </div>
                     <h1 className="text-5xl md:text-7xl font-bold text-[#003366] mb-4 font-luckiest tracking-wider drop-shadow-sm">
                         {selectedEvent ? selectedEvent.title : (
-                            <>Our <span className="text-[#ef5f5f]">Gallery</span></>
+                            <>Our <span className="text-[#ef5f5f]">Event Gallery</span></>
                         )}
                     </h1>
                     <p className="text-xl text-gray-500 max-w-2xl mx-auto font-medium italic">
