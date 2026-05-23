@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ImageIcon, Play, Sparkles } from 'lucide-react';
 import FluidBackground from '@/components/ui/FluidBackground';
 
-import { apiUrl, mediaUrl } from '@/lib/api-client';
+import { apiUrl, mediaUrl, nextImageSrc } from '@/lib/api-client';
 
 type GalleryItem = {
     title: string;
@@ -276,8 +276,11 @@ const TestimonialsSection = () => {
                         title: item.title,
                         author: item.author || 'T.I.M.E. Kids',
                         location: item.location || 'Main Branch',
-                        thumbnailUrl: item.file?.startsWith('http') ? item.file : mediaUrl(item.file || item.thumbnailUrl),
-                        videoUrl: (item.media_type === 'video' || item.type === 'video') ? (item.file?.startsWith('http') ? item.file : mediaUrl(item.file || item.videoUrl)) : null,
+                        thumbnailUrl: nextImageSrc(item.file || item.thumbnailUrl),
+                        videoUrl:
+                            item.media_type === 'video' || item.type === 'video'
+                                ? mediaUrl(item.file || item.videoUrl) || item.file || item.videoUrl || null
+                                : null,
                         type: item.media_type || item.type || 'image'
                     });
                 });

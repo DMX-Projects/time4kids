@@ -1,64 +1,97 @@
+"use client";
 
-'use client';
-
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/Toast";
-import { useAuth } from "@/components/auth/AuthProvider";
+import Link from "next/link";
+import { useMemo } from "react";
+import { ArrowLeft } from "lucide-react";
+import { FranchiseCenterPageAccordion } from "@/components/dashboard/franchise/FranchiseCenterPageAccordion";
+import { FranchiseHubOrphanDocs } from "@/components/dashboard/franchise/FranchiseHubOrphanDocs";
+import { FRANCHISE_ACADEMIC_HUB_SECTION } from "@/config/franchise-center-page-nav";
 import {
-    FranchiseResourceFileRow,
-    type FranchiseHubDoc,
-} from "@/components/dashboard/franchise/FranchiseResourceFileRow";
+    collectLinksFromTopItem,
+    groupFranchiseHubDocsByCategory,
+    groupFranchiseHubDocsBySourcePath,
+    groupOrphanHubDocsForTopItem,
+} from "@/lib/franchise-center-page-links";
+import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useEffect, useState } from "react";
 
 export default function AcademicDocumentsPage() {
     const { authFetch } = useAuth();
-    const { showToast } = useToast();
-
-    const [docs, setDocs] = useState<FranchiseHubDoc[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [hubDocs, setHubDocs] = useState<FranchiseHubDoc[]>([]);
 
     useEffect(() => {
+        let cancelled = false;
         const load = async () => {
             try {
-                const data = await authFetch<any>("/documents/franchise/documents/category/ACADEMIC_DOCUMENTS/");
-                setDocs(Array.isArray(data) ? data : []);
+                const data = await authFetch<FranchiseHubDoc[]>("/documents/franchise/documents/");
+                if (!cancelled) setHubDocs(Array.isArray(data) ? data : []);
             } catch {
-                showToast("Could not load Academic documents. Please try again.", "error");
-            } finally {
-                setLoading(false);
+                if (!cancelled) setHubDocs([]);
             }
         };
+        void load();
+        return () => {
+            cancelled = true;
+        };
+    }, [authFetch]);
 
-        load();
-    }, [authFetch, showToast]);
+    const hubDocsByCategory = useMemo(() => groupFranchiseHubDocsByCategory(hubDocs), [hubDocs]);
+    const hubDocsBySourcePath = useMemo(() => groupFranchiseHubDocsBySourcePath(hubDocs), [hubDocs]);
+
+    const orphanGroups = useMemo(
+        () =>
+            groupOrphanHubDocsForTopItem(
+                FRANCHISE_ACADEMIC_HUB_SECTION,
+                hubDocsByCategory,
+                hubDocsBySourcePath,
+            ),
+        [hubDocsByCategory, hubDocsBySourcePath],
+    );
+
+    const checklistLinkCount = useMemo(
+        () => collectLinksFromTopItem(FRANCHISE_ACADEMIC_HUB_SECTION).length,
+        [],
+    );
 
     return (
         <div className="space-y-5">
-            <div className="space-y-1">
-                <h1 className="text-2xl font-semibold text-[#111827]">Academic Documents (AY 2025–26)</h1>
-                <p className="text-sm text-[#374151]">Year plans, lesson guides, and curriculum packs.</p>
+            <div className="space-y-3">
+                <Link
+                    href="/dashboard/franchise/#center-page"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-700 hover:text-orange-800"
+                >
+                    <ArrowLeft className="h-4 w-4" aria-hidden />
+                    Back to Center Page
+                </Link>
+                <div className="space-y-1">
+                    <h1 className="text-2xl font-semibold text-[#111827]">
+                        Academic Documents (AY 2026–27)
+                    </h1>
+                    <p className="max-w-2xl text-sm text-[#374151]">
+                        Study material, holiday lists, welcome letters, and related files — grouped
+                        by topic. Open a grey heading to see download links underneath.
+                    </p>
+                </div>
             </div>
 
-            {loading ? (
-                <div className="flex items-center justify-center py-16">
-                    <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-                </div>
-            ) : docs.length === 0 ? (
-                <div className="bg-[#fffaf0] border border-[#E5E7EB] rounded-2xl p-5 text-sm text-[#374151]">
-                    No Academic documents found for your centre yet.
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    {docs.map((doc) => (
-                        <FranchiseResourceFileRow key={doc.id} doc={doc} />
-                    ))}
-                </div>
-            )}
+            <FranchiseCenterPageAccordion
+                sections={[[FRANCHISE_ACADEMIC_HUB_SECTION]]}
+                mode="franchise"
+                hub={{
+                    title: "Academic Documents",
+                    description: "Same order as the Center Page checklist.",
+                    initialOpenTopIds: ["academic-ay"],
+                    expandAllSections: true,
+                    flattenTopLevel: true,
+                }}
+            />
+
+            <FranchiseHubOrphanDocs groups={orphanGroups} />
 
             <p className="text-xs text-[#6B7280]">
-                Shared by HO for your centre.
+                {checklistLinkCount} checklist items · shared by head office for your centre.
             </p>
         </div>
     );
 }
-

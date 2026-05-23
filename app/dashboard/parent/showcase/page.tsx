@@ -1,12 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import Image from "next/image";
 import { Sparkles } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { EventGalleryImage } from "@/components/ui/EventGalleryImage";
+import { EventGalleryVideo } from "@/components/ui/EventGalleryVideo";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 
 export default function ShowcasePage() {
-    const { eventMedia, events, parentSchoolLoading } = useSchoolData();
+    const { tokens } = useAuth();
+    const { eventMedia, events, parentSchoolLoading, refreshEvents } = useSchoolData();
     const eventTitleById = useMemo(() => {
         const m = new Map<string, string>();
         for (const ev of events) m.set(ev.id, ev.title);
@@ -23,13 +26,13 @@ export default function ShowcasePage() {
                             <Sparkles className="w-5 h-5" />
                         </div>
                         <div>
-                            <h1 className="text-lg font-semibold text-orange-900">Showcase</h1>
+                            <h1 className="text-lg font-semibold text-orange-900">Event Gallery</h1>
                             <p className="text-sm text-orange-700">Photos and videos shared by your centre.</p>
                         </div>
                     </div>
                 </section>
                 <div className="text-center py-8">
-                    <p className="text-sm text-orange-700">Loading showcase media...</p>
+                    <p className="text-sm text-orange-700">Loading event gallery…</p>
                 </div>
             </div>
         );
@@ -43,9 +46,16 @@ export default function ShowcasePage() {
                         <Sparkles className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-semibold text-orange-900">Showcase</h1>
+                        <h1 className="text-lg font-semibold text-orange-900">Event Gallery</h1>
                         <p className="text-sm text-orange-700">Photos and videos shared by your centre.</p>
                     </div>
+                    <button
+                        type="button"
+                        onClick={() => void refreshEvents()}
+                        className="ml-auto text-xs font-semibold text-orange-600 underline hover:text-orange-800"
+                    >
+                        Refresh
+                    </button>
                 </div>
             </section>
 
@@ -54,11 +64,24 @@ export default function ShowcasePage() {
                     <div key={ph.id} className="overflow-hidden rounded-xl border border-orange-100 shadow-sm bg-white">
                         {ph.type === "video" ? (
                             <div className="h-40 w-full bg-black flex items-center justify-center">
-                                <video className="w-full h-40 object-contain" src={ph.url} controls playsInline preload="metadata" aria-label={ph.title || "Showcase video"} />
+                                <EventGalleryVideo
+                                    filePath={ph.filePath}
+                                    mediaId={Number(ph.id)}
+                                    accessToken={tokens?.access}
+                                    caption={ph.title}
+                                    className="w-full h-40 object-contain"
+                                    aria-label={ph.title || "Showcase video"}
+                                />
                             </div>
-                        ) : ph.url ? (
+                        ) : ph.filePath ? (
                             <div className="relative h-40 w-full">
-                                <Image src={ph.url} alt={ph.title || "Showcase image"} fill className="object-cover" unoptimized />
+                                <EventGalleryImage
+                                    file={ph.filePath}
+                                    mediaId={Number(ph.id)}
+                                    accessToken={tokens?.access}
+                                    alt={ph.title || "Showcase image"}
+                                    fill
+                                />
                             </div>
                         ) : (
                             <div className="h-40 w-full bg-orange-50" />

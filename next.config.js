@@ -16,7 +16,20 @@ const nextConfig = {
         ignoreDuringBuilds: true,
     },
     images: {
+        /**
+         * When `localPatterns` is set, only listed paths work with `next/image`.
+         * Include `public/` assets (logos, icons) and Django proxy paths.
+         */
+        localPatterns: [
+            { pathname: '/cms-media/**' },
+            { pathname: '/media/**' },
+            { pathname: '/**' },
+        ],
         remotePatterns: [
+            { protocol: 'http', hostname: 'localhost', pathname: '/cms-media/**' },
+            { protocol: 'http', hostname: 'localhost', pathname: '/media/**' },
+            { protocol: 'http', hostname: '127.0.0.1', pathname: '/cms-media/**' },
+            { protocol: 'http', hostname: '127.0.0.1', pathname: '/media/**' },
             { protocol: 'http', hostname: 'localhost' },
             { protocol: 'http', hostname: '127.0.0.1' },
             { protocol: 'https', hostname: 'localhost' },
@@ -27,6 +40,9 @@ const nextConfig = {
             { protocol: 'https', hostname: 'timekidspreschools.in', pathname: '/api/cms-files/**' },
             { protocol: 'https', hostname: 'www.timekidspreschools.in', pathname: '/media/**' },
             { protocol: 'https', hostname: 'timekidspreschools.in', pathname: '/media/**' },
+            { protocol: 'https', hostname: 'timekids1.t4e.in', pathname: '/media/**' },
+            { protocol: 'https', hostname: 'timekids1.t4e.in', pathname: '/cms-media/**' },
+            { protocol: 'https', hostname: 'timekids1.t4e.in', pathname: '/api/cms-files/**' },
             {
                 protocol: 'http',
                 hostname: '103.65.21.176',

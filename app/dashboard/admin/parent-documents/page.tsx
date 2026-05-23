@@ -1,18 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Plus, Upload } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
-import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
+import { AdminParentAppChecklist } from "@/components/dashboard/admin/AdminParentAppChecklist";
 import {
     PARENT_DOCUMENT_CATEGORIES,
     PARENT_DOCUMENT_STATES,
 } from "@/config/parent-document-categories";
-import { openParentDocumentFile } from "@/lib/parent-document-file-open";
+import type { AdminParentAppUploadContext } from "@/lib/admin-parent-app-upload";
 
 export type ParentDocumentRow = {
     id: number;
@@ -45,21 +45,17 @@ const emptyForm = {
 };
 
 export default function AdminParentDocumentsPage() {
-    const { authFetch, tokens, authFetchBlobResponse } = useAuth();
+    const { authFetch } = useAuth();
     const { franchises } = useAdminData();
     const { showToast } = useToast();
     const [items, setItems] = useState<ParentDocumentRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [categoryFilter, setCategoryFilter] = useState("");
-    const [franchiseFilter, setFranchiseFilter] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<ParentDocumentRow | null>(null);
+    const [uploadContext, setUploadContext] = useState<AdminParentAppUploadContext | null>(null);
     const [form, setForm] = useState(emptyForm);
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [deleteAllOpen, setDeleteAllOpen] = useState(false);
-    const [deletingAll, setDeletingAll] = useState(false);
 
     const isHoliday = form.category === "HOLIDAY_LISTS";
     const isTimetable = form.category === "CLASS_TIMETABLE";
@@ -67,12 +63,7 @@ export default function AdminParentDocumentsPage() {
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const params = new URLSearchParams();
-            if (categoryFilter) params.set("category", categoryFilter);
-            if (franchiseFilter === "global") params.set("franchise", "global");
-            else if (franchiseFilter) params.set("franchise", franchiseFilter);
-            const q = params.toString() ? `?${params}` : "";
-            const data = await authFetch<ParentDocumentRow[]>(`/documents/admin/parent-documents/${q}`);
+            const data = await authFetch<ParentDocumentRow[]>("/documents/admin/parent-documents/");
             setItems(Array.isArray(data) ? data : []);
         } catch (e) {
             console.error(e);
@@ -81,40 +72,47 @@ export default function AdminParentDocumentsPage() {
         } finally {
             setLoading(false);
         }
-    }, [authFetch, categoryFilter, franchiseFilter, showToast]);
+    }, [authFetch, showToast]);
 
     useEffect(() => {
         void load();
     }, [load]);
 
-    const grouped = useMemo(() => {
-        const map = new Map<string, ParentDocumentRow[]>();
-        for (const row of items) {
-            const key = row.category_display || row.category;
-            map.set(key, [...(map.get(key) || []), row]);
-        }
-        return Array.from(map.entries());
-    }, [items]);
-
-    const openCreate = () => {
+    const openCreateManual = () => {
         setEditing(null);
-        setForm({ ...emptyForm, category: categoryFilter || emptyForm.category });
+        setUploadContext(null);
+        setForm({ ...emptyForm });
         setFile(null);
         setModalOpen(true);
     };
 
-    const openEdit = (row: ParentDocumentRow) => {
-        setEditing(row);
-        setForm({
-            category: row.category,
-            title: row.title,
-            description: row.description || "",
-            academic_year: row.academic_year || "",
-            state: row.state || "",
-            order: row.order ?? 0,
-            is_active: row.is_active,
-            franchise_id: row.franchise != null ? String(row.franchise) : "",
-        });
+    const openFromChecklist = (ctx: AdminParentAppUploadContext) => {
+        setUploadContext(ctx);
+        const existing = ctx.matchedDocId
+            ? items.find((row) => row.id === ctx.matchedDocId)
+            : undefined;
+
+        if (existing) {
+            setEditing(existing);
+            setForm({
+                category: existing.category,
+                title: existing.title,
+                description: existing.description || "",
+                academic_year: existing.academic_year || "AY 2026-27",
+                state: existing.state || "",
+                order: existing.order ?? 0,
+                is_active: existing.is_active,
+                franchise_id: existing.franchise != null ? String(existing.franchise) : "",
+            });
+        } else {
+            setEditing(null);
+            setForm({
+                ...emptyForm,
+                category: ctx.category,
+                title: ctx.suggestedTitle || "",
+                state: ctx.state || "",
+            });
+        }
         setFile(null);
         setModalOpen(true);
     };
@@ -122,6 +120,7 @@ export default function AdminParentDocumentsPage() {
     const closeModal = () => {
         setModalOpen(false);
         setEditing(null);
+        setUploadContext(null);
         setFile(null);
     };
 
@@ -199,164 +198,51 @@ export default function AdminParentDocumentsPage() {
         }
     };
 
-    const onDelete = async () => {
-        if (deleteId == null) return;
-        try {
-            await authFetch(`/documents/admin/parent-documents/${deleteId}/`, { method: "DELETE" });
-            showToast("Document removed.", "success");
-            setDeleteId(null);
-            await load();
-        } catch {
-            showToast("Delete failed.", "error");
-        }
-    };
-
-    const onDeleteAll = async () => {
-        if (items.length === 0) return;
-        setDeletingAll(true);
-        let ok = 0;
-        let failed = 0;
-        for (const row of items) {
-            try {
-                await authFetch(`/documents/admin/parent-documents/${row.id}/`, { method: "DELETE" });
-                ok++;
-            } catch {
-                failed++;
-            }
-        }
-        setDeletingAll(false);
-        setDeleteAllOpen(false);
-        if (failed === 0) {
-            showToast(`Removed ${ok} document(s).`, "success");
-        } else {
-            showToast(`Removed ${ok}; ${failed} failed.`, ok > 0 ? "success" : "error");
-        }
-        await load();
-    };
-
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
+                <div className="max-w-2xl">
                     <h1 className="text-2xl font-semibold text-slate-900">Parent app documents</h1>
-                    <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-                        Upload timetables, holiday lists, policies, and other files for the parent mobile app.
-                        Leave centre blank for all parents; pick a centre for centre-only files. Franchises cannot
-                        upload these — head office only.
+                    <p className="mt-2 text-sm text-slate-600">
+                        Each row is where the file appears in the parent app. Click <strong>Upload</strong> on
+                        that row — e.g. <span className="text-slate-800">Holiday Lists › Karnataka</span>.
                     </p>
                 </div>
-                <Button type="button" onClick={openCreate} className="bg-orange-500 hover:brightness-105 shrink-0">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={openCreateManual}
+                    className="shrink-0 border-orange-200 text-orange-900 hover:bg-orange-50"
+                >
                     <Plus className="w-4 h-4 mr-2" />
-                    Add document
+                    Manual upload
                 </Button>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-                <label className="text-xs font-medium text-slate-600">
-                    Category
-                    <select
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
-                        className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                    >
-                        <option value="">All categories</option>
-                        {PARENT_DOCUMENT_CATEGORIES.map((c) => (
-                            <option key={c.value} value={c.value}>
-                                {c.label}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="text-xs font-medium text-slate-600">
-                    Centre
-                    <select
-                        value={franchiseFilter}
-                        onChange={(e) => setFranchiseFilter(e.target.value)}
-                        className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm min-w-[200px]"
-                    >
-                        <option value="">All centres</option>
-                        <option value="global">Global (all parents)</option>
-                        {franchises.map((f) => (
-                            <option key={f.id} value={String(f.id)}>
-                                {f.name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                {items.length > 0 ? (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="self-end border-red-200 text-red-700 hover:bg-red-50"
-                        disabled={deletingAll}
-                        onClick={() => setDeleteAllOpen(true)}
-                    >
-                        <Trash2 className="w-4 h-4 mr-1 inline" />
-                        Delete all ({items.length})
-                    </Button>
-                ) : null}
-            </div>
-
-            {loading && <p className="text-sm text-slate-500">Loading…</p>}
-            {!loading && items.length === 0 && (
-                <p className="text-sm text-slate-500">No documents yet. Use Add document to upload.</p>
+            {loading ? (
+                <p className="text-sm text-slate-500">Loading checklist…</p>
+            ) : (
+                <AdminParentAppChecklist docs={items} onManageLink={openFromChecklist} />
             )}
 
-            {grouped.map(([name, rows]) => (
-                <section key={name} className="bg-white border border-slate-200 rounded-2xl p-4">
-                    <h2 className="text-sm font-semibold text-slate-800 mb-3">{name}</h2>
-                    <div className="space-y-2">
-                        {rows.map((d) => (
-                            <div
-                                key={d.id}
-                                className="flex flex-wrap items-center justify-between gap-2 border border-slate-100 rounded-xl px-3 py-2"
-                            >
-                                <div className="min-w-0">
-                                    <p className="text-sm font-medium text-slate-800 truncate">
-                                        {d.display_title || d.title}
-                                    </p>
-                                    <p className="text-xs text-slate-500">
-                                        {d.franchise_name ? d.franchise_name : "All centres"}
-                                        {d.is_active ? "" : " · inactive"}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            openParentDocumentFile(tokens?.access, authFetchBlobResponse, d)
-                                        }
-                                        className="text-blue-600 text-xs font-semibold inline-flex items-center gap-1"
-                                    >
-                                        <Download className="w-3.5 h-3.5" />
-                                        Open
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => openEdit(d)}
-                                        className="text-slate-600 text-xs font-semibold inline-flex items-center gap-1"
-                                    >
-                                        <Pencil className="w-3.5 h-3.5" />
-                                        Edit
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setDeleteId(d.id)}
-                                        className="text-red-600 text-xs font-semibold inline-flex items-center gap-1"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                        Delete
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            ))}
+            <Modal
+                isOpen={modalOpen}
+                onClose={closeModal}
+                title={
+                    editing
+                        ? "Edit parent document"
+                        : uploadContext
+                          ? "Upload for parent app"
+                          : "Manual upload"
+                }
+            >
+                <form onSubmit={submit} className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+                    {uploadContext ? (
+                        <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-900">
+                            {uploadContext.breadcrumbLabel}
+                        </p>
+                    ) : null}
 
-            <Modal isOpen={modalOpen} onClose={closeModal} title={editing ? "Edit parent document" : "Upload parent document"}>
-                <form onSubmit={submit} className="space-y-3">
                     <label className="text-xs font-semibold text-slate-600 block">
                         Category
                         <select
@@ -375,11 +261,16 @@ export default function AdminParentDocumentsPage() {
                     <label className="text-xs font-semibold text-slate-600 block">
                         Centre (optional)
                         <select
-                            value={form.franchise_id}
-                            onChange={(e) => setForm((p) => ({ ...p, franchise_id: e.target.value }))}
+                            value={form.franchise_id === "" ? "__global__" : form.franchise_id}
+                            onChange={(e) =>
+                                setForm((p) => ({
+                                    ...p,
+                                    franchise_id: e.target.value === "__global__" ? "" : e.target.value,
+                                }))
+                            }
                             className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
                         >
-                            <option value="">Global — all parents</option>
+                            <option value="__global__">Global — all parents</option>
                             {franchises.map((f) => (
                                 <option key={f.id} value={String(f.id)}>
                                     {f.name}
@@ -462,26 +353,6 @@ export default function AdminParentDocumentsPage() {
                     </div>
                 </form>
             </Modal>
-
-            <ConfirmModal
-                isOpen={deleteId != null}
-                onClose={() => setDeleteId(null)}
-                onConfirm={onDelete}
-                title="Delete document?"
-                description="Parents will no longer see this file."
-                confirmText="Delete"
-                variant="danger"
-            />
-
-            <ConfirmModal
-                isOpen={deleteAllOpen}
-                onClose={() => !deletingAll && setDeleteAllOpen(false)}
-                onConfirm={onDeleteAll}
-                title="Delete all parent app documents?"
-                description={`This permanently deletes all ${items.length} document(s) currently listed (respects category and centre filters). Parents will no longer see them in the app.`}
-                confirmText={deletingAll ? "Deleting…" : "Delete all"}
-                variant="danger"
-            />
         </div>
     );
 }

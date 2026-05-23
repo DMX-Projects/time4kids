@@ -120,9 +120,19 @@ export function isPdfFile(file: File): boolean {
 }
 
 export const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+/** Event Gallery / showcase photos (franchise → parent app & public centre page). */
+export const MAX_EVENT_GALLERY_IMAGE_BYTES = 1 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 export const MAX_DOC_BYTES = 25 * 1024 * 1024;
 export const MAX_HUB_FILE_BYTES = 50 * 1024 * 1024;
+
+export function validateEventGalleryImageSize(file: File): string | null {
+    if (file.size > MAX_EVENT_GALLERY_IMAGE_BYTES) {
+        const mb = (file.size / (1024 * 1024)).toFixed(2);
+        return `${file.name}: image too large (${mb} MB). Max 1 MB per photo.`;
+    }
+    return null;
+}
 
 export function validateFileSize(file: File, kind: ParentUploadKind): string | null {
     if (kind === "image" && file.size > MAX_IMAGE_BYTES) {
@@ -218,6 +228,10 @@ export async function uploadEventMediaFile(
     file: File,
     kind: "image" | "video",
 ): Promise<void> {
+    if (kind === "image") {
+        const err = validateEventGalleryImageSize(file);
+        if (err) throw new Error(err);
+    }
     const fd = new FormData();
     fd.append("file", file);
     fd.append("media_type", kind === "video" ? "VIDEO" : "IMAGE");

@@ -286,6 +286,9 @@ const PUBLIC_STATIC_BY_BASENAME: Record<string, string> = {
     "11.png": "/11.png",
     "16.png": "/16.png",
     "day care.png": "/day care.png",
+    "chennai2.mp4": "/chennai2.mp4",
+    "trichy-rajacolony.mp4": "/trichy-rajacolony.mp4",
+    "chaninai kilpauk-AnnualDay-Video-2018-19.mp4": "/chaninai kilpauk-AnnualDay-Video-2018-19.mp4",
 };
 
 /** Stem (filename without ext) → public path for hero_slides uploads with random `_abc123` suffix. */
@@ -365,9 +368,24 @@ export function resolveCentrePageImageSrc(path?: string | null): string {
     return schoolGalleryMediaUrl(pathname);
 }
 
-/** Same as `mediaUrl` for CMS uploads; relative `/cms-media/…` works with `next/image` on live. */
+/** Site origin for absolute media URLs (SSR + `next/image` optimizer). */
+function siteOriginForPublicMedia(): string {
+    if (typeof window !== "undefined") {
+        return window.location.origin.replace(/\/$/, "");
+    }
+    return (process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000").replace(/\/$/, "");
+}
+
+/**
+ * Absolute URL for `next/image`. Relative `/cms-media/…` paths return 400 from `/_next/image`
+ * unless listed in `images.localPatterns` (we set both localPatterns and absolute URLs).
+ */
 export function nextImageSrc(path?: string | null): string {
-    return resolveCentrePageImageSrc(path);
+    const resolved = resolveCentrePageImageSrc(path);
+    if (!resolved) return "";
+    if (/^https?:\/\//i.test(resolved)) return resolved;
+    if (resolved.startsWith("/")) return `${siteOriginForPublicMedia()}${resolved}`;
+    return resolved;
 }
 
 /**

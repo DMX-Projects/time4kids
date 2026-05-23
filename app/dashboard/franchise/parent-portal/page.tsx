@@ -2,24 +2,22 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { LayoutGrid } from "lucide-react";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
-import { SHOWCASE_AUTO_DESCRIPTION, isShowcasePlaceholderEvent } from "@/lib/showcase-events";
 import { jsonHeaders } from "@/lib/api-client";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import dynamic from "next/dynamic";
 
-const MapPicker = dynamic(() => import('@/components/ui/MapPicker'), { ssr: false });
-
+const MapPicker = dynamic(() => import("@/components/ui/MapPicker"), { ssr: false });
+/** Existing franchise pages — embedded here instead of separate sidebar links. */
+const FranchiseAttendancePanel = dynamic(() => import("../attendance/page"), { ssr: false });
+const FranchiseEventsPanel = dynamic(() => import("../events/page"), { ssr: false });
 type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 type ShowToastFn = (message: string, variant?: "success" | "error") => void;
 
 type MiniStudent = { id: number; full_name: string; class_name: string };
-type FranchiseEventOption = { id: number; title: string; media?: FranchiseEventMedia[] };
-type FranchiseEventMedia = { id: number; file?: string; media_type?: string; caption?: string };
-
 const normalizeList = <T,>(data: unknown): T[] => {
     if (Array.isArray(data)) return data as T[];
     if (data && typeof data === "object" && Array.isArray((data as { results?: unknown[] }).results)) {
@@ -28,7 +26,11 @@ const normalizeList = <T,>(data: unknown): T[] => {
     return [];
 };
 
-/** Same sections as the parent web app sidebar (franchise staff publish content here). */
+/**
+ * Matches parent login sidebar (`config/parent-sidebar-nav.tsx`).
+ * Former sidebar items Attendance and Event Gallery are embedded here as tabs.
+ * Add Grades is a separate sidebar link (`/dashboard/franchise/add-grades/`).
+ */
 type Tab =
     | "homework"
     | "notifications"
@@ -44,17 +46,44 @@ const TAB_CONFIG: { id: Tab; label: string }[] = [
     { id: "notifications", label: "Notifications" },
     { id: "timetable", label: "Timetable" },
     { id: "transport", label: "Transport" },
-    { id: "calendar", label: "Calendar" },
-    { id: "showcase", label: "Showcase" },
-    { id: "fees", label: "Fees" },
+    { id: "calendar", label: "Attendance" },
+    { id: "showcase", label: "Event Gallery" },
+    { id: "fees", label: "Fee" },
     { id: "holidays", label: "Holiday list" },
 ];
 
+const TAB_IDS = new Set<Tab>(TAB_CONFIG.map((t) => t.id));
+
+function parseTabParam(value: string | null): Tab | null {
+    if (!value || !TAB_IDS.has(value as Tab)) return null;
+    return value as Tab;
+}
+
 export default function ParentPortalAdminPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const { authFetch } = useAuth();
     const { showToast } = useToast();
     const [tab, setTab] = useState<Tab>("homework");
     const [students, setStudents] = useState<MiniStudent[]>([]);
+
+    useEffect(() => {
+        if (searchParams.get("tab") === "grades") {
+            router.replace("/dashboard/franchise/add-grades/");
+            return;
+        }
+        if (searchParams.get("tab") === "support") {
+            router.replace("/dashboard/franchise/parent-tickets/");
+            return;
+        }
+        const fromUrl = parseTabParam(searchParams.get("tab"));
+        if (fromUrl) setTab(fromUrl);
+    }, [searchParams, router]);
+
+    const selectTab = (id: Tab) => {
+        setTab(id);
+        router.replace(`/dashboard/franchise/parent-portal/?tab=${id}`, { scroll: false });
+    };
 
     const loadStudents = useCallback(async () => {
         try {
@@ -77,12 +106,8 @@ export default function ParentPortalAdminPage() {
                     Parent App
                 </h1>
                 <p className="text-sm text-[#374151] mt-1">
-                    Publish content for the parent app (homework through holidays). <strong className="text-[#111827]">Support</strong> and{" "}
-                    <strong className="text-[#111827]">Settings</strong> are for parents after they use the parent login — reply to tickets under{" "}
-                    <Link href="/dashboard/franchise/parent-tickets" className="text-blue-600 underline font-medium">
-                        Parent support tickets
-                    </Link>
-                    . Timetable and holiday PDFs are uploaded by head office.
+                    Everything parents see in the parent app is managed here (same order as the parent login menu). Timetable and holiday PDFs are uploaded by head office.
+                    Parents change <strong className="text-[#111827]">Settings</strong> and use <strong className="text-[#111827]">Support</strong> on their own after parent login.
                 </p>
             </div>
 
@@ -91,7 +116,7 @@ export default function ParentPortalAdminPage() {
                     <button
                         key={id}
                         type="button"
-                        onClick={() => setTab(id)}
+                        onClick={() => selectTab(id)}
                         className={`rounded-full px-3 py-2 text-xs sm:text-sm font-semibold transition-colors ${tab === id ? "bg-[#FFF4CC] text-[#111827]" : "text-[#6B7280] hover:bg-[#F3F4F6]"}`}
                     >
                         {label}
@@ -103,8 +128,8 @@ export default function ParentPortalAdminPage() {
             {tab === "notifications" && <AnnouncementsTab authFetch={authFetch} showToast={showToast} />}
             {tab === "timetable" && <DocsHintPanel variant="timetable" />}
             {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} students={students} />}
-            {tab === "calendar" && <FranchiseCalendarTab authFetch={authFetch} />}
-            {tab === "showcase" && <ShowcaseTab authFetch={authFetch} showToast={showToast} />}
+            {tab === "calendar" && <FranchiseAttendancePanel />}
+            {tab === "showcase" && <FranchiseEventsPanel />}
             {tab === "fees" && <FeesTab authFetch={authFetch} showToast={showToast} students={students} />}
             {tab === "holidays" && <DocsHintPanel variant="holidays" />}
         </div>
@@ -126,259 +151,6 @@ function DocsHintPanel({ variant }: { variant: "timetable" | "holidays" }) {
         <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 space-y-3 max-w-2xl">
             <h3 className="font-semibold text-[#111827]">{copy.title}</h3>
             <p className="text-sm text-[#374151]">{copy.body}</p>
-        </div>
-    );
-}
-
-function ShowcaseTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
-    const [events, setEvents] = useState<FranchiseEventOption[]>([]);
-    const [mediaRows, setMediaRows] = useState<Array<{ id: string; eventTitle: string; mediaType: string; caption: string; file?: string }>>([]);
-    const [loading, setLoading] = useState(true);
-    const [uploading, setUploading] = useState(false);
-    const [form, setForm] = useState<{ eventId: string; caption: string; file: File | null; mediaType: "IMAGE" | "VIDEO" }>({
-        eventId: "",
-        caption: "",
-        file: null,
-        mediaType: "IMAGE",
-    });
-
-    const load = useCallback(async () => {
-        setLoading(true);
-        try {
-            const raw = await authFetch<unknown>("/events/franchise/");
-            const list = normalizeList<FranchiseEventOption>(raw);
-            setEvents(list);
-            const flattened = list.flatMap((ev) =>
-                (ev.media || []).map((m) => ({
-                    id: `${ev.id}-${m.id}`,
-                    eventTitle: ev.title,
-                    mediaType: (m.media_type || "IMAGE").toUpperCase(),
-                    caption: m.caption || "",
-                    file: m.file,
-                })),
-            );
-            setMediaRows(flattened);
-        } catch {
-            setEvents([]);
-            setMediaRows([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [authFetch]);
-
-    useEffect(() => {
-        void load();
-    }, [load]);
-
-    const submit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!form.file) {
-            showToast("Select file", "error");
-            return;
-        }
-
-        // File size validation
-        const maxSize = form.mediaType === "VIDEO" ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
-        if (form.file.size > maxSize) {
-            showToast(`File too large. Max ${form.mediaType === "VIDEO" ? "50MB for video" : "5MB for image"}.`, "error");
-            return;
-        }
-
-        setUploading(true);
-        try {
-            let targetEventId = form.eventId;
-            if (!targetEventId) {
-                const today = new Date().toISOString().slice(0, 10);
-                const inferredTitle =
-                    form.caption.trim() || form.file.name.replace(/\.[^/.]+$/, "") || "Showcase Upload";
-                const createdEvent = await authFetch<{ id: number; title?: string }>("/events/franchise/", {
-                    method: "POST",
-                    headers: jsonHeaders(),
-                    body: JSON.stringify({
-                        title: inferredTitle,
-                        description: SHOWCASE_AUTO_DESCRIPTION,
-                        start_date: today,
-                        end_date: today,
-                        location: "Showcase",
-                    }),
-                });
-                targetEventId = String(createdEvent.id);
-            }
-
-            const fd = new FormData();
-            fd.append("file", form.file);
-            fd.append("media_type", form.mediaType);
-            if (form.caption.trim()) fd.append("caption", form.caption.trim());
-            const saved = await authFetch<FranchiseEventMedia>(`/events/franchise/${targetEventId}/media/`, {
-                method: "POST",
-                body: fd,
-            });
-            const eventTitle = events.find((x) => String(x.id) === targetEventId)?.title || `Event #${targetEventId}`;
-            setMediaRows((prev) => [
-                {
-                    id: `${targetEventId}-${saved.id}`,
-                    eventTitle,
-                    mediaType: (saved.media_type || "IMAGE").toUpperCase(),
-                    caption: saved.caption || "",
-                    file: saved.file,
-                },
-                ...prev,
-            ]);
-            setForm((prev) => ({ ...prev, eventId: targetEventId, caption: "", file: null }));
-            showToast("Showcase media uploaded", "success");
-            await load();
-        } catch {
-            showToast("Upload failed", "error");
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    return (
-        <div className="space-y-4 max-w-3xl">
-            <form onSubmit={submit} className="rounded-2xl border border-[#E5E7EB] bg-white p-6 space-y-3">
-                <h3 className="font-semibold text-[#111827]">Showcase upload</h3>
-                <p className="text-sm text-[#374151]">
-                    Upload event media here. Parents will see this in Showcase. If you don&apos;t pick an existing event, we create a
-                    hidden <strong>Showcase</strong> entry so your photos don&apos;t clutter the school calendar.
-                </p>
-                <label className="text-xs font-semibold text-[#4B5563] block">
-                    Event (optional)
-                    <select
-                        value={form.eventId}
-                        onChange={(e) => setForm((p) => ({ ...p, eventId: e.target.value }))}
-                        className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                    >
-                        <option value="">— Auto-create from this upload —</option>
-                        {events.map((ev) => (
-                            <option key={ev.id} value={ev.id}>
-                                {ev.title}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="text-xs font-semibold text-[#4B5563] block">
-                    Upload type
-                    <select
-                        value={form.mediaType}
-                        onChange={(e) =>
-                            setForm((p) => ({
-                                ...p,
-                                mediaType: e.target.value === "VIDEO" ? "VIDEO" : "IMAGE",
-                                file: null,
-                            }))
-                        }
-                        className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                    >
-                        <option value="IMAGE">Image upload</option>
-                        <option value="VIDEO">Video upload</option>
-                    </select>
-                </label>
-                <label className="text-xs font-semibold text-[#4B5563] block">
-                    File (image/video)
-                    <input
-                        required
-                        type="file"
-                        accept={form.mediaType === "VIDEO" ? "video/*,.mp4,.webm,.mov,.m4v" : "image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.heic,.heif,.tif,.tiff,.avif"}
-                        onChange={(e) => setForm((p) => ({ ...p, file: e.target.files?.[0] || null }))}
-                        className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                    />
-                    {form.mediaType === "VIDEO" && (
-                        <p className="mt-1.5 text-[11px] text-orange-600 font-medium">
-                            Recommended: Under 30 seconds, MP4 format, Max 50MB.
-                        </p>
-                    )}
-                </label>
-                <label className="text-xs font-semibold text-[#4B5563] block">
-                    Caption (optional)
-                    <input
-                        value={form.caption}
-                        onChange={(e) => setForm((p) => ({ ...p, caption: e.target.value }))}
-                        className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                    />
-                </label>
-                <Button type="submit" className="bg-[#FF922B] text-white" disabled={uploading}>
-                    {uploading ? "Uploading..." : "Upload to showcase"}
-                </Button>
-            </form>
-
-            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-6 space-y-3">
-                <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-[#111827]">Uploaded showcase media</h3>
-                    <button type="button" onClick={() => void load()} className="text-xs text-[#2563EB] underline">
-                        Refresh
-                    </button>
-                </div>
-                {loading && <p className="text-sm text-[#6B7280]">Loading…</p>}
-                {!loading && mediaRows.length === 0 && <p className="text-sm text-[#6B7280]">No media uploaded yet.</p>}
-                <ul className="space-y-2">
-                    {mediaRows.map((m) => (
-                        <li key={m.id} className="rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm">
-                            <p className="font-medium text-[#111827]">{m.eventTitle}</p>
-                            <p className="text-xs text-[#4B5563]">
-                                {m.mediaType} {m.caption ? `• ${m.caption}` : ""}
-                            </p>
-                            {m.file ? (
-                                <p className="text-[11px] text-[#6B7280] break-all mt-1">{m.file}</p>
-                            ) : null}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            <div className="flex flex-wrap gap-4 text-sm">
-                <Link href="/dashboard/franchise/events/" className="text-[#2563EB] font-medium underline">
-                    Events & gallery
-                </Link>
-            </div>
-        </div>
-    );
-}
-
-function FranchiseCalendarTab({ authFetch }: { authFetch: AuthFetchFn }) {
-    const [rows, setRows] = useState<{ id: number; title: string; start_date?: string; location?: string }[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            try {
-                const raw = await authFetch<unknown>("/events/franchise/");
-                const list = Array.isArray(raw) ? raw : (raw as { results?: unknown[] }).results ?? [];
-                const filtered = (list as Array<{ id: number; title: string; start_date?: string; location?: string; description?: string }>).filter(
-                    (ev) => !isShowcasePlaceholderEvent({ venue: ev.location, notes: ev.description }),
-                );
-                if (!cancelled) setRows(filtered);
-            } catch {
-                if (!cancelled) setRows([]);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, [authFetch]);
-
-    if (loading) return <p className="text-sm text-[#6B7280]">Loading events…</p>;
-
-    return (
-        <div className="space-y-2 max-w-2xl">
-            <ul className="space-y-2">
-                {rows.map((ev) => (
-                    <li key={ev.id} className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm">
-                        <span className="font-medium">{ev.title}</span>
-                        <span className="text-[#6B7280] ml-2">{ev.start_date || "—"}</span>
-                        {ev.location ? <p className="text-xs text-[#6B7280] mt-1">{ev.location}</p> : null}
-                    </li>
-                ))}
-            </ul>
-            {rows.length === 0 && <p className="text-sm text-[#6B7280]">No events yet. Add them under Events.</p>}
-            <p className="text-xs text-[#6B7280] pt-2">
-                <Link href="/dashboard/franchise/events" className="text-[#2563EB] underline font-medium">
-                    Manage events
-                </Link>
-            </p>
         </div>
     );
 }

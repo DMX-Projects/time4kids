@@ -3,8 +3,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { apiUrl, jsonHeaders, mediaUrl, toApiError } from "@/lib/api-client";
+import { apiUrl, jsonHeaders, mediaUrl, schoolGalleryMediaUrl, toApiError } from "@/lib/api-client";
 import { buildEventMediaFileViewUrl } from "@/lib/event-media-url";
+import { validateEventGalleryImageSize } from "@/lib/franchise-centre-upload";
 import {
     mapApiGrade,
     mapApiStudent,
@@ -25,6 +26,8 @@ export type SchoolStudent = {
     name: string;
     grade: string;
     section: string;
+    /** M = Male, F = Female */
+    gender?: "" | "M" | "F";
     parentId: string;
     isActive: boolean;
     dateOfBirth?: string;
@@ -58,12 +61,18 @@ export type EventMedia = {
     type: "image" | "video";
     title: string;
     url: string;
+    /** Raw Django path e.g. `events/media/chennai2.mp4` for stream/fallback URLs. */
+    filePath: string;
     description?: string;
     eventId?: string;
     studentId?: string;
 };
 
-type AddEventMediaPayload = Omit<EventMedia, "id" | "url"> & { url?: string; file?: File };
+type AddEventMediaPayload = Omit<EventMedia, "id" | "url" | "filePath"> & {
+    url?: string;
+    file?: File;
+    filePath?: string;
+};
 
 /** Used by franchise UIs; file upload and optional external URL (local gallery row). */
 export type AddEventMediaInput =
@@ -142,6 +151,8 @@ export type SchoolDataContextValue = {
     attendance: AttendanceRecord[];
 
     refreshAll: () => Promise<void>;
+    /** Reload events + gallery media from API (franchise or parent). */
+    refreshEvents: () => Promise<void>;
     addParent: (p: Omit<SchoolParent, "id">) => Promise<SchoolParent>;
     addStudent: (s: Omit<SchoolStudent, "id">) => Promise<SchoolStudent>;
     addGradesBulk: (rows: BulkGradeRow[]) => Promise<{ inserted: number; skipped: number }>;
@@ -158,6 +169,7 @@ export type SchoolDataContextValue = {
         rollNumber: string;
         grade: string;
         section: string;
+        gender: "" | "M" | "F";
         parentId: string;
     }) => Promise<void>;
     resolveEnquiry: (id: string) => Promise<void>;
@@ -232,19 +244,23 @@ const mapEvent = (ev: ApiEvent): EventRecord => ({
     notes: ev.description || "",
 });
 
-const mapMedia = (media: ApiEventMedia, eventId?: string, accessToken?: string): EventMedia => {
-    const token = accessToken?.trim();
+const mapMedia = (media: ApiEventMedia, eventId?: string, accessToken?: string | null): EventMedia => {
+    const filePath = media.file || "";
+    const mediaId = Number(media.id);
     const signed =
-        token &&
-        buildEventMediaFileViewUrl(token, media.id, {
-            caption: media.caption,
-            filePath: media.file,
+        accessToken &&
+        Number.isFinite(mediaId) &&
+        buildEventMediaFileViewUrl(accessToken, mediaId, {
+            caption: media.caption || "",
+            filePath,
         });
+    const url = signed || schoolGalleryMediaUrl(filePath) || mediaUrl(filePath);
     return {
         id: String(media.id),
         type: (media.media_type || "image").toLowerCase() === "video" ? "video" : "image",
         title: media.caption || "",
-        url: signed || mediaUrl(media.file),
+        url,
+        filePath,
         eventId,
     };
 };
@@ -340,6 +356,14 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.id, user?.role]);
 
+    /** Refresh gallery when parent opens Event Gallery (picks up new franchise uploads). */
+    useEffect(() => {
+        if (!user || user.role !== "parent") return;
+        if (!/\/dashboard\/parent\/(showcase|event-gallery)\/?$/i.test(pathname)) return;
+        void loadParentEvents();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname, user?.id, user?.role]);
+
     const loadParentEvents = async () => {
         try {
             const data = await authFetch<unknown>("/events/parent/");
@@ -409,14 +433,23 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         }
     };
 
-    const ingestEvents = (items: ApiEvent[]) => {
-        const mappedEvents = items.map(mapEvent);
-        const access = tokens?.access;
-        const flattenedMedia = items.flatMap((ev) =>
-            (ev.media || []).map((m) => mapMedia(m, String(ev.id), access)),
-        );
-        setEvents(mappedEvents);
-        setEventMedia(flattenedMedia);
+    const ingestEvents = useCallback(
+        (items: ApiEvent[]) => {
+            const accessToken = tokens?.access ?? null;
+            const mappedEvents = items.map(mapEvent);
+            const flattenedMedia = items.flatMap((ev) =>
+                (ev.media || []).map((m) => mapMedia(m, String(ev.id), accessToken)),
+            );
+            setEvents(mappedEvents);
+            setEventMedia(flattenedMedia);
+        },
+        [tokens?.access],
+    );
+
+    const refreshEvents = async () => {
+        if (!user) return;
+        if (user.role === "parent") await loadParentEvents();
+        else if (user.role === "franchise") await loadFranchiseEvents();
     };
 
     const addParent = async (payload: Omit<SchoolParent, "id">) => {
@@ -430,7 +463,9 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             first_name: payload.name.split(" ")[0],
             last_name: payload.name.split(" ").slice(1).join(" "),
             class_name: payload.grade,
+            section: payload.section || "",
             roll_number: payload.rollNumber,
+            gender: payload.gender || "",
             is_active: true,
         };
         const saved = await authFetch<any>("/students/franchise/students/", {
@@ -522,16 +557,20 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     const addMedia = async (payload: AddEventMediaPayload) => {
+        if (payload.file && payload.type === "image") {
+            const sizeErr = validateEventGalleryImageSize(payload.file);
+            if (sizeErr) throw new Error(sizeErr);
+        }
         const formData = new FormData();
         if (payload.file) formData.append("file", payload.file);
         formData.append("media_type", payload.type.toUpperCase());
         if (payload.description) formData.append("caption", payload.description);
 
-        const saved = await authFetch<ApiEventMedia>(`/events/franchise/${payload.eventId}/media/`, {
+        await authFetch<ApiEventMedia>(`/events/franchise/${payload.eventId}/media/`, {
             method: "POST",
             body: formData,
         });
-        setEventMedia((prev) => [mapMedia(saved, payload.eventId, tokens?.access), ...prev]);
+        await refreshEvents();
     };
 
     const addEventMedia = async (payload: AddEventMediaInput) => {
@@ -552,6 +591,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
                     type: p.type,
                     title: p.title || "Link",
                     url: p.url,
+                    filePath: p.url,
                     description: p.description,
                     eventId: p.eventId,
                 },
@@ -568,7 +608,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             return;
         }
         await authFetch(`/events/franchise/${eventId}/media/${mediaId}/`, { method: "DELETE" });
-        setEventMedia((prev) => prev.filter((m) => !(m.eventId === eventId && m.id === mediaId)));
+        await refreshEvents();
     };
 
     const addEnquiry = async (payload: AddEnquiryInput) => {
@@ -749,6 +789,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         rollNumber: string;
         grade: string;
         section: string;
+        gender: "" | "M" | "F";
         parentId: string;
     }) => {
         const [firstName, ...rest] = data.name.trim().split(/\s+/);
@@ -760,6 +801,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             roll_number: data.rollNumber,
             class_name: data.grade,
             section: data.section,
+            gender: data.gender,
         };
 
         if (data.id) {
@@ -790,6 +832,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         enquiries,
         attendance,
         refreshAll,
+        refreshEvents,
         addParent,
         addStudent,
         addGradesBulk,

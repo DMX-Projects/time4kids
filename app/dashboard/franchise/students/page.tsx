@@ -6,6 +6,12 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
+import { useToast } from "@/components/ui/Toast";
+import {
+    formatStudentGenderLabel,
+    studentSaveSuccessMessage,
+    type StudentGender,
+} from "@/lib/student-gender";
 
 const shells = {
     card: "bg-white/90 backdrop-blur border border-white/60 shadow-[0_12px_40px_-20px_rgba(255,146,43,0.45)]",
@@ -17,20 +23,23 @@ type StudentForm = {
     rollNumber: string;
     grade: string;
     section: string;
+    gender: StudentGender;
     parentId: string;
 };
 
-const emptyForm = (): StudentForm => ({ 
-    name: "", 
-    rollNumber: "", 
-    grade: "", 
+const emptyForm = (): StudentForm => ({
+    name: "",
+    rollNumber: "",
+    grade: "",
     section: "",
-    parentId: ""
+    gender: "",
+    parentId: "",
 });
 
 export default function FranchiseStudentsPage() {
     const { students, addOrUpdateStudent, franchiseDeleteStudent } = useSchoolData();
     const { parents } = useFranchiseData();
+    const { showToast } = useToast();
 
     const [query, setQuery] = useState("");
     const [form, setForm] = useState<StudentForm>(emptyForm());
@@ -44,7 +53,8 @@ export default function FranchiseStudentsPage() {
     const filtered = useMemo(() => {
         const term = query.toLowerCase();
         return students.filter((s) =>
-            [s.name, s.rollNumber, s.grade, s.section].some((f) => (f || "").toLowerCase().includes(term))
+            [s.name, s.rollNumber, s.grade, s.section, formatStudentGenderLabel(s.gender)]
+                .some((f) => (f || "").toLowerCase().includes(term))
         );
     }, [students, query]);
 
@@ -68,6 +78,7 @@ export default function FranchiseStudentsPage() {
             rollNumber: found.rollNumber || "",
             grade: found.grade || "",
             section: found.section || "",
+            gender: found.gender || "",
             parentId: found.parentId || "",
         });
         setError(null);
@@ -78,6 +89,7 @@ export default function FranchiseStudentsPage() {
         if (!form.name.trim()) return "Student name is required.";
         if (!/^[A-Za-z\s'.,-]+$/.test(form.name)) return "Student name must contain letters only.";
         if (!form.grade.trim()) return "Class is required.";
+        if (!form.gender) return "Please select gender (Male or Female).";
         if (!editingId && !form.parentId) return "Please select a parent/family.";
         return null;
     };
@@ -90,6 +102,10 @@ export default function FranchiseStudentsPage() {
         setSubmitting(true);
         try {
             await addOrUpdateStudent({ ...form, id: editingId || undefined });
+            showToast(
+                studentSaveSuccessMessage(form.name, form.gender, Boolean(editingId)),
+                "success",
+            );
             resetForm();
             setShowFormModal(false);
         } catch (err: any) {
@@ -159,7 +175,9 @@ export default function FranchiseStudentsPage() {
                                 <div className="space-y-0.5">
                                     <p className="font-semibold text-[#1F2937] text-sm">{student.name}</p>
                                     <p className="text-xs text-[#4B5563]">
-                                        {student.grade} {student.section ? `· Section ${student.section}` : ""}
+                                        {formatStudentGenderLabel(student.gender)}
+                                        {student.grade ? ` · ${student.grade}` : ""}
+                                        {student.section ? ` · Section ${student.section}` : ""}
                                     </p>
                                 </div>
                             </div>
@@ -206,6 +224,10 @@ export default function FranchiseStudentsPage() {
                         </div>
                         <div className="grid sm:grid-cols-2 gap-4 bg-orange-50/50 p-3 rounded-xl">
                             <div>
+                                <p className="text-[10px] uppercase tracking-wider font-bold text-orange-600">Gender</p>
+                                <p className="font-medium">{formatStudentGenderLabel(viewingStudent.gender)}</p>
+                            </div>
+                            <div>
                                 <p className="text-[10px] uppercase tracking-wider font-bold text-orange-600">Class</p>
                                 <p className="font-medium">{viewingStudent.grade || "—"}</p>
                             </div>
@@ -250,6 +272,21 @@ export default function FranchiseStudentsPage() {
                                 onChange={(e) => setForm({ ...form, rollNumber: e.target.value })}
                                 placeholder="e.g. 42"
                             />
+                            <label className="flex flex-col gap-1 text-xs font-semibold text-[#4B5563]">
+                                Gender *
+                                <select
+                                    value={form.gender}
+                                    onChange={(e) =>
+                                        setForm({ ...form, gender: e.target.value as StudentGender })
+                                    }
+                                    required
+                                    className="rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#1F2937] focus:border-[#FF922B] focus:outline-none shadow-inner"
+                                >
+                                    <option value="">Select gender</option>
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                </select>
+                            </label>
                             <Input
                                 label="Class *"
                                 value={form.grade}

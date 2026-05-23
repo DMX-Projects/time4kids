@@ -1,4 +1,4 @@
-import type { CenterPageLink } from "@/config/franchise-center-page-nav";
+import type { CenterPageLink, CenterPageTopItem } from "@/config/franchise-center-page-nav";
 import { isStudentsKitPublicPath } from "@/config/students-kit-public-pages";
 import { mediaUrl } from "@/lib/api-client";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
@@ -24,9 +24,9 @@ export const FRANCHISE_CATEGORY_HUB_PATH: Record<string, string> = {
     SOCIAL_MEDIA_SUPPORT: "/dashboard/franchise/#center-page",
     WATCH_HEAR_LEARN: "/dashboard/franchise/parent-portal/",
     ADMISSION_COUNSELLING: "/dashboard/franchise/enquiries",
-    ARTWORKS_MARKETING: "/dashboard/franchise/events/",
-    CONCEPT_ROOM_DISPLAYS: "/dashboard/franchise/events/",
-    REPORT_CARD_COMMENTS: "/dashboard/franchise/add-grades",
+    ARTWORKS_MARKETING: "/dashboard/franchise/parent-portal/?tab=showcase",
+    CONCEPT_ROOM_DISPLAYS: "/dashboard/franchise/parent-portal/?tab=showcase",
+    REPORT_CARD_COMMENTS: "/dashboard/franchise/add-grades/",
     PARENT_ORIENTATION: "/dashboard/franchise/parent-portal/",
     COUNSELLING_TOOLS: "/dashboard/franchise/enquiries",
     PARENTING_TIPS: "/dashboard/franchise/parent-portal/",
@@ -267,4 +267,62 @@ export function resolveCenterPageLinks(
             franchiseHubDocId: meta.franchiseHubDocId,
         };
     });
+}
+
+/** Every checklist link under a top-level Center Page / hub section. */
+export function collectLinksFromTopItem(item: CenterPageTopItem): CenterPageLink[] {
+    const out: CenterPageLink[] = [];
+    if (item.directLinks?.length) out.push(...item.directLinks);
+    for (const group of item.groups) {
+        if (group.links?.length) out.push(...group.links);
+        if (group.nested) {
+            for (const block of group.nested) out.push(...block.links);
+        }
+    }
+    return out;
+}
+
+function folderLabelFromSourcePath(sourcePath: string | null | undefined): string {
+    const parts = (sourcePath || "").replace(/\\/g, "/").split("/").filter(Boolean);
+    if (parts.length > 1) return parts.slice(0, -1).join(" / ");
+    return "Other uploads";
+}
+
+/**
+ * Uploaded hub files in the section’s categories that are not tied to a checklist link
+ * (shown at the bottom of category hub pages).
+ */
+export function groupOrphanHubDocsForTopItem(
+    item: CenterPageTopItem,
+    docsByCategory: Map<string, FranchiseHubDoc[]>,
+    docsBySourcePath?: Map<string, FranchiseHubDoc>,
+): Map<string, FranchiseHubDoc[]> {
+    const links = collectLinksFromTopItem(item);
+    const resolved = resolveCenterPageLinks(links, docsByCategory, docsBySourcePath);
+    const usedIds = new Set(
+        resolved
+            .map((l) => l.franchiseHubDocId)
+            .filter((id): id is number => typeof id === "number"),
+    );
+
+    const categories = new Set<string>();
+    for (const link of links) {
+        if (link.adminCategory) categories.add(link.adminCategory);
+    }
+
+    const orphans: FranchiseHubDoc[] = [];
+    for (const category of Array.from(categories)) {
+        for (const doc of docsByCategory.get(category) ?? []) {
+            if (doc.id != null && !usedIds.has(doc.id)) orphans.push(doc);
+        }
+    }
+
+    const groups = new Map<string, FranchiseHubDoc[]>();
+    for (const doc of orphans) {
+        const key = folderLabelFromSourcePath(doc.source_path);
+        const list = groups.get(key) ?? [];
+        list.push(doc);
+        groups.set(key, list);
+    }
+    return groups;
 }

@@ -1,18 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
-import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
-import { mediaUrl } from "@/lib/api-client";
+import { AdminCentrePageChecklist } from "@/components/dashboard/admin/AdminCentrePageChecklist";
+import {
+    FRANCHISE_CENTER_PAGE_BLOCK_A,
+    FRANCHISE_CENTER_PAGE_BLOCK_B,
+} from "@/config/franchise-center-page-nav";
 import { FRANCHISE_DOCUMENT_CATEGORY_ORDER } from "@/config/franchise-dashboard-resource-order";
-import { FranchiseCentreBulkUpload } from "@/components/franchise/FranchiseCentreBulkUpload";
-import { getFranchiseResourceFileMetaFromDoc } from "@/lib/franchise-resource-file-meta";
 import { resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
-import { Plus, Pencil, Trash2, ExternalLink, Info } from "lucide-react";
+import type { AdminCenterPageUploadContext } from "@/lib/admin-center-page-upload";
+import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
+import { Plus } from "lucide-react";
 
 export type FranchiseResourceDoc = {
     id: number;
@@ -63,22 +66,19 @@ export default function AdminFranchiseDocumentsPage() {
     const { showToast } = useToast();
     const [items, setItems] = useState<FranchiseResourceDoc[]>([]);
     const [loading, setLoading] = useState(true);
-    const [categoryFilter, setCategoryFilter] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<FranchiseResourceDoc | null>(null);
+    const [uploadContext, setUploadContext] = useState<AdminCenterPageUploadContext | null>(null);
     const [form, setForm] = useState(emptyForm);
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [deleteId, setDeleteId] = useState<number | null>(null);
-    const [deleteAllOpen, setDeleteAllOpen] = useState(false);
-    const [deletingAll, setDeletingAll] = useState(false);
+    const hubDocs = useMemo(() => items as FranchiseHubDoc[], [items]);
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const q = categoryFilter ? `?category=${encodeURIComponent(categoryFilter)}` : "";
             const data = await authFetch<FranchiseResourceDoc[] | { results: FranchiseResourceDoc[] }>(
-                `/documents/admin/franchise-documents/${q}`,
+                "/documents/admin/franchise-documents/",
             );
             const list = Array.isArray(data) ? data : data?.results ?? [];
             setItems(sortDocsByCategoryOrder(list));
@@ -89,32 +89,47 @@ export default function AdminFranchiseDocumentsPage() {
         } finally {
             setLoading(false);
         }
-    }, [authFetch, categoryFilter, showToast]);
+    }, [authFetch, showToast]);
 
     useEffect(() => {
         void load();
     }, [load]);
 
-    const openCreate = () => {
+    const openCreateManual = () => {
         setEditing(null);
-        setForm(emptyForm);
+        setUploadContext(null);
+        setForm({ ...emptyForm });
         setFile(null);
         setModalOpen(true);
     };
 
-    const openEdit = (row: FranchiseResourceDoc) => {
-        setEditing(row);
-        setForm({
-            category: row.category,
-            title: row.title,
-            source_path: row.source_path ?? "",
-            embed_url: row.embed_url ?? "",
-            description: row.description ?? "",
-            academic_year: row.academic_year ?? "",
-            order: row.order ?? 0,
-            is_active: row.is_active,
-            franchise_id: row.franchise != null ? String(row.franchise) : "",
-        });
+    const openFromChecklist = (ctx: AdminCenterPageUploadContext) => {
+        setUploadContext(ctx);
+        const existing = ctx.matchedDocId
+            ? items.find((row) => row.id === ctx.matchedDocId)
+            : undefined;
+        if (existing) {
+            setEditing(existing);
+            setForm({
+                category: existing.category,
+                title: existing.title,
+                source_path: existing.source_path ?? ctx.sourcePath,
+                embed_url: existing.embed_url ?? "",
+                description: existing.description ?? "",
+                academic_year: existing.academic_year ?? "",
+                order: existing.order ?? 0,
+                is_active: existing.is_active,
+                franchise_id: existing.franchise != null ? String(existing.franchise) : "",
+            });
+        } else {
+            setEditing(null);
+            setForm({
+                ...emptyForm,
+                category: ctx.category,
+                title: ctx.linkLabel,
+                source_path: ctx.sourcePath,
+            });
+        }
         setFile(null);
         setModalOpen(true);
     };
@@ -122,6 +137,7 @@ export default function AdminFranchiseDocumentsPage() {
     const closeModal = () => {
         setModalOpen(false);
         setEditing(null);
+        setUploadContext(null);
         setFile(null);
     };
 
@@ -225,220 +241,46 @@ export default function AdminFranchiseDocumentsPage() {
         }
     };
 
-    const confirmDelete = async () => {
-        if (deleteId == null) return;
-        try {
-            await authFetch(`/documents/admin/franchise-documents/${deleteId}/`, { method: "DELETE" });
-            showToast("Deleted.", "success");
-            setDeleteId(null);
-            void load();
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Delete failed.";
-            showToast(msg, "error");
-        }
-    };
-
-    const confirmDeleteAll = async () => {
-        if (items.length === 0) return;
-        setDeletingAll(true);
-        let ok = 0;
-        let failed = 0;
-        for (const row of items) {
-            try {
-                await authFetch(`/documents/admin/franchise-documents/${row.id}/`, { method: "DELETE" });
-                ok++;
-            } catch {
-                failed++;
-            }
-        }
-        setDeletingAll(false);
-        setDeleteAllOpen(false);
-        if (failed === 0) {
-            showToast(`Removed ${ok} document(s).`, "success");
-        } else {
-            showToast(`Removed ${ok}; ${failed} failed.`, ok > 0 ? "success" : "error");
-        }
-        void load();
-    };
-
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="max-w-2xl">
                     <h1 className="text-2xl font-semibold text-orange-900">Centre page documents</h1>
-                    <p className="text-sm text-orange-800/90 mt-1 max-w-2xl">
-                        Upload, edit, or delete PDFs, images, ZIPs, videos, and iframe embed links for the franchise{" "}
-                        <strong>Center Page</strong>. Every upload is saved in the{" "}
-                        <strong>PostgreSQL database</strong> (<code className="text-[11px]">FranchiseDocument</code>)
-                        and the file is stored under <code className="text-[11px]">media/franchise_documents/</code>.
-                        Leave <strong>Centre</strong> empty for all centres.
+                    <p className="mt-2 text-sm text-slate-600">
+                        Each row shows the full path where the file appears on the Centre Page. Click{" "}
+                        <strong>Upload</strong> on that row only.
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2 shrink-0">
-                    <Button type="button" size="sm" onClick={openCreate}>
+                    <Button type="button" size="sm" variant="outline" onClick={openCreateManual}>
                         <Plus className="w-4 h-4 mr-1 inline" />
-                        Add document
+                        Manual upload
                     </Button>
                 </div>
             </div>
 
-            <FranchiseCentreBulkUpload adminHub compact onComplete={() => void load()} />
+            {loading ? (
+                <p className="text-sm text-slate-600">Loading checklist…</p>
+            ) : (
+                <AdminCentrePageChecklist
+                    sections={[FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B]}
+                    hubDocs={hubDocs}
+                    onManageLink={openFromChecklist}
+                />
+            )}
 
-            <div className="rounded-xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-slate-800">
-                <div className="flex gap-2">
-                    <Info className="w-5 h-5 shrink-0 text-blue-700 mt-0.5" aria-hidden />
-                    <div className="space-y-2 min-w-0">
-                        <p className="font-semibold text-blue-900">How to upload</p>
-                        <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                            <li>
-                                <strong>Upload from PC</strong> — choose files or a whole folder above, pick a category,
-                                then upload (global for all centres).
-                            </li>
-                            <li>
-                                <strong>Add document</strong> — one file or embed link with title, category, and sort
-                                order.
-                            </li>
-                            <li>
-                                <strong>Edit / Delete</strong> — use the table below. Turn off <strong>Active</strong> to
-                                hide from franchises.
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-                <label className="text-sm font-medium text-orange-900">
-                    Filter by category
-                    <select
-                        className="ml-2 rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm"
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
-                    >
-                        <option value="">All categories</option>
-                        {FRANCHISE_DOCUMENT_CATEGORY_ORDER.map((c) => (
-                            <option key={c.value} value={c.value}>
-                                {c.label}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                {categoryFilter ? (
-                    <button
-                        type="button"
-                        className="text-sm text-blue-700 hover:underline"
-                        onClick={() => setCategoryFilter("")}
-                    >
-                        Clear filter (show all)
-                    </button>
-                ) : null}
-                {items.length > 0 ? (
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="border-red-200 text-red-700 hover:bg-red-50"
-                        disabled={deletingAll}
-                        onClick={() => setDeleteAllOpen(true)}
-                    >
-                        <Trash2 className="w-4 h-4 mr-1 inline" />
-                        Delete all ({items.length})
-                    </Button>
-                ) : null}
-            </div>
-
-            <div className="bg-white border border-orange-100 rounded-2xl shadow-sm overflow-hidden">
-                {loading ? (
-                    <p className="p-8 text-sm text-slate-600">Loading…</p>
-                ) : items.length === 0 ? (
-                    <p className="p-8 text-sm text-slate-600">
-                        {categoryFilter
-                            ? "No documents in this category. Clear the filter or upload files above."
-                            : "No documents yet. Upload from your PC above or use Add document."}
-                    </p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm">
-                            <thead className="bg-orange-50 text-left text-orange-900">
-                                <tr>
-                                    <th className="px-4 py-3 font-semibold">Order</th>
-                                    <th className="px-4 py-3 font-semibold">Title</th>
-                                    <th className="px-4 py-3 font-semibold">Category</th>
-                                    <th className="px-4 py-3 font-semibold">Centre</th>
-                                    <th className="px-4 py-3 font-semibold">AY</th>
-                                    <th className="px-4 py-3 font-semibold">Active</th>
-                                    <th className="px-4 py-3 font-semibold">File / Embed</th>
-                                    <th className="px-4 py-3 font-semibold w-28">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-orange-100">
-                                {items.map((row) => {
-                                    const fm = getFranchiseResourceFileMetaFromDoc(row);
-                                    return (
-                                    <tr key={row.id} className="hover:bg-orange-50/40">
-                                        <td className="px-4 py-2 text-slate-700">{row.order}</td>
-                                        <td className="px-4 py-2 font-medium text-slate-900">{row.title}</td>
-                                        <td className="px-4 py-2 text-slate-600 max-w-[200px] truncate" title={row.category_display}>
-                                            {row.category_display ?? row.category}
-                                        </td>
-                                        <td className="px-4 py-2 text-slate-600">{row.franchise_name ?? "— Global —"}</td>
-                                        <td className="px-4 py-2 text-slate-600">{row.academic_year || "—"}</td>
-                                        <td className="px-4 py-2">{row.is_active ? "Yes" : "No"}</td>
-                                        <td className="px-4 py-2">
-                                            {row.file || row.embed_url ? (
-                                                <div className="flex flex-col gap-1 items-start max-w-[200px]">
-                                                    <span className="inline-flex rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
-                                                        {fm.extLabel}
-                                                    </span>
-                                                    {row.file ? (
-                                                        <a
-                                                            href={mediaUrl(row.file)}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-blue-600 inline-flex items-center gap-1 hover:underline text-xs"
-                                                        >
-                                                            {fm.actionLabel}{" "}
-                                                            <ExternalLink className="w-3 h-3 shrink-0" />
-                                                        </a>
-                                                    ) : (
-                                                        <span className="text-xs text-slate-600 truncate max-w-full" title={row.embed_url ?? ""}>
-                                                            {row.embed_url}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                "—"
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-2">
-                                            <button
-                                                type="button"
-                                                className="p-1.5 text-orange-700 hover:bg-orange-100 rounded"
-                                                onClick={() => openEdit(row)}
-                                                title="Edit"
-                                            >
-                                                <Pencil className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded ml-1"
-                                                onClick={() => setDeleteId(row.id)}
-                                                title="Delete"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-
-            <Modal isOpen={modalOpen} onClose={closeModal} title={editing ? "Edit document" : "Add document"}>
+            <Modal
+                isOpen={modalOpen}
+                onClose={closeModal}
+                title={editing ? "Edit document" : uploadContext ? "Upload for checklist row" : "Add document"}
+            >
                 <form onSubmit={submit} className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+                    {uploadContext ? (
+                        <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-900">
+                            {uploadContext.breadcrumbLabel}
+                        </p>
+                    ) : null}
+
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
                         Category
                         <select
@@ -455,7 +297,7 @@ export default function AdminFranchiseDocumentsPage() {
                         </select>
                     </label>
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        Title
+                        Title (shown to franchises)
                         <input
                             className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
                             value={form.title}
@@ -464,10 +306,10 @@ export default function AdminFranchiseDocumentsPage() {
                         />
                     </label>
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        Centre Page path (optional — saved in database)
+                        Centre Page path (matches checklist folder)
                         <input
                             className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono text-xs"
-                            placeholder="e.g. holidayslist-2026-27/AP Holiday List 2026-2027.pdf (auto-filled from filename if empty)"
+                            placeholder="e.g. study-material-26-27/Block-1/PG-Study-Material-for-Block-1.zip"
                             value={form.source_path}
                             onChange={(e) => setForm({ ...form, source_path: e.target.value })}
                         />
@@ -484,7 +326,7 @@ export default function AdminFranchiseDocumentsPage() {
                         Academic year (optional)
                         <input
                             className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                            placeholder="e.g. AY 2025-26"
+                            placeholder="e.g. AY 2026-27"
                             value={form.academic_year}
                             onChange={(e) => setForm({ ...form, academic_year: e.target.value })}
                         />
@@ -531,10 +373,7 @@ export default function AdminFranchiseDocumentsPage() {
                     </label>
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
                         <span>
-                            File {editing ? "(optional — leave empty to keep current)" : "(optional if embed link below)"}
-                        </span>
-                        <span className="font-normal text-slate-500">
-                            PDF, images (PNG/JPG), ZIP, audio, video, and Office formats are supported.
+                            File {editing ? "(optional — leave empty to keep current)" : "(required unless embed)"}
                         </span>
                         <input
                             type="file"
@@ -544,21 +383,17 @@ export default function AdminFranchiseDocumentsPage() {
                         />
                     </label>
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        <span>Embed / video link (optional — instead of file)</span>
-                        <span className="font-normal text-slate-500">
-                            YouTube, MediaDelivery, or paste full{" "}
-                            <code className="text-[10px] bg-slate-100 px-1 rounded">&lt;iframe src=&quot;…&quot;&gt;</code>
-                        </span>
+                        Embed / video link (optional)
                         <textarea
                             className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono min-h-[72px]"
-                            placeholder="https://www.youtube.com/watch?v=… or https://iframe.mediadelivery.net/embed/…"
+                            placeholder="https://www.youtube.com/watch?v=…"
                             value={form.embed_url}
                             onChange={(e) => setForm({ ...form, embed_url: e.target.value })}
                         />
                     </label>
                     <div className="flex gap-2 pt-2">
                         <Button type="submit" size="sm" disabled={submitting}>
-                            {submitting ? "Saving…" : editing ? "Update" : "Create"}
+                            {submitting ? "Saving…" : editing ? "Update" : "Upload"}
                         </Button>
                         <Button type="button" variant="outline" size="sm" onClick={closeModal}>
                             Cancel
@@ -566,30 +401,6 @@ export default function AdminFranchiseDocumentsPage() {
                     </div>
                 </form>
             </Modal>
-
-            <ConfirmModal
-                isOpen={deleteId != null}
-                onClose={() => setDeleteId(null)}
-                onConfirm={confirmDelete}
-                title="Delete document?"
-                description="This removes the file from the resource hub. Franchises will no longer see it."
-                confirmText="Delete"
-                variant="danger"
-            />
-
-            <ConfirmModal
-                isOpen={deleteAllOpen}
-                onClose={() => !deletingAll && setDeleteAllOpen(false)}
-                onConfirm={confirmDeleteAll}
-                title="Delete all listed documents?"
-                description={
-                    categoryFilter
-                        ? `This permanently deletes all ${items.length} row(s) in the current category filter. Franchises will no longer see them.`
-                        : `This permanently deletes all ${items.length} centre page document(s) in the table (every category). Franchises will no longer see them.`
-                }
-                confirmText={deletingAll ? "Deleting…" : "Delete all"}
-                variant="danger"
-            />
         </div>
     );
 }

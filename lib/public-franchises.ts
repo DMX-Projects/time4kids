@@ -8,7 +8,7 @@ export async function fetchAllPublicFranchises(
     let nextUrl: string | null = initialUrl;
 
     while (nextUrl) {
-        const response: Response = await fetch(nextUrl);
+        const response: Response = await fetch(nextUrl, { cache: "no-store" });
         if (!response.ok) throw new Error("Failed to fetch franchises");
 
         const json: { results?: Record<string, unknown>[]; next?: string | null } | Record<string, unknown>[] =
@@ -21,7 +21,13 @@ export async function fetchAllPublicFranchises(
 
         const next = !Array.isArray(json) ? json.next : null;
         if (!next) break;
-        nextUrl = next.startsWith("http") ? next : apiUrl(next.startsWith("/") ? next : `/${next}`);
+        if (next.startsWith("http")) {
+            nextUrl = next;
+        } else {
+            const rel = next.startsWith("/") ? next : `/${next}`;
+            const path = rel.startsWith("/api/") ? rel.slice(4) : rel;
+            nextUrl = apiUrl(path);
+        }
     }
 
     return all;

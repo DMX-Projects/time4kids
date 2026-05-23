@@ -76,6 +76,7 @@ export default async function SchoolPage({ params }: PageProps) {
                     city={franchise.city}
                     state={franchise.state}
                     urlCityFallback={urlCityFallback}
+                    centreSlug={franchise.slug}
                     events={franchise.events}
                     galleryItems={franchise.gallery_items}
                 />

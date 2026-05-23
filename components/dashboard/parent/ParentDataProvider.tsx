@@ -28,6 +28,8 @@ export type ParentProfile = {
 
 type ParentProfileApi = {
     full_name?: string;
+    display_name?: string;
+    child_name?: string;
     email?: string;
     phone?: string;
     address?: string;

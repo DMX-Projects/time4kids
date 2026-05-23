@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import Image from "next/image";
 import { Images } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { EventGalleryImage } from "@/components/ui/EventGalleryImage";
+import { EventGalleryVideo } from "@/components/ui/EventGalleryVideo";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 
 export default function EventGalleryPage() {
-    const { user } = useAuth();
+    const { user, tokens } = useAuth();
     const { eventMedia, events } = useSchoolData();
     const media = eventMedia;
     const eventTitleById = useMemo(() => {
@@ -32,11 +33,25 @@ export default function EventGalleryPage() {
                     <div key={ph.id} className="overflow-hidden rounded-xl border border-orange-100 shadow-sm bg-white">
                         {ph.type === "video" ? (
                             <div className="h-40 w-full bg-black flex items-center justify-center">
-                                <video className="w-full h-40 object-contain" src={ph.url} controls playsInline preload="metadata" aria-label={ph.title || "Event video"} />
+                                <EventGalleryVideo
+                                    filePath={ph.filePath}
+                                    mediaId={Number(ph.id)}
+                                    accessToken={tokens?.access}
+                                    caption={ph.title}
+                                    className="w-full h-40 object-contain"
+                                    aria-label={ph.title || "Event video"}
+                                />
                             </div>
-                        ) : ph.url ? (
+                        ) : ph.filePath ? (
                             <div className="relative h-40 w-full">
-                                <Image src={ph.url} alt={ph.title} fill className="object-cover" unoptimized />
+                                <EventGalleryImage
+                                    file={ph.filePath}
+                                    mediaId={Number(ph.id)}
+                                    accessToken={tokens?.access}
+                                    caption={ph.title}
+                                    alt={ph.title}
+                                    fill
+                                />
                             </div>
                         ) : (
                             <div className="h-40 w-full bg-orange-50" />
