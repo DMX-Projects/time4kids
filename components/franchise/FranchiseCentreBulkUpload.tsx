@@ -16,6 +16,7 @@ import {
     uploadEventMediaFile,
     uploadFranchiseHubDocument,
     uploadAdminFranchiseHubDocument,
+    validateEventGalleryImageSize,
     validateFileSize,
     validateHubFileSize,
     type BulkUploadResult,
@@ -37,17 +38,29 @@ type Props = {
     parentsOnly?: boolean;
     /** Admin dashboard: centre resource hub via HO API (no franchise login) */
     adminHub?: boolean;
+    /** Controlled hub category (admin page: one dropdown for upload + table filter) */
+    hubCategory?: string;
+    onHubCategoryChange?: (category: string) => void;
     /** After successful upload */
     onComplete?: () => void;
 };
 
-export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onComplete }: Props) {
+export function FranchiseCentreBulkUpload({
+    compact,
+    parentsOnly,
+    adminHub,
+    hubCategory: hubCategoryProp,
+    onHubCategoryChange,
+    onComplete,
+}: Props) {
     const { authFetch, tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
     const { showToast } = useToast();
 
     const [publishShowcase, setPublishShowcase] = useState(!adminHub);
     const [publishHub, setPublishHub] = useState(adminHub || !parentsOnly);
-    const [hubCategory, setHubCategory] = useState("ACADEMIC_DOCUMENTS");
+    const [hubCategoryInternal, setHubCategoryInternal] = useState("ACADEMIC_DOCUMENTS");
+    const hubCategory = hubCategoryProp ?? hubCategoryInternal;
+    const setHubCategory = onHubCategoryChange ?? setHubCategoryInternal;
     const [eventId, setEventId] = useState("");
     const [events, setEvents] = useState<{ id: number; title: string }[]>([]);
     const [files, setFiles] = useState<File[]>([]);
@@ -99,7 +112,9 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
         void loadEvents();
     }, [refreshLists, loadEvents]);
 
-    const canSubmit = files.length > 0 && (publishShowcase || publishHub) && !uploading;
+    const uploadHubCategory = hubCategory || "ACADEMIC_DOCUMENTS";
+    const canSubmit =
+        files.length > 0 && (publishShowcase || publishHub) && !uploading && (!adminHub || !publishHub || Boolean(hubCategory));
 
     const onSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -109,6 +124,10 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
         }
         if (!publishShowcase && !publishHub) {
             showToast("Select at least one destination: Showcase and/or Franchise centre files", "error");
+            return;
+        }
+        if (adminHub && publishHub && !hubCategory) {
+            showToast("Choose a document category before uploading (not “All categories”).", "error");
             return;
         }
 
@@ -125,7 +144,10 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
 
                 if (publishShowcase) {
                     if (kind === "image" || kind === "video") {
-                        const sizeErr = validateFileSize(file, kind);
+                        const sizeErr =
+                            kind === "image"
+                                ? validateEventGalleryImageSize(file)
+                                : validateFileSize(file, kind);
                         if (sizeErr) {
                             result.failed++;
                             result.errors.push(sizeErr);
@@ -160,9 +182,11 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
                     } else {
                         try {
                             if (adminHub) {
-                                await uploadAdminFranchiseHubDocument(authFetch, file, { category: hubCategory });
+                                await uploadAdminFranchiseHubDocument(authFetch, file, {
+                                    category: uploadHubCategory,
+                                });
                             } else {
-                                await uploadFranchiseHubDocument(authFetch, file, { category: hubCategory });
+                                await uploadFranchiseHubDocument(authFetch, file, { category: uploadHubCategory });
                             }
                             result.ok++;
                         } catch {
@@ -264,21 +288,34 @@ export function FranchiseCentreBulkUpload({ compact, parentsOnly, adminHub, onCo
 
                 {(adminHub || publishHub) && (
                     <label className="text-xs font-semibold text-[#4B5563] block rounded-xl bg-[#F0F9FF] border border-[#BAE6FD] p-3">
-                        {adminHub ? "Centre resource file category" : "Franchise centre file category"}
+                        {adminHub ? "Document category" : "Franchise centre file category"}
                         <select
                             value={hubCategory}
                             onChange={(e) => setHubCategory(e.target.value)}
                             className="mt-1 w-full rounded-xl border px-3 py-2 text-sm bg-white"
                             disabled={uploading}
                         >
-                            {FRANCHISE_DOCUMENT_CATEGORY_ORDER.map((c) => (
-                                <option key={c.value} value={c.value}>
-                                    {c.label}
-                                </option>
-                            ))}
+                            {adminHub ? (
+                                <>
+                                    <option value="">All categories (view table only)</option>
+                                    {FRANCHISE_DOCUMENT_CATEGORY_ORDER.map((c) => (
+                                        <option key={c.value} value={c.value}>
+                                            {c.label}
+                                        </option>
+                                    ))}
+                                </>
+                            ) : (
+                                FRANCHISE_DOCUMENT_CATEGORY_ORDER.map((c) => (
+                                    <option key={c.value} value={c.value}>
+                                        {c.label}
+                                    </option>
+                                ))
+                            )}
                         </select>
                         <span className="block mt-1 text-[11px] text-[#0369A1]">
-                            Appears on your centre pages (e.g. Academic documents) right after upload.
+                            {adminHub
+                                ? "Choose a category to upload files and filter the list below. Pick “All categories” to browse everything without uploading to one folder."
+                                : "Appears on your centre pages (e.g. Academic documents) right after upload."}
                         </span>
                     </label>
                 )}

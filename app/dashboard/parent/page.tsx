@@ -20,8 +20,12 @@ export default function ParentDashboardPage() {
     const upcomingEventsCount = countUpcomingEvents(events);
 
     const focusStudent = myStudents.find((s) => s.id === selectedStudentId) ?? myStudents[0];
-    const firstName = focusStudent?.name?.trim();
-    const welcomeName = user?.fullName?.split(/\s+/)[0] || "Parent";
+    const childLabel =
+        user?.displayName?.trim() ||
+        user?.childName?.trim() ||
+        focusStudent?.name?.trim() ||
+        "";
+    const welcomeName = childLabel.split(/\s+/)[0] || "there";
 
     const [showConfetti, setShowConfetti] = useState(true);
     const cartoonStrip = [
@@ -52,8 +56,7 @@ export default function ParentDashboardPage() {
                             Parent App
                         </div>
                         <h1 className="text-2xl md:text-3xl font-bold text-[#1F2937] leading-tight">
-                            Welcome, {welcomeName}
-                            {myStudents.length === 1 && firstName ? ` & ${firstName}` : myStudents.length > 1 ? " & family" : ""}!
+                            Welcome, {welcomeName}!
                         </h1>
                         {myStudents.length > 1 && (
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-[#374151]">

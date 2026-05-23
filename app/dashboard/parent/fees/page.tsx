@@ -79,7 +79,7 @@ export default function FeesPage() {
                         <CreditCard className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-semibold text-orange-900">Fees</h1>
+                        <h1 className="text-lg font-semibold text-orange-900">Fee</h1>
                         <p className="text-sm text-orange-700">Pending dues and paid history shared by your centre.</p>
                     </div>
                 </div>

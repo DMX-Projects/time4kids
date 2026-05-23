@@ -79,7 +79,7 @@ export default function AttendancePage() {
                         <CalendarCheck className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-semibold text-orange-900">Calendar & Attendance</h1>
+                        <h1 className="text-lg font-semibold text-orange-900">Attendance</h1>
                         <p className="text-sm text-orange-700">Event dates and daily attendance records from your centre.</p>
                     </div>
                 </div>

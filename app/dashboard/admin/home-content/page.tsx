@@ -989,7 +989,7 @@ export default function AdminHomeContentPage() {
                                             <div className="space-y-0.5">
                                                 <div>
                                                     <span className="font-semibold text-slate-700">Requirements (recommended):</span> max{" "}
-                                                    <strong>5MB</strong>, square image recommended <strong>512×512</strong>, minimum <strong>256×256</strong>. Use “Image crop” below if the face is not centered.
+                                                    <strong>5MB</strong>, square image recommended <strong>512×512</strong>, minimum <strong>256×256</strong>.
                                                 </div>
                                                 <div className="text-slate-500">
                                                     <span className="font-semibold text-slate-600">Enforced:</span> file size ≤5MB only — smaller or non-square images still upload.
@@ -1006,47 +1006,6 @@ export default function AdminHomeContentPage() {
                                             onChange={(e) => {
                                                 const next = [...data.programs_preview.programs];
                                                 next[i] = { ...next[i], description: e.target.value };
-                                                setData({ ...data, programs_preview: { ...data.programs_preview, programs: next } });
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Theme colour (hex)</label>
-                                        <input
-                                            className={inputClass}
-                                            value={prog.color}
-                                            onChange={(e) => {
-                                                const next = [...data.programs_preview.programs];
-                                                next[i] = { ...next[i], color: e.target.value };
-                                                setData({ ...data, programs_preview: { ...data.programs_preview, programs: next } });
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={labelClass}>Vertical offset (e.g. -20px or 40px)</label>
-                                        <input
-                                            className={inputClass}
-                                            value={prog.yOffset}
-                                            onChange={(e) => {
-                                                const next = [...data.programs_preview.programs];
-                                                next[i] = { ...next[i], yOffset: e.target.value };
-                                                setData({ ...data, programs_preview: { ...data.programs_preview, programs: next } });
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label className={labelClass}>Image crop (optional, e.g. center 20%)</label>
-                                        <input
-                                            className={inputClass}
-                                            placeholder="center 20%"
-                                            value={prog.imageStyle?.objectPosition ?? ""}
-                                            onChange={(e) => {
-                                                const next = [...data.programs_preview.programs];
-                                                const v = e.target.value.trim();
-                                                next[i] = {
-                                                    ...next[i],
-                                                    imageStyle: v ? { objectPosition: v } : undefined,
-                                                };
                                                 setData({ ...data, programs_preview: { ...data.programs_preview, programs: next } });
                                             }}
                                         />

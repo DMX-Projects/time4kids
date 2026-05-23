@@ -7,7 +7,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { slugify, cn, franchisePublicLocationLine } from '@/lib/utils';
 import { apiUrl } from '@/lib/api-client';
 import { fetchAllPublicFranchises } from '@/lib/public-franchises';
-import { CentreMap } from '@/components/shared/CentreMap';
+import nextDynamic from 'next/dynamic';
+
+const CentreMap = nextDynamic(() => import('@/components/shared/CentreMap').then((m) => m.CentreMap), {
+    ssr: false,
+    loading: () => (
+        <div className="flex h-[500px] w-full items-center justify-center rounded-2xl bg-slate-100 animate-pulse">
+            <p className="text-slate-500">Loading map…</p>
+        </div>
+    ),
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +65,8 @@ interface Centre {
     postal_code?: string;
     phone: string;
     googleMapLink?: string;
+    latitude?: number | null;
+    longitude?: number | null;
     socials?: {
         facebook?: string;
         instagram?: string;
@@ -87,6 +98,7 @@ function LocateCentreContent() {
     const [centres, setCentres] = useState<Centre[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSearching, setIsSearching] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
     // Debounce search term (500ms delay)
@@ -129,23 +141,18 @@ function LocateCentreContent() {
                 setIsLoading(true);
                 setIsSearching(true);
 
-                // Search replaces dropdown filters (avoids city search + state filter showing wrong centres).
                 const queryParams = new URLSearchParams();
-                const searchActive =
-                    debouncedSearchTerm.trim().length >= 3;
+                const searchActive = debouncedSearchTerm.trim().length >= 2;
 
-                if (searchActive) {
-                    queryParams.set('search', debouncedSearchTerm.trim());
-                } else if (selectedCity) {
-                    queryParams.set('city', selectedCity);
-                } else if (selectedState) {
-                    queryParams.set('state', selectedState);
-                }
+                if (selectedState) queryParams.set('state', selectedState);
+                if (selectedCity) queryParams.set('city', selectedCity);
+                if (searchActive) queryParams.set('search', debouncedSearchTerm.trim());
 
                 const url = queryParams.toString()
                     ? apiUrl(`/franchises/public/?${queryParams}`)
                     : apiUrl('/franchises/public/');
 
+                setLoadError(null);
                 const data = await fetchAllPublicFranchises(url);
 
                 const mappedCentres = data.map((item: any, index: number) => {
@@ -192,20 +199,44 @@ function LocateCentreContent() {
                 setCentres(mappedCentres);
             } catch (error) {
                 console.error('Error fetching centres:', error);
+                setCentres([]);
+                setLoadError(
+                    'Could not load centres. Check that the API is running (Django on port 8000), then try again.',
+                );
             } finally {
                 setIsLoading(false);
                 setIsSearching(false);
             }
         };
 
-        fetchCentres();
-    }, [selectedState, selectedCity, debouncedSearchTerm, searchTerm]);
+        void fetchCentres();
+    }, [selectedState, selectedCity, debouncedSearchTerm]);
 
-    // Handle URL parameters  
+    // Normalize URL params (state may be code "TG" or name "Telangana")
     useEffect(() => {
-        if (stateFromUrl) setSelectedState(stateFromUrl);
-        if (cityFromUrl) setSelectedCity(cityFromUrl);
-    }, [stateFromUrl, cityFromUrl]);
+        if (cityFromUrl) {
+            try {
+                setSelectedCity(decodeURIComponent(cityFromUrl));
+            } catch {
+                setSelectedCity(cityFromUrl);
+            }
+        }
+    }, [cityFromUrl]);
+
+    useEffect(() => {
+        if (!stateFromUrl || states.length === 0) return;
+        let raw = stateFromUrl;
+        try {
+            raw = decodeURIComponent(stateFromUrl);
+        } catch {
+            /* keep raw */
+        }
+        const lower = raw.toLowerCase();
+        const match = states.find(
+            (s) => s.code.toLowerCase() === lower || s.name.toLowerCase() === lower,
+        );
+        if (match) setSelectedState(match.code);
+    }, [stateFromUrl, states]);
 
     const [availableLocations, setAvailableLocations] = useState<
         { city_name: string; state: string; state_display?: string; franchise_count?: number }[]
@@ -353,9 +384,9 @@ function LocateCentreContent() {
                                         </svg>
                                     </button>
                                 )}
-                                {searchTerm && searchTerm.length < 3 && (
+                                {searchTerm && searchTerm.length < 2 && (
                                     <div className="absolute left-0 -bottom-6 text-xs text-amber-600 font-medium">
-                                        ⚠️ Type at least 3 characters to search
+                                        Type at least 2 characters to search by area or city
                                     </div>
                                 )}
                             </div>
@@ -426,13 +457,17 @@ function LocateCentreContent() {
             <section className="py-12 relative z-10">
                 <div className="container mx-auto px-4">
                     <div className="max-w-6xl mx-auto">
-                        {isLoading ? (
+                        {loadError ? (
+                            <div className="text-center py-20 text-red-600 font-medium max-w-lg mx-auto">
+                                {loadError}
+                            </div>
+                        ) : isLoading ? (
                             <div className="flex justify-center items-center py-20 min-h-[300px]">
                                 <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-pink-400"></div>
                             </div>
                         ) : displayedCentres.length > 0 ? (
                             viewMode === 'map' ? (
-                                <CentreMap centres={displayedCentres as any} />
+                                <CentreMap centres={displayedCentres} />
                             ) : (
                             <div className="mx-auto grid w-full max-w-6xl grid-cols-1 justify-items-center gap-8 sm:gap-8 md:grid-cols-2 md:justify-items-stretch md:gap-10 lg:gap-14">
                                 {displayedCentres.map((centre) => {

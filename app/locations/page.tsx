@@ -9,15 +9,23 @@ import Card from '@/components/ui/Card';
 import { comparePresenceCities } from '@/lib/site-location-presence';
 
 export default function LocationsPage() {
-    // Get unique cities
     const [locations, setLocations] = React.useState<
         { city: string; franchise_count: number }[]
     >([]);
+    const [loading, setLoading] = React.useState(true);
+    const [loadError, setLoadError] = React.useState<string | null>(null);
+
+    const totalCentres = React.useMemo(
+        () => locations.reduce((sum, loc) => sum + loc.franchise_count, 0),
+        [locations],
+    );
 
     React.useEffect(() => {
         const fetchLocations = async () => {
+            setLoading(true);
+            setLoadError(null);
             try {
-                const res = await fetch(apiUrl('/franchises/public/locations/'));
+                const res = await fetch(apiUrl('/franchises/public/locations/'), { cache: 'no-store' });
                 if (!res.ok) throw new Error('Failed to fetch locations');
                 const data = await res.json();
                 const rows = Array.isArray(data) ? data : [];
@@ -37,10 +45,15 @@ export default function LocationsPage() {
             } catch (err) {
                 console.error(err);
                 setLocations([]);
+                setLoadError(
+                    'Could not load centres. Make sure the backend API is running (Django on port 8000), then refresh this page.',
+                );
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchLocations();
+        void fetchLocations();
     }, []);
 
 
@@ -61,17 +74,36 @@ export default function LocationsPage() {
                     <h1 className="font-fredoka font-bold text-5xl md:text-7xl mb-6 text-gray-900 leading-tight">
                         Our <span className="text-secondary-500">Locations</span>
                     </h1>
-                    <p className="text-xl text-gray-700 max-w-2xl mx-auto font-medium mb-10">
-                        Browse every city where T.I.M.E. Kids centres are open — pick a city to explore schools near you.
+                    <p className="text-xl text-gray-700 max-w-2xl mx-auto font-medium mb-6">
+                        Browse every city where T.I.M.E. Kids centres are open — pick a city to see all preschools in that city.
                     </p>
+                    {!loading && !loadError && locations.length > 0 && (
+                        <p className="text-base text-gray-600 max-w-xl mx-auto">
+                            <strong className="text-gray-900">{totalCentres}</strong> centres across{' '}
+                            <strong className="text-gray-900">{locations.length}</strong> cities. Need a searchable list?{' '}
+                            <Link href="/locate-centre" className="text-primary-600 font-semibold underline hover:text-primary-700">
+                                Locate a centre
+                            </Link>
+                            .
+                        </p>
+                    )}
                 </div>
             </section>
 
             {/* City Selection Grid */}
             <section className="py-20 -mt-10 relative z-20">
                 <div className="container mx-auto px-4">
+                    {loading && (
+                        <p className="text-center text-gray-500 py-16">Loading cities and centres…</p>
+                    )}
+                    {loadError && (
+                        <p className="text-center text-red-600 max-w-lg mx-auto py-16 font-medium">{loadError}</p>
+                    )}
+                    {!loading && !loadError && locations.length === 0 && (
+                        <p className="text-center text-gray-500 py-16">No centres found yet.</p>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        {locations.map(({ city, franchise_count }) => {
+                        {!loading && !loadError && locations.map(({ city, franchise_count }) => {
 
 
                             return (

@@ -4,6 +4,7 @@ import React, { useCallback, useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
 import { apiUrl, mediaUrl } from '@/lib/api-client';
+import { validateEventGalleryImageSize } from '@/lib/franchise-centre-upload';
 import { buildEventMediaFileViewUrl } from '@/lib/event-media-url';
 import { ArrowLeft, Upload, Trash2, Image as ImageIcon, Play, Loader } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -74,6 +75,15 @@ const EventMediaManager: React.FC<EventMediaManagerProps> = ({ event, onBackActi
             let failCount = 0;
 
             for (const file of Array.from(selectedFiles)) {
+                if (mediaType === 'IMAGE') {
+                    const sizeErr = validateEventGalleryImageSize(file);
+                    if (sizeErr) {
+                        failCount++;
+                        console.error(sizeErr);
+                        continue;
+                    }
+                }
+
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('media_type', mediaType);
@@ -187,13 +197,21 @@ const EventMediaManager: React.FC<EventMediaManagerProps> = ({ event, onBackActi
                         </div>
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-gray-700">
-                                Select files (multiple allowed)
+                                Select files (any number{mediaType === "IMAGE" ? " — 1 MB max per photo" : ""})
                             </label>
                             <input
                                 type="file"
                                 accept={mediaType === 'IMAGE' ? 'image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.heic,.heif,.tif,.tiff,.avif' : 'video/*,.mp4,.webm,.mov,.m4v'}
                                 multiple
-                                onChange={(e) => setSelectedFiles(e.target.files)}
+                                onChange={(e) => {
+                                    const picked = e.target.files;
+                                    if (!picked?.length) return;
+                                    const dt = new DataTransfer();
+                                    const existing = selectedFiles ? Array.from(selectedFiles) : [];
+                                    [...existing, ...Array.from(picked)].forEach((f) => dt.items.add(f));
+                                    setSelectedFiles(dt.files);
+                                    e.target.value = "";
+                                }}
                                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
                             />
                         </div>

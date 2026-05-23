@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Pencil, Save, User, Users, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
+import { formatStudentGenderLabel, studentRelationLabel } from "@/lib/student-gender";
 import Button from "@/components/ui/Button";
 
 export default function ParentDetailsPage() {
@@ -87,7 +88,14 @@ function ChildEditCard({
     student,
     updateChildInfo,
 }: {
-    student: { id: string; name: string; grade: string; section: string; rollNumber: string };
+    student: {
+        id: string;
+        name: string;
+        grade: string;
+        section: string;
+        rollNumber: string;
+        gender?: "" | "M" | "F";
+    };
     updateChildInfo: (studentId: string, firstName: string, lastName: string) => Promise<void>;
 }) {
     const nameParts = (student.name || "").trim().split(/\s+/);
@@ -143,6 +151,10 @@ function ChildEditCard({
                         <p className="text-sm font-semibold text-orange-900">{student.name || "—"}</p>
                         <p className="text-xs text-orange-600">
                             {[
+                                studentRelationLabel(student.gender),
+                                formatStudentGenderLabel(student.gender) !== "—"
+                                    ? formatStudentGenderLabel(student.gender)
+                                    : null,
                                 student.grade,
                                 student.section && `Section ${student.section}`,
                                 student.rollNumber && `Roll: ${student.rollNumber}`,

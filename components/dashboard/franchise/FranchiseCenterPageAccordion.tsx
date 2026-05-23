@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { useCallback, useEffect, useId, useMemo, useReducer, useState } from "react";
 
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Upload, Pencil } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
@@ -27,6 +27,10 @@ import type {
   CenterPageSubsection,
   CenterPageTopItem,
 } from "@/config/franchise-center-page-nav";
+import {
+  buildAdminUploadContext,
+  type AdminCenterPageUploadContext,
+} from "@/lib/admin-center-page-upload";
 
 type Mode = "franchise" | "admin";
 
@@ -42,14 +46,70 @@ const emptyAccordionSets: AccordionSetsState = {
   openNested: new Set(),
 };
 
+function collectAccordionKeysForItems(items: CenterPageTopItem[]): AccordionSetsState {
+  const openTop = new Set<string>();
+  const openSub = new Set<string>();
+  const openNested = new Set<string>();
+
+  for (const item of items) {
+    openTop.add(item.id);
+    for (const group of item.groups) {
+      const subKey = `${item.id}::${group.title}`;
+      openSub.add(subKey);
+      if (group.nested) {
+        for (const block of group.nested) {
+          openNested.add(`${subKey}::${block.title}`);
+        }
+      }
+    }
+  }
+
+  return { openTop, openSub, openNested };
+}
+
+function initialAccordionSets(
+  items: CenterPageTopItem[],
+  hub?: { initialOpenTopIds?: string[]; expandAllSections?: boolean },
+): AccordionSetsState {
+  if (hub?.expandAllSections) {
+    const ids = hub.initialOpenTopIds?.length
+      ? new Set(hub.initialOpenTopIds)
+      : undefined;
+    const scoped = ids ? items.filter((item) => ids.has(item.id)) : items;
+    return collectAccordionKeysForItems(scoped);
+  }
+  if (hub?.initialOpenTopIds?.length) {
+    return { ...emptyAccordionSets, openTop: new Set(hub.initialOpenTopIds) };
+  }
+  return emptyAccordionSets;
+}
+
 function accordionSetsReducer(
   state: AccordionSetsState,
   action:
     | { type: "toggleTop"; id: string }
+    | { type: "toggleTopTree"; id: string; item: CenterPageTopItem }
     | { type: "toggleSub"; key: string }
     | { type: "toggleNested"; key: string },
 ): AccordionSetsState {
   switch (action.type) {
+    case "toggleTopTree": {
+      const { id, item } = action;
+      if (state.openTop.has(id)) {
+        const nextTop = new Set(Array.from(state.openTop));
+        nextTop.delete(id);
+        return {
+          openTop: nextTop,
+          openSub: new Set(
+            Array.from(state.openSub).filter((k) => !k.startsWith(`${id}::`)),
+          ),
+          openNested: new Set(
+            Array.from(state.openNested).filter((k) => !k.startsWith(`${id}::`)),
+          ),
+        };
+      }
+      return collectAccordionKeysForItems([item]);
+    }
     case "toggleTop": {
       const { id } = action;
       if (state.openTop.has(id)) {
@@ -188,30 +248,186 @@ function GrayPillRow({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AdminChecklistLinkRow({
+  link,
+  topTitle,
+  groupTitle,
+  nestedTitle,
+  onAdminManageLink,
+}: {
+  link: CenterPageLink;
+  topTitle: string;
+  groupTitle?: string;
+  nestedTitle?: string;
+  onAdminManageLink?: (ctx: AdminCenterPageUploadContext) => void;
+}) {
+  const ctx = buildAdminUploadContext({
+    topTitle,
+    groupTitle,
+    nestedTitle,
+    link,
+    matchedDocId: link.franchiseHubDocId,
+  });
+  const uploaded = link.franchiseHubDocId != null;
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-orange-100 bg-white px-3 py-2.5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0 flex-1">
+        <p className="font-serif text-sm font-medium leading-snug text-slate-800">{link.label}</p>
+        {!link.adminCategory ? (
+          <p className="mt-0.5 text-[11px] text-slate-500">External checklist link — not in upload categories</p>
+        ) : uploaded ? (
+          <p className="mt-0.5 text-[11px] font-medium text-emerald-700">File in database (ID {link.franchiseHubDocId})</p>
+        ) : (
+          <p className="mt-0.5 text-[11px] font-medium text-amber-800">Not uploaded yet — franchises see legacy URL until you upload</p>
+        )}
+      </div>
+      {ctx && onAdminManageLink ? (
+        <button
+          type="button"
+          onClick={() => onAdminManageLink(ctx)}
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-900 transition hover:bg-orange-100"
+        >
+          {uploaded ? (
+            <>
+              <Pencil className="h-3.5 w-3.5" aria-hidden />
+              Edit upload
+            </>
+          ) : (
+            <>
+              <Upload className="h-3.5 w-3.5" aria-hidden />
+              Upload here
+            </>
+          )}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function SectionHeading({ title, nested }: { title: string; nested?: boolean }) {
+  if (nested) {
+    return (
+      <h4 className="text-sm font-semibold font-serif tracking-tight text-[#c2410c] sm:text-[0.9375rem]">
+        {title}
+      </h4>
+    );
+  }
+  return (
+    <h3 className="flex min-h-[2.35rem] w-full max-w-full items-center rounded-full border border-slate-300/55 bg-slate-200/95 px-4 py-2 text-left text-sm font-semibold font-serif text-[#f58220] shadow-sm ring-1 ring-white/40 sm:text-[0.9375rem]">
+      {title}
+    </h3>
+  );
+}
+
+function TopItemGroupsDocumentTree({
+  item,
+  mode,
+  hubDocsByCategory,
+  hubDocsBySourcePath,
+  onAdminPickCategory,
+  onAdminManageLink,
+}: {
+  item: CenterPageTopItem;
+  mode: Mode;
+  hubDocsByCategory?: Map<string, FranchiseHubDoc[]>;
+  hubDocsBySourcePath?: Map<string, FranchiseHubDoc>;
+  onAdminPickCategory?: (category: string) => void;
+  onAdminManageLink?: (ctx: AdminCenterPageUploadContext) => void;
+}) {
+  const linkProps = {
+    mode,
+    topTitle: item.title,
+    hubDocsByCategory,
+    hubDocsBySourcePath,
+    onAdminPickCategory,
+    onAdminManageLink,
+  };
+
+  return (
+    <div className="space-y-5">
+      {item.groups.map((group) => {
+        const subKey = `${item.id}::${group.title}`;
+
+        if (isNestedGroup(group)) {
+          return (
+            <section key={subKey} className="space-y-3">
+              <SectionHeading title={group.title} />
+              <div className="ml-0.5 space-y-4 border-l-2 border-dashed border-slate-300/85 pl-3 sm:ml-1 sm:pl-4">
+                {group.nested.map((block) => (
+                  <div key={`${subKey}::${block.title}`} className="space-y-2">
+                    <SectionHeading title={block.title} nested />
+                    <LinkRows
+                      links={block.links}
+                      {...linkProps}
+                      groupTitle={group.title}
+                      nestedTitle={block.title}
+                    />
+                  </div>
+                ))}
+                {group.links && group.links.length > 0 ? (
+                  <div className="space-y-2 border-t border-dashed border-slate-300/80 pt-3">
+                    <LinkRows links={group.links} {...linkProps} groupTitle={group.title} />
+                  </div>
+                ) : null}
+              </div>
+            </section>
+          );
+        }
+
+        return (
+          <section key={subKey} className="space-y-2">
+            <SectionHeading title={group.title} />
+            <div className="border-l-2 border-dashed border-slate-300/80 py-0.5 pl-3 sm:pl-4">
+              <LinkRows links={group.links ?? []} {...linkProps} groupTitle={group.title} />
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 function LinkRows({
   links,
 
   mode,
+
+  topTitle,
+
+  groupTitle,
+
+  nestedTitle,
 
   hubDocsByCategory,
 
   hubDocsBySourcePath,
 
   onAdminPickCategory,
+
+  onAdminManageLink,
 }: {
   links: CenterPageLink[];
 
   mode: Mode;
+
+  topTitle?: string;
+
+  groupTitle?: string;
+
+  nestedTitle?: string;
 
   hubDocsByCategory?: Map<string, FranchiseHubDoc[]>;
 
   hubDocsBySourcePath?: Map<string, FranchiseHubDoc>;
 
   onAdminPickCategory?: (category: string) => void;
+
+  onAdminManageLink?: (ctx: AdminCenterPageUploadContext) => void;
 }) {
   const { tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
   const displayLinks =
-    mode === "franchise" && hubDocsByCategory
+    (mode === "franchise" || mode === "admin") && hubDocsByCategory
       ? resolveCenterPageLinks(links, hubDocsByCategory, hubDocsBySourcePath)
       : links;
   const franchiseRowClass =
@@ -304,6 +520,14 @@ function LinkRows({
                   <span className={franchiseLabelClass}>{link.label}</span>
                 </Link>
               )
+            ) : mode === "admin" && topTitle ? (
+              <AdminChecklistLinkRow
+                link={link}
+                topTitle={topTitle}
+                groupTitle={groupTitle}
+                nestedTitle={nestedTitle}
+                onAdminManageLink={onAdminManageLink}
+              />
             ) : (
               <div className="flex flex-wrap items-start gap-2.5">
                 <HandprintBullet className="mt-0.5 shrink-0 text-emerald-600" />
@@ -375,6 +599,14 @@ function BlockItems({
   hubDocsBySourcePath,
 
   onAdminPickCategory,
+
+  onAdminManageLink,
+
+  flattenTopLevel,
+
+  documentTreeLayout,
+
+  onToggleTop,
 }: {
   blocks: CenterPageTopItem[];
 
@@ -399,11 +631,22 @@ function BlockItems({
   toggleNested: (key: string) => void;
 
   onAdminPickCategory?: (category: string) => void;
+
+  onAdminManageLink?: (ctx: AdminCenterPageUploadContext) => void;
+
+  flattenTopLevel?: boolean;
+
+  documentTreeLayout?: boolean;
+
+  onToggleTop?: (id: string, item: CenterPageTopItem) => void;
 }) {
+  const flattenSingleTop = Boolean(flattenTopLevel && blocks.length === 1);
+  const useDocumentTree = Boolean(documentTreeLayout);
+
   return (
     <>
       {blocks.map((item) => {
-        const expanded = openTop.has(item.id);
+        const expanded = flattenSingleTop || openTop.has(item.id);
 
         const panelId = `${baseId}-panel-${item.id}`;
 
@@ -411,34 +654,38 @@ function BlockItems({
 
         return (
           <div key={item.id} className="space-y-1.5">
-            <button
-              id={btnId}
-              type="button"
-              aria-expanded={expanded}
-              aria-controls={panelId}
-              onClick={() => toggleTop(item.id)}
-              className="group w-full rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
-            >
-              <ZigzagBar emphasize={item.emphasize}>
-                {expanded ? (
-                  <ChevronDown
-                    className="h-5 w-5 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
-                    strokeWidth={2.25}
-                    aria-hidden
-                  />
-                ) : (
-                  <ChevronRight
-                    className="h-5 w-5 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
-                    strokeWidth={2.25}
-                    aria-hidden
-                  />
-                )}
+            {!flattenSingleTop ? (
+              <button
+                id={btnId}
+                type="button"
+                aria-expanded={expanded}
+                aria-controls={panelId}
+                onClick={() =>
+                  onToggleTop ? onToggleTop(item.id, item) : toggleTop(item.id)
+                }
+                className="group w-full rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+              >
+                <ZigzagBar emphasize={item.emphasize}>
+                  {expanded ? (
+                    <ChevronDown
+                      className="h-5 w-5 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
+                      strokeWidth={2.25}
+                      aria-hidden
+                    />
+                  ) : (
+                    <ChevronRight
+                      className="h-5 w-5 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
+                      strokeWidth={2.25}
+                      aria-hidden
+                    />
+                  )}
 
-                <span className="text-[0.95rem] leading-snug sm:text-base">
-                  {item.title}
-                </span>
-              </ZigzagBar>
-            </button>
+                  <span className="text-[0.95rem] leading-snug sm:text-base">
+                    {item.title}
+                  </span>
+                </ZigzagBar>
+              </button>
+            ) : null}
 
             <AccordionCollapse open={expanded}>
               <div
@@ -446,18 +693,33 @@ function BlockItems({
                 role="region"
                 aria-labelledby={btnId}
                 aria-hidden={!expanded}
-                className="ml-0 space-y-2 border-l-2 border-orange-200/90 pl-3 sm:ml-1 sm:pl-4"
+                className={
+                  flattenSingleTop
+                    ? "ml-0 space-y-2"
+                    : "ml-0 space-y-2 border-l-2 border-orange-200/90 pl-3 sm:ml-1 sm:pl-4"
+                }
               >
                 {item.directLinks && item.directLinks.length > 0 ? (
                   <div className="border-l border-dashed border-slate-300/80 py-1 pl-3 sm:pl-4">
                     <LinkRows
                       links={item.directLinks}
                       mode={mode}
+                      topTitle={item.title}
                       hubDocsByCategory={hubDocsByCategory}
                       hubDocsBySourcePath={hubDocsBySourcePath}
                       onAdminPickCategory={onAdminPickCategory}
+                      onAdminManageLink={onAdminManageLink}
                     />
                   </div>
+                ) : useDocumentTree ? (
+                  <TopItemGroupsDocumentTree
+                    item={item}
+                    mode={mode}
+                    hubDocsByCategory={hubDocsByCategory}
+                    hubDocsBySourcePath={hubDocsBySourcePath}
+                    onAdminPickCategory={onAdminPickCategory}
+                    onAdminManageLink={onAdminManageLink}
+                  />
                 ) : (
                   item.groups.map((group) => {
                     const subKey = `${item.id}::${group.title}`;
@@ -642,31 +904,63 @@ function BlockItems({
   );
 }
 
+export type FranchiseCenterPageHubOptions = {
+  /** Replaces the default “Center Page” card header. */
+  title: string;
+  description?: string;
+  /** Open these orange sections on first paint (e.g. `["academic-ay"]`). */
+  initialOpenTopIds?: string[];
+  /** Open every grey pill and nested block under the opened top sections. */
+  expandAllSections?: boolean;
+  /** On a single-section hub page, skip the orange top bar and show grey headings directly. */
+  flattenTopLevel?: boolean;
+};
+
 export function FranchiseCenterPageAccordion({
   sections,
 
   mode,
 
   onAdminPickCategory,
+
+  onAdminManageLink,
+
+  hub,
+
+  externalHubDocs,
 }: {
   sections: CenterPageTopItem[][];
 
   mode: Mode;
 
   onAdminPickCategory?: (category: string) => void;
+
+  onAdminManageLink?: (ctx: AdminCenterPageUploadContext) => void;
+
+  hub?: FranchiseCenterPageHubOptions;
+
+  /** When set (admin page), skips internal fetch. */
+  externalHubDocs?: FranchiseHubDoc[];
 }) {
   const { authFetch } = useAuth();
   const baseId = useId();
+  const flatItems = useMemo(() => sections.flat(), [sections]);
   const [hubDocs, setHubDocs] = useState<FranchiseHubDoc[]>([]);
 
   useEffect(() => {
-    if (mode !== "franchise") return;
+    if (externalHubDocs) return;
+    if (mode !== "franchise" && mode !== "admin") return;
     let cancelled = false;
 
     const load = async () => {
       try {
-        const data = await authFetch<FranchiseHubDoc[]>("/documents/franchise/documents/");
-        if (!cancelled) setHubDocs(Array.isArray(data) ? data : []);
+        const path =
+          mode === "admin"
+            ? "/documents/admin/franchise-documents/"
+            : "/documents/franchise/documents/";
+        const data = await authFetch<FranchiseHubDoc[] | { results: FranchiseHubDoc[] }>(path);
+        const list = Array.isArray(data) ? data : data?.results ?? [];
+        if (!cancelled) setHubDocs(list);
       } catch {
         if (!cancelled) setHubDocs([]);
       }
@@ -676,26 +970,46 @@ export function FranchiseCenterPageAccordion({
     return () => {
       cancelled = true;
     };
-  }, [authFetch, mode]);
+  }, [authFetch, mode, externalHubDocs]);
+
+  const effectiveHubDocs = externalHubDocs ?? hubDocs;
 
   const hubDocsByCategory = useMemo(
-    () => (mode === "franchise" ? groupFranchiseHubDocsByCategory(hubDocs) : undefined),
-    [hubDocs, mode],
+    () =>
+      mode === "franchise" || mode === "admin"
+        ? groupFranchiseHubDocsByCategory(effectiveHubDocs)
+        : undefined,
+    [effectiveHubDocs, mode],
   );
 
   const hubDocsBySourcePath = useMemo(
-    () => (mode === "franchise" ? groupFranchiseHubDocsBySourcePath(hubDocs) : undefined),
-    [hubDocs, mode],
+    () =>
+      mode === "franchise" || mode === "admin"
+        ? groupFranchiseHubDocsBySourcePath(effectiveHubDocs)
+        : undefined,
+    [effectiveHubDocs, mode],
   );
+
+  const documentTreeLayout =
+    mode === "admin" ||
+    (mode === "franchise" && Boolean(hub?.flattenTopLevel || hub?.expandAllSections));
 
   const [{ openTop, openSub, openNested }, dispatch] = useReducer(
     accordionSetsReducer,
-    emptyAccordionSets,
+    flatItems,
+    (items) => initialAccordionSets(items, hub),
   );
 
   const toggleTop = useCallback((id: string) => {
     dispatch({ type: "toggleTop", id });
   }, []);
+
+  const toggleTopTree = useCallback(
+    (id: string, item: CenterPageTopItem) => {
+      dispatch({ type: "toggleTopTree", id, item });
+    },
+    [],
+  );
 
   const toggleSub = useCallback((key: string) => {
     dispatch({ type: "toggleSub", key });
@@ -705,19 +1019,40 @@ export function FranchiseCenterPageAccordion({
     dispatch({ type: "toggleNested", key });
   }, []);
 
+  const isHub = Boolean(hub);
+
   return (
     <div className="rounded-xl border border-slate-200/90 bg-white shadow-md">
-      <div className="bg-[#1e3a5f] px-4 py-3 text-center sm:px-6 sm:text-left">
-        <h2 className="text-lg font-bold tracking-wide text-white sm:text-xl">
-          Center Page
-        </h2>
+      {isHub ? (
+        <div className="border-b border-slate-200/90 bg-gradient-to-r from-[#fffaf0] to-white px-4 py-3 sm:px-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-orange-700/90">
+            Head office resources
+          </p>
+          <p className="mt-1 text-sm text-slate-600">
+            Grey headings group files. Nested topics (e.g. Block-1) sit under their parent;
+            other sections show download links right below the heading.
+          </p>
+        </div>
+      ) : mode === "admin" ? (
+        <div className="border-b border-orange-100 bg-gradient-to-r from-[#fffaf0] to-white px-4 py-3 sm:px-5">
+          <h2 className="text-lg font-bold text-orange-950 sm:text-xl">Centre Page checklist</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Open a section (orange bar), then use <strong>Upload here</strong> on the exact row.
+            Headings match what franchises see — Block Material, Holiday Lists, welcome letters, etc.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-[#1e3a5f] px-4 py-3 text-center sm:px-6 sm:text-left">
+          <h2 className="text-lg font-bold tracking-wide text-white sm:text-xl">
+            Center Page
+          </h2>
 
-        <p className="mt-0.5 text-xs text-blue-100/90 sm:text-sm">
-          Only one orange section stays open at a time; grey sub-headings and inner
-          blocks work the same way (opening one closes the others). Same checklist
-          order as head office.
-        </p>
-      </div>
+          <p className="mt-0.5 text-xs text-blue-100/90 sm:text-sm">
+            Tap an orange section to open it. Grey headings group topics; some have a second
+            heading (e.g. Block-1), others show download links directly below.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2 p-3 sm:p-4">
         {sections.map((chunk, idx) => (
@@ -735,6 +1070,10 @@ export function FranchiseCenterPageAccordion({
               toggleSub={toggleSub}
               toggleNested={toggleNested}
               onAdminPickCategory={onAdminPickCategory}
+              onAdminManageLink={onAdminManageLink}
+              flattenTopLevel={hub?.flattenTopLevel}
+              documentTreeLayout={documentTreeLayout}
+              onToggleTop={documentTreeLayout ? toggleTopTree : undefined}
             />
           </div>
         ))}

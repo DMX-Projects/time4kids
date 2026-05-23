@@ -974,3 +974,7 @@ export const FRANCHISE_CENTER_PAGE_BLOCK_B: CenterPageTopItem[] = [
 ];
 
 export const FRANCHISE_CENTER_PAGE_ALL: CenterPageTopItem[] = [...FRANCHISE_CENTER_PAGE_BLOCK_A, ...FRANCHISE_CENTER_PAGE_BLOCK_B];
+
+/** Centre Page → Academic Documents hub (`/dashboard/franchise/academic-documents`). */
+export const FRANCHISE_ACADEMIC_HUB_SECTION: CenterPageTopItem =
+    FRANCHISE_CENTER_PAGE_BLOCK_A.find((item) => item.id === "academic-ay")!;

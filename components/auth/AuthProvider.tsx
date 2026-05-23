@@ -13,6 +13,10 @@ type User = {
     email: string;
     role: Role;
     fullName?: string;
+    /** Child name from login / me (parent accounts). */
+    childName?: string;
+    /** Use for greetings in the parent app — child name, not parent full_name. */
+    displayName?: string;
 };
 
 type Tokens = { access: string; refresh: string };
@@ -64,6 +68,22 @@ export const normalizeRole = (role?: string | null): Role => {
     if (mapped === "driver") return "driver";
     return "parent";
 };
+
+function mapApiUserToSession(data: Record<string, unknown>, fallbackEmail = ""): User {
+    return {
+        id: String(data.id ?? ""),
+        email: String(data.email ?? fallbackEmail),
+        fullName: data.full_name != null ? String(data.full_name) : undefined,
+        childName: data.child_name != null ? String(data.child_name) : undefined,
+        displayName:
+            data.display_name != null
+                ? String(data.display_name)
+                : data.child_name != null
+                  ? String(data.child_name)
+                  : undefined,
+        role: normalizeRole(data.role as string | undefined),
+    };
+}
 
 /** Role implied by URL, e.g. /dashboard/franchise/... → franchise */
 function pathnameDashboardRole(): Role | null {
@@ -227,12 +247,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
             if (!res.ok) return;
             const data = await res.json();
-            const nextUser: User = {
-                id: String(data.id),
-                email: data.email,
-                fullName: data.full_name,
-                role: normalizeRole(data.role),
-            };
+            const nextUser = mapApiUserToSession(data as Record<string, unknown>);
             setUser(nextUser);
             setTokens(existingTokens);
             persistSession({ user: nextUser, tokens: existingTokens }, null);
@@ -251,11 +266,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!res.ok) throw await toApiError(res);
         const data = await res.json();
         const nextTokens: Tokens = { access: data.access, refresh: data.refresh };
+        const u = data.user ?? {};
         const nextUser: User = {
-            id: String(data.user?.id ?? ""),
-            email: data.user?.email ?? email,
-            fullName: data.user?.full_name ?? undefined,
-            role: normalizeRole(data.user?.role),
+            id: String(u.id ?? ""),
+            email: u.email ?? email,
+            fullName: u.full_name ?? undefined,
+            childName: u.child_name,
+            displayName: u.display_name ?? u.child_name,
+            role: normalizeRole(u.role),
         };
         setTokens(nextTokens);
         setUser(nextUser);
@@ -337,12 +355,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     });
                     if (!retry.ok) return;
                     const data = await retry.json();
-                    const nextUser: User = {
-                        id: String(data.id),
-                        email: data.email,
-                        fullName: data.full_name,
-                        role: normalizeRole(data.role),
-                    };
+                    const nextUser = mapApiUserToSession(data as Record<string, unknown>);
                     setUser(nextUser);
                     persistSession({ user: nextUser, tokens: refreshed }, null);
                 }
@@ -350,12 +363,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
             if (!res.ok) return;
             const data = await res.json();
-            const nextUser: User = {
-                id: String(data.id),
-                email: data.email,
-                fullName: data.full_name,
-                role: normalizeRole(data.role),
-            };
+            const nextUser = mapApiUserToSession(data as Record<string, unknown>);
             setUser(nextUser);
             persistSession({ user: nextUser, tokens }, null);
         } catch {

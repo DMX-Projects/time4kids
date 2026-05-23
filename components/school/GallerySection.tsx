@@ -4,7 +4,8 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Play, Hand, Clock, ArrowLeft, Calendar, MapPin, AlertCircle, Image as ImageIcon, X, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { resolveCentrePageImageSrc } from '@/lib/api-client';
+import { EventGalleryImage } from '@/components/ui/EventGalleryImage';
+import { EventGalleryVideo } from '@/components/ui/EventGalleryVideo';
 import { franchisePublicLocationLine } from '@/lib/utils';
 import Modal from '@/components/ui/Modal';
 
@@ -41,11 +42,13 @@ interface GallerySectionProps {
     city: string;
     state?: string | null;
     urlCityFallback?: string | null;
+    /** Franchise slug — enables Django stream URLs when files are not on the Next host. */
+    centreSlug?: string;
     galleryItems?: OldGalleryItem[];
     events?: EventItem[];
 }
 
-/** Legacy franchise gallery rows (pre–Events & gallery migration). */
+/** Legacy franchise gallery rows (pre–Event Gallery migration). */
 function galleryItemsAsEvents(items: OldGalleryItem[]): EventItem[] {
     return items
         .map((item) => {
@@ -86,6 +89,7 @@ export default function GallerySection({
     city,
     state,
     urlCityFallback,
+    centreSlug,
     galleryItems = [],
     events = [],
 }: GallerySectionProps) {
@@ -298,19 +302,24 @@ export default function GallerySection({
                                                         event.media.find((m) => m.media_type === "IMAGE") ?? event.media[0];
                                                     if (!thumb) return null;
                                                     return thumb.media_type === "VIDEO" ? (
-                                                        <video
-                                                            src={resolveCentrePageImageSrc(thumb.file)}
+                                                        <EventGalleryVideo
+                                                            filePath={thumb.file}
+                                                            mediaId={thumb.id}
+                                                            centreSlug={centreSlug}
                                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                            preload="metadata"
+                                                            controls={false}
                                                             muted
                                                             playsInline
+                                                            preload="metadata"
                                                         />
                                                     ) : (
-                                                        <Image
-                                                            src={resolveCentrePageImageSrc(thumb.file)}
+                                                        <EventGalleryImage
+                                                            file={thumb.file}
+                                                            centreSlug={centreSlug}
+                                                            mediaId={thumb.id}
                                                             alt={event.title}
                                                             fill
-                                                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                                            className="transition-transform duration-500 group-hover:scale-105"
                                                         />
                                                     );
                                                 })() : (
@@ -351,7 +360,7 @@ export default function GallerySection({
                                     </div>
                                     <p className="text-gray-400 text-xl font-bold">
                                         {displayEvents.length === 0
-                                            ? "Photos and videos from your centre will appear here once uploaded in Events & gallery."
+                                            ? "Photos and videos from your centre will appear here once uploaded in Event Gallery."
                                             : `No events found for ${filterYear}.`}
                                     </p>
                                 </div>
@@ -405,20 +414,25 @@ export default function GallerySection({
                                             onClick={() => handleMediaClick(item)}
                                         >
                                             {item.media_type === "VIDEO" ? (
-                                                <video
-                                                    src={resolveCentrePageImageSrc(item.file)}
+                                                <EventGalleryVideo
+                                                    filePath={item.file}
+                                                    mediaId={item.id}
+                                                    centreSlug={centreSlug}
+                                                    caption={item.caption}
                                                     className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
-                                                    preload="metadata"
+                                                    controls={false}
                                                     muted
                                                     playsInline
+                                                    preload="metadata"
                                                 />
                                             ) : (
-                                                <Image
-                                                    src={resolveCentrePageImageSrc(item.file)}
+                                                <EventGalleryImage
+                                                    file={item.file}
+                                                    centreSlug={centreSlug}
+                                                    mediaId={item.id}
                                                     alt={item.caption || "Event Media"}
                                                     fill
-                                                    className="object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
-                                                    sizes="(max-width: 768px) 50vw, 25vw"
+                                                    className="transition-all duration-1000 group-hover:scale-110 group-hover:rotate-1"
                                                 />
                                             )}
                                             {item.media_type === 'VIDEO' && (
@@ -480,20 +494,24 @@ export default function GallerySection({
                             )}
 
                             {selectedMedia.media_type === 'VIDEO' ? (
-                                <video
-                                    src={resolveCentrePageImageSrc(selectedMedia.file)}
+                                <EventGalleryVideo
+                                    filePath={selectedMedia.file}
+                                    mediaId={selectedMedia.id}
+                                    centreSlug={centreSlug}
+                                    caption={selectedMedia.caption}
                                     controls
                                     autoPlay
                                     className="max-w-full max-h-full rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.3)]"
                                 />
                             ) : (
                                 <div className="relative w-full h-full p-4">
-                                    <Image
-                                        src={resolveCentrePageImageSrc(selectedMedia.file)}
+                                    <EventGalleryImage
+                                        file={selectedMedia.file}
+                                        centreSlug={centreSlug}
+                                        mediaId={selectedMedia.id}
                                         alt={selectedMedia.caption || "Gallery View"}
                                         fill
                                         className="object-contain drop-shadow-2xl"
-                                        priority
                                     />
                                 </div>
                             )}

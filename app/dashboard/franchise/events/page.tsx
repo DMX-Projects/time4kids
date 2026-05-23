@@ -4,22 +4,28 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarRange, Eye, MapPin, Pencil, Search, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
+import { EventGalleryImage } from "@/components/ui/EventGalleryImage";
+import { EventGalleryVideo } from "@/components/ui/EventGalleryVideo";
 import { centrePublicPagePath } from "@/lib/centre-public-url";
 import {
     IMAGE_FILE_ACCEPT,
     VIDEO_FILE_ACCEPT,
     isImageUploadFile,
     isVideoUploadFile,
-    MAX_IMAGE_BYTES,
+    validateEventGalleryImageSize,
 } from "@/lib/franchise-centre-upload";
 
 const pastelCard = "bg-white border border-orange-100 rounded-xl shadow-sm";
 
 export default function FranchiseEventsPage() {
+    const { tokens } = useAuth();
     const { profile } = useFranchiseData();
-    const { events, eventMedia, addEvent, updateEvent, deleteEvent, addEventMedia, deleteEventMedia } = useSchoolData();
+    const { events, eventMedia, addEvent, updateEvent, deleteEvent, addEventMedia, deleteEventMedia, refreshEvents } =
+        useSchoolData();
+    const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
     const publicCentrePath =
         profile.slug && profile.city ? centrePublicPagePath(profile.city, profile.slug) : null;
 
@@ -94,10 +100,12 @@ export default function FranchiseEventsPage() {
             return;
         }
         setError(null);
+        setUploadSuccess(null);
         setMediaSubmitting(true);
         try {
             let ok = 0;
             let failed = 0;
+            const sizeErrors: string[] = [];
             for (const file of mediaFiles) {
                 const isImage = mediaType === "image";
                 if (isImage && !isImageUploadFile(file)) {
@@ -108,9 +116,13 @@ export default function FranchiseEventsPage() {
                     failed++;
                     continue;
                 }
-                if (isImage && file.size > MAX_IMAGE_BYTES) {
-                    failed++;
-                    continue;
+                if (isImage) {
+                    const sizeErr = validateEventGalleryImageSize(file);
+                    if (sizeErr) {
+                        sizeErrors.push(sizeErr);
+                        failed++;
+                        continue;
+                    }
                 }
                 try {
                     await addEventMedia({
@@ -127,12 +139,22 @@ export default function FranchiseEventsPage() {
             }
             if (failed > 0 && ok === 0) {
                 setError(
-                    mediaType === "image"
-                        ? "Unable to upload. Use JPG, PNG, WEBP, GIF, HEIC, or other image files (max 15 MB each)."
-                        : "Unable to upload. Use MP4, WEBM, MOV, or other video files.",
+                    sizeErrors.length > 0
+                        ? sizeErrors.slice(0, 5).join(" ")
+                        : mediaType === "image"
+                          ? "Unable to upload. Use JPG, PNG, WEBP, GIF, HEIC, or other image files (max 1 MB each). You can select any number of photos at once."
+                          : "Unable to upload. Use MP4, WEBM, MOV, or other video files.",
                 );
             } else if (failed > 0) {
-                setError(`Uploaded ${ok} file(s); ${failed} failed (wrong type, too large, or server error).`);
+                const extra =
+                    sizeErrors.length > 0 ? ` ${sizeErrors.slice(0, 3).join(" ")}` : "";
+                setError(`Uploaded ${ok} file(s); ${failed} failed (wrong type, over 1 MB, or server error).${extra}`);
+            }
+            if (ok > 0) {
+                await refreshEvents();
+                setUploadSuccess(
+                    `Uploaded ${ok} file${ok === 1 ? "" : "s"}. Visible on your centre page (Life at…) and in the parent app after parents refresh Event Gallery.`,
+                );
             }
             setMediaCaption("");
             setMediaFiles([]);
@@ -155,10 +177,14 @@ export default function FranchiseEventsPage() {
         <div className="space-y-6">
             <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-semibold text-orange-900">Events & gallery</h1>
+                    <h1 className="text-2xl font-semibold text-orange-900">Event Gallery</h1>
                     <p className="text-sm text-orange-700">
                         Create events and upload photos/videos. They appear on your public centre page under
                         &ldquo;Life at [your centre]&rdquo;.
+                    </p>
+                    <p className="text-xs text-orange-600 mt-1">
+                        Photos: <strong>max 1 MB each</strong>, upload <strong>as many as you need</strong> in one go
+                        (multi-select or add more batches).
                     </p>
                     {publicCentrePath && (
                         <p className="text-sm text-orange-800 mt-2">
@@ -232,10 +258,27 @@ export default function FranchiseEventsPage() {
                             {mediaForEditing.map((m) => (
                                 <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden border border-orange-100 bg-white shadow-sm">
                                     {m.type === "video" ? (
-                                        <video src={m.url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+                                        <EventGalleryVideo
+                                            filePath={m.filePath}
+                                            mediaId={Number(m.id)}
+                                            accessToken={tokens?.access}
+                                            caption={m.title}
+                                            className="h-full w-full object-cover"
+                                            controls={false}
+                                            muted
+                                            playsInline
+                                            preload="metadata"
+                                        />
                                     ) : (
-                                        // eslint-disable-next-line @next/next/no-img-element -- dynamic franchise URLs
-                                        <img src={m.url} alt="" className="h-full w-full object-cover" />
+                                        <EventGalleryImage
+                                            file={m.filePath}
+                                            mediaId={Number(m.id)}
+                                            accessToken={tokens?.access}
+                                            caption={m.title}
+                                            alt={m.title || ""}
+                                            fill
+                                            className="object-cover"
+                                        />
                                     )}
                                     <button
                                         type="button"
@@ -278,6 +321,7 @@ export default function FranchiseEventsPage() {
                     </div>
                 </div>
                 {error && <p className="text-sm text-red-600">{error}</p>}
+                {uploadSuccess && <p className="text-sm text-green-700">{uploadSuccess}</p>}
                 <form className="space-y-3" onSubmit={handleUploadMedia}>
                     <div className="grid md:grid-cols-2 gap-3">
                         <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
@@ -296,18 +340,37 @@ export default function FranchiseEventsPage() {
                             </select>
                         </label>
                         <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
-                            Files {mediaType === "image" ? "(multiple photos)" : "(multiple videos)"}
+                            Files{" "}
+                            {mediaType === "image"
+                                ? "(select any number — max 1 MB each)"
+                                : "(multiple videos)"}
                             <input
                                 key={mediaFileInputKey}
                                 type="file"
                                 accept={mediaType === "image" ? IMAGE_FILE_ACCEPT : VIDEO_FILE_ACCEPT}
                                 multiple
-                                onChange={(e) => setMediaFiles(Array.from(e.target.files || []))}
+                                onChange={(e) => {
+                                    const picked = Array.from(e.target.files || []);
+                                    setMediaFiles((prev) => [...prev, ...picked]);
+                                    e.target.value = "";
+                                }}
                                 className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
                             />
                             {mediaFiles.length > 0 && (
                                 <span className="text-[11px] font-normal text-orange-600">
                                     {mediaFiles.length} file{mediaFiles.length === 1 ? "" : "s"} selected
+                                    {mediaType === "image" ? " · 1 MB max per image" : ""}
+                                    {" · "}
+                                    <button
+                                        type="button"
+                                        className="underline hover:text-orange-800"
+                                        onClick={() => {
+                                            setMediaFiles([]);
+                                            setMediaFileInputKey((k) => k + 1);
+                                        }}
+                                    >
+                                        Clear all
+                                    </button>
                                 </span>
                             )}
                         </label>
@@ -456,10 +519,23 @@ export default function FranchiseEventsPage() {
                                                 className="relative aspect-square rounded-lg overflow-hidden border border-orange-100 bg-orange-100/50 shadow-sm"
                                             >
                                                 {m.type === "video" ? (
-                                                    <video src={m.url} className="h-full w-full object-cover" controls playsInline preload="metadata" />
+                                                    <EventGalleryVideo
+                                                        filePath={m.filePath}
+                                                        mediaId={Number(m.id)}
+                                                        accessToken={tokens?.access}
+                                                        caption={m.title}
+                                                        className="h-full w-full object-cover"
+                                                    />
                                                 ) : (
-                                                    // eslint-disable-next-line @next/next/no-img-element
-                                                    <img src={m.url} alt={m.title || "Event"} className="h-full w-full object-cover" />
+                                                    <EventGalleryImage
+                                                        file={m.filePath}
+                                                        mediaId={Number(m.id)}
+                                                        accessToken={tokens?.access}
+                                                        caption={m.title}
+                                                        alt={m.title || "Event"}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
                                                 )}
                                                 <button
                                                     type="button"
