@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Pencil, Upload } from "lucide-react";
+import { ChecklistAddMenu } from "@/components/dashboard/admin/ChecklistAddMenu";
 import {
     PARENT_APP_DOCUMENT_CHECKLIST,
     type ParentAppDocumentSection,
@@ -11,6 +12,18 @@ import {
     type AdminParentAppUploadContext,
     type ParentDocumentForMatch,
 } from "@/lib/admin-parent-app-upload";
+
+export type ParentAppAddKind = "document" | "centreDocument";
+
+export type ParentAppAddRequest = {
+    kind: ParentAppAddKind;
+    section: ParentAppDocumentSection;
+};
+
+const PARENT_APP_ADD_OPTIONS: { kind: ParentAppAddKind; label: string }[] = [
+    { kind: "document", label: "Add document (all centres)" },
+    { kind: "centreDocument", label: "Add document for one centre" },
+];
 
 function UploadRow({
     ctx,
@@ -58,21 +71,30 @@ function SectionBlock({
     section,
     contexts,
     onManage,
+    onAddRequest,
 }: {
     section: ParentAppDocumentSection;
     contexts: AdminParentAppUploadContext[];
     onManage: (ctx: AdminParentAppUploadContext) => void;
+    onAddRequest?: (req: ParentAppAddRequest) => void;
 }) {
     const rows = contexts.filter((c) => c.category === section.category && !c.id.startsWith("extra-"));
     const extras = contexts.filter((c) => c.category === section.category && c.id.startsWith("extra-"));
 
-    if (rows.length === 0 && extras.length === 0) return null;
+    if (rows.length === 0 && extras.length === 0 && !onAddRequest) return null;
 
     return (
-        <section className="rounded-xl border border-slate-200 bg-white">
-            <h2 className="border-b border-slate-100 bg-slate-50 px-4 py-3 text-base font-semibold text-slate-900">
-                {section.title}
-            </h2>
+        <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2.5">
+                <h2 className="min-w-0 truncate text-base font-semibold text-slate-900">{section.title}</h2>
+                {onAddRequest ? (
+                    <ChecklistAddMenu
+                        options={PARENT_APP_ADD_OPTIONS}
+                        onPick={(kind) => onAddRequest({ kind, section })}
+                        sectionTitle={section.title}
+                    />
+                ) : null}
+            </div>
             <div className="px-4">
                 {rows.map((ctx) => (
                     <UploadRow key={ctx.id} ctx={ctx} onManage={onManage} />
@@ -95,9 +117,11 @@ function SectionBlock({
 export function AdminParentAppChecklist({
     docs,
     onManageLink,
+    onAddRequest,
 }: {
     docs: ParentDocumentForMatch[];
     onManageLink: (ctx: AdminParentAppUploadContext) => void;
+    onAddRequest?: (req: ParentAppAddRequest) => void;
 }) {
     const contexts = useMemo(
         () => buildParentAppUploadContexts(PARENT_APP_DOCUMENT_CHECKLIST, docs),
@@ -130,6 +154,7 @@ export function AdminParentAppChecklist({
                     section={section}
                     contexts={contexts}
                     onManage={onManageLink}
+                    onAddRequest={onAddRequest}
                 />
             ))}
         </div>

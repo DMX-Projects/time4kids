@@ -2,13 +2,38 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from "next/link";
 import { useForm } from 'react-hook-form';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 import { useToast } from '@/components/ui/Toast';
 import { trackLeadSubmission } from '@/lib/tracking';
+import { apiUrl, jsonHeaders } from '@/lib/api-client';
 import { fetchCentersByCity, fetchCities, type CentreOption } from '@/lib/api/franchise-lookup';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[6-9]\d{9}$/;
+const ALREADY_REGISTERED_MSG = 'This email is already registered.';
+
+async function assertEmailNotRegistered(email: string): Promise<void> {
+    const res = await fetch(apiUrl('/auth/check-parent-email/'), {
+        method: 'POST',
+        headers: jsonHeaders(),
+        body: JSON.stringify({ email }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+        registered?: boolean;
+        detail?: string;
+    };
+    if (data.registered) {
+        throw new Error(
+            typeof data.detail === 'string' && data.detail.trim()
+                ? data.detail
+                : ALREADY_REGISTERED_MSG,
+        );
+    }
+}
 
 interface AdmissionFormData {
     parentName: string;
@@ -26,6 +51,10 @@ interface AdmissionFormProps {
     franchiseSlug?: string;
     defaultCity?: string;
     contactPhone?: string;
+    /** `register` — parent sign-up from login; submits enquiry + creates account. */
+    variant?: 'enquiry' | 'register';
+    /** When the page supplies the main heading (e.g. register page). */
+    hideHeading?: boolean;
 }
 
 const CHILD_AGE_OPTIONS = [
@@ -48,9 +77,17 @@ const PROGRAM_OPTIONS = [
     'Refresher Course (Level-2)',
 ] as const;
 
-const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
+const AdmissionForm = ({
+    franchiseSlug,
+    defaultCity,
+    variant = 'enquiry',
+    hideHeading = false,
+}: AdmissionFormProps) => {
+    const isRegister = variant === 'register';
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const [resetUrl, setResetUrl] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
     const [cities, setCities] = useState<string[]>([]);
     const [loadingCities, setLoadingCities] = useState(true);
     const [citiesError, setCitiesError] = useState<string | null>(null);
@@ -126,32 +163,106 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
 
     const onSubmit = async (data: AdmissionFormData) => {
         setSubmitError(null);
-        // Determine which slug to use: prop or selected from dropdown
+        setResetUrl(null);
         const activeSlug = franchiseSlug || data.center;
-        
+        const trimmedEmail = data.email.trim().toLowerCase();
+        const normalizedPhone = data.phone.replace(/\D/g, '').slice(0, 10);
+
+        if (!EMAIL_REGEX.test(trimmedEmail)) {
+            setSubmitError('Please enter a valid email address.');
+            return;
+        }
+        if (!PHONE_REGEX.test(normalizedPhone)) {
+            setSubmitError('Phone number must be 10 digits and start with 6, 7, 8, or 9.');
+            return;
+        }
+
+        setSubmitting(true);
+        let accountResetUrl: string | null = null;
         try {
-            await addEnquiry({
-                type: 'admission',
-                name: data.parentName,
-                email: data.email,
-                phone: data.phone,
-                city: data.city,
-                childAge: data.childAge,
-                message: `Child: ${data.childName}, Age: ${data.childAge}, Program: ${data.program}, City: ${data.city}${data.message ? ' | Note: ' + data.message : ''}`,
-                franchiseSlug: activeSlug,
-            });
+            try {
+                await assertEmailNotRegistered(trimmedEmail);
+            } catch (regErr: unknown) {
+                const message =
+                    regErr instanceof Error ? regErr.message : ALREADY_REGISTERED_MSG;
+                setSubmitError(message);
+                showToast(message, 'error');
+                return;
+            }
+
+            if (isRegister) {
+                const regRes = await fetch(apiUrl('/auth/register/'), {
+                    method: 'POST',
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({
+                        full_name: data.parentName.trim(),
+                        email: trimmedEmail,
+                        phone: normalizedPhone,
+                        child_name: data.childName.trim(),
+                        child_age: data.childAge,
+                        program: data.program,
+                        city: data.city,
+                        franchise_slug: activeSlug,
+                        message: data.message?.trim() || '',
+                    }),
+                });
+                const regData = (await regRes.json().catch(() => ({}))) as {
+                    detail?: string;
+                    reset_url?: string;
+                };
+                if (!regRes.ok) {
+                    const msg =
+                        typeof regData?.detail === 'string'
+                            ? regData.detail
+                            : 'Registration failed. If you already have an account, sign in or use Forgot password.';
+                    setSubmitError(msg);
+                    showToast(msg, 'error');
+                    return;
+                }
+                accountResetUrl =
+                    typeof regData?.reset_url === 'string' ? regData.reset_url : null;
+                setResetUrl(accountResetUrl);
+            } else {
+                await addEnquiry({
+                    type: 'admission',
+                    name: data.parentName.trim(),
+                    email: trimmedEmail,
+                    phone: normalizedPhone,
+                    city: data.city,
+                    childAge: data.childAge,
+                    message: `Child: ${data.childName}, Age: ${data.childAge}, Program: ${data.program}, City: ${data.city}${data.message ? ' | Note: ' + data.message : ''}`,
+                    franchiseSlug: activeSlug,
+                });
+            }
+
             setIsSubmitted(true);
             reset();
             trackLeadSubmission({
-                formType: "admission",
+                formType: isRegister ? 'parent_register' : 'admission',
                 location: window.location.href,
                 franchiseSlug: activeSlug,
             });
-            showToast("Admission enquiry submitted successfully!");
-            setTimeout(() => setIsSubmitted(false), 5000);
-        } catch (err: any) {
-            setSubmitError(err?.message || 'Unable to submit your enquiry. Please try again.');
-            showToast(err?.message || 'Unable to submit your enquiry. Please try again.', "error");
+            if (isRegister) {
+                showToast(
+                    accountResetUrl
+                        ? 'Registration successful. Check your email to set your password.'
+                        : 'Registration submitted successfully.',
+                    'success',
+                );
+            } else {
+                showToast('Admission enquiry submitted successfully!');
+            }
+            setTimeout(
+                () => setIsSubmitted(false),
+                isRegister && accountResetUrl ? 30000 : 5000,
+            );
+        } catch (err: unknown) {
+            const message =
+                err instanceof Error ? err.message : 'Unable to submit. Please try again.';
+            setSubmitError(message);
+            showToast(message, 'error');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -161,9 +272,11 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
 
                 {/* Main Form Area */}
                 <div className="p-2 md:p-4">
-                    <h3 className="mb-7 font-display text-3xl font-black leading-tight text-[#253247] md:text-4xl">
-                        Admission Enquiry
-                    </h3>
+                    {!hideHeading && (
+                        <h3 className="mb-7 font-display text-3xl font-black leading-tight text-[#253247] md:text-4xl">
+                            Admission Enquiry
+                        </h3>
+                    )}
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-6">
@@ -299,14 +412,34 @@ const AdmissionForm = ({ franchiseSlug, defaultCity }: AdmissionFormProps) => {
                                         whileHover={{ scale: 1.03, y: -2 }}
                                         whileTap={{ scale: 0.97 }}
                                         type="submit"
-                                        disabled={loadingCities}
-                                        className="bg-[#FF7A2F] text-white px-8 py-2.5 rounded-xl font-fredoka font-bold text-base md:text-lg shadow-[0_5px_0_#D35400] border border-white/90 transition-all whitespace-nowrap disabled:opacity-60"
+                                        disabled={loadingCities || submitting}
+                                        className="bg-[#FF7A2F] text-white px-8 py-2.5 rounded-xl font-fredoka font-bold text-base md:text-lg shadow-[0_5px_0_#D35400] border border-white/90 transition-all whitespace-nowrap disabled:opacity-60 inline-flex items-center gap-2"
                                     >
-                                        Submit Enquiry
+                                        {submitting && <Loader2 className="w-5 h-5 animate-spin" />}
+                                        {isRegister ? 'Register & Submit Enquiry' : 'Submit Enquiry'}
                                     </motion.button>
+                                    {isRegister && resetUrl && (
+                                        <div className="mt-4 w-full rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-900 space-y-3">
+                                            <p className="font-semibold">
+                                                Account created. Set your password using the link below (also sent to your
+                                                email):
+                                            </p>
+                                            <Link
+                                                href={resetUrl}
+                                                className="inline-flex items-center rounded-lg bg-green-600 text-white px-4 py-2 font-semibold hover:bg-green-700"
+                                            >
+                                                Open Reset Password Link
+                                            </Link>
+                                            <p className="text-xs break-all">{resetUrl}</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                            <div className="relative aspect-[10/13] w-full overflow-visible border-0 bg-transparent ring-0 outline-none md:col-span-4 md:aspect-[4/5] md:-mt-28 max-md:mx-auto max-md:-mt-1 max-md:max-w-sm">
+                            <div
+                                className={`relative aspect-[10/13] w-full overflow-visible border-0 bg-transparent ring-0 outline-none md:col-span-4 md:aspect-[4/5] max-md:mx-auto max-md:max-w-sm ${
+                                    isRegister ? "md:mt-4" : "md:-mt-28 max-md:-mt-1"
+                                }`}
+                            >
                                 <Image
                                     src="/student-welcome.png"
                                     alt="Welcome to T.I.M.E. Kids"

@@ -284,6 +284,7 @@ const PUBLIC_STATIC_BY_BASENAME: Record<string, string> = {
     "2.png": "/2.png",
     "2 (1).png": "/2 (1).png",
     "11.png": "/11.png",
+    "12.png": "/12.png",
     "16.png": "/16.png",
     "day care.png": "/day care.png",
     "chennai2.mp4": "/chennai2.mp4",
@@ -376,16 +377,56 @@ function siteOriginForPublicMedia(): string {
     return (process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000").replace(/\/$/, "");
 }
 
+/** Root-relative path for files in `public/` (FAQ banners, logos, etc.). */
+export function publicImageSrc(path?: string | null): string {
+    const raw = (path || "").trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw)) {
+        try {
+            const pathname = new URL(raw).pathname;
+            return pathname.startsWith("/") ? pathname : `/${pathname}`;
+        } catch {
+            return raw;
+        }
+    }
+    return raw.startsWith("/") ? raw : `/${raw.replace(/^\/+/, "")}`;
+}
+
+function sameOriginPathnameIfPublic(href: string): string {
+    if (!/^https?:\/\//i.test(href)) return href;
+    try {
+        const u = new URL(href);
+        const site = siteOriginForPublicMedia().replace(/\/$/, "");
+        if (u.origin !== site) return href;
+        const p = u.pathname || "/";
+        if (p.startsWith(PUBLIC_CMS_MEDIA_PREFIX) || p.startsWith("/media/") || p.startsWith("/api/")) {
+            return href;
+        }
+        return p;
+    } catch {
+        return href;
+    }
+}
+
 /**
- * Absolute URL for `next/image`. Relative `/cms-media/…` paths return 400 from `/_next/image`
- * unless listed in `images.localPatterns` (we set both localPatterns and absolute URLs).
+ * `next/image` src — public files stay relative (`/faq-banner-new-1.png`); CMS uploads use absolute
+ * same-origin URLs so the optimizer can fetch `/cms-media/…` via remotePatterns.
  */
 export function nextImageSrc(path?: string | null): string {
     const resolved = resolveCentrePageImageSrc(path);
     if (!resolved) return "";
-    if (/^https?:\/\//i.test(resolved)) return resolved;
-    if (resolved.startsWith("/")) return `${siteOriginForPublicMedia()}${resolved}`;
-    return resolved;
+
+    const href = sameOriginPathnameIfPublic(resolved);
+    if (/^https?:\/\//i.test(href)) return href;
+    if (
+        href.startsWith("/") &&
+        !href.startsWith(PUBLIC_CMS_MEDIA_PREFIX) &&
+        !href.startsWith("/media/")
+    ) {
+        return href;
+    }
+    if (href.startsWith("/")) return `${siteOriginForPublicMedia()}${href}`;
+    return href;
 }
 
 /**

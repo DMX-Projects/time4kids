@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PreschoolBackground, CuteSchoolBus, FloatingBalloon, PlayfulStar, PastelBlob } from '../../components/ui/PreschoolDecorations';
-import { apiUrl, nextImageSrc } from '@/lib/api-client';
+import { apiUrl, publicImageSrc } from '@/lib/api-client';
 import { DEFAULT_FAQ_PAGE_DATA, mergeFaqPageData, type FaqItem } from '@/config/faq-page-defaults';
 
 const AnimatedWave = ({ position = 'top', showObjects = false }: { position?: 'top' | 'bottom', showObjects?: boolean }) => {
@@ -433,11 +433,12 @@ export default function FAQPage() {
                                         className={`slide ${index === activeSlide ? 'active' : ''}`}
                                     >
                                         <Image
-                                            src={nextImageSrc(img)}
+                                            src={publicImageSrc(img)}
                                             alt="FAQ Banner"
                                             fill
                                             style={{ objectFit: 'cover' }}
                                             priority
+                                            unoptimized
                                         />
                                     </div>
                                 ))}

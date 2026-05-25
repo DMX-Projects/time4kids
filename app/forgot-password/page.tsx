@@ -40,10 +40,14 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 flex items-center justify-center px-4 py-12">
-            <div className="w-full max-w-lg">
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 site-page-below-header pb-12">
+            <div className="container mx-auto px-4 py-8 md:py-12">
+                <div className="w-full max-w-lg mx-auto">
                 <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">Forgot Password</h1>
-                <p className="text-sm text-gray-600 text-center mb-8">Enter your email and we will send reset instructions.</p>
+                <p className="text-sm text-gray-600 text-center mb-8">
+                    Enter the <strong>personal email</strong> registered for your parent account (e.g. Gmail, Yahoo, or your work email).
+                    The reset link is sent only to that inbox — not to the school office email.
+                </p>
 
                 <form onSubmit={onSubmit} className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100 space-y-5">
                     <div className="space-y-2">
@@ -53,7 +57,7 @@ export default function ForgotPasswordPage() {
                             onChange={(e) => setEmail(e.target.value)}
                             type="email"
                             required
-                            placeholder="you@example.com"
+                            placeholder="your.personal.email@example.com"
                             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 bg-gray-50 focus:bg-white"
                         />
                     </div>
@@ -74,6 +78,7 @@ export default function ForgotPasswordPage() {
                         </button>
                     </div>
                 </form>
+                </div>
             </div>
         </div>
     );

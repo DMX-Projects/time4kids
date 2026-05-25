@@ -33,8 +33,8 @@ export function AdminSidebar({ brand, navItems, open }: SidebarProps) {
 
     return (
         <aside
-            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${
-                open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none md:translate-x-0 md:pointer-events-auto"
+            className={`fixed lg:sticky lg:top-0 z-40 w-[min(100vw,18rem)] lg:w-64 h-screen shrink-0 transform transition-transform duration-200 ease-out ${
+                open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none lg:translate-x-0 lg:pointer-events-auto"
             }`}
         >
             <div className="h-screen overflow-y-auto bg-white border-r border-[#E5E7EB] flex flex-col">
@@ -86,8 +86,8 @@ export function FranchiseSidebar({ brand, navItems, open }: SidebarProps) {
 
     return (
         <aside
-            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${
-                open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none md:translate-x-0 md:pointer-events-auto"
+            className={`fixed lg:sticky lg:top-0 z-40 w-[min(100vw,18rem)] lg:w-64 h-screen shrink-0 transform transition-transform duration-200 ease-out ${
+                open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none lg:translate-x-0 lg:pointer-events-auto"
             }`}
         >
             <div className="h-screen overflow-y-auto bg-white border-r border-[#E5E7EB] flex flex-col">
@@ -136,8 +136,8 @@ export function ParentSidebar({ brand, navItems, open }: SidebarProps) {
 
     return (
         <aside
-            className={`fixed md:sticky md:top-0 z-40 w-72 md:w-64 h-screen transform transition-transform duration-200 ease-out ${
-                open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none md:translate-x-0 md:pointer-events-auto"
+            className={`fixed lg:sticky lg:top-0 z-40 w-[min(100vw,18rem)] lg:w-64 h-screen shrink-0 transform transition-transform duration-200 ease-out ${
+                open ? "translate-x-0 pointer-events-auto" : "-translate-x-full pointer-events-none lg:translate-x-0 lg:pointer-events-auto"
             }`}
         >
             <div className="h-screen overflow-y-auto bg-white border-r border-[#E5E7EB] flex flex-col">

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -43,10 +44,10 @@ const Modal: React.FC<ModalProps> = ({
     if (!isOpen) return null;
 
     const sizes = {
-        sm: 'max-w-md',
-        md: 'max-w-2xl',
-        lg: 'max-w-4xl',
-        xl: 'max-w-6xl',
+        sm: 'sm:max-w-md',
+        md: 'sm:max-w-2xl',
+        lg: 'sm:max-w-4xl',
+        xl: 'sm:max-w-6xl',
     };
 
     // Prevent wheel event from bubbling to background
@@ -54,8 +55,8 @@ const Modal: React.FC<ModalProps> = ({
         e.stopPropagation();
     };
 
-    return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fade-in">
+    const modalTree = (
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-[#1e293b]/95 backdrop-blur-sm"
@@ -65,7 +66,7 @@ const Modal: React.FC<ModalProps> = ({
             {/* Modal Content - Fixed height structure */}
             <div
                 ref={modalContentRef}
-                className={`relative isolate bg-white rounded-2xl shadow-2xl w-full ${sizes[size]} h-auto max-h-[85vh] flex flex-col animate-scale-in overflow-hidden z-[10000]`}
+                className={`relative isolate bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[100vw] ${sizes[size]} h-auto max-h-[92dvh] sm:max-h-[85vh] flex flex-col animate-scale-in overflow-hidden z-[10000]`}
                 onWheel={handleWheel}
                 onClick={(e) => e.stopPropagation()}
             >
@@ -110,6 +111,9 @@ const Modal: React.FC<ModalProps> = ({
             </div>
         </div>
     );
+
+    if (typeof document === 'undefined') return null;
+    return createPortal(modalTree, document.body);
 };
 
 export default Modal;

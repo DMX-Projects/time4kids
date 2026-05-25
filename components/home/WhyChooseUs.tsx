@@ -17,6 +17,7 @@ import {
     Star,
 } from 'lucide-react';
 import { useHomePageContent } from '@/components/home/HomePageContentProvider';
+import { resolveCentrePageImageSrc } from '@/lib/api-client';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -94,7 +95,7 @@ const PremiumFeatureCard = ({
                     <div className={`absolute -inset-8 bg-gradient-to-br ${gradient} opacity-25 blur-3xl`} />
                     <div className="relative aspect-[4/3] overflow-hidden rounded-[22px]">
                         <Image
-                            src={feature.image}
+                            src={resolveCentrePageImageSrc(feature.image)}
                             alt={feature.title}
                             fill
                             sizes="(min-width: 1024px) 31vw, (min-width: 768px) 45vw, 92vw"

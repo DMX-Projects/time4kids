@@ -78,6 +78,17 @@ body {
   color: #333;
 }
 
+/* Fixed header-top + main nav — keep page content visible below site chrome */
+.site-page-below-header {
+  padding-top: 7.5rem;
+}
+
+@media (min-width: 768px) {
+  .site-page-below-header {
+    padding-top: 9rem;
+  }
+}
+
 /* Accessibility - respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
 

@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Upload } from "lucide-react";
+import { Trash2, Upload } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
-import { AdminParentAppChecklist } from "@/components/dashboard/admin/AdminParentAppChecklist";
+import {
+    AdminParentAppChecklist,
+    type ParentAppAddRequest,
+} from "@/components/dashboard/admin/AdminParentAppChecklist";
 import {
     PARENT_DOCUMENT_CATEGORIES,
     PARENT_DOCUMENT_STATES,
@@ -56,6 +59,7 @@ export default function AdminParentDocumentsPage() {
     const [form, setForm] = useState(emptyForm);
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [addForCentreOnly, setAddForCentreOnly] = useState(false);
 
     const isHoliday = form.category === "HOLIDAY_LISTS";
     const isTimetable = form.category === "CLASS_TIMETABLE";
@@ -78,10 +82,31 @@ export default function AdminParentDocumentsPage() {
         void load();
     }, [load]);
 
-    const openCreateManual = () => {
+    const deleteDocById = useCallback(
+        async (id: number) => {
+            await authFetch(`/documents/admin/parent-documents/${id}/`, { method: "DELETE" });
+            setItems((prev) => prev.filter((row) => row.id !== id));
+        },
+        [authFetch],
+    );
+
+    const handleAddRequest = (req: ParentAppAddRequest) => {
         setEditing(null);
-        setUploadContext(null);
-        setForm({ ...emptyForm });
+        setAddForCentreOnly(req.kind === "centreDocument");
+        setUploadContext({
+            id: `new-${req.section.category}-${req.kind}`,
+            category: req.section.category,
+            breadcrumbLabel:
+                req.kind === "centreDocument"
+                    ? `${req.section.title} › New upload (one centre)`
+                    : `${req.section.title} › New upload (all centres)`,
+            franchiseId: null,
+            suggestedTitle: req.section.title,
+        });
+        setForm({
+            ...emptyForm,
+            category: req.section.category,
+        });
         setFile(null);
         setModalOpen(true);
     };
@@ -121,6 +146,7 @@ export default function AdminParentDocumentsPage() {
         setModalOpen(false);
         setEditing(null);
         setUploadContext(null);
+        setAddForCentreOnly(false);
         setFile(null);
     };
 
@@ -139,6 +165,10 @@ export default function AdminParentDocumentsPage() {
         }
         if (!editing && !file) {
             showToast("Choose a file to upload.", "error");
+            return;
+        }
+        if (!editing && addForCentreOnly && (form.franchise_id === "" || form.franchise_id === "__global__")) {
+            showToast("Select a centre for this upload.", "error");
             return;
         }
 
@@ -200,41 +230,30 @@ export default function AdminParentDocumentsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="max-w-2xl">
-                    <h1 className="text-2xl font-semibold text-slate-900">Parent app documents</h1>
-                    <p className="mt-2 text-sm text-slate-600">
-                        Each row is where the file appears in the parent app. Click <strong>Upload</strong> on
-                        that row — e.g. <span className="text-slate-800">Holiday Lists › Karnataka</span>.
-                    </p>
-                </div>
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={openCreateManual}
-                    className="shrink-0 border-orange-200 text-orange-900 hover:bg-orange-50"
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Manual upload
-                </Button>
+            <div className="max-w-2xl">
+                <h1 className="text-2xl font-semibold text-slate-900">Parent app documents</h1>
+                <p className="mt-2 text-sm text-slate-600">
+                    Each row is where the file appears in the parent app. Use <strong>Upload</strong> or{" "}
+                    <strong>Add</strong> on a section to add files. To remove an upload, click <strong>Edit</strong>{" "}
+                    on that row → <strong>Delete upload</strong>. Checklist rows (e.g. each state holiday list) cannot
+                    be deleted — only the file on that row.
+                </p>
             </div>
 
             {loading ? (
                 <p className="text-sm text-slate-500">Loading checklist…</p>
             ) : (
-                <AdminParentAppChecklist docs={items} onManageLink={openFromChecklist} />
+                <AdminParentAppChecklist
+                    docs={items}
+                    onManageLink={openFromChecklist}
+                    onAddRequest={handleAddRequest}
+                />
             )}
 
             <Modal
                 isOpen={modalOpen}
                 onClose={closeModal}
-                title={
-                    editing
-                        ? "Edit parent document"
-                        : uploadContext
-                          ? "Upload for parent app"
-                          : "Manual upload"
-                }
+                title={editing ? "Edit parent document" : "Upload for parent app"}
             >
                 <form onSubmit={submit} className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
                     {uploadContext ? (
@@ -259,7 +278,7 @@ export default function AdminParentDocumentsPage() {
                         </select>
                     </label>
                     <label className="text-xs font-semibold text-slate-600 block">
-                        Centre (optional)
+                        Centre {addForCentreOnly ? "(required)" : "(optional)"}
                         <select
                             value={form.franchise_id === "" ? "__global__" : form.franchise_id}
                             onChange={(e) =>
@@ -269,8 +288,13 @@ export default function AdminParentDocumentsPage() {
                                 }))
                             }
                             className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+                            required={addForCentreOnly}
                         >
-                            <option value="__global__">Global — all parents</option>
+                            {!addForCentreOnly ? (
+                                <option value="__global__">Global — all parents</option>
+                            ) : (
+                                <option value="__global__">Select a centre…</option>
+                            )}
                             {franchises.map((f) => (
                                 <option key={f.id} value={String(f.id)}>
                                     {f.name}
@@ -342,6 +366,30 @@ export default function AdminParentDocumentsPage() {
                         />
                         Visible in parent app
                     </label>
+                    {editing?.id ? (
+                        <div className="pt-1">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="text-red-700 border-red-200 hover:bg-red-50"
+                                onClick={() => {
+                                    if (!window.confirm("Delete this upload permanently? Parents will no longer see it.")) {
+                                        return;
+                                    }
+                                    void deleteDocById(editing.id)
+                                        .then(() => {
+                                            showToast("Upload deleted.", "success");
+                                            closeModal();
+                                        })
+                                        .catch(() => showToast("Delete failed.", "error"));
+                                }}
+                            >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete upload
+                            </Button>
+                        </div>
+                    ) : null}
                     <div className="flex gap-2 pt-2">
                         <Button type="submit" disabled={submitting} className="bg-orange-500">
                             <Upload className="w-4 h-4 mr-2" />

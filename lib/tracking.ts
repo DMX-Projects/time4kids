@@ -6,7 +6,7 @@ declare global {
 }
 
 type LeadEventPayload = {
-    formType: "contact" | "admission";
+    formType: "contact" | "admission" | "parent_register";
     location: string;
     franchiseSlug?: string;
 };

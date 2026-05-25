@@ -6,7 +6,11 @@ import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
-import { AdminCentrePageChecklist } from "@/components/dashboard/admin/AdminCentrePageChecklist";
+import {
+    AdminCentrePageChecklist,
+    type CentrePageAddRequest,
+    type CentrePageRemoveRequest,
+} from "@/components/dashboard/admin/AdminCentrePageChecklist";
 import {
     FRANCHISE_CENTER_PAGE_BLOCK_A,
     FRANCHISE_CENTER_PAGE_BLOCK_B,
@@ -15,7 +19,24 @@ import { FRANCHISE_DOCUMENT_CATEGORY_ORDER } from "@/config/franchise-dashboard-
 import { resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
 import type { AdminCenterPageUploadContext } from "@/lib/admin-center-page-upload";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
-import { Plus } from "lucide-react";
+import {
+    CENTRE_PAGE_NAV_CUSTOM_SLUG,
+    addCustomGroup,
+    addCustomLink,
+    addCustomNested,
+    addCustomTopSection,
+    emptyCentrePageNavCustom,
+    isCustomTopSection,
+    isCustomGroup,
+    isCustomNested,
+    mergeCentrePageBlocks,
+    removeCustomGroup,
+    removeCustomLink,
+    removeCustomNested,
+    removeCustomTopSection,
+    type CentrePageNavCustomData,
+} from "@/lib/centre-page-nav-custom";
+import { Trash2 } from "lucide-react";
 
 export type FranchiseResourceDoc = {
     id: number;
@@ -60,6 +81,19 @@ const emptyForm = {
     franchise_id: "" as string | number,
 };
 
+function parseCustomNav(raw: unknown): CentrePageNavCustomData {
+    if (!raw || typeof raw !== "object") return emptyCentrePageNavCustom();
+    const o = raw as Record<string, unknown>;
+    return {
+        customTopSections: Array.isArray(o.customTopSections)
+            ? (o.customTopSections as CentrePageNavCustomData["customTopSections"])
+            : [],
+        staticExtensions: Array.isArray(o.staticExtensions)
+            ? (o.staticExtensions as CentrePageNavCustomData["staticExtensions"])
+            : [],
+    };
+}
+
 export default function AdminFranchiseDocumentsPage() {
     const { authFetch } = useAuth();
     const { franchises } = useAdminData();
@@ -72,20 +106,47 @@ export default function AdminFranchiseDocumentsPage() {
     const [form, setForm] = useState(emptyForm);
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [customNav, setCustomNav] = useState<CentrePageNavCustomData>(emptyCentrePageNavCustom());
+    const [addModal, setAddModal] = useState<CentrePageAddRequest | null>(null);
+    const [addTitle, setAddTitle] = useState("");
+    const [addCategory, setAddCategory] = useState("ACADEMIC_DOCUMENTS");
+    const [addSaving, setAddSaving] = useState(false);
+
     const hubDocs = useMemo(() => items as FranchiseHubDoc[], [items]);
+    const mergedSections = useMemo(
+        () => mergeCentrePageBlocks(FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B, customNav),
+        [customNav],
+    );
+
+    const saveCustomNav = useCallback(
+        async (next: CentrePageNavCustomData) => {
+            await authFetch(`/common/page-content/${CENTRE_PAGE_NAV_CUSTOM_SLUG}/`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(next),
+            });
+            setCustomNav(next);
+        },
+        [authFetch],
+    );
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await authFetch<FranchiseResourceDoc[] | { results: FranchiseResourceDoc[] }>(
-                "/documents/admin/franchise-documents/",
-            );
-            const list = Array.isArray(data) ? data : data?.results ?? [];
+            const [docData, navData] = await Promise.all([
+                authFetch<FranchiseResourceDoc[] | { results: FranchiseResourceDoc[] }>(
+                    "/documents/admin/franchise-documents/",
+                ),
+                authFetch<CentrePageNavCustomData>(`/common/page-content/${CENTRE_PAGE_NAV_CUSTOM_SLUG}/`),
+            ]);
+            const list = Array.isArray(docData) ? docData : docData?.results ?? [];
             setItems(sortDocsByCategoryOrder(list));
+            setCustomNav(parseCustomNav(navData));
         } catch (e) {
             console.error(e);
             showToast("Could not load documents.", "error");
             setItems([]);
+            setCustomNav(emptyCentrePageNavCustom());
         } finally {
             setLoading(false);
         }
@@ -95,12 +156,122 @@ export default function AdminFranchiseDocumentsPage() {
         void load();
     }, [load]);
 
-    const openCreateManual = () => {
-        setEditing(null);
-        setUploadContext(null);
-        setForm({ ...emptyForm });
-        setFile(null);
-        setModalOpen(true);
+    const deleteDocById = useCallback(
+        async (id: number) => {
+            await authFetch(`/documents/admin/franchise-documents/${id}/`, { method: "DELETE" });
+            setItems((prev) => prev.filter((row) => row.id !== id));
+        },
+        [authFetch],
+    );
+
+    const handleAddRequest = (req: CentrePageAddRequest) => {
+        setAddModal(req);
+        setAddTitle("");
+        setAddCategory("ACADEMIC_DOCUMENTS");
+    };
+
+    const handleRemoveRequest = async (req: CentrePageRemoveRequest) => {
+        const label =
+            req.kind === "topSection"
+                ? req.anchor.topTitle
+                : req.kind === "subsection"
+                  ? `${req.anchor.topTitle} › ${req.anchor.groupTitle}`
+                  : req.kind === "nested"
+                    ? `${req.anchor.topTitle} › ${req.anchor.groupTitle} › ${req.anchor.nestedTitle}`
+                    : req.linkLabel || "this link";
+        if (!window.confirm(`Remove "${label}" from the centre page checklist?`)) return;
+        try {
+            let next = customNav;
+            if (req.kind === "topSection") {
+                next = removeCustomTopSection(customNav, req.anchor.topId);
+            } else if (req.kind === "subsection" && req.anchor.groupTitle) {
+                next = removeCustomGroup(
+                    customNav,
+                    req.anchor as typeof req.anchor & { groupTitle: string },
+                );
+            } else if (req.kind === "nested" && req.anchor.groupTitle && req.anchor.nestedTitle) {
+                next = removeCustomNested(
+                    customNav,
+                    req.anchor as typeof req.anchor & { groupTitle: string; nestedTitle: string },
+                );
+            } else if (req.kind === "link" && req.rowKey) {
+                next = removeCustomLink(customNav, req.anchor, req.rowKey);
+            }
+            await saveCustomNav(next);
+            showToast("Removed from checklist.", "success");
+        } catch {
+            showToast("Could not remove.", "error");
+        }
+    };
+
+    const closeAddModal = () => {
+        setAddModal(null);
+        setAddTitle("");
+    };
+
+    const submitAddStructure = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!addModal) return;
+        const title = addTitle.trim();
+        if (!title) {
+            showToast("Name is required.", "error");
+            return;
+        }
+        setAddSaving(true);
+        try {
+            let next = customNav;
+            const { kind, anchor } = addModal;
+
+            if (kind === "subsection") {
+                next = addCustomGroup(customNav, anchor, title);
+            } else if (kind === "nested") {
+                if (!anchor.groupTitle) {
+                    showToast("Pick a subsection first.", "error");
+                    setAddSaving(false);
+                    return;
+                }
+                next = addCustomNested(
+                    customNav,
+                    { ...anchor, groupTitle: anchor.groupTitle },
+                    title,
+                );
+            } else if (kind === "link") {
+                const { data, link } = addCustomLink(customNav, anchor, title, addCategory);
+                next = data;
+                await saveCustomNav(next);
+                closeAddModal();
+                showToast(`"${title}" added — upload the file on that row.`, "success");
+                const ctx: AdminCenterPageUploadContext = {
+                    breadcrumb: [anchor.topTitle, anchor.groupTitle, anchor.nestedTitle, title].filter(
+                        (p): p is string => Boolean(p?.trim()),
+                    ),
+                    breadcrumbLabel: [anchor.topTitle, anchor.groupTitle, anchor.nestedTitle, title]
+                        .filter(Boolean)
+                        .join(" › "),
+                    topTitle: anchor.topTitle,
+                    groupTitle: anchor.groupTitle,
+                    nestedTitle: anchor.nestedTitle,
+                    linkLabel: title,
+                    category: addCategory,
+                    sourcePath: link.sourcePath ?? "",
+                    checklistHref: "",
+                    rowKey: link.rowKey,
+                };
+                openFromChecklist(ctx);
+                setAddSaving(false);
+                return;
+            } else if (kind === "topSection") {
+                next = addCustomTopSection(customNav, title);
+            }
+
+            await saveCustomNav(next);
+            closeAddModal();
+            showToast("Saved.", "success");
+        } catch {
+            showToast("Could not save.", "error");
+        } finally {
+            setAddSaving(false);
+        }
     };
 
     const openFromChecklist = (ctx: AdminCenterPageUploadContext) => {
@@ -243,36 +414,96 @@ export default function AdminFranchiseDocumentsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="max-w-2xl">
-                    <h1 className="text-2xl font-semibold text-orange-900">Centre page documents</h1>
-                    <p className="mt-2 text-sm text-slate-600">
-                        Each row shows the full path where the file appears on the Centre Page. Click{" "}
-                        <strong>Upload</strong> on that row only.
-                    </p>
-                </div>
-                <div className="flex flex-wrap gap-2 shrink-0">
-                    <Button type="button" size="sm" variant="outline" onClick={openCreateManual}>
-                        <Plus className="w-4 h-4 mr-1 inline" />
-                        Manual upload
-                    </Button>
-                </div>
+            <div className="max-w-2xl">
+                <h1 className="text-2xl font-semibold text-orange-900">Centre page documents</h1>
+                <p className="mt-2 text-sm text-slate-600">
+                    Use <strong>Add</strong> on headings you created to add subsections and links.{" "}
+                    <strong>Remove</strong> only appears on items added via Add (not built-in checklist rows). To
+                    delete an uploaded file, open <strong>Edit</strong> on that row → <strong>Delete upload</strong>.
+                    Built-in links cannot be removed here — contact dev if one must go.
+                </p>
             </div>
 
             {loading ? (
                 <p className="text-sm text-slate-600">Loading checklist…</p>
             ) : (
                 <AdminCentrePageChecklist
-                    sections={[FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B]}
+                    sections={mergedSections}
                     hubDocs={hubDocs}
                     onManageLink={openFromChecklist}
+                    onAddRequest={handleAddRequest}
+                    onRemoveRequest={handleRemoveRequest}
+                    isCustomTop={(id) => isCustomTopSection(customNav, id)}
+                    canRemoveGroup={(anchor) => isCustomGroup(customNav, anchor)}
+                    canRemoveNested={(anchor) => isCustomNested(customNav, anchor)}
                 />
             )}
 
             <Modal
+                isOpen={addModal != null}
+                onClose={closeAddModal}
+                title={
+                    addModal?.kind === "subsection"
+                        ? "Add subsection"
+                        : addModal?.kind === "nested"
+                          ? "Add nested section"
+                          : addModal?.kind === "link"
+                            ? "Add file / link"
+                            : "Add section"
+                }
+            >
+                <form onSubmit={submitAddStructure} className="space-y-3">
+                    {addModal ? (
+                        <p className="text-sm text-slate-600">
+                            Under:{" "}
+                            <strong>
+                                {[addModal.anchor.topTitle, addModal.anchor.groupTitle, addModal.anchor.nestedTitle]
+                                    .filter(Boolean)
+                                    .join(" › ")}
+                            </strong>
+                        </p>
+                    ) : null}
+                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+                        {addModal?.kind === "link" ? "Link label (shown to franchises)" : "Section name"}
+                        <input
+                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                            value={addTitle}
+                            onChange={(e) => setAddTitle(e.target.value)}
+                            required
+                            autoFocus
+                        />
+                    </label>
+                    {addModal?.kind === "link" ? (
+                        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+                            Category
+                            <select
+                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                value={addCategory}
+                                onChange={(e) => setAddCategory(e.target.value)}
+                            >
+                                {FRANCHISE_DOCUMENT_CATEGORY_ORDER.map((c) => (
+                                    <option key={c.value} value={c.value}>
+                                        {c.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    ) : null}
+                    <div className="flex gap-2 pt-1">
+                        <Button type="submit" size="sm" disabled={addSaving}>
+                            {addSaving ? "Saving…" : "Save"}
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={closeAddModal}>
+                            Cancel
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+            <Modal
                 isOpen={modalOpen}
                 onClose={closeModal}
-                title={editing ? "Edit document" : uploadContext ? "Upload for checklist row" : "Add document"}
+                title={editing ? "Edit document" : "Upload for checklist row"}
             >
                 <form onSubmit={submit} className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
                     {uploadContext ? (
@@ -382,6 +613,28 @@ export default function AdminFranchiseDocumentsPage() {
                             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                         />
                     </label>
+                    {editing?.id ? (
+                        <div className="pt-1">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="text-red-700 border-red-200 hover:bg-red-50"
+                                onClick={() => {
+                                    if (!window.confirm("Delete this upload permanently?")) return;
+                                    void deleteDocById(editing.id)
+                                        .then(() => {
+                                            showToast("Upload deleted.", "success");
+                                            closeModal();
+                                        })
+                                        .catch(() => showToast("Delete failed.", "error"));
+                                }}
+                            >
+                                <Trash2 className="w-4 h-4 mr-1 inline" />
+                                Delete upload
+                            </Button>
+                        </div>
+                    ) : null}
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
                         Embed / video link (optional)
                         <textarea

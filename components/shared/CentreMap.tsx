@@ -17,6 +17,7 @@ import {
     type CentreMapPin,
     type ResolvedCentrePosition,
 } from "@/lib/centre-map-coords";
+import { MAP_TILE_ENGLISH } from "@/lib/map-tiles";
 
 export type { CentreMapPin };
 
@@ -144,7 +145,7 @@ export function CentreMap({ centres }: CentreMapProps) {
                     scrollWheelZoom
                     attributionControl={false}
                 >
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <TileLayer url={MAP_TILE_ENGLISH.url} attribution={MAP_TILE_ENGLISH.attribution} />
                     <IndiaMapConstraints />
                     <FitBounds pins={mapPins} />
                     {pinned.map(({ centre, position }) => (
@@ -159,7 +160,7 @@ export function CentreMap({ centres }: CentreMapProps) {
                     rel="noopener noreferrer"
                     className="hover:text-slate-500"
                 >
-                    Map data © OpenStreetMap
+                    Map © Esri
                 </a>
             </p>
         </div>

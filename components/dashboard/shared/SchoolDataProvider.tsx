@@ -35,6 +35,8 @@ export type SchoolStudent = {
     /** When loaded from parent API */
     blood?: string;
     emergency?: string;
+    idCardNo?: string;
+    academicYear?: string;
 };
 
 export type GradeRecord = {
@@ -171,6 +173,8 @@ export type SchoolDataContextValue = {
         section: string;
         gender: "" | "M" | "F";
         parentId: string;
+        idCardNo?: string;
+        academicYear?: string;
     }) => Promise<void>;
     resolveEnquiry: (id: string) => Promise<void>;
 
@@ -466,6 +470,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             section: payload.section || "",
             roll_number: payload.rollNumber,
             gender: payload.gender || "",
+            id_card_no: payload.idCardNo?.trim() || "",
+            academic_year: payload.academicYear?.trim() || "",
             is_active: true,
         };
         const saved = await authFetch<any>("/students/franchise/students/", {
@@ -736,14 +742,20 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         }
     };
 
-    const franchiseAddStudent = async (data: any) => {
+    const franchiseAddStudent = async (data: Record<string, unknown>) => {
+        const first = String(data.first_name ?? "").trim();
+        const last = String(data.last_name ?? "").trim();
         await addStudent({
-            parentId: data.parent,
-            name: `${data.first_name} ${data.last_name}`,
-            rollNumber: data.roll_number,
-            grade: data.class_name,
-            isActive: data.is_active ?? true,
-        } as any);
+            parentId: String(data.parent ?? ""),
+            name: `${first} ${last}`.trim() || first || last,
+            rollNumber: String(data.roll_number ?? ""),
+            grade: String(data.class_name ?? ""),
+            section: String(data.section ?? ""),
+            gender: (data.gender as SchoolStudent["gender"]) ?? "",
+            idCardNo: String(data.id_card_no ?? ""),
+            academicYear: String(data.academic_year ?? ""),
+            isActive: data.is_active !== false,
+        });
     };
 
     const franchiseUpdateStudent = async (id: string, data: any) => {
@@ -791,6 +803,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         section: string;
         gender: "" | "M" | "F";
         parentId: string;
+        idCardNo?: string;
+        academicYear?: string;
     }) => {
         const [firstName, ...rest] = data.name.trim().split(/\s+/);
         const lastName = rest.join(" ") || "-";
@@ -802,6 +816,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             class_name: data.grade,
             section: data.section,
             gender: data.gender,
+            id_card_no: data.idCardNo?.trim() || "",
+            academic_year: data.academicYear?.trim() || "",
         };
 
         if (data.id) {

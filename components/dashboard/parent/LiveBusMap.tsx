@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMap, Polyline, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { MAP_TILE_ENGLISH } from "@/lib/map-tiles";
 
 interface LiveBusMapProps {
     lat: number;
@@ -129,7 +130,7 @@ export default function LiveBusMap({
                 zoomControl={false}
                 attributionControl={false}
             >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <TileLayer url={MAP_TILE_ENGLISH.url} attribution={MAP_TILE_ENGLISH.attribution} />
                 
                 {/* Route Path Polyline */}
                 <Polyline 
