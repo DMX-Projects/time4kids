@@ -1,92 +1,49 @@
 'use client';
 
-import React, { useCallback, useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X, Building2, MapPin } from 'lucide-react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Building2, MapPin, Plus, RefreshCw, Search } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useRouter } from 'next/navigation';
-import { useToast } from '@/components/ui/Toast';
+import { comparePresenceCities } from '@/lib/site-location-presence';
 
-type LocationId = number | string;
-
-interface FranchiseLocation {
-    id?: LocationId;
+type FranchiseCityRow = {
+    id: string;
     city_name: string;
+    city?: string;
     state: string;
     state_display?: string;
-    is_active?: boolean;
-    display_order?: number;
-    franchise_count?: number;
-}
+    franchise_count: number;
+};
 
 export default function FranchiseLocationsPage() {
     const { authFetch } = useAuth();
-    const { showToast } = useToast();
-    const [locations, setLocations] = useState<FranchiseLocation[]>([]);
+    const [locations, setLocations] = useState<FranchiseCityRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [editingId, setEditingId] = useState<LocationId | null>(null);
-    const [isCreating, setIsCreating] = useState(false);
-    const [formData, setFormData] = useState<FranchiseLocation>({
-        city_name: '',
-        state: 'DL',
-        is_active: true,
-        display_order: 0
-    });
-
-    const indianStates = [
-        { code: 'AN', name: 'Andaman and Nicobar Islands' },
-        { code: 'AP', name: 'Andhra Pradesh' },
-        { code: 'AR', name: 'Arunachal Pradesh' },
-        { code: 'AS', name: 'Assam' },
-        { code: 'BR', name: 'Bihar' },
-        { code: 'CH', name: 'Chandigarh' },
-        { code: 'CT', name: 'Chhattisgarh' },
-        { code: 'DN', name: 'Dadra and Nagar Haveli' },
-        { code: 'DD', name: 'Daman and Diu' },
-        { code: 'DL', name: 'Delhi' },
-        { code: 'GA', name: 'Goa' },
-        { code: 'GJ', name: 'Gujarat' },
-        { code: 'HR', name: 'Haryana' },
-        { code: 'HP', name: 'Himachal Pradesh' },
-        { code: 'JK', name: 'Jammu and Kashmir' },
-        { code: 'JH', name: 'Jharkhand' },
-        { code: 'KA', name: 'Karnataka' },
-        { code: 'KL', name: 'Kerala' },
-        { code: 'LA', name: 'Ladakh' },
-        { code: 'LD', name: 'Lakshadweep' },
-        { code: 'MP', name: 'Madhya Pradesh' },
-        { code: 'MH', name: 'Maharashtra' },
-        { code: 'MN', name: 'Manipur' },
-        { code: 'ML', name: 'Meghalaya' },
-        { code: 'MZ', name: 'Mizoram' },
-        { code: 'NL', name: 'Nagaland' },
-        { code: 'OR', name: 'Odisha' },
-        { code: 'PY', name: 'Puducherry' },
-        { code: 'PB', name: 'Punjab' },
-        { code: 'RJ', name: 'Rajasthan' },
-        { code: 'SK', name: 'Sikkim' },
-        { code: 'TN', name: 'Tamil Nadu' },
-        { code: 'TG', name: 'Telangana' },
-        { code: 'TR', name: 'Tripura' },
-        { code: 'UP', name: 'Uttar Pradesh' },
-        { code: 'UT', name: 'Uttarakhand' },
-        { code: 'WB', name: 'West Bengal' },
-    ];
-
-
-
-    const router = useRouter();
+    const [search, setSearch] = useState('');
 
     const fetchLocations = useCallback(async () => {
         try {
             setLoading(true);
-            const data = await authFetch<any>('/franchises/public/locations/');
+            const data = await authFetch<FranchiseCityRow[] | { results?: FranchiseCityRow[] }>(
+                '/franchises/public/locations/',
+            );
             const results = Array.isArray(data) ? data : (data.results || []);
-            setLocations(results);
+            const sorted = [...results].sort((a, b) =>
+                comparePresenceCities(a.city_name || a.city || '', b.city_name || b.city || ''),
+            );
+            setLocations(
+                sorted.map((row) => ({
+                    ...row,
+                    city_name: row.city_name || row.city || '',
+                    franchise_count: row.franchise_count ?? 0,
+                })),
+            );
             setError(null);
         } catch (err) {
             console.error('Fetch error:', err);
-            setError(err instanceof Error ? err.message : 'Failed to fetch locations');
+            setError(err instanceof Error ? err.message : 'Failed to fetch cities from franchise table');
+            setLocations([]);
         } finally {
             setLoading(false);
         }
@@ -96,318 +53,156 @@ export default function FranchiseLocationsPage() {
         fetchLocations();
     }, [fetchLocations]);
 
+    const filtered = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        if (!q) return locations;
+        return locations.filter((loc) => {
+            const city = (loc.city_name || '').toLowerCase();
+            const state = (loc.state_display || loc.state || '').toLowerCase();
+            return city.includes(q) || state.includes(q);
+        });
+    }, [locations, search]);
 
-
-    const handleCreate = async () => {
-        if (!formData.city_name || !formData.state) {
-            alert('Please fill all required location fields');
-            return;
-        }
-
-        try {
-            // 1. Create the location
-            const locationResponse = await authFetch<any>('/franchises/admin/franchise-locations/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-
-            showToast('Location created successfully!', 'success');
-
-            await fetchLocations();
-
-            setIsCreating(false);
-            setFormData({
-                city_name: '',
-                state: 'DL',
-                is_active: true,
-                display_order: 0
-            });
-
-
-        } catch (err: any) {
-            const errorMessage = err.message || 'Failed to create location';
-            if (errorMessage.includes('UNIQUE constraint') || errorMessage.includes('city_name')) {
-                showToast(`A location with the city name "${formData.city_name}" already exists.`, 'error');
-            } else {
-                showToast(errorMessage, 'error');
-            }
-        }
-    };
-
-    const handleUpdate = async (id: LocationId) => {
-        try {
-            const locationToUpdate = locations.find(loc => loc.id === id);
-            if (!locationToUpdate) return;
-
-            await authFetch(`/franchises/admin/franchise-locations/${id}/`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(locationToUpdate)
-            });
-
-            await fetchLocations();
-            setEditingId(null);
-        } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed to update location');
-        }
-    };
-
-    const handleDelete = async (id: LocationId) => {
-        if (!confirm('Are you sure you want to delete this location?')) return;
-
-        try {
-            await authFetch(`/franchises/admin/franchise-locations/${id}/`, {
-                method: 'DELETE'
-            });
-
-            await fetchLocations();
-        } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed to delete location');
-        }
-    };
-
-    const updateLocation = (id: LocationId, field: keyof FranchiseLocation, value: unknown) => {
-        setLocations(locations.map(loc =>
-            loc.id === id ? { ...loc, [field]: value } : loc
-        ));
-    };
+    const totalCentres = useMemo(
+        () => filtered.reduce((sum, loc) => sum + (loc.franchise_count || 0), 0),
+        [filtered],
+    );
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent"></div>
+            <div className="flex min-h-[50vh] items-center justify-center">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
             </div>
         );
     }
 
     return (
-        <div className="p-8">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Centre cities &amp; states</h1>
+        <div className="p-6 md:p-8">
+            <div className="mb-6">
+                <h1 className="mb-2 flex items-center gap-2 text-3xl font-bold text-gray-900">
+                    <MapPin className="h-8 w-8 text-orange-500" />
+                    Cities (franchise table)
+                </h1>
                 <p className="text-gray-600">
-                    Read-only list from active centres in the <strong>franchise</strong> table. Powers Locate a Centre and Locations.
+                    Distinct <strong>city</strong> values from active rows in the <strong>franchise</strong> table. This
+                    list powers the homepage Our Presence strip, Locate a Centre, and{' '}
+                    <code className="rounded bg-gray-100 px-1 text-sm">/locations</code>.
                 </p>
+            </div>
 
-                {/* Info Alert */}
-                <div className="mt-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                    <div className="flex items-start">
-                        <svg className="w-5 h-5 text-blue-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                        </svg>
-                        <div>
-                            <h3 className="text-sm font-semibold text-blue-800 mb-1">How it works</h3>
-                            <p className="text-sm text-blue-700">
-                                City and state come from each centre (Admin → Add franchise). Update a centre&apos;s city/state there — not the old franchise_location table.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+            <div className="mb-6 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
+                <p className="text-sm text-blue-800">
+                    <strong>To add or change a city:</strong> add a centre or edit an existing centre&apos;s{' '}
+                    <strong>City</strong> field under{' '}
+                    <Link href="/dashboard/admin/add-franchise" className="font-semibold underline">
+                        Add franchise
+                    </Link>{' '}
+                    or{' '}
+                    <Link href="/dashboard/admin/manage-franchise" className="font-semibold underline">
+                        Manage franchise
+                    </Link>
+                    . Cities appear here automatically when at least one active centre uses that city.
+                </p>
             </div>
 
             {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-                    {error}
-                </div>
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">{error}</div>
             )}
 
-            {/* Create Form */}
-            {isCreating && (
-                <div className="bg-white p-6 rounded-lg shadow-lg mb-6 border-2 border-primary-100">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <MapPin className="w-6 h-6 text-primary-600" />
-                        Add New Location
-                    </h2>
-
-                    {/* Location Part */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                        <div className="col-span-1 md:col-span-2 lg:col-span-1">
-                            <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">City Name *</label>
+            <div className="overflow-hidden rounded-lg bg-white shadow-md">
+                <div className="flex flex-col gap-3 border-b border-gray-200 bg-gray-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div>
+                        <h2 className="text-lg font-semibold text-gray-900">Cities on site</h2>
+                        <p className="text-sm text-gray-500">
+                            {filtered.length} cities · {totalCentres} centres
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <input
-                                type="text"
-                                value={formData.city_name}
-                                onChange={(e) => setFormData({ ...formData, city_name: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                placeholder="e.g., Mumbai"
+                                type="search"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search city or state…"
+                                className="w-full min-w-[200px] rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 sm:w-56"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">State *</label>
-                            <select
-                                value={formData.state}
-                                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            >
-                                {indianStates.map(state => (
-                                    <option key={state.code} value={state.code}>{state.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Order</label>
-                            <input
-                                type="number"
-                                value={formData.display_order}
-                                onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            />
-                        </div>
-                        <div className="flex items-center pt-6">
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={formData.is_active}
-                                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                                    className="w-5 h-5 text-primary-600 rounded focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer"
-                                />
-                                <span className="text-sm font-bold text-gray-700 uppercase tracking-wider group-hover:text-primary-600 transition-colors">Active</span>
-                            </label>
-                        </div>
-                    </div>
-
-
-                    <div className="flex gap-2 mt-4">
                         <button
-                            onClick={handleCreate}
-                            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                            type="button"
+                            onClick={() => fetchLocations()}
+                            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                         >
-                            <Save className="w-4 h-4" />
-                            Save
+                            <RefreshCw className="h-4 w-4" />
+                            Refresh
                         </button>
-                        <button
-                            onClick={() => setIsCreating(false)}
-                            className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+                        <Link
+                            href="/dashboard/admin/add-franchise"
+                            className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-700"
                         >
-                            <X className="w-4 h-4" />
-                            Cancel
-                        </button>
+                            <Plus className="h-4 w-4" />
+                            Add centre
+                        </Link>
                     </div>
-                </div>
-            )}
-
-            {/* Locations Table */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                {/* Table Header with Create Franchise Button */}
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                    <h2 className="text-lg font-semibold text-gray-900">Current Locations</h2>
-                    <a
-                        href="/dashboard/admin/manage-franchise"
-                        className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition shadow-sm"
-                    >
-                        <Building2 className="w-5 h-5" />
-                        View Franchise
-                    </a>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">City</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Centres</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    #
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    City (franchise.city)
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    State
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    Centres
+                                </th>
+                                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    Action
+                                </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {locations.map((location) => (
-                                <tr key={location.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {editingId === location.id ? (
-                                            <input
-                                                type="text"
-                                                value={location.city_name}
-                                                onChange={(e) => updateLocation(location.id!, 'city_name', e.target.value)}
-                                                className="px-2 py-1 border border-gray-300 rounded w-full"
-                                            />
-                                        ) : (
-                                            <span className="text-sm font-medium text-gray-900">{location.city_name}</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {editingId === location.id ? (
-                                            <select
-                                                value={location.state}
-                                                onChange={(e) => updateLocation(location.id!, 'state', e.target.value)}
-                                                className="px-2 py-1 border border-gray-300 rounded w-full text-sm"
-                                            >
-                                                {indianStates.map(state => (
-                                                    <option key={state.code} value={state.code}>{state.name}</option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <span className="text-sm text-gray-700">{location.state_display || location.state}</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {editingId === location.id ? (
-                                            <input
-                                                type="number"
-                                                value={location.display_order}
-                                                onChange={(e) => updateLocation(location.id!, 'display_order', parseInt(e.target.value))}
-                                                className="px-2 py-1 border border-gray-300 rounded w-20"
-                                            />
-                                        ) : (
-                                            <span className="text-sm font-semibold text-gray-800">{location.franchise_count ?? '—'}</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {editingId === location.id ? (
-                                            <label className="flex items-center gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={location.is_active}
-                                                    onChange={(e) => updateLocation(location.id!, 'is_active', e.target.checked)}
-                                                    className="w-4 h-4 text-primary-600 rounded"
-                                                />
-                                                <span className="text-sm">Active</span>
-                                            </label>
-                                        ) : (
-                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${location.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                                {location.is_active ? 'Active' : 'Inactive'}
-                                            </span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        {editingId === location.id ? (
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleUpdate(location.id!)}
-                                                    className="text-green-600 hover:text-green-900"
-                                                >
-                                                    <Save className="w-5 h-5" />
-                                                </button>
-                                                <button
-                                                    onClick={() => setEditingId(null)}
-                                                    className="text-gray-600 hover:text-gray-900"
-                                                >
-                                                    <X className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => setEditingId(location.id!)}
-                                                    className="text-blue-600 hover:text-blue-900"
-                                                >
-                                                    <Edit className="w-5 h-5" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(location.id!)}
-                                                    className="text-red-600 hover:text-red-900"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        )}
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                            {filtered.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
+                                        {search ? 'No cities match your search.' : 'No active centres with a city yet.'}
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                filtered.map((location, index) => (
+                                    <tr key={location.id || location.city_name} className="hover:bg-gray-50">
+                                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">{index + 1}</td>
+                                        <td className="whitespace-nowrap px-6 py-4">
+                                            <span className="text-sm font-semibold text-gray-900">{location.city_name}</span>
+                                        </td>
+                                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                                            {location.state_display || location.state || '—'}
+                                        </td>
+                                        <td className="whitespace-nowrap px-6 py-4">
+                                            <span className="inline-flex rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-bold text-orange-800">
+                                                {location.franchise_count}
+                                            </span>
+                                        </td>
+                                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                                            <Link
+                                                href={`/dashboard/admin/manage-franchise?city=${encodeURIComponent(location.city_name)}`}
+                                                className="inline-flex items-center gap-1 font-medium text-orange-600 hover:text-orange-800"
+                                            >
+                                                <Building2 className="h-4 w-4" />
+                                                View centres
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
-                </div>
-
-                <div className="mt-4 text-sm text-gray-600 px-6 pb-4">
-                    Total Locations: {locations.length}
                 </div>
             </div>
         </div>

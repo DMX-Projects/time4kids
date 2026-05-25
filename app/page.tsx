@@ -1,51 +1,42 @@
 import React from 'react';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import HeroSection from '@/components/home/HeroSection';
 import KeyNavigation from '@/components/home/KeyNavigation';
+import LocationsLadderSection from '@/components/home/LocationsLadderSection';
 import { HomePageContentProvider } from '@/components/home/HomePageContentProvider';
+import { fetchPublicFranchiseCityTiles } from '@/lib/public-franchise-cities';
 
-// Lazy load below-the-fold components for faster initial page load
-const BenefitsUpdates = dynamic(() => import('@/components/home/BenefitsUpdates'), {
-    loading: () => <div className="h-96" />, // Placeholder to prevent layout shift
-});
-const WhyChooseUs = dynamic(() => import('@/components/home/WhyChooseUs'), {
+/** Always load fresh cities from franchise table (never stale static export). */
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const BenefitsUpdates = nextDynamic(() => import('@/components/home/BenefitsUpdates'), {
     loading: () => <div className="h-96" />,
 });
-const ProgramsPreview = dynamic(() => import('@/components/home/ProgramsPreview'), {
+const WhyChooseUs = nextDynamic(() => import('@/components/home/WhyChooseUs'), {
     loading: () => <div className="h-96" />,
 });
-const TestimonialSlider = dynamic(() => import('@/components/home/TestimonialSlider'), {
+const ProgramsPreview = nextDynamic(() => import('@/components/home/ProgramsPreview'), {
     loading: () => <div className="h-96" />,
 });
-const LocationsLadder = dynamic(() => import('@/components/home/LocationsLadder'), {
+const TestimonialSlider = nextDynamic(() => import('@/components/home/TestimonialSlider'), {
     loading: () => <div className="h-96" />,
 });
 
-export default function Home() {
+export default async function Home() {
+    const { tiles: presenceCities, fromDatabase } = await fetchPublicFranchiseCityTiles();
+
     return (
         <HomePageContentProvider>
-        <div className="min-w-0">
-            {/* Hero Section - Banner Slider */}
-            <HeroSection />
-
-            {/* Key Navigation Icons */}
-            <KeyNavigation />
-
-            {/* Programs Preview Section */}
-            <ProgramsPreview />
-
-            {/* Benefits & Updates */}
-            <BenefitsUpdates />
-
-            {/* Why Choose Us Section */}
-            <WhyChooseUs />
-
-            {/* Testimonials */}
-            <TestimonialSlider />
-
-            {/* Locations Ladder Section */}
-            <LocationsLadder />
-        </div>
+            <div className="min-w-0">
+                <HeroSection />
+                <KeyNavigation />
+                <ProgramsPreview />
+                <BenefitsUpdates />
+                <WhyChooseUs />
+                <TestimonialSlider />
+                <LocationsLadderSection tiles={presenceCities} fromDatabase={fromDatabase} />
+            </div>
         </HomePageContentProvider>
     );
 }
