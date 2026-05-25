@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { useCallback, useEffect, useId, useMemo, useReducer, useState } from "react";
 
-import { ChevronDown, ChevronRight, Upload, Pencil } from "lucide-react";
+import { ChevronDown, ChevronRight, Upload, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
@@ -31,8 +31,50 @@ import {
   buildAdminUploadContext,
   type AdminCenterPageUploadContext,
 } from "@/lib/admin-center-page-upload";
+import type { CentrePageLinkAnchor } from "@/lib/centre-page-nav-custom";
+import {
+  rowKeyForChecklistLink,
+  rowKeyForUploadedDoc,
+} from "@/lib/centre-page-nav-custom";
 
 type Mode = "franchise" | "admin";
+
+export type CentrePageAdminTools = {
+  selectedRowKeys: Set<string>;
+  onToggleRow: (rowKey: string, checked: boolean) => void;
+  onAddTopSection: () => void;
+  onAddGroup: (anchor: CentrePageLinkAnchor) => void;
+  onAddNested: (anchor: CentrePageLinkAnchor & { groupTitle: string }) => void;
+  onAddLink: (anchor: CentrePageLinkAnchor) => void;
+  onDeleteUploaded: (docId: number) => Promise<void>;
+  canRemoveTopSection?: (topId: string) => boolean;
+  onRemoveTopSection?: (topId: string) => void;
+};
+
+function AdminToolbarButton({
+  children,
+  onClick,
+  variant = "default",
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  variant?: "default" | "danger";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
+        variant === "danger"
+          ? "border-red-200 bg-red-50 text-red-800 hover:bg-red-100"
+          : "border-orange-200 bg-orange-50 text-orange-900 hover:bg-orange-100",
+      ].join(" ")}
+    >
+      {children}
+    </button>
+  );
+}
 
 type AccordionSetsState = {
   openTop: Set<string>;
@@ -254,12 +296,14 @@ function AdminChecklistLinkRow({
   groupTitle,
   nestedTitle,
   onAdminManageLink,
+  adminTools,
 }: {
   link: CenterPageLink;
   topTitle: string;
   groupTitle?: string;
   nestedTitle?: string;
   onAdminManageLink?: (ctx: AdminCenterPageUploadContext) => void;
+  adminTools?: CentrePageAdminTools;
 }) {
   const ctx = buildAdminUploadContext({
     topTitle,
@@ -269,38 +313,65 @@ function AdminChecklistLinkRow({
     matchedDocId: link.franchiseHubDocId,
   });
   const uploaded = link.franchiseHubDocId != null;
+  const rowKey = uploaded
+    ? rowKeyForUploadedDoc(link.franchiseHubDocId!)
+    : rowKeyForChecklistLink(link);
+  const selected = adminTools?.selectedRowKeys.has(rowKey) ?? false;
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-orange-100 bg-white px-3 py-2.5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0 flex-1">
-        <p className="font-serif text-sm font-medium leading-snug text-slate-800">{link.label}</p>
-        {!link.adminCategory ? (
-          <p className="mt-0.5 text-[11px] text-slate-500">External checklist link — not in upload categories</p>
-        ) : uploaded ? (
-          <p className="mt-0.5 text-[11px] font-medium text-emerald-700">File in database (ID {link.franchiseHubDocId})</p>
-        ) : (
-          <p className="mt-0.5 text-[11px] font-medium text-amber-800">Not uploaded yet — franchises see legacy URL until you upload</p>
-        )}
-      </div>
-      {ctx && onAdminManageLink ? (
-        <button
-          type="button"
-          onClick={() => onAdminManageLink(ctx)}
-          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-900 transition hover:bg-orange-100"
-        >
-          {uploaded ? (
-            <>
-              <Pencil className="h-3.5 w-3.5" aria-hidden />
-              Edit upload
-            </>
+      <div className="flex min-w-0 flex-1 items-start gap-2">
+        {adminTools ? (
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+            checked={selected}
+            onChange={(e) => adminTools.onToggleRow(rowKey, e.target.checked)}
+            aria-label={`Select ${link.label}`}
+          />
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <p className="font-serif text-sm font-medium leading-snug text-slate-800">{link.label}</p>
+          {!link.adminCategory ? (
+            <p className="mt-0.5 text-[11px] text-slate-500">External checklist link — not in upload categories</p>
+          ) : uploaded ? (
+            <p className="mt-0.5 text-[11px] font-medium text-emerald-700">File in database (ID {link.franchiseHubDocId})</p>
           ) : (
-            <>
-              <Upload className="h-3.5 w-3.5" aria-hidden />
-              Upload here
-            </>
+            <p className="mt-0.5 text-[11px] font-medium text-amber-800">Not uploaded yet — franchises see legacy URL until you upload</p>
           )}
-        </button>
-      ) : null}
+        </div>
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {uploaded && adminTools ? (
+          <button
+            type="button"
+            onClick={() => void adminTools.onDeleteUploaded(link.franchiseHubDocId!)}
+            className="inline-flex items-center justify-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100"
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+            Delete
+          </button>
+        ) : null}
+        {ctx && onAdminManageLink ? (
+          <button
+            type="button"
+            onClick={() => onAdminManageLink(ctx)}
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-900 transition hover:bg-orange-100"
+          >
+            {uploaded ? (
+              <>
+                <Pencil className="h-3.5 w-3.5" aria-hidden />
+                Edit
+              </>
+            ) : (
+              <>
+                <Upload className="h-3.5 w-3.5" aria-hidden />
+                Upload
+              </>
+            )}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -327,6 +398,7 @@ function TopItemGroupsDocumentTree({
   hubDocsBySourcePath,
   onAdminPickCategory,
   onAdminManageLink,
+  adminTools,
 }: {
   item: CenterPageTopItem;
   mode: Mode;
@@ -334,29 +406,76 @@ function TopItemGroupsDocumentTree({
   hubDocsBySourcePath?: Map<string, FranchiseHubDoc>;
   onAdminPickCategory?: (category: string) => void;
   onAdminManageLink?: (ctx: AdminCenterPageUploadContext) => void;
+  adminTools?: CentrePageAdminTools;
 }) {
   const linkProps = {
     mode,
     topTitle: item.title,
+    topId: item.id,
     hubDocsByCategory,
     hubDocsBySourcePath,
     onAdminPickCategory,
     onAdminManageLink,
+    adminTools,
   };
+
+  const anchorBase: CentrePageLinkAnchor = { topId: item.id, topTitle: item.title };
 
   return (
     <div className="space-y-5">
+      {mode === "admin" && adminTools ? (
+        <div className="flex flex-wrap gap-2">
+          <AdminToolbarButton onClick={() => adminTools.onAddGroup(anchorBase)}>
+            <Plus className="h-3 w-3" aria-hidden />
+            Add subsection
+          </AdminToolbarButton>
+          <AdminToolbarButton onClick={() => adminTools.onAddLink(anchorBase)}>
+            <Plus className="h-3 w-3" aria-hidden />
+            Add file / link
+          </AdminToolbarButton>
+        </div>
+      ) : null}
       {item.groups.map((group) => {
         const subKey = `${item.id}::${group.title}`;
+        const groupAnchor = { ...anchorBase, groupTitle: group.title };
 
         if (isNestedGroup(group)) {
           return (
             <section key={subKey} className="space-y-3">
-              <SectionHeading title={group.title} />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <SectionHeading title={group.title} />
+                {mode === "admin" && adminTools ? (
+                  <div className="flex flex-wrap gap-2">
+                    <AdminToolbarButton onClick={() => adminTools.onAddNested(groupAnchor)}>
+                      <Plus className="h-3 w-3" aria-hidden />
+                      Add nested section
+                    </AdminToolbarButton>
+                    <AdminToolbarButton onClick={() => adminTools.onAddLink(groupAnchor)}>
+                      <Plus className="h-3 w-3" aria-hidden />
+                      Add file / link
+                    </AdminToolbarButton>
+                  </div>
+                ) : null}
+              </div>
               <div className="ml-0.5 space-y-4 border-l-2 border-dashed border-slate-300/85 pl-3 sm:ml-1 sm:pl-4">
                 {group.nested.map((block) => (
                   <div key={`${subKey}::${block.title}`} className="space-y-2">
-                    <SectionHeading title={block.title} nested />
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <SectionHeading title={block.title} nested />
+                      {mode === "admin" && adminTools ? (
+                        <AdminToolbarButton
+                          onClick={() =>
+                            adminTools.onAddLink({
+                              ...groupAnchor,
+                              nestedTitle: block.title,
+                            })
+                          }
+                        >
+                          <Plus className="h-3 w-3" aria-hidden />
+                          Add file / link
+                        </AdminToolbarButton>
+                      ) : null}
+                    </div>
                     <LinkRows
                       links={block.links}
                       {...linkProps}
@@ -377,7 +496,21 @@ function TopItemGroupsDocumentTree({
 
         return (
           <section key={subKey} className="space-y-2">
-            <SectionHeading title={group.title} />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <SectionHeading title={group.title} />
+              {mode === "admin" && adminTools ? (
+                <div className="flex flex-wrap gap-2">
+                  <AdminToolbarButton onClick={() => adminTools.onAddNested(groupAnchor)}>
+                    <Plus className="h-3 w-3" aria-hidden />
+                    Add nested section
+                  </AdminToolbarButton>
+                  <AdminToolbarButton onClick={() => adminTools.onAddLink(groupAnchor)}>
+                    <Plus className="h-3 w-3" aria-hidden />
+                    Add file / link
+                  </AdminToolbarButton>
+                </div>
+              ) : null}
+            </div>
             <div className="border-l-2 border-dashed border-slate-300/80 py-0.5 pl-3 sm:pl-4">
               <LinkRows links={group.links ?? []} {...linkProps} groupTitle={group.title} />
             </div>
@@ -406,12 +539,15 @@ function LinkRows({
   onAdminPickCategory,
 
   onAdminManageLink,
+  adminTools,
 }: {
   links: CenterPageLink[];
 
   mode: Mode;
 
   topTitle?: string;
+
+  topId?: string;
 
   groupTitle?: string;
 
@@ -424,6 +560,8 @@ function LinkRows({
   onAdminPickCategory?: (category: string) => void;
 
   onAdminManageLink?: (ctx: AdminCenterPageUploadContext) => void;
+
+  adminTools?: CentrePageAdminTools;
 }) {
   const { tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
   const displayLinks =
@@ -527,6 +665,7 @@ function LinkRows({
                 groupTitle={groupTitle}
                 nestedTitle={nestedTitle}
                 onAdminManageLink={onAdminManageLink}
+                adminTools={adminTools}
               />
             ) : (
               <div className="flex flex-wrap items-start gap-2.5">
@@ -607,6 +746,8 @@ function BlockItems({
   documentTreeLayout,
 
   onToggleTop,
+
+  adminTools,
 }: {
   blocks: CenterPageTopItem[];
 
@@ -639,6 +780,8 @@ function BlockItems({
   documentTreeLayout?: boolean;
 
   onToggleTop?: (id: string, item: CenterPageTopItem) => void;
+
+  adminTools?: CentrePageAdminTools;
 }) {
   const flattenSingleTop = Boolean(flattenTopLevel && blocks.length === 1);
   const useDocumentTree = Boolean(documentTreeLayout);
@@ -655,36 +798,59 @@ function BlockItems({
         return (
           <div key={item.id} className="space-y-1.5">
             {!flattenSingleTop ? (
-              <button
-                id={btnId}
-                type="button"
-                aria-expanded={expanded}
-                aria-controls={panelId}
-                onClick={() =>
-                  onToggleTop ? onToggleTop(item.id, item) : toggleTop(item.id)
-                }
-                className="group w-full rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
-              >
-                <ZigzagBar emphasize={item.emphasize}>
-                  {expanded ? (
-                    <ChevronDown
-                      className="h-5 w-5 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
-                      strokeWidth={2.25}
-                      aria-hidden
-                    />
-                  ) : (
-                    <ChevronRight
-                      className="h-5 w-5 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
-                      strokeWidth={2.25}
-                      aria-hidden
-                    />
-                  )}
+              <div className="space-y-1.5">
+                <button
+                  id={btnId}
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-controls={panelId}
+                  onClick={() =>
+                    onToggleTop ? onToggleTop(item.id, item) : toggleTop(item.id)
+                  }
+                  className="group w-full rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+                >
+                  <ZigzagBar emphasize={item.emphasize}>
+                    {expanded ? (
+                      <ChevronDown
+                        className="h-5 w-5 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
+                        strokeWidth={2.25}
+                        aria-hidden
+                      />
+                    ) : (
+                      <ChevronRight
+                        className="h-5 w-5 shrink-0 text-[#1e3a5f] transition-transform duration-300 ease-out motion-reduce:duration-0"
+                        strokeWidth={2.25}
+                        aria-hidden
+                      />
+                    )}
 
-                  <span className="text-[0.95rem] leading-snug sm:text-base">
-                    {item.title}
-                  </span>
-                </ZigzagBar>
-              </button>
+                    <span className="text-[0.95rem] leading-snug sm:text-base">
+                      {item.title}
+                    </span>
+                  </ZigzagBar>
+                </button>
+                {mode === "admin" && adminTools && expanded ? (
+                  <div className="flex flex-wrap gap-2 pl-1">
+                    <AdminToolbarButton
+                      onClick={() =>
+                        adminTools.onAddGroup({ topId: item.id, topTitle: item.title })
+                      }
+                    >
+                      <Plus className="h-3 w-3" aria-hidden />
+                      Add subsection
+                    </AdminToolbarButton>
+                    {adminTools.canRemoveTopSection?.(item.id) ? (
+                      <AdminToolbarButton
+                        variant="danger"
+                        onClick={() => adminTools.onRemoveTopSection?.(item.id)}
+                      >
+                        <Trash2 className="h-3 w-3" aria-hidden />
+                        Remove section
+                      </AdminToolbarButton>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             ) : null}
 
             <AccordionCollapse open={expanded}>
@@ -701,14 +867,28 @@ function BlockItems({
               >
                 {item.directLinks && item.directLinks.length > 0 ? (
                   <div className="border-l border-dashed border-slate-300/80 py-1 pl-3 sm:pl-4">
+                    {mode === "admin" && adminTools ? (
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        <AdminToolbarButton
+                          onClick={() =>
+                            adminTools.onAddLink({ topId: item.id, topTitle: item.title })
+                          }
+                        >
+                          <Plus className="h-3 w-3" aria-hidden />
+                          Add file / link
+                        </AdminToolbarButton>
+                      </div>
+                    ) : null}
                     <LinkRows
                       links={item.directLinks}
                       mode={mode}
                       topTitle={item.title}
+                      topId={item.id}
                       hubDocsByCategory={hubDocsByCategory}
                       hubDocsBySourcePath={hubDocsBySourcePath}
                       onAdminPickCategory={onAdminPickCategory}
                       onAdminManageLink={onAdminManageLink}
+                      adminTools={adminTools}
                     />
                   </div>
                 ) : useDocumentTree ? (
@@ -719,6 +899,7 @@ function BlockItems({
                     hubDocsBySourcePath={hubDocsBySourcePath}
                     onAdminPickCategory={onAdminPickCategory}
                     onAdminManageLink={onAdminManageLink}
+                    adminTools={adminTools}
                   />
                 ) : (
                   item.groups.map((group) => {
@@ -928,6 +1109,8 @@ export function FranchiseCenterPageAccordion({
   hub,
 
   externalHubDocs,
+
+  adminTools,
 }: {
   sections: CenterPageTopItem[][];
 
@@ -941,6 +1124,9 @@ export function FranchiseCenterPageAccordion({
 
   /** When set (admin page), skips internal fetch. */
   externalHubDocs?: FranchiseHubDoc[];
+
+  /** Admin centre-page: add sections, multi-select, delete uploads. */
+  adminTools?: CentrePageAdminTools;
 }) {
   const { authFetch } = useAuth();
   const baseId = useId();
@@ -1035,11 +1221,21 @@ export function FranchiseCenterPageAccordion({
         </div>
       ) : mode === "admin" ? (
         <div className="border-b border-orange-100 bg-gradient-to-r from-[#fffaf0] to-white px-4 py-3 sm:px-5">
-          <h2 className="text-lg font-bold text-orange-950 sm:text-xl">Centre Page checklist</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Open a section (orange bar), then use <strong>Upload here</strong> on the exact row.
-            Headings match what franchises see — Block Material, Holiday Lists, welcome letters, etc.
-          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-orange-950 sm:text-xl">Centre Page checklist</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Open a section, use <strong>Add subsection</strong> or <strong>Add nested section</strong> to
+                extend the tree. Select multiple rows to delete uploads in bulk.
+              </p>
+            </div>
+            {adminTools ? (
+              <AdminToolbarButton onClick={() => adminTools.onAddTopSection()}>
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                Add top section
+              </AdminToolbarButton>
+            ) : null}
+          </div>
         </div>
       ) : (
         <div className="bg-[#1e3a5f] px-4 py-3 text-center sm:px-6 sm:text-left">
@@ -1074,6 +1270,7 @@ export function FranchiseCenterPageAccordion({
               flattenTopLevel={hub?.flattenTopLevel}
               documentTreeLayout={documentTreeLayout}
               onToggleTop={documentTreeLayout ? toggleTopTree : undefined}
+              adminTools={adminTools}
             />
           </div>
         ))}

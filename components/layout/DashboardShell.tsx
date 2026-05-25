@@ -85,7 +85,7 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
 
     return (
         <RoleGuard allowedRole={role}>
-            <div className="h-screen flex bg-white isolate overflow-hidden">
+            <div className="min-h-screen h-[100dvh] flex bg-white isolate">
 
                 <SidebarMenuProvider closeMenu={() => setOpen(false)}>
                     {/* Render role-specific sidebar */}
@@ -94,16 +94,16 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                     {role === "parent" && hasSidebarNav && <ParentSidebar brand={brand} navItems={navItems} open={open} />}
                 </SidebarMenuProvider>
                 {open && hasSidebarNav && (
-                    <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setOpen(false)} aria-label="Close menu" />
+                    <div className="fixed inset-0 bg-black/30 z-30 lg:hidden" onClick={() => setOpen(false)} aria-label="Close menu" />
                 )}
 
-                <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-y-auto bg-slate-50">
+                <div className="flex-1 flex flex-col min-w-0 w-full relative z-[1] overflow-y-auto overflow-x-hidden bg-slate-50">
                     <header className="sticky top-0 bg-white border-b border-[#E5E7EB] z-30 shadow-sm">
-                        <div className="container mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
+                        <div className="w-full max-w-none px-3 sm:px-4 lg:px-6 py-3 flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                                 {hasSidebarNav && (
                                     <button
-                                        className="md:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white text-[#1F2937] border border-[#E5E7EB] flex-shrink-0"
+                                        className="lg:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white text-[#1F2937] border border-[#E5E7EB] flex-shrink-0"
                                         onClick={() => setOpen((prev) => !prev)}
                                         aria-label="Toggle menu"
                                     >
@@ -154,7 +154,7 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                     </header>
 
                     {/* Avoid nested <main> (root layout already wraps app in main). */}
-                    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 flex-1 min-w-0 min-h-[50vh] w-full relative z-10 bg-slate-50/90">
+                    <div className="w-full max-w-none px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 flex-1 min-w-0 min-h-[50vh] relative z-10 bg-slate-50/90">
                         {children}
                     </div>
 

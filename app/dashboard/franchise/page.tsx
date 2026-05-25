@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
 import { FranchiseCenterPageAccordion } from "@/components/dashboard/franchise/FranchiseCenterPageAccordion";
 import {
@@ -7,6 +8,8 @@ import {
     FRANCHISE_CENTER_PAGE_BLOCK_B,
 } from "@/config/franchise-center-page-nav";
 import { FRANCHISE_DASHBOARD_RIGHT_ACTION_URLS } from "@/config/franchise-dashboard-side-actions";
+import { useCentrePageNavCustom } from "@/hooks/useCentrePageNavCustom";
+import { mergeCentrePageBlocks } from "@/lib/centre-page-nav-custom";
 
 function SideActionButton({ href, label }: { href: string; label: string }) {
     const ready = href.trim().length > 0;
@@ -35,8 +38,13 @@ function SideActionButton({ href, label }: { href: string; label: string }) {
 
 export default function FranchiseDashboardPage() {
     const { profile } = useFranchiseData();
+    const { customNav } = useCentrePageNavCustom();
     const { indentsPlacing } = FRANCHISE_DASHBOARD_RIGHT_ACTION_URLS;
     const centreName = profile.name?.trim() || profile.centre?.trim() || "your centre";
+    const centrePageSections = useMemo(
+        () => mergeCentrePageBlocks(FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B, customNav),
+        [customNav],
+    );
 
     return (
         <div className="space-y-6">
@@ -56,7 +64,7 @@ export default function FranchiseDashboardPage() {
 
             <section id="center-page" className="scroll-mt-6">
                 <FranchiseCenterPageAccordion
-                    sections={[FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B]}
+                    sections={centrePageSections}
                     mode="franchise"
                 />
             </section>

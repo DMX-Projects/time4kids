@@ -25,6 +25,8 @@ type StudentForm = {
     section: string;
     gender: StudentGender;
     parentId: string;
+    idCardNo: string;
+    academicYear: string;
 };
 
 const emptyForm = (): StudentForm => ({
@@ -34,6 +36,8 @@ const emptyForm = (): StudentForm => ({
     section: "",
     gender: "",
     parentId: "",
+    idCardNo: "",
+    academicYear: "AY 2026-27",
 });
 
 export default function FranchiseStudentsPage() {
@@ -53,7 +57,7 @@ export default function FranchiseStudentsPage() {
     const filtered = useMemo(() => {
         const term = query.toLowerCase();
         return students.filter((s) =>
-            [s.name, s.rollNumber, s.grade, s.section, formatStudentGenderLabel(s.gender)]
+            [s.name, s.rollNumber, s.grade, s.section, s.idCardNo, s.academicYear, formatStudentGenderLabel(s.gender)]
                 .some((f) => (f || "").toLowerCase().includes(term))
         );
     }, [students, query]);
@@ -80,6 +84,8 @@ export default function FranchiseStudentsPage() {
             section: found.section || "",
             gender: found.gender || "",
             parentId: found.parentId || "",
+            idCardNo: found.idCardNo || "",
+            academicYear: found.academicYear || "AY 2026-27",
         });
         setError(null);
         setShowFormModal(true);
@@ -235,6 +241,14 @@ export default function FranchiseStudentsPage() {
                                 <p className="text-[10px] uppercase tracking-wider font-bold text-orange-600">Section</p>
                                 <p className="font-medium">{viewingStudent.section || "—"}</p>
                             </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-wider font-bold text-orange-600">ID card no.</p>
+                                <p className="font-medium">{viewingStudent.idCardNo || "—"}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-wider font-bold text-orange-600">Academic year</p>
+                                <p className="font-medium">{viewingStudent.academicYear || "—"}</p>
+                            </div>
                             <div className="col-span-2">
                                 <p className="text-[10px] uppercase tracking-wider font-bold text-orange-600">Parent / Family</p>
                                 <p className="font-medium flex items-center gap-2">
@@ -300,7 +314,18 @@ export default function FranchiseStudentsPage() {
                                 onChange={(e) => setForm({ ...form, section: e.target.value })}
                                 placeholder="e.g. Section A"
                             />
-                            
+                            <Input
+                                label="ID card no."
+                                value={form.idCardNo}
+                                onChange={(e) => setForm({ ...form, idCardNo: e.target.value })}
+                                placeholder="e.g. TKI-2026-001"
+                            />
+                            <Input
+                                label="Academic year"
+                                value={form.academicYear}
+                                onChange={(e) => setForm({ ...form, academicYear: e.target.value })}
+                                placeholder="e.g. AY 2026-27"
+                            />
                             <label className="flex flex-col gap-1 text-xs font-semibold text-[#4B5563] md:col-span-2">
                                 Parent / Family {!editingId && "*"}
                                 <select

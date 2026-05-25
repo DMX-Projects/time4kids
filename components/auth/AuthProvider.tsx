@@ -17,6 +17,10 @@ type User = {
     childName?: string;
     /** Use for greetings in the parent app — child name, not parent full_name. */
     displayName?: string;
+    /** Child gender code from login / me (`M` | `F`). */
+    gender?: "M" | "F" | "";
+    /** Human-readable label (`Male` | `Female`). */
+    genderLabel?: string;
 };
 
 type Tokens = { access: string; refresh: string };
@@ -81,8 +85,29 @@ function mapApiUserToSession(data: Record<string, unknown>, fallbackEmail = ""):
                 : data.child_name != null
                   ? String(data.child_name)
                   : undefined,
+        gender: normalizeParentGender(data.gender),
+        genderLabel:
+            data.gender_label != null
+                ? String(data.gender_label)
+                : genderLabelFromCode(data.gender),
         role: normalizeRole(data.role as string | undefined),
     };
+}
+
+function normalizeParentGender(raw: unknown): "M" | "F" | "" | undefined {
+    const v = String(raw ?? "")
+        .trim()
+        .toUpperCase();
+    if (v === "M" || v === "MALE") return "M";
+    if (v === "F" || v === "FEMALE") return "F";
+    return v ? "" : undefined;
+}
+
+function genderLabelFromCode(raw: unknown): string | undefined {
+    const g = normalizeParentGender(raw);
+    if (g === "M") return "Male";
+    if (g === "F") return "Female";
+    return undefined;
 }
 
 /** Role implied by URL, e.g. /dashboard/franchise/... → franchise */
@@ -273,6 +298,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             fullName: u.full_name ?? undefined,
             childName: u.child_name,
             displayName: u.display_name ?? u.child_name,
+            gender: normalizeParentGender(u.gender),
+            genderLabel: u.gender_label ?? genderLabelFromCode(u.gender),
             role: normalizeRole(u.role),
         };
         setTokens(nextTokens);

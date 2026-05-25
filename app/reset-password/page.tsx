@@ -65,8 +65,9 @@ function ResetPasswordForm() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 flex items-center justify-center px-4 py-12">
-            <div className="w-full max-w-lg">
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 site-page-below-header pb-12">
+            <div className="container mx-auto px-4 py-8 md:py-12">
+                <div className="w-full max-w-lg mx-auto">
                 <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">Reset Password</h1>
                 <p className="text-sm text-gray-600 text-center mb-8">Enter a new password to complete the reset.</p>
 
@@ -109,6 +110,7 @@ function ResetPasswordForm() {
                         UID: {uid ? "Provided" : "Missing"} | Token: {token ? "Provided" : "Missing"}
                     </div>
                 </form>
+                </div>
             </div>
         </div>
     );
@@ -118,7 +120,7 @@ export default function ResetPasswordPage() {
     return (
         <Suspense
             fallback={
-                <div className="min-h-screen flex items-center justify-center">
+                <div className="min-h-screen site-page-below-header flex items-center justify-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-400" />
                 </div>
             }

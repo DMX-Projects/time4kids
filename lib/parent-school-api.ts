@@ -60,6 +60,10 @@ export function mapApiStudent(raw: unknown, parentId: string): SchoolStudent {
     const admissionDate = r.admission_date != null ? String(r.admission_date) : undefined;
     const isActive = r.is_active !== false; // Default to true if missing or true
     const gender = normalizeStudentGender(r.gender);
+    const idCardNo = String(
+        r.id_card_no ?? r.Idcardno ?? r.idcardno ?? r.student_code ?? "",
+    ).trim();
+    const academicYear = String(r.academic_year ?? r.Year ?? r.year ?? "").trim();
     return {
         id,
         name,
@@ -68,6 +72,8 @@ export function mapApiStudent(raw: unknown, parentId: string): SchoolStudent {
         section,
         gender,
         parentId: finalParentId,
+        idCardNo,
+        academicYear,
         blood,
         emergency,
         dateOfBirth,

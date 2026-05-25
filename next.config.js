@@ -40,6 +40,8 @@ const nextConfig = {
             { protocol: 'https', hostname: 'timekidspreschools.in', pathname: '/api/cms-files/**' },
             { protocol: 'https', hostname: 'www.timekidspreschools.in', pathname: '/media/**' },
             { protocol: 'https', hostname: 'timekidspreschools.in', pathname: '/media/**' },
+            { protocol: 'https', hostname: 'www.timekidspreschools.in', pathname: '/**' },
+            { protocol: 'https', hostname: 'timekidspreschools.in', pathname: '/**' },
             { protocol: 'https', hostname: 'timekids1.t4e.in', pathname: '/media/**' },
             { protocol: 'https', hostname: 'timekids1.t4e.in', pathname: '/cms-media/**' },
             { protocol: 'https', hostname: 'timekids1.t4e.in', pathname: '/api/cms-files/**' },

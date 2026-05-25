@@ -84,7 +84,7 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 flex items-center justify-center px-4 py-12">
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 site-page-below-header flex items-center justify-center px-4 py-8 md:py-12">
             <div className={`w-full ${variant === "driver" ? "max-w-md" : "max-w-5xl"} grid ${variant === "driver" ? "grid-cols-1" : "md:grid-cols-2"} gap-12 items-center`}>
                 {variant !== "driver" && (
                     <div className="relative h-full min-h-[400px] md:min-h-[600px] rounded-3xl overflow-hidden shadow-2xl">
