@@ -5,7 +5,6 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
 import {
     AdminCentrePageChecklist,
     type CentrePageAddRequest,
@@ -37,6 +36,9 @@ import {
     type CentrePageNavCustomData,
 } from "@/lib/centre-page-nav-custom";
 import { Trash2 } from "lucide-react";
+import { ChecklistFileUploadField } from "@/components/dashboard/admin/ChecklistFileUploadField";
+import { inferCategoryForAnchor } from "@/lib/infer-centre-page-category";
+import { validateAdminHubDocumentUpload } from "@/lib/franchise-centre-upload";
 
 export type FranchiseResourceDoc = {
     id: number;
@@ -96,7 +98,6 @@ function parseCustomNav(raw: unknown): CentrePageNavCustomData {
 
 export default function AdminFranchiseDocumentsPage() {
     const { authFetch } = useAuth();
-    const { franchises } = useAdminData();
     const { showToast } = useToast();
     const [items, setItems] = useState<FranchiseResourceDoc[]>([]);
     const [loading, setLoading] = useState(true);
@@ -109,7 +110,8 @@ export default function AdminFranchiseDocumentsPage() {
     const [customNav, setCustomNav] = useState<CentrePageNavCustomData>(emptyCentrePageNavCustom());
     const [addModal, setAddModal] = useState<CentrePageAddRequest | null>(null);
     const [addTitle, setAddTitle] = useState("");
-    const [addCategory, setAddCategory] = useState("ACADEMIC_DOCUMENTS");
+    const [addFile, setAddFile] = useState<File | null>(null);
+    const [addEmbedUrl, setAddEmbedUrl] = useState("");
     const [addSaving, setAddSaving] = useState(false);
 
     const hubDocs = useMemo(() => items as FranchiseHubDoc[], [items]);
@@ -167,7 +169,8 @@ export default function AdminFranchiseDocumentsPage() {
     const handleAddRequest = (req: CentrePageAddRequest) => {
         setAddModal(req);
         setAddTitle("");
-        setAddCategory("ACADEMIC_DOCUMENTS");
+        setAddFile(null);
+        setAddEmbedUrl("");
     };
 
     const handleRemoveRequest = async (req: CentrePageRemoveRequest) => {
@@ -207,6 +210,64 @@ export default function AdminFranchiseDocumentsPage() {
     const closeAddModal = () => {
         setAddModal(null);
         setAddTitle("");
+        setAddFile(null);
+        setAddEmbedUrl("");
+    };
+
+    const uploadNewDocument = async (args: {
+        category: string;
+        title: string;
+        sourcePath?: string;
+        file?: File | null;
+        embedUrl?: string;
+    }) => {
+        const embedRaw = (args.embedUrl || "").trim();
+        const embedNormalized = embedRaw ? resolveFranchiseEmbedSrc(embedRaw) : null;
+        if (embedRaw && !embedNormalized) {
+            throw new Error("Could not read that embed link. Paste a YouTube or MediaDelivery embed URL.");
+        }
+        if (args.file && embedNormalized) {
+            throw new Error("Use either a file upload or an embed link, not both.");
+        }
+        if (!args.file && !embedNormalized) {
+            throw new Error("Choose a file to upload or paste a video/embed link.");
+        }
+
+        // Size limits apply only when the admin picks a new file — existing server uploads are untouched.
+        if (args.file) {
+            const sizeErr = validateAdminHubDocumentUpload(args.file);
+            if (sizeErr) throw new Error(sizeErr);
+        }
+
+        if (embedNormalized) {
+            await authFetch("/documents/admin/franchise-documents/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    category: args.category,
+                    title: args.title.trim(),
+                    source_path: args.sourcePath?.trim() || null,
+                    embed_url: embedNormalized,
+                    description: "",
+                    academic_year: "",
+                    order: 0,
+                    is_active: true,
+                    franchise: null,
+                }),
+            });
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append("category", args.category);
+        fd.append("title", args.title.trim());
+        if (args.sourcePath?.trim()) fd.append("source_path", args.sourcePath.trim());
+        fd.append("description", "");
+        fd.append("academic_year", "");
+        fd.append("order", "0");
+        fd.append("is_active", "true");
+        fd.append("file", args.file!);
+        await authFetch("/documents/admin/franchise-documents/", { method: "POST", body: fd });
     };
 
     const submitAddStructure = async (e: React.FormEvent) => {
@@ -236,28 +297,27 @@ export default function AdminFranchiseDocumentsPage() {
                     title,
                 );
             } else if (kind === "link") {
+                const addCategory = inferCategoryForAnchor(anchor, mergedSections);
                 const { data, link } = addCustomLink(customNav, anchor, title, addCategory);
-                next = data;
-                await saveCustomNav(next);
+                await saveCustomNav(data);
+
+                try {
+                    await uploadNewDocument({
+                        category: addCategory,
+                        title,
+                        sourcePath: link.sourcePath ?? "",
+                        file: addFile,
+                        embedUrl: addEmbedUrl,
+                    });
+                } catch (err) {
+                    showToast(err instanceof Error ? err.message : "Upload failed.", "error");
+                    setAddSaving(false);
+                    return;
+                }
+
                 closeAddModal();
-                showToast(`"${title}" added — upload the file on that row.`, "success");
-                const ctx: AdminCenterPageUploadContext = {
-                    breadcrumb: [anchor.topTitle, anchor.groupTitle, anchor.nestedTitle, title].filter(
-                        (p): p is string => Boolean(p?.trim()),
-                    ),
-                    breadcrumbLabel: [anchor.topTitle, anchor.groupTitle, anchor.nestedTitle, title]
-                        .filter(Boolean)
-                        .join(" › "),
-                    topTitle: anchor.topTitle,
-                    groupTitle: anchor.groupTitle,
-                    nestedTitle: anchor.nestedTitle,
-                    linkLabel: title,
-                    category: addCategory,
-                    sourcePath: link.sourcePath ?? "",
-                    checklistHref: "",
-                    rowKey: link.rowKey,
-                };
-                openFromChecklist(ctx);
+                showToast(`"${title}" added and uploaded.`, "success");
+                await load();
                 setAddSaving(false);
                 return;
             } else if (kind === "topSection") {
@@ -273,6 +333,20 @@ export default function AdminFranchiseDocumentsPage() {
             setAddSaving(false);
         }
     };
+
+    const handleDeleteUpload = useCallback(
+        async (ctx: AdminCenterPageUploadContext) => {
+            if (ctx.matchedDocId == null) return;
+            if (!window.confirm(`Delete "${ctx.breadcrumbLabel}" permanently?`)) return;
+            try {
+                await deleteDocById(ctx.matchedDocId);
+                showToast("Upload deleted.", "success");
+            } catch {
+                showToast("Delete failed.", "error");
+            }
+        },
+        [deleteDocById, showToast],
+    );
 
     const openFromChecklist = (ctx: AdminCenterPageUploadContext) => {
         setUploadContext(ctx);
@@ -327,6 +401,13 @@ export default function AdminFranchiseDocumentsPage() {
         if (file && embedNormalized) {
             showToast("Use either a file upload or an embed link, not both.", "error");
             return;
+        }
+        if (file) {
+            const sizeErr = validateAdminHubDocumentUpload(file);
+            if (sizeErr) {
+                showToast(sizeErr, "error");
+                return;
+            }
         }
 
         setSubmitting(true);
@@ -417,10 +498,9 @@ export default function AdminFranchiseDocumentsPage() {
             <div className="max-w-2xl">
                 <h1 className="text-2xl font-semibold text-orange-900">Centre page documents</h1>
                 <p className="mt-2 text-sm text-slate-600">
-                    Use <strong>Add</strong> on headings you created to add subsections and links.{" "}
-                    <strong>Remove</strong> only appears on items added via Add (not built-in checklist rows). To
-                    delete an uploaded file, open <strong>Edit</strong> on that row → <strong>Delete upload</strong>.
-                    Built-in links cannot be removed here — contact dev if one must go.
+                    Each row matches a centre page link. Click <strong>Upload</strong> to add a file, photo, video, or
+                    embed link. Use <strong>Delete</strong> on uploaded rows to remove files. Category is set
+                    automatically from the section you are in.
                 </p>
             </div>
 
@@ -433,6 +513,7 @@ export default function AdminFranchiseDocumentsPage() {
                     onManageLink={openFromChecklist}
                     onAddRequest={handleAddRequest}
                     onRemoveRequest={handleRemoveRequest}
+                    onDeleteUpload={handleDeleteUpload}
                     isCustomTop={(id) => isCustomTopSection(customNav, id)}
                     canRemoveGroup={(anchor) => isCustomGroup(customNav, anchor)}
                     canRemoveNested={(anchor) => isCustomNested(customNav, anchor)}
@@ -464,34 +545,47 @@ export default function AdminFranchiseDocumentsPage() {
                         </p>
                     ) : null}
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        {addModal?.kind === "link" ? "Link label (shown to franchises)" : "Section name"}
+                        {addModal?.kind === "link" ? "Name for this file / link" : "Section name"}
                         <input
                             className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
                             value={addTitle}
                             onChange={(e) => setAddTitle(e.target.value)}
                             required
                             autoFocus
+                            placeholder={addModal?.kind === "link" ? "e.g. Playgroup study material" : undefined}
                         />
                     </label>
                     {addModal?.kind === "link" ? (
-                        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                            Category
-                            <select
-                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                value={addCategory}
-                                onChange={(e) => setAddCategory(e.target.value)}
-                            >
-                                {FRANCHISE_DOCUMENT_CATEGORY_ORDER.map((c) => (
-                                    <option key={c.value} value={c.value}>
-                                        {c.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
+                        <>
+                            <ChecklistFileUploadField
+                                id="add-centre-page-file"
+                                accept=".pdf,.zip,.rar,.7z,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.mp3,.mp4,.wav,.mov,.webm,.htm,.html"
+                                hint="PDF, photos, ZIP, documents, audio, or video (max 50 MB)"
+                                required={!addEmbedUrl.trim()}
+                                currentName={addFile?.name ?? null}
+                                onChange={setAddFile}
+                            />
+                            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+                                Video / iframe embed link (optional)
+                                <textarea
+                                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono min-h-[72px]"
+                                    placeholder="https://www.youtube.com/watch?v=… or iframe embed URL"
+                                    value={addEmbedUrl}
+                                    onChange={(e) => setAddEmbedUrl(e.target.value)}
+                                />
+                                <span className="text-[11px] font-normal text-slate-500">
+                                    Upload a file above, or paste a YouTube / video embed link here — not both.
+                                </span>
+                            </label>
+                        </>
                     ) : null}
                     <div className="flex gap-2 pt-1">
                         <Button type="submit" size="sm" disabled={addSaving}>
-                            {addSaving ? "Saving…" : "Save"}
+                            {addSaving
+                                ? "Saving…"
+                                : addModal?.kind === "link"
+                                  ? "Save & upload"
+                                  : "Save"}
                         </Button>
                         <Button type="button" variant="outline" size="sm" onClick={closeAddModal}>
                             Cancel
@@ -512,21 +606,23 @@ export default function AdminFranchiseDocumentsPage() {
                         </p>
                     ) : null}
 
-                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        Category
-                        <select
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                            value={form.category}
-                            onChange={(e) => setForm({ ...form, category: e.target.value })}
-                            required
-                        >
-                            {FRANCHISE_DOCUMENT_CATEGORY_ORDER.map((c) => (
-                                <option key={c.value} value={c.value}>
-                                    {c.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
+                    {!uploadContext ? (
+                        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+                            Category
+                            <select
+                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                                value={form.category}
+                                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                                required
+                            >
+                                {FRANCHISE_DOCUMENT_CATEGORY_ORDER.map((c) => (
+                                    <option key={c.value} value={c.value}>
+                                        {c.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    ) : null}
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
                         Title (shown to franchises)
                         <input
@@ -536,83 +632,14 @@ export default function AdminFranchiseDocumentsPage() {
                             required
                         />
                     </label>
-                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        Centre Page path (matches checklist folder)
-                        <input
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono text-xs"
-                            placeholder="e.g. study-material-26-27/Block-1/PG-Study-Material-for-Block-1.zip"
-                            value={form.source_path}
-                            onChange={(e) => setForm({ ...form, source_path: e.target.value })}
-                        />
-                    </label>
-                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        Description (optional)
-                        <textarea
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[72px]"
-                            value={form.description}
-                            onChange={(e) => setForm({ ...form, description: e.target.value })}
-                        />
-                    </label>
-                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        Academic year (optional)
-                        <input
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                            placeholder="e.g. AY 2026-27"
-                            value={form.academic_year}
-                            onChange={(e) => setForm({ ...form, academic_year: e.target.value })}
-                        />
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                            Sort order
-                            <input
-                                type="number"
-                                min={0}
-                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                value={form.order}
-                                onChange={(e) => setForm({ ...form, order: Number(e.target.value) || 0 })}
-                            />
-                        </label>
-                        <label className="flex items-center gap-2 mt-6 text-sm text-slate-700">
-                            <input
-                                type="checkbox"
-                                checked={form.is_active}
-                                onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                            />
-                            Active
-                        </label>
-                    </div>
-                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        Centre (optional — blank = all centres)
-                        <select
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                            value={form.franchise_id === "" ? "__global__" : String(form.franchise_id)}
-                            onChange={(e) =>
-                                setForm({
-                                    ...form,
-                                    franchise_id: e.target.value === "__global__" ? "" : e.target.value,
-                                })
-                            }
-                        >
-                            <option value="__global__">Global (all centres)</option>
-                            {franchises.map((f) => (
-                                <option key={f.id} value={f.id}>
-                                    {f.name}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        <span>
-                            File {editing ? "(optional — leave empty to keep current)" : "(required unless embed)"}
-                        </span>
-                        <input
-                            type="file"
-                            accept=".pdf,.zip,.rar,.7z,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.mp3,.mp4,.wav,.htm,.html"
-                            className="text-sm"
-                            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                        />
-                    </label>
+                    <ChecklistFileUploadField
+                        id="centre-page-file"
+                        accept=".pdf,.zip,.rar,.7z,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.mp3,.mp4,.wav,.mov,.webm,.htm,.html"
+                        hint="PDF, documents, images, audio, video, or ZIP (max 50 MB)"
+                        required={!editing && !form.embed_url.trim()}
+                        currentName={file?.name ?? (editing?.file ? "Current file on server" : null)}
+                        onChange={setFile}
+                    />
                     {editing?.id ? (
                         <div className="pt-1">
                             <Button
@@ -636,13 +663,16 @@ export default function AdminFranchiseDocumentsPage() {
                         </div>
                     ) : null}
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        Embed / video link (optional)
+                        Video / embed link (optional — YouTube, etc.)
                         <textarea
                             className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono min-h-[72px]"
                             placeholder="https://www.youtube.com/watch?v=…"
                             value={form.embed_url}
                             onChange={(e) => setForm({ ...form, embed_url: e.target.value })}
                         />
+                        <span className="text-[11px] font-normal text-slate-500">
+                            Use a file upload above, or paste a video/embed link here — not both.
+                        </span>
                     </label>
                     <div className="flex gap-2 pt-2">
                         <Button type="submit" size="sm" disabled={submitting}>

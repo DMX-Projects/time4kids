@@ -28,13 +28,51 @@ type Tokens = { access: string; refresh: string };
 type LoginOptions = {
     /** Default: `/auth/login/`. Use `/auth/parent/login/` on the parent-only sign-in page. */
     authPath?: string;
+    /** Used on role-specific login pages when the API omits top-level ``user`` (driver login). */
+    forceRole?: Role;
+};
+
+export type AuthLoginResponse = {
+    refresh: string;
+    access: string;
+    user?: {
+        id: number;
+        email: string;
+        full_name?: string;
+        role: string;
+        [key: string]: unknown;
+    };
+    driver_profile?: {
+        id: number;
+        user: {
+            id: number;
+            email: string;
+            full_name: string;
+            username?: string;
+            role?: string;
+            is_active?: boolean;
+        };
+        phone: string;
+        service_number?: string;
+        license_number?: string;
+        license_document?: string | null;
+        vehicle_rc?: string | null;
+        vehicle_insurance?: string | null;
+        is_active?: boolean;
+        created_at?: string;
+    };
+};
+
+export type LoginResult = {
+    user: User;
+    response: AuthLoginResponse;
 };
 
 type AuthContextValue = {
     user: User | null;
     tokens: Tokens | null;
     loading: boolean;
-    login: (email: string, password: string, options?: LoginOptions) => Promise<User>;
+    login: (email: string, password: string, options?: LoginOptions) => Promise<LoginResult>;
     logout: () => void;
     refreshTokens: () => Promise<Tokens | false>;
     /** Re-fetch `/auth/me/` and update stored session (e.g. after parent updates display name). */
@@ -281,7 +319,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const login = async (email: string, password: string, options?: LoginOptions) => {
+    const login = async (email: string, password: string, options?: LoginOptions): Promise<LoginResult> => {
         const path = options?.authPath ?? "/auth/login/";
         const res = await fetch(apiUrl(path), {
             method: "POST",
@@ -289,23 +327,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             body: JSON.stringify({ email, password }),
         });
         if (!res.ok) throw await toApiError(res);
-        const data = await res.json();
+        const data = (await res.json()) as AuthLoginResponse;
         const nextTokens: Tokens = { access: data.access, refresh: data.refresh };
-        const u = data.user ?? {};
+        const u = data.user ?? data.driver_profile?.user;
+        const resolvedRole = u?.role ?? data.driver_profile?.user?.role ?? options?.forceRole;
         const nextUser: User = {
-            id: String(u.id ?? ""),
-            email: u.email ?? email,
-            fullName: u.full_name ?? undefined,
-            childName: u.child_name,
-            displayName: u.display_name ?? u.child_name,
-            gender: normalizeParentGender(u.gender),
-            genderLabel: u.gender_label ?? genderLabelFromCode(u.gender),
-            role: normalizeRole(u.role),
+            ...mapApiUserToSession((u ?? {}) as Record<string, unknown>, email),
+            role: normalizeRole(resolvedRole),
         };
         setTokens(nextTokens);
         setUser(nextUser);
         persistSession({ tokens: nextTokens, user: nextUser }, user);
-        return nextUser;
+        return { user: nextUser, response: data };
     };
 
     const logout = () => {
@@ -569,6 +602,11 @@ export const useAuth = () => {
     return ctx;
 };
 
+function dashboardPathForRole(role: Role): string {
+    if (role === "driver") return "/driver/trip";
+    return `/dashboard/${role}`;
+}
+
 export const RoleGuard = ({ allowedRole, children }: { allowedRole: Role; children: React.ReactNode }) => {
     const { user, loading } = useAuth();
     const router = useRouter();
@@ -583,7 +621,7 @@ export const RoleGuard = ({ allowedRole, children }: { allowedRole: Role; childr
 
         const actual = normalizeRole(user.role);
         if (actual !== allowedRole) {
-            router.replace(`/dashboard/${actual}`);
+            router.replace(dashboardPathForRole(actual));
         }
     }, [allowedRole, loading, router, user]);
 

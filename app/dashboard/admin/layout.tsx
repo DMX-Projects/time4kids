@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Briefcase, Images, MessageSquareQuote, LayoutTemplate, LayoutList, GraduationCap, HelpCircle, FileText, Star, MapPin } from "lucide-react";
+import { CalendarDays, Briefcase, Images, MessageSquareQuote, LayoutTemplate, LayoutList, GraduationCap, HelpCircle, FileText, Star } from "lucide-react";
 
 import { DashboardShell, DashboardNavItem } from "@/components/layout/DashboardShell";
 import { AdminDataProvider } from "@/components/dashboard/admin/AdminDataProvider";
@@ -10,7 +10,6 @@ const navItems: DashboardNavItem[] = [
     { label: "Media Files", href: "/dashboard/admin/media", icon: <Images className="w-5 h-5" /> },
     { label: "Brochures & Downloads", href: "/dashboard/admin/marketing-assets", icon: <FileText className="w-5 h-5" /> },
     { label: "Home page content", href: "/dashboard/admin/home-content", icon: <LayoutTemplate className="w-5 h-5" /> },
-    { label: "Cities (franchise)", href: "/dashboard/admin/locations", icon: <MapPin className="w-5 h-5" /> },
     { label: "Our programs", href: "/dashboard/admin/programs-content", icon: <LayoutList className="w-5 h-5" /> },
     { label: "Admission page content", href: "/dashboard/admin/admission-content", icon: <GraduationCap className="w-5 h-5" /> },
     { label: "FAQ page content", href: "/dashboard/admin/faq-content", icon: <HelpCircle className="w-5 h-5" /> },

@@ -50,7 +50,8 @@ function djangoOriginForServer(): string {
 
 /**
  * Browser on `127.0.0.1` but `.env` says `localhost` → cross-origin and almost everything fails.
- * When configured URL is loopback and matches this tab's port, rewrite to `window.location.origin`.
+ * When configured URL is loopback, rewrite to `window.location.origin` so Next dev on :3001 still
+ * hits `/api` on the same port (env often still says :3000 when that port is busy).
  */
 function alignLoopbackDevOrigin(configured: string | undefined, fallback: string): string {
     const resolved = normalizeBase(configured, fallback);
@@ -65,9 +66,16 @@ function alignLoopbackDevOrigin(configured: string | undefined, fallback: string
         const urlPort = u.port || (u.protocol === "https:" ? "443" : "80");
         const pagePort = window.location.port || (window.location.protocol === "https:" ? "443" : "80");
         if (!loopback(u.hostname) || !loopback(window.location.hostname)) return resolved;
-        if (urlPort !== pagePort) return resolved;
-        const suffix = u.pathname === "/" ? "" : u.pathname;
-        return normalizeBase(`${window.location.origin}${suffix}`, `${window.location.origin}${suffix}`);
+        const nextDevPort = (port: string) => {
+            const n = parseInt(port, 10);
+            return n >= 3000 && n <= 3099;
+        };
+        // Same port, or env points at Next (3000–3099) but tab is on another Next port → use this tab.
+        if (urlPort === pagePort || nextDevPort(urlPort)) {
+            const suffix = u.pathname === "/" ? "" : u.pathname;
+            return normalizeBase(`${window.location.origin}${suffix}`, `${window.location.origin}${suffix}`);
+        }
+        return resolved;
     } catch {
         return resolved;
     }

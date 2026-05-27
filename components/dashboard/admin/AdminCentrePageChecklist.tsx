@@ -86,11 +86,13 @@ function HeadingBar({
 function AdminUploadRow({
     ctx,
     onManage,
+    onDeleteUpload,
     onRemoveLink,
     indent = false,
 }: {
     ctx: AdminCenterPageUploadContext;
     onManage: (ctx: AdminCenterPageUploadContext) => void;
+    onDeleteUpload?: (ctx: AdminCenterPageUploadContext) => void;
     onRemoveLink?: () => void;
     indent?: boolean;
 }) {
@@ -106,7 +108,7 @@ function AdminUploadRow({
                     {uploaded ? (
                         <span className="text-emerald-700">Uploaded to database</span>
                     ) : (
-                        <span className="text-amber-800">Not uploaded yet</span>
+                        <span className="text-amber-800">Not uploaded yet — click Upload</span>
                     )}
                     {ctx.sourcePath ? (
                         <>
@@ -117,6 +119,16 @@ function AdminUploadRow({
                 </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+                {uploaded && onDeleteUpload ? (
+                    <button
+                        type="button"
+                        onClick={() => onDeleteUpload(ctx)}
+                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-50"
+                    >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                        Delete
+                    </button>
+                ) : null}
                 {onRemoveLink ? (
                     <button
                         type="button"
@@ -158,6 +170,7 @@ function LinkRowsBlock({
     hubDocsByCategory,
     hubDocsBySourcePath,
     onManage,
+    onDeleteUpload,
     onRemoveRequest,
     canRemoveLink,
 }: {
@@ -169,6 +182,7 @@ function LinkRowsBlock({
     hubDocsByCategory: Map<string, FranchiseHubDoc[]>;
     hubDocsBySourcePath: Map<string, FranchiseHubDoc>;
     onManage: (ctx: AdminCenterPageUploadContext) => void;
+    onDeleteUpload?: (ctx: AdminCenterPageUploadContext) => void;
     onRemoveRequest?: (req: CentrePageRemoveRequest) => void;
     canRemoveLink?: (rowKey?: string) => boolean;
 }) {
@@ -197,6 +211,7 @@ function LinkRowsBlock({
                         key={ctx.rowKey ?? ctx.breadcrumbLabel}
                         ctx={ctx}
                         onManage={onManage}
+                        onDeleteUpload={onDeleteUpload}
                         onRemoveLink={
                             removable && onRemoveRequest
                                 ? () =>
@@ -228,6 +243,7 @@ function NestedBlock({
     hubDocsByCategory,
     hubDocsBySourcePath,
     onManage,
+    onDeleteUpload,
     onAddRequest,
     onRemoveRequest,
     canRemoveNested,
@@ -238,6 +254,7 @@ function NestedBlock({
     hubDocsByCategory: Map<string, FranchiseHubDoc[]>;
     hubDocsBySourcePath: Map<string, FranchiseHubDoc>;
     onManage: (ctx: AdminCenterPageUploadContext) => void;
+    onDeleteUpload?: (ctx: AdminCenterPageUploadContext) => void;
     onAddRequest?: (req: CentrePageAddRequest) => void;
     onRemoveRequest?: (req: CentrePageRemoveRequest) => void;
     canRemoveNested?: (anchor: CentrePageLinkAnchor & { groupTitle: string; nestedTitle: string }) => boolean;
@@ -272,6 +289,7 @@ function NestedBlock({
                 hubDocsByCategory={hubDocsByCategory}
                 hubDocsBySourcePath={hubDocsBySourcePath}
                 onManage={onManage}
+                onDeleteUpload={onDeleteUpload}
                 onRemoveRequest={onRemoveRequest}
                 canRemoveLink={isCustomLinkRow}
             />
@@ -285,6 +303,7 @@ function GroupBlock({
     hubDocsByCategory,
     hubDocsBySourcePath,
     onManage,
+    onDeleteUpload,
     onAddRequest,
     onRemoveRequest,
     canRemoveGroup,
@@ -295,6 +314,7 @@ function GroupBlock({
     hubDocsByCategory: Map<string, FranchiseHubDoc[]>;
     hubDocsBySourcePath: Map<string, FranchiseHubDoc>;
     onManage: (ctx: AdminCenterPageUploadContext) => void;
+    onDeleteUpload?: (ctx: AdminCenterPageUploadContext) => void;
     onAddRequest?: (req: CentrePageAddRequest) => void;
     onRemoveRequest?: (req: CentrePageRemoveRequest) => void;
     canRemoveGroup?: (anchor: CentrePageLinkAnchor & { groupTitle: string }) => boolean;
@@ -333,6 +353,7 @@ function GroupBlock({
                     hubDocsByCategory={hubDocsByCategory}
                     hubDocsBySourcePath={hubDocsBySourcePath}
                     onManage={onManage}
+                    onDeleteUpload={onDeleteUpload}
                     onAddRequest={onAddRequest}
                     onRemoveRequest={onRemoveRequest}
                     canRemoveNested={canRemoveNested}
@@ -347,6 +368,7 @@ function GroupBlock({
                     hubDocsByCategory={hubDocsByCategory}
                     hubDocsBySourcePath={hubDocsBySourcePath}
                     onManage={onManage}
+                    onDeleteUpload={onDeleteUpload}
                     onRemoveRequest={onRemoveRequest}
                     canRemoveLink={isCustomLinkRow}
                 />
@@ -362,6 +384,7 @@ function SectionBlock({
     hubDocsByCategory,
     hubDocsBySourcePath,
     onManage,
+    onDeleteUpload,
     onAddRequest,
     onRemoveRequest,
     isCustomTop,
@@ -372,6 +395,7 @@ function SectionBlock({
     hubDocsByCategory: Map<string, FranchiseHubDoc[]>;
     hubDocsBySourcePath: Map<string, FranchiseHubDoc>;
     onManage: (ctx: AdminCenterPageUploadContext) => void;
+    onDeleteUpload?: (ctx: AdminCenterPageUploadContext) => void;
     onAddRequest?: (req: CentrePageAddRequest) => void;
     onRemoveRequest?: (req: CentrePageRemoveRequest) => void;
     isCustomTop?: boolean;
@@ -411,6 +435,7 @@ function SectionBlock({
                     hubDocsByCategory={hubDocsByCategory}
                     hubDocsBySourcePath={hubDocsBySourcePath}
                     onManage={onManage}
+                    onDeleteUpload={onDeleteUpload}
                     onRemoveRequest={onRemoveRequest}
                     canRemoveLink={isCustomLinkRow}
                 />
@@ -424,6 +449,7 @@ function SectionBlock({
                     hubDocsByCategory={hubDocsByCategory}
                     hubDocsBySourcePath={hubDocsBySourcePath}
                     onManage={onManage}
+                    onDeleteUpload={onDeleteUpload}
                     onAddRequest={onAddRequest}
                     onRemoveRequest={onRemoveRequest}
                     canRemoveGroup={canRemoveGroup}
@@ -444,6 +470,7 @@ export function AdminCentrePageChecklist({
     sections,
     hubDocs,
     onManageLink,
+    onDeleteUpload,
     onAddRequest,
     onRemoveRequest,
     isCustomTop,
@@ -453,6 +480,7 @@ export function AdminCentrePageChecklist({
     sections: CenterPageTopItem[][];
     hubDocs: FranchiseHubDoc[];
     onManageLink: (ctx: AdminCenterPageUploadContext) => void;
+    onDeleteUpload?: (ctx: AdminCenterPageUploadContext) => void;
     onAddRequest?: (req: CentrePageAddRequest) => void;
     onRemoveRequest?: (req: CentrePageRemoveRequest) => void;
     isCustomTop?: (topId: string) => boolean;
@@ -473,6 +501,7 @@ export function AdminCentrePageChecklist({
                     hubDocsByCategory={hubDocsByCategory}
                     hubDocsBySourcePath={hubDocsBySourcePath}
                     onManage={onManageLink}
+                    onDeleteUpload={onDeleteUpload}
                     onAddRequest={onAddRequest}
                     onRemoveRequest={onRemoveRequest}
                     isCustomTop={isCustomTop?.(item.id)}

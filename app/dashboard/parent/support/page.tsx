@@ -5,11 +5,13 @@ import { LifeBuoy } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders } from "@/lib/api-client";
 import Button from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 
 type Ticket = { id: number; subject: string; body: string; status: string; franchise_reply?: string; created_at?: string };
 
 export default function SupportPage() {
     const { authFetch } = useAuth();
+    const { showToast } = useToast();
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
     const [subject, setSubject] = useState("");
@@ -44,7 +46,10 @@ export default function SupportPage() {
             });
             setSubject("");
             setBody("");
+            showToast("Ticket submitted to your centre", "success");
             await load();
+        } catch (err: unknown) {
+            showToast(err instanceof Error ? err.message : "Could not submit ticket", "error");
         } finally {
             setSending(false);
         }
