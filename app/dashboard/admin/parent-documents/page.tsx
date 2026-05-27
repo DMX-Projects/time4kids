@@ -11,11 +11,17 @@ import {
     AdminParentAppChecklist,
     type ParentAppAddRequest,
 } from "@/components/dashboard/admin/AdminParentAppChecklist";
+import { ChecklistFileUploadField } from "@/components/dashboard/admin/ChecklistFileUploadField";
 import {
     PARENT_DOCUMENT_CATEGORIES,
     PARENT_DOCUMENT_STATES,
 } from "@/config/parent-document-categories";
 import type { AdminParentAppUploadContext } from "@/lib/admin-parent-app-upload";
+import {
+    acceptForParentDocumentCategory,
+    uploadHintForParentDocumentCategory,
+} from "@/lib/parent-document-upload-accept";
+import { validateAdminParentDocumentUpload } from "@/lib/franchise-centre-upload";
 
 export type ParentDocumentRow = {
     id: number;
@@ -88,6 +94,22 @@ export default function AdminParentDocumentsPage() {
             setItems((prev) => prev.filter((row) => row.id !== id));
         },
         [authFetch],
+    );
+
+    const handleDeleteUpload = useCallback(
+        async (ctx: AdminParentAppUploadContext) => {
+            if (ctx.matchedDocId == null) return;
+            if (!window.confirm(`Delete "${ctx.breadcrumbLabel}" permanently? Parents will no longer see it.`)) {
+                return;
+            }
+            try {
+                await deleteDocById(ctx.matchedDocId);
+                showToast("Upload deleted.", "success");
+            } catch {
+                showToast("Delete failed.", "error");
+            }
+        },
+        [deleteDocById, showToast],
     );
 
     const handleAddRequest = (req: ParentAppAddRequest) => {
@@ -171,6 +193,13 @@ export default function AdminParentDocumentsPage() {
             showToast("Select a centre for this upload.", "error");
             return;
         }
+        if (file) {
+            const sizeErr = validateAdminParentDocumentUpload(file);
+            if (sizeErr) {
+                showToast(sizeErr, "error");
+                return;
+            }
+        }
 
         setSubmitting(true);
         try {
@@ -233,10 +262,9 @@ export default function AdminParentDocumentsPage() {
             <div className="max-w-2xl">
                 <h1 className="text-2xl font-semibold text-slate-900">Parent app documents</h1>
                 <p className="mt-2 text-sm text-slate-600">
-                    Each row is where the file appears in the parent app. Use <strong>Upload</strong> or{" "}
-                    <strong>Add</strong> on a section to add files. To remove an upload, click <strong>Edit</strong>{" "}
-                    on that row → <strong>Delete upload</strong>. Checklist rows (e.g. each state holiday list) cannot
-                    be deleted — only the file on that row.
+                    Each section matches the parent app. Click <strong>Upload</strong> on a row to add PDFs, photos,
+                    audio, or video. Use <strong>Delete</strong> on uploaded rows to remove files. The section is chosen
+                    automatically — you do not need to pick a category.
                 </p>
             </div>
 
@@ -247,6 +275,7 @@ export default function AdminParentDocumentsPage() {
                     docs={items}
                     onManageLink={openFromChecklist}
                     onAddRequest={handleAddRequest}
+                    onDeleteUpload={handleDeleteUpload}
                 />
             )}
 
@@ -262,46 +291,46 @@ export default function AdminParentDocumentsPage() {
                         </p>
                     ) : null}
 
-                    <label className="text-xs font-semibold text-slate-600 block">
-                        Category
-                        <select
-                            value={form.category}
-                            onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-                            className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                            required
-                        >
-                            {PARENT_DOCUMENT_CATEGORIES.map((c) => (
-                                <option key={c.value} value={c.value}>
-                                    {c.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <label className="text-xs font-semibold text-slate-600 block">
-                        Centre {addForCentreOnly ? "(required)" : "(optional)"}
-                        <select
-                            value={form.franchise_id === "" ? "__global__" : form.franchise_id}
-                            onChange={(e) =>
-                                setForm((p) => ({
-                                    ...p,
-                                    franchise_id: e.target.value === "__global__" ? "" : e.target.value,
-                                }))
-                            }
-                            className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                            required={addForCentreOnly}
-                        >
-                            {!addForCentreOnly ? (
-                                <option value="__global__">Global — all parents</option>
-                            ) : (
+                    {!uploadContext ? (
+                        <label className="text-xs font-semibold text-slate-600 block">
+                            Category
+                            <select
+                                value={form.category}
+                                onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                                className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+                                required
+                            >
+                                {PARENT_DOCUMENT_CATEGORIES.map((c) => (
+                                    <option key={c.value} value={c.value}>
+                                        {c.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    ) : null}
+                    {addForCentreOnly ? (
+                        <label className="text-xs font-semibold text-slate-600 block">
+                            Centre (required)
+                            <select
+                                value={form.franchise_id === "" ? "__global__" : form.franchise_id}
+                                onChange={(e) =>
+                                    setForm((p) => ({
+                                        ...p,
+                                        franchise_id: e.target.value === "__global__" ? "" : e.target.value,
+                                    }))
+                                }
+                                className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+                                required
+                            >
                                 <option value="__global__">Select a centre…</option>
-                            )}
-                            {franchises.map((f) => (
-                                <option key={f.id} value={String(f.id)}>
-                                    {f.name}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
+                                {franchises.map((f) => (
+                                    <option key={f.id} value={String(f.id)}>
+                                        {f.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                    ) : null}
                     {isHoliday && (
                         <>
                             <label className="text-xs font-semibold text-slate-600 block">
@@ -348,16 +377,14 @@ export default function AdminParentDocumentsPage() {
                             className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
                         />
                     </label>
-                    <label className="text-xs font-semibold text-slate-600 block">
-                        File {editing ? "(leave empty to keep current)" : ""}
-                        <input
-                            type="file"
-                            accept={isTimetable ? ".pdf,application/pdf" : undefined}
-                            onChange={(e) => setFile(e.target.files?.[0] || null)}
-                            className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                            required={!editing}
-                        />
-                    </label>
+                    <ChecklistFileUploadField
+                        id="parent-app-file"
+                        accept={acceptForParentDocumentCategory(form.category)}
+                        hint={uploadHintForParentDocumentCategory(form.category)}
+                        required={!editing}
+                        currentName={file?.name ?? (editing?.file ? "Current file on server" : null)}
+                        onChange={setFile}
+                    />
                     <label className="flex items-center gap-2 text-sm text-slate-700">
                         <input
                             type="checkbox"

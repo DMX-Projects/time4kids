@@ -154,6 +154,20 @@ export function validateHubFileSize(file: File): string | null {
     return null;
 }
 
+/** Admin centre-page / resource hub checklist uploads (new file picks only). */
+export function validateAdminHubDocumentUpload(file: File): string | null {
+    return validateHubFileSize(file);
+}
+
+/** Admin parent-app document checklist uploads (new file picks only). */
+export function validateAdminParentDocumentUpload(file: File): string | null {
+    const kind = classifyParentUploadFile(file);
+    if (kind === "skip") {
+        return `${file.name}: file type not supported for parent app uploads.`;
+    }
+    return validateFileSize(file, kind);
+}
+
 export type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 
 export async function ensureShowcaseEventId(authFetch: AuthFetchFn): Promise<string> {

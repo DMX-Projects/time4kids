@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Pencil, Upload } from "lucide-react";
+import { Pencil, Trash2, Upload } from "lucide-react";
 import { ChecklistAddMenu } from "@/components/dashboard/admin/ChecklistAddMenu";
 import {
     PARENT_APP_DOCUMENT_CHECKLIST,
@@ -28,9 +28,11 @@ const PARENT_APP_ADD_OPTIONS: { kind: ParentAppAddKind; label: string }[] = [
 function UploadRow({
     ctx,
     onManage,
+    onDeleteUpload,
 }: {
     ctx: AdminParentAppUploadContext;
     onManage: (ctx: AdminParentAppUploadContext) => void;
+    onDeleteUpload?: (ctx: AdminParentAppUploadContext) => void;
 }) {
     const uploaded = ctx.matchedDocId != null;
 
@@ -42,27 +44,39 @@ function UploadRow({
                     {uploaded ? (
                         <span className="text-emerald-700">Uploaded — visible in parent app</span>
                     ) : (
-                        <span className="text-amber-800">Not uploaded yet</span>
+                        <span className="text-amber-800">Not uploaded yet — click Upload</span>
                     )}
                 </p>
             </div>
-            <button
-                type="button"
-                onClick={() => onManage(ctx)}
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-900 hover:bg-orange-100"
-            >
-                {uploaded ? (
-                    <>
-                        <Pencil className="h-3.5 w-3.5" aria-hidden />
-                        Edit
-                    </>
-                ) : (
-                    <>
-                        <Upload className="h-3.5 w-3.5" aria-hidden />
-                        Upload
-                    </>
-                )}
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+                {uploaded && onDeleteUpload ? (
+                    <button
+                        type="button"
+                        onClick={() => onDeleteUpload(ctx)}
+                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-50"
+                    >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                        Delete
+                    </button>
+                ) : null}
+                <button
+                    type="button"
+                    onClick={() => onManage(ctx)}
+                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-900 hover:bg-orange-100"
+                >
+                    {uploaded ? (
+                        <>
+                            <Pencil className="h-3.5 w-3.5" aria-hidden />
+                            Edit
+                        </>
+                    ) : (
+                        <>
+                            <Upload className="h-3.5 w-3.5" aria-hidden />
+                            Upload
+                        </>
+                    )}
+                </button>
+            </div>
         </div>
     );
 }
@@ -71,11 +85,13 @@ function SectionBlock({
     section,
     contexts,
     onManage,
+    onDeleteUpload,
     onAddRequest,
 }: {
     section: ParentAppDocumentSection;
     contexts: AdminParentAppUploadContext[];
     onManage: (ctx: AdminParentAppUploadContext) => void;
+    onDeleteUpload?: (ctx: AdminParentAppUploadContext) => void;
     onAddRequest?: (req: ParentAppAddRequest) => void;
 }) {
     const rows = contexts.filter((c) => c.category === section.category && !c.id.startsWith("extra-"));
@@ -97,7 +113,7 @@ function SectionBlock({
             </div>
             <div className="px-4">
                 {rows.map((ctx) => (
-                    <UploadRow key={ctx.id} ctx={ctx} onManage={onManage} />
+                    <UploadRow key={ctx.id} ctx={ctx} onManage={onManage} onDeleteUpload={onDeleteUpload} />
                 ))}
                 {extras.length > 0 ? (
                     <div className="border-t border-dashed border-slate-200 py-2">
@@ -105,7 +121,7 @@ function SectionBlock({
                             Additional uploads in this section
                         </p>
                         {extras.map((ctx) => (
-                            <UploadRow key={ctx.id} ctx={ctx} onManage={onManage} />
+                            <UploadRow key={ctx.id} ctx={ctx} onManage={onManage} onDeleteUpload={onDeleteUpload} />
                         ))}
                     </div>
                 ) : null}
@@ -117,10 +133,12 @@ function SectionBlock({
 export function AdminParentAppChecklist({
     docs,
     onManageLink,
+    onDeleteUpload,
     onAddRequest,
 }: {
     docs: ParentDocumentForMatch[];
     onManageLink: (ctx: AdminParentAppUploadContext) => void;
+    onDeleteUpload?: (ctx: AdminParentAppUploadContext) => void;
     onAddRequest?: (req: ParentAppAddRequest) => void;
 }) {
     const contexts = useMemo(
@@ -154,6 +172,7 @@ export function AdminParentAppChecklist({
                     section={section}
                     contexts={contexts}
                     onManage={onManageLink}
+                    onDeleteUpload={onDeleteUpload}
                     onAddRequest={onAddRequest}
                 />
             ))}
