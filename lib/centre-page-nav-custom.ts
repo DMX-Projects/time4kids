@@ -28,6 +28,8 @@ export type CentrePageCustomGroup = {
     title: string;
     links?: CentrePageCustomLink[];
     nested?: CentrePageCustomNested[];
+    /** Admin-added subsection (shows Remove). Link-only buckets omit this. */
+    removable?: boolean;
 };
 
 export type CentrePageCustomTop = {
@@ -43,11 +45,6 @@ export type CentrePageStaticExtension = {
     directLinks?: CentrePageCustomLink[];
 };
 
-export type CentrePageNavCustomData = {
-    customTopSections: CentrePageCustomTop[];
-    staticExtensions: CentrePageStaticExtension[];
-};
-
 export type CentrePageLinkAnchor = {
     topId: string;
     topTitle: string;
@@ -55,8 +52,51 @@ export type CentrePageLinkAnchor = {
     nestedTitle?: string;
 };
 
+export type CentrePageStaticGroupLinkAppend = {
+    staticTopId: string;
+    groupTitle: string;
+    links: CentrePageCustomLink[];
+};
+
+export type CentrePageNavCustomData = {
+    customTopSections: CentrePageCustomTop[];
+    staticExtensions: CentrePageStaticExtension[];
+    /** Extra links added under an existing static subsection (same name, one merged block). */
+    staticGroupLinkAppends?: CentrePageStaticGroupLinkAppend[];
+    /** Display-name overrides for static nav items (keys from labelKey helpers). */
+    labelOverrides?: Record<string, string>;
+};
+
+export type CentrePageRenameTarget =
+    | { kind: "top"; topId: string; currentTitle: string }
+    | { kind: "group"; topId: string; groupTitle: string; currentTitle: string }
+    | { kind: "nested"; topId: string; groupTitle: string; nestedTitle: string; currentTitle: string }
+    | {
+          kind: "link";
+          anchor: CentrePageLinkAnchor;
+          rowKey: string;
+          linkId?: string | null;
+          currentTitle: string;
+      };
+
+export function topLabelKey(topId: string): string {
+    return `top:${topId}`;
+}
+
+export function groupLabelKey(topId: string, groupTitle: string): string {
+    return `group:${topId}::${groupTitle}`;
+}
+
+export function nestedLabelKey(topId: string, groupTitle: string, nestedTitle: string): string {
+    return `nested:${topId}::${groupTitle}::${nestedTitle}`;
+}
+
+export function linkLabelKey(rowKey: string): string {
+    return `link:${rowKey}`;
+}
+
 export function emptyCentrePageNavCustom(): CentrePageNavCustomData {
-    return { customTopSections: [], staticExtensions: [] };
+    return { customTopSections: [], staticExtensions: [], staticGroupLinkAppends: [], labelOverrides: {} };
 }
 
 export function newCustomId(prefix: string): string {
@@ -119,19 +159,101 @@ function customTopToItem(top: CentrePageCustomTop): CenterPageTopItem {
     };
 }
 
+function applyLinkLabelOverride(link: CenterPageLink, overrides: Record<string, string>): CenterPageLink {
+    const rowKey = link.rowKey ?? rowKeyForChecklistLink(link);
+    const key = linkLabelKey(rowKey);
+    const label = overrides[key]?.trim() || link.label;
+    return label === link.label ? link : { ...link, label };
+}
+
+function applyLabelOverridesToTop(
+    item: CenterPageTopItem,
+    overrides: Record<string, string>,
+): CenterPageTopItem {
+    if (!Object.keys(overrides).length) return item;
+
+    const title = overrides[topLabelKey(item.id)]?.trim() || item.title;
+
+    const groups = item.groups.map((group) => {
+        const origGroupTitle = group.title;
+        const groupTitle = overrides[groupLabelKey(item.id, origGroupTitle)]?.trim() || origGroupTitle;
+        return {
+            ...group,
+            title: groupTitle,
+            nested: group.nested?.map((nested) => {
+                const origNestedTitle = nested.title;
+                const nestedTitle =
+                    overrides[nestedLabelKey(item.id, origGroupTitle, origNestedTitle)]?.trim() ||
+                    origNestedTitle;
+                return {
+                    ...nested,
+                    title: nestedTitle,
+                    links: nested.links.map((link) => applyLinkLabelOverride(link, overrides)),
+                };
+            }),
+            links: group.links?.map((link) => applyLinkLabelOverride(link, overrides)),
+        };
+    });
+
+    return {
+        ...item,
+        title,
+        groups,
+        directLinks: item.directLinks?.map((link) => applyLinkLabelOverride(link, overrides)),
+    };
+}
+
+function coalesceGroupsByTitle(groups: CenterPageSubsection[]): CenterPageSubsection[] {
+    const out: CenterPageSubsection[] = [];
+    for (const group of groups) {
+        const idx = out.findIndex((g) => g.title === group.title);
+        if (idx < 0) {
+            out.push({ ...group });
+            continue;
+        }
+        const prev = out[idx];
+        out[idx] = {
+            ...prev,
+            links: [...(prev.links ?? []), ...(group.links ?? [])],
+            nested: [...(prev.nested ?? []), ...(group.nested ?? [])],
+        };
+    }
+    return out;
+}
+
 function mergeTopWithExtension(
     item: CenterPageTopItem,
     custom: CentrePageNavCustomData,
 ): CenterPageTopItem {
     const ext = custom.staticExtensions.find((e) => e.staticTopId === item.id);
-    if (!ext) return item;
-    const extraGroups = ext.groups.map(customGroupToSubsection);
-    const extraDirect = ext.directLinks?.map(customLinkToCenterLink) ?? [];
-    return {
-        ...item,
-        groups: [...item.groups, ...extraGroups],
-        directLinks: [...(item.directLinks ?? []), ...extraDirect],
-    };
+    let groups = item.groups;
+    let directLinks = item.directLinks;
+
+    if (ext) {
+        const extraGroups = ext.groups.map(customGroupToSubsection);
+        const extraDirect = ext.directLinks?.map(customLinkToCenterLink) ?? [];
+        groups = coalesceGroupsByTitle([...item.groups, ...extraGroups]);
+        directLinks = [...(item.directLinks ?? []), ...extraDirect];
+    }
+
+    const appends =
+        custom.staticGroupLinkAppends?.filter((a) => a.staticTopId === item.id) ?? [];
+    if (appends.length) {
+        groups = groups.map((group) => {
+            const append = appends.find((a) => a.groupTitle === group.title);
+            if (!append?.links.length) return group;
+            return {
+                ...group,
+                links: [
+                    ...(group.links ?? []),
+                    ...append.links.map(customLinkToCenterLink),
+                ],
+            };
+        });
+    }
+
+    if (!ext && !appends.length) return item;
+    return { ...item, groups, directLinks };
 }
 
 /** Merge static checklist with admin-added sections (for franchise + admin UI). */
@@ -141,9 +263,16 @@ export function mergeCentrePageBlocks(
     custom: CentrePageNavCustomData | null | undefined,
 ): CenterPageTopItem[][] {
     const data = custom ?? emptyCentrePageNavCustom();
-    const mergedA = blockA.map((item) => mergeTopWithExtension(item, data));
-    const mergedB = blockB.map((item) => mergeTopWithExtension(item, data));
-    const customTops = data.customTopSections.map(customTopToItem);
+    const overrides = data.labelOverrides ?? {};
+    const mergedA = blockA.map((item) =>
+        applyLabelOverridesToTop(mergeTopWithExtension(item, data), overrides),
+    );
+    const mergedB = blockB.map((item) =>
+        applyLabelOverridesToTop(mergeTopWithExtension(item, data), overrides),
+    );
+    const customTops = data.customTopSections
+        .map(customTopToItem)
+        .map((item) => applyLabelOverridesToTop(item, overrides));
     return [mergedA, [...mergedB, ...customTops]];
 }
 
@@ -178,6 +307,7 @@ export function addCustomGroup(
         id: newCustomId("grp"),
         title: title.trim(),
         links: [],
+        removable: true,
     };
     if (isCustomTopSection(data, anchor.topId)) {
         return {
@@ -240,6 +370,7 @@ export function addCustomNested(
         id: newCustomId("grp"),
         title: anchor.groupTitle,
         nested: [nested],
+        removable: true,
     };
     return {
         ...data,
@@ -264,6 +395,23 @@ export function addCustomLink(
         rowKey: `custom-${newCustomId("row")}`,
     };
 
+    const appendToStaticSubsection = (): CentrePageNavCustomData => {
+        const appends = [...(data.staticGroupLinkAppends ?? [])];
+        const idx = appends.findIndex(
+            (a) => a.staticTopId === anchor.topId && a.groupTitle === anchor.groupTitle,
+        );
+        if (idx >= 0) {
+            appends[idx] = { ...appends[idx], links: [...appends[idx].links, link] };
+        } else {
+            appends.push({
+                staticTopId: anchor.topId,
+                groupTitle: anchor.groupTitle!,
+                links: [link],
+            });
+        }
+        return { ...data, staticGroupLinkAppends: appends };
+    };
+
     const appendToGroup = (g: CentrePageCustomGroup): CentrePageCustomGroup => {
         if (anchor.groupTitle && g.title !== anchor.groupTitle) return g;
         if (anchor.nestedTitle) {
@@ -279,6 +427,13 @@ export function addCustomLink(
         return { ...g, links: [...(g.links ?? []), link] };
     };
 
+    const appendToExtensionGroups = (ext: CentrePageStaticExtension): boolean => {
+        if (!anchor.groupTitle || anchor.nestedTitle) return false;
+        const hasGroup = ext.groups.some((g) => g.title === anchor.groupTitle);
+        if (!hasGroup) return false;
+        return true;
+    };
+
     if (isCustomTopSection(data, anchor.topId)) {
         const customTopSections = data.customTopSections.map((t) => {
             if (t.id !== anchor.topId) return t;
@@ -292,14 +447,23 @@ export function addCustomLink(
 
     const extIdx = data.staticExtensions.findIndex((e) => e.staticTopId === anchor.topId);
     if (extIdx >= 0) {
-        const next = [...data.staticExtensions];
-        const ext = { ...next[extIdx] };
-        if (!anchor.groupTitle) {
-            ext.directLinks = [...(ext.directLinks ?? []), link];
-        } else {
-            ext.groups = ext.groups.map(appendToGroup);
+        const ext = data.staticExtensions[extIdx];
+        if (anchor.groupTitle && !anchor.nestedTitle && appendToExtensionGroups(ext)) {
+            const next = [...data.staticExtensions];
+            next[extIdx] = { ...ext, groups: ext.groups.map(appendToGroup) };
+            return { data: { ...data, staticExtensions: next }, link };
         }
-        next[extIdx] = ext;
+        if (anchor.groupTitle && !anchor.nestedTitle) {
+            return { data: appendToStaticSubsection(), link };
+        }
+        const next = [...data.staticExtensions];
+        const patched = { ...ext };
+        if (!anchor.groupTitle) {
+            patched.directLinks = [...(patched.directLinks ?? []), link];
+        } else {
+            patched.groups = patched.groups.map(appendToGroup);
+        }
+        next[extIdx] = patched;
         return { data: { ...data, staticExtensions: next }, link };
     }
 
@@ -316,24 +480,26 @@ export function addCustomLink(
         };
     }
 
-    const group: CentrePageCustomGroup = {
-        id: newCustomId("grp"),
-        title: anchor.groupTitle,
-        nested: anchor.nestedTitle
-            ? [{ id: newCustomId("nest"), title: anchor.nestedTitle, links: [link] }]
-            : undefined,
-        links: anchor.nestedTitle ? undefined : [link],
-    };
-    return {
-        data: {
-            ...data,
-            staticExtensions: [
-                ...data.staticExtensions,
-                { staticTopId: anchor.topId, groups: [group] },
-            ],
-        },
-        link,
-    };
+    if (anchor.nestedTitle) {
+        const group: CentrePageCustomGroup = {
+            id: newCustomId("grp"),
+            title: anchor.groupTitle,
+            nested: [{ id: newCustomId("nest"), title: anchor.nestedTitle, links: [link] }],
+            removable: true,
+        };
+        return {
+            data: {
+                ...data,
+                staticExtensions: [
+                    ...data.staticExtensions,
+                    { staticTopId: anchor.topId, groups: [group] },
+                ],
+            },
+            link,
+        };
+    }
+
+    return { data: appendToStaticSubsection(), link };
 }
 
 export function removeCustomTopSection(
@@ -365,7 +531,7 @@ export function isCustomGroup(
         return top?.groups.some((g) => g.title === anchor.groupTitle) ?? false;
     }
     const ext = data.staticExtensions.find((e) => e.staticTopId === anchor.topId);
-    return ext?.groups.some((g) => g.title === anchor.groupTitle) ?? false;
+    return ext?.groups.some((g) => g.title === anchor.groupTitle && g.removable) ?? false;
 }
 
 export function isCustomNested(
@@ -424,7 +590,7 @@ export function removeCustomLink(
         };
     }
 
-    return {
+    let nextData: CentrePageNavCustomData = {
         ...data,
         staticExtensions: data.staticExtensions.map((ext) => {
             if (ext.staticTopId !== anchor.topId) return ext;
@@ -434,6 +600,18 @@ export function removeCustomLink(
             return { ...ext, groups: ext.groups.map(patchGroup) };
         }),
     };
+
+    if (anchor.groupTitle) {
+        const appends = (nextData.staticGroupLinkAppends ?? [])
+            .map((a) => {
+                if (a.staticTopId !== anchor.topId || a.groupTitle !== anchor.groupTitle) return a;
+                return { ...a, links: stripLinkById(a.links, linkId) };
+            })
+            .filter((a) => a.links.length > 0);
+        nextData = { ...nextData, staticGroupLinkAppends: appends };
+    }
+
+    return nextData;
 }
 
 export function removeCustomNested(
@@ -496,4 +674,132 @@ export function rowKeyForUploadedDoc(docId: number): string {
 
 export function rowKeyForChecklistLink(link: CenterPageLink): string {
     return link.rowKey ?? `link:${link.label}:${link.href}`;
+}
+
+function patchCustomLinkLabel(
+    data: CentrePageNavCustomData,
+    linkId: string,
+    newLabel: string,
+): CentrePageNavCustomData {
+    const label = newLabel.trim();
+    const patchLinks = (links: CentrePageCustomLink[]) =>
+        links.map((l) => (l.id === linkId ? { ...l, label } : l));
+
+    const patchGroup = (g: CentrePageCustomGroup): CentrePageCustomGroup => ({
+        ...g,
+        links: g.links ? patchLinks(g.links) : g.links,
+        nested: g.nested?.map((n) => ({ ...n, links: patchLinks(n.links) })),
+    });
+
+    return {
+        ...data,
+        customTopSections: data.customTopSections.map((t) => ({
+            ...t,
+            directLinks: t.directLinks ? patchLinks(t.directLinks) : t.directLinks,
+            groups: t.groups.map(patchGroup),
+        })),
+        staticExtensions: data.staticExtensions.map((ext) => ({
+            ...ext,
+            directLinks: ext.directLinks ? patchLinks(ext.directLinks) : ext.directLinks,
+            groups: ext.groups.map(patchGroup),
+        })),
+    };
+}
+
+/** Rename a section, subsection, nested block, or link label (custom nav or static override). */
+export function renameNavLabel(
+    data: CentrePageNavCustomData,
+    target: CentrePageRenameTarget,
+    newTitle: string,
+): CentrePageNavCustomData {
+    const title = newTitle.trim();
+    if (!title) return data;
+
+    const overrides = { ...(data.labelOverrides ?? {}) };
+
+    if (target.kind === "top") {
+        if (isCustomTopSection(data, target.topId)) {
+            return {
+                ...data,
+                customTopSections: data.customTopSections.map((t) =>
+                    t.id === target.topId ? { ...t, title } : t,
+                ),
+            };
+        }
+        overrides[topLabelKey(target.topId)] = title;
+        return { ...data, labelOverrides: overrides };
+    }
+
+    if (target.kind === "group") {
+        if (
+            isCustomGroup(data, {
+                topId: target.topId,
+                topTitle: "",
+                groupTitle: target.groupTitle,
+            })
+        ) {
+            const patch = (g: CentrePageCustomGroup) =>
+                g.title === target.groupTitle ? { ...g, title } : g;
+            if (isCustomTopSection(data, target.topId)) {
+                return {
+                    ...data,
+                    customTopSections: data.customTopSections.map((t) =>
+                        t.id === target.topId ? { ...t, groups: t.groups.map(patch) } : t,
+                    ),
+                };
+            }
+            return {
+                ...data,
+                staticExtensions: data.staticExtensions.map((ext) =>
+                    ext.staticTopId === target.topId ? { ...ext, groups: ext.groups.map(patch) } : ext,
+                ),
+            };
+        }
+        overrides[groupLabelKey(target.topId, target.groupTitle)] = title;
+        return { ...data, labelOverrides: overrides };
+    }
+
+    if (target.kind === "nested") {
+        if (
+            isCustomNested(data, {
+                topId: target.topId,
+                topTitle: "",
+                groupTitle: target.groupTitle,
+                nestedTitle: target.nestedTitle,
+            })
+        ) {
+            const patchGroup = (g: CentrePageCustomGroup): CentrePageCustomGroup => {
+                if (g.title !== target.groupTitle) return g;
+                return {
+                    ...g,
+                    nested: (g.nested ?? []).map((n) =>
+                        n.title === target.nestedTitle ? { ...n, title } : n,
+                    ),
+                };
+            };
+            if (isCustomTopSection(data, target.topId)) {
+                return {
+                    ...data,
+                    customTopSections: data.customTopSections.map((t) =>
+                        t.id === target.topId ? { ...t, groups: t.groups.map(patchGroup) } : t,
+                    ),
+                };
+            }
+            return {
+                ...data,
+                staticExtensions: data.staticExtensions.map((ext) =>
+                    ext.staticTopId === target.topId ? { ...ext, groups: ext.groups.map(patchGroup) } : ext,
+                ),
+            };
+        }
+        overrides[nestedLabelKey(target.topId, target.groupTitle, target.nestedTitle)] = title;
+        return { ...data, labelOverrides: overrides };
+    }
+
+    if (target.linkId) {
+        return patchCustomLinkLabel(data, target.linkId, title);
+    }
+
+    overrides[linkLabelKey(target.rowKey)] = title;
+    return { ...data, labelOverrides: overrides };
 }

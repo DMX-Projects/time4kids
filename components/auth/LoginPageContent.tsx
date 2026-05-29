@@ -23,7 +23,7 @@ const copy: Record<
     },
     parent: {
         title: "Parent sign in",
-        subtitle: "Use the email and password from your centre",
+        subtitle: "Use email, username, ID card, or mobile number from your centre",
         leftTitle: "Parent App",
         leftBody: "View your child’s progress, marks, and centre updates.",
     },
@@ -35,7 +35,7 @@ const copy: Record<
     },
     driver: {
         title: "Driver sign in",
-        subtitle: "Transport tracking access",
+        subtitle: "Use email, username, or mobile number",
         leftTitle: "Safe transport",
         leftBody: "Sign in to manage your route, track student attendance, and broadcast live location.",
     },
@@ -188,8 +188,10 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                             variant === "franchise"
                                                 ? "Centre username (e.g. domalguda)"
                                                 : variant === "driver"
-                                                  ? "driver@example.com"
-                                                  : "you@example.com or username"
+                                                  ? "Email, username, or mobile number"
+                                                  : variant === "parent"
+                                                    ? "Email, username, ID card, or mobile"
+                                                    : "Email or username"
                                         }
                                         required
                                     />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Trash2, Upload } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -10,6 +10,7 @@ import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
 import {
     AdminParentAppChecklist,
     type ParentAppAddRequest,
+    type ParentAppRenameRequest,
 } from "@/components/dashboard/admin/AdminParentAppChecklist";
 import { ChecklistFileUploadField } from "@/components/dashboard/admin/ChecklistFileUploadField";
 import {
@@ -22,6 +23,13 @@ import {
     uploadHintForParentDocumentCategory,
 } from "@/lib/parent-document-upload-accept";
 import { validateAdminParentDocumentUpload } from "@/lib/franchise-centre-upload";
+import {
+    PARENT_APP_NAV_CUSTOM_SLUG,
+    emptyParentAppNavCustom,
+    mergeParentAppChecklist,
+    renameParentAppLabel,
+    type ParentAppNavCustomData,
+} from "@/lib/parent-app-nav-custom";
 
 export type ParentDocumentRow = {
     id: number;
@@ -53,6 +61,21 @@ const emptyForm = {
     franchise_id: "" as string,
 };
 
+function parseParentNavCustom(raw: unknown): ParentAppNavCustomData {
+    if (!raw || typeof raw !== "object") return emptyParentAppNavCustom();
+    const o = raw as Record<string, unknown>;
+    return {
+        sectionTitles:
+            o.sectionTitles && typeof o.sectionTitles === "object"
+                ? (o.sectionTitles as Record<string, string>)
+                : {},
+        slotLabels:
+            o.slotLabels && typeof o.slotLabels === "object"
+                ? (o.slotLabels as Record<string, string>)
+                : {},
+    };
+}
+
 export default function AdminParentDocumentsPage() {
     const { authFetch } = useAuth();
     const { franchises } = useAdminData();
@@ -66,6 +89,24 @@ export default function AdminParentDocumentsPage() {
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [addForCentreOnly, setAddForCentreOnly] = useState(false);
+    const [navCustom, setNavCustom] = useState<ParentAppNavCustomData>(emptyParentAppNavCustom());
+    const [renameModal, setRenameModal] = useState<ParentAppRenameRequest | null>(null);
+    const [renameTitle, setRenameTitle] = useState("");
+    const [renameSaving, setRenameSaving] = useState(false);
+
+    const mergedSections = useMemo(() => mergeParentAppChecklist(navCustom), [navCustom]);
+
+    const saveNavCustom = useCallback(
+        async (next: ParentAppNavCustomData) => {
+            await authFetch(`/common/page-content/${PARENT_APP_NAV_CUSTOM_SLUG}/`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(next),
+            });
+            setNavCustom(next);
+        },
+        [authFetch],
+    );
 
     const isHoliday = form.category === "HOLIDAY_LISTS";
     const isTimetable = form.category === "CLASS_TIMETABLE";
@@ -73,12 +114,19 @@ export default function AdminParentDocumentsPage() {
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await authFetch<ParentDocumentRow[]>("/documents/admin/parent-documents/");
+            const [data, navData] = await Promise.all([
+                authFetch<ParentDocumentRow[]>("/documents/admin/parent-documents/"),
+                authFetch<ParentAppNavCustomData>(`/common/page-content/${PARENT_APP_NAV_CUSTOM_SLUG}/`).catch(
+                    () => emptyParentAppNavCustom(),
+                ),
+            ]);
             setItems(Array.isArray(data) ? data : []);
+            setNavCustom(parseParentNavCustom(navData));
         } catch (e) {
             console.error(e);
             showToast("Could not load parent documents.", "error");
             setItems([]);
+            setNavCustom(emptyParentAppNavCustom());
         } finally {
             setLoading(false);
         }
@@ -131,6 +179,33 @@ export default function AdminParentDocumentsPage() {
         });
         setFile(null);
         setModalOpen(true);
+    };
+
+    const handleRenameRequest = (req: ParentAppRenameRequest) => {
+        setRenameModal(req);
+        setRenameTitle(req.currentTitle);
+    };
+
+    const submitRename = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!renameModal) return;
+        const title = renameTitle.trim();
+        if (!title) {
+            showToast("Name is required.", "error");
+            return;
+        }
+        setRenameSaving(true);
+        try {
+            const next = renameParentAppLabel(navCustom, renameModal, title);
+            await saveNavCustom(next);
+            setRenameModal(null);
+            setRenameTitle("");
+            showToast("Name updated.", "success");
+        } catch {
+            showToast("Could not rename.", "error");
+        } finally {
+            setRenameSaving(false);
+        }
     };
 
     const openFromChecklist = (ctx: AdminParentAppUploadContext) => {
@@ -262,9 +337,9 @@ export default function AdminParentDocumentsPage() {
             <div className="max-w-2xl">
                 <h1 className="text-2xl font-semibold text-slate-900">Parent app documents</h1>
                 <p className="mt-2 text-sm text-slate-600">
-                    Each section matches the parent app. Click <strong>Upload</strong> on a row to add PDFs, photos,
-                    audio, or video. Use <strong>Delete</strong> on uploaded rows to remove files. The section is chosen
-                    automatically — you do not need to pick a category.
+                    Each section matches the parent app. Use <strong>Rename</strong> on section or row names.
+                    Click <strong>Add</strong> on an existing section to add another file — no new subsection needed.
+                    Uploaded file titles can also be changed with <strong>Edit</strong>.
                 </p>
             </div>
 
@@ -273,11 +348,52 @@ export default function AdminParentDocumentsPage() {
             ) : (
                 <AdminParentAppChecklist
                     docs={items}
+                    sections={mergedSections}
                     onManageLink={openFromChecklist}
                     onAddRequest={handleAddRequest}
+                    onRenameRequest={handleRenameRequest}
                     onDeleteUpload={handleDeleteUpload}
                 />
             )}
+
+            <Modal
+                isOpen={renameModal != null}
+                onClose={() => {
+                    setRenameModal(null);
+                    setRenameTitle("");
+                }}
+                title="Rename"
+                size="sm"
+            >
+                <form onSubmit={submitRename} className="space-y-3">
+                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+                        Display name
+                        <input
+                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                            value={renameTitle}
+                            onChange={(e) => setRenameTitle(e.target.value)}
+                            required
+                            autoFocus
+                        />
+                    </label>
+                    <div className="flex gap-2 pt-1">
+                        <Button type="submit" size="sm" disabled={renameSaving}>
+                            {renameSaving ? "Saving…" : "Save"}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setRenameModal(null);
+                                setRenameTitle("");
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
 
             <Modal
                 isOpen={modalOpen}
