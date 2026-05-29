@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { Pencil, Trash2, Upload } from "lucide-react";
 import { ChecklistAddMenu } from "@/components/dashboard/admin/ChecklistAddMenu";
 import {
-    PARENT_APP_DOCUMENT_CHECKLIST,
     type ParentAppDocumentSection,
 } from "@/config/parent-app-document-checklist";
 import {
@@ -12,6 +11,7 @@ import {
     type AdminParentAppUploadContext,
     type ParentDocumentForMatch,
 } from "@/lib/admin-parent-app-upload";
+import { mergeParentAppChecklist } from "@/lib/parent-app-nav-custom";
 
 export type ParentAppAddKind = "document" | "centreDocument";
 
@@ -21,18 +21,22 @@ export type ParentAppAddRequest = {
 };
 
 const PARENT_APP_ADD_OPTIONS: { kind: ParentAppAddKind; label: string }[] = [
-    { kind: "document", label: "Add document (all centres)" },
-    { kind: "centreDocument", label: "Add document for one centre" },
+    { kind: "document", label: "Add another file (all centres)" },
+    { kind: "centreDocument", label: "Add another file (one centre)" },
 ];
+
+export type ParentAppRenameRequest = import("@/lib/parent-app-nav-custom").ParentAppRenameTarget;
 
 function UploadRow({
     ctx,
     onManage,
     onDeleteUpload,
+    onRename,
 }: {
     ctx: AdminParentAppUploadContext;
     onManage: (ctx: AdminParentAppUploadContext) => void;
     onDeleteUpload?: (ctx: AdminParentAppUploadContext) => void;
+    onRename?: () => void;
 }) {
     const uploaded = ctx.matchedDocId != null;
 
@@ -49,6 +53,16 @@ function UploadRow({
                 </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+                {onRename && !ctx.id.startsWith("extra-") ? (
+                    <button
+                        type="button"
+                        onClick={onRename}
+                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                        <Pencil className="h-3.5 w-3.5" aria-hidden />
+                        Rename
+                    </button>
+                ) : null}
                 {uploaded && onDeleteUpload ? (
                     <button
                         type="button"
@@ -87,12 +101,14 @@ function SectionBlock({
     onManage,
     onDeleteUpload,
     onAddRequest,
+    onRenameRequest,
 }: {
     section: ParentAppDocumentSection;
     contexts: AdminParentAppUploadContext[];
     onManage: (ctx: AdminParentAppUploadContext) => void;
     onDeleteUpload?: (ctx: AdminParentAppUploadContext) => void;
     onAddRequest?: (req: ParentAppAddRequest) => void;
+    onRenameRequest?: (req: ParentAppRenameRequest) => void;
 }) {
     const rows = contexts.filter((c) => c.category === section.category && !c.id.startsWith("extra-"));
     const extras = contexts.filter((c) => c.category === section.category && c.id.startsWith("extra-"));
@@ -103,17 +119,50 @@ function SectionBlock({
         <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2.5">
                 <h2 className="min-w-0 truncate text-base font-semibold text-slate-900">{section.title}</h2>
-                {onAddRequest ? (
-                    <ChecklistAddMenu
-                        options={PARENT_APP_ADD_OPTIONS}
-                        onPick={(kind) => onAddRequest({ kind, section })}
-                        sectionTitle={section.title}
-                    />
-                ) : null}
+                <div className="flex shrink-0 items-center gap-2">
+                    {onRenameRequest ? (
+                        <button
+                            type="button"
+                            onClick={() =>
+                                onRenameRequest({
+                                    kind: "section",
+                                    sectionId: section.id,
+                                    currentTitle: section.title,
+                                })
+                            }
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                            <Pencil className="h-3.5 w-3.5" aria-hidden />
+                            Rename
+                        </button>
+                    ) : null}
+                    {onAddRequest ? (
+                        <ChecklistAddMenu
+                            options={PARENT_APP_ADD_OPTIONS}
+                            onPick={(kind) => onAddRequest({ kind, section })}
+                            sectionTitle={section.title}
+                        />
+                    ) : null}
+                </div>
             </div>
             <div className="px-4">
                 {rows.map((ctx) => (
-                    <UploadRow key={ctx.id} ctx={ctx} onManage={onManage} onDeleteUpload={onDeleteUpload} />
+                    <UploadRow
+                        key={ctx.id}
+                        ctx={ctx}
+                        onManage={onManage}
+                        onDeleteUpload={onDeleteUpload}
+                        onRename={
+                            onRenameRequest
+                                ? () =>
+                                      onRenameRequest({
+                                          kind: "slot",
+                                          slotId: ctx.id,
+                                          currentTitle: ctx.breadcrumbLabel.split(" › ").pop() || ctx.breadcrumbLabel,
+                                      })
+                                : undefined
+                        }
+                    />
                 ))}
                 {extras.length > 0 ? (
                     <div className="border-t border-dashed border-slate-200 py-2">
@@ -132,22 +181,26 @@ function SectionBlock({
 
 export function AdminParentAppChecklist({
     docs,
+    sections = mergeParentAppChecklist(null),
     onManageLink,
     onDeleteUpload,
     onAddRequest,
+    onRenameRequest,
 }: {
     docs: ParentDocumentForMatch[];
+    sections?: ParentAppDocumentSection[];
     onManageLink: (ctx: AdminParentAppUploadContext) => void;
     onDeleteUpload?: (ctx: AdminParentAppUploadContext) => void;
     onAddRequest?: (req: ParentAppAddRequest) => void;
+    onRenameRequest?: (req: ParentAppRenameRequest) => void;
 }) {
     const contexts = useMemo(
-        () => buildParentAppUploadContexts(PARENT_APP_DOCUMENT_CHECKLIST, docs),
-        [docs],
+        () => buildParentAppUploadContexts(sections, docs),
+        [sections, docs],
     );
 
     const extraSections = useMemo(() => {
-        const known = new Set(PARENT_APP_DOCUMENT_CHECKLIST.map((s) => s.category));
+        const known = new Set(sections.map((s) => s.category));
         const orphanCats = Array.from(
             new Set(docs.map((d) => d.category).filter((c) => !known.has(c))),
         );
@@ -157,11 +210,11 @@ export function AdminParentAppChecklist({
             category,
             slots: [],
         }));
-    }, [docs]);
+    }, [docs, sections]);
 
     const allSections = useMemo(
-        () => [...PARENT_APP_DOCUMENT_CHECKLIST, ...extraSections],
-        [extraSections],
+        () => [...sections, ...extraSections],
+        [sections, extraSections],
     );
 
     return (
@@ -174,6 +227,7 @@ export function AdminParentAppChecklist({
                     onManage={onManageLink}
                     onDeleteUpload={onDeleteUpload}
                     onAddRequest={onAddRequest}
+                    onRenameRequest={onRenameRequest}
                 />
             ))}
         </div>

@@ -9,6 +9,7 @@ import {
     AdminCentrePageChecklist,
     type CentrePageAddRequest,
     type CentrePageRemoveRequest,
+    type CentrePageRenameRequest,
 } from "@/components/dashboard/admin/AdminCentrePageChecklist";
 import {
     FRANCHISE_CENTER_PAGE_BLOCK_A,
@@ -33,6 +34,7 @@ import {
     removeCustomLink,
     removeCustomNested,
     removeCustomTopSection,
+    renameNavLabel,
     type CentrePageNavCustomData,
 } from "@/lib/centre-page-nav-custom";
 import { Trash2 } from "lucide-react";
@@ -93,6 +95,13 @@ function parseCustomNav(raw: unknown): CentrePageNavCustomData {
         staticExtensions: Array.isArray(o.staticExtensions)
             ? (o.staticExtensions as CentrePageNavCustomData["staticExtensions"])
             : [],
+        labelOverrides:
+            o.labelOverrides && typeof o.labelOverrides === "object"
+                ? (o.labelOverrides as Record<string, string>)
+                : {},
+        staticGroupLinkAppends: Array.isArray(o.staticGroupLinkAppends)
+            ? (o.staticGroupLinkAppends as CentrePageNavCustomData["staticGroupLinkAppends"])
+            : [],
     };
 }
 
@@ -113,6 +122,9 @@ export default function AdminFranchiseDocumentsPage() {
     const [addFile, setAddFile] = useState<File | null>(null);
     const [addEmbedUrl, setAddEmbedUrl] = useState("");
     const [addSaving, setAddSaving] = useState(false);
+    const [renameModal, setRenameModal] = useState<CentrePageRenameRequest | null>(null);
+    const [renameTitle, setRenameTitle] = useState("");
+    const [renameSaving, setRenameSaving] = useState(false);
 
     const hubDocs = useMemo(() => items as FranchiseHubDoc[], [items]);
     const mergedSections = useMemo(
@@ -171,6 +183,33 @@ export default function AdminFranchiseDocumentsPage() {
         setAddTitle("");
         setAddFile(null);
         setAddEmbedUrl("");
+    };
+
+    const handleRenameRequest = (req: CentrePageRenameRequest) => {
+        setRenameModal(req);
+        setRenameTitle(req.currentTitle);
+    };
+
+    const submitRename = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!renameModal) return;
+        const title = renameTitle.trim();
+        if (!title) {
+            showToast("Name is required.", "error");
+            return;
+        }
+        setRenameSaving(true);
+        try {
+            const next = renameNavLabel(customNav, renameModal, title);
+            await saveCustomNav(next);
+            setRenameModal(null);
+            setRenameTitle("");
+            showToast("Name updated.", "success");
+        } catch {
+            showToast("Could not rename.", "error");
+        } finally {
+            setRenameSaving(false);
+        }
     };
 
     const handleRemoveRequest = async (req: CentrePageRemoveRequest) => {
@@ -498,9 +537,9 @@ export default function AdminFranchiseDocumentsPage() {
             <div className="max-w-2xl">
                 <h1 className="text-2xl font-semibold text-orange-900">Centre page documents</h1>
                 <p className="mt-2 text-sm text-slate-600">
-                    Each row matches a centre page link. Click <strong>Upload</strong> to add a file, photo, video, or
-                    embed link. Use <strong>Delete</strong> on uploaded rows to remove files. Category is set
-                    automatically from the section you are in.
+                    Each row matches a centre page link. Use <strong>Rename</strong> on section or file names.
+                    Click <strong>Add</strong> on an existing section → choose <strong>Add file / link to this section</strong>{" "}
+                    (you do not need a new subsection). Upload replaces legacy files for that row.
                 </p>
             </div>
 
@@ -513,12 +552,68 @@ export default function AdminFranchiseDocumentsPage() {
                     onManageLink={openFromChecklist}
                     onAddRequest={handleAddRequest}
                     onRemoveRequest={handleRemoveRequest}
+                    onRenameRequest={handleRenameRequest}
                     onDeleteUpload={handleDeleteUpload}
                     isCustomTop={(id) => isCustomTopSection(customNav, id)}
                     canRemoveGroup={(anchor) => isCustomGroup(customNav, anchor)}
                     canRemoveNested={(anchor) => isCustomNested(customNav, anchor)}
                 />
             )}
+
+            <div className="flex justify-end">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                        handleAddRequest({
+                            kind: "topSection",
+                            anchor: { topId: "", topTitle: "New section" },
+                        })
+                    }
+                >
+                    Add top-level section
+                </Button>
+            </div>
+
+            <Modal
+                isOpen={renameModal != null}
+                onClose={() => {
+                    setRenameModal(null);
+                    setRenameTitle("");
+                }}
+                title="Rename"
+                size="sm"
+            >
+                <form onSubmit={submitRename} className="space-y-3">
+                    <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+                        Display name
+                        <input
+                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                            value={renameTitle}
+                            onChange={(e) => setRenameTitle(e.target.value)}
+                            required
+                            autoFocus
+                        />
+                    </label>
+                    <div className="flex gap-2 pt-1">
+                        <Button type="submit" size="sm" disabled={renameSaving}>
+                            {renameSaving ? "Saving…" : "Save"}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setRenameModal(null);
+                                setRenameTitle("");
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
 
             <Modal
                 isOpen={addModal != null}
