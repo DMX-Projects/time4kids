@@ -13,6 +13,9 @@ export type AdminFranchise = {
     phone: string;
     status: string;
     city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
     about?: string;
     programs?: string;
     facilities?: string;
@@ -108,6 +111,7 @@ type ApiFranchise = {
     city?: string;
     state?: string;
     country?: string;
+    postal_code?: string;
     contact_email?: string;
     contact_phone?: string;
     is_active?: boolean;
@@ -154,8 +158,11 @@ const mapFranchise = (fr: ApiFranchise): AdminFranchise => ({
     id: String(fr.id),
     name: fr.name,
     owner: fr.user?.full_name || fr.user?.email || "",
-    region: fr.city || fr.state || fr.country || "",
+    region: fr.city || "",
     city: fr.city,
+    state: fr.state || "",
+    country: fr.country || "",
+    postalCode: fr.postal_code || "",
     email: fr.contact_email || fr.user?.email || "",
     phone: fr.contact_phone || "",
     status: fr.is_active === false ? "Inactive" : "Active",
@@ -225,9 +232,24 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     const loadFranchises = async () => {
         setFranchisesLoadError(null);
         try {
-            const data = await authFetch<ApiFranchise[] | { results: ApiFranchise[] }>("/franchises/admin/franchises/");
-            const items = unwrapList<ApiFranchise>(data);
-            setFranchises(items.map(mapFranchise));
+            const all: ApiFranchise[] = [];
+            let page = 1;
+            for (;;) {
+                const path =
+                    page === 1 ? "/franchises/admin/franchises/" : `/franchises/admin/franchises/?page=${page}`;
+                const data = await authFetch<
+                    ApiFranchise[] | { results: ApiFranchise[]; next?: string | null }
+                >(path);
+                if (Array.isArray(data)) {
+                    all.push(...data);
+                    break;
+                }
+                const batch = data?.results ?? [];
+                all.push(...batch);
+                if (!batch.length || !data?.next) break;
+                page += 1;
+            }
+            setFranchises(all.map(mapFranchise));
         } catch (e: unknown) {
             setFranchises([]);
             const msg = e instanceof Error ? e.message : "Failed to load franchises.";
@@ -315,6 +337,9 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         const body = {
             name: payload.name,
             city: payload.region,
+            state: payload.state,
+            country: payload.country,
+            postal_code: payload.postalCode,
             contact_email: payload.email,
             contact_phone: payload.phone,
             franchise_email: payload.email,
@@ -344,7 +369,10 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     const updateFranchise = async (id: string, payload: Partial<AdminFranchise>) => {
         const body = {
             name: payload.name,
-            city: payload.region,
+            city: payload.region ?? payload.city,
+            state: payload.state,
+            country: payload.country,
+            postal_code: payload.postalCode,
             contact_email: payload.email,
             contact_phone: payload.phone,
             is_active: payload.status ? payload.status.toLowerCase() === "active" : undefined,

@@ -1,9 +1,8 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useParams } from "next/navigation";
-import { ManageFranchiseView } from "@/components/dashboard/admin/ManageFranchiseView";
+type Props = { params: { id: string } };
 
-export default function ManageFranchiseDetailPage() {
-    const params = useParams<{ id: string }>();
-    return <ManageFranchiseView initialFranchiseId={params?.id} />;
+/** Legacy deep link — opens the unified centres editor. */
+export default function ManageFranchiseDetailPage({ params }: Props) {
+    redirect(`/dashboard/admin/locations?id=${encodeURIComponent(params.id)}`);
 }

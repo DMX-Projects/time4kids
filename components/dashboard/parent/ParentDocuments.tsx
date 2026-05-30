@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Download, Eye, FileText, Music, Play, Sparkles } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useParentAppNavCustom } from "@/hooks/useParentAppNavCustom";
 import { openParentDocumentFile } from "@/lib/parent-document-file-open";
+import { mergeParentAppChecklist } from "@/lib/parent-app-nav-custom";
 
 type ParentDoc = {
     id: number;
@@ -24,15 +26,15 @@ const normalizeDocs = (data: unknown): ParentDoc[] => {
     return [];
 };
 
-const categoryMeta: Record<string, { title: string; icon: JSX.Element; accent: { strip: string; text: string } }> = {
-    PRESCHOOL_POLICIES: { title: "Preschool Policies", icon: <FileText className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
-    CLASS_TIMETABLE: { title: "Class Timetable (PDF)", icon: <FileText className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
-    HOLIDAY_LISTS: { title: "Holiday Lists (AY 2025-26)", icon: <Sparkles className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
-    AUDIO_RHYMES: { title: "Audio Rhymes", icon: <Music className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
-    VIDEOS: { title: "Watch • Hear • Learn", icon: <Play className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
-    NEWSLETTERS: { title: "Newsletters", icon: <FileText className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
-    STUDENTS_KIT: { title: "Students Kit", icon: <Sparkles className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
-    PARENTING_TIPS: { title: "Parenting Tips & Articles", icon: <Sparkles className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
+const categoryMeta: Record<string, { icon: JSX.Element; accent: { strip: string; text: string } }> = {
+    PRESCHOOL_POLICIES: { icon: <FileText className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
+    CLASS_TIMETABLE: { icon: <FileText className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
+    HOLIDAY_LISTS: { icon: <Sparkles className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
+    AUDIO_RHYMES: { icon: <Music className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
+    VIDEOS: { icon: <Play className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
+    NEWSLETTERS: { icon: <FileText className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
+    STUDENTS_KIT: { icon: <Sparkles className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
+    PARENTING_TIPS: { icon: <Sparkles className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
 };
 
 export function ParentDocuments() {
@@ -40,6 +42,9 @@ export function ParentDocuments() {
     const [loading, setLoading] = useState(true);
     const [docs, setDocs] = useState<ParentDoc[]>([]);
     const { authFetch, tokens, authFetchBlobResponse } = useAuth();
+    const { navCustom } = useParentAppNavCustom();
+
+    const sections = useMemo(() => mergeParentAppChecklist(navCustom), [navCustom]);
 
     const load = useCallback(async () => {
         try {
@@ -57,12 +62,21 @@ export function ParentDocuments() {
     }, [load]);
 
     const categories = useMemo(() => {
-        return Object.entries(categoryMeta).map(([key, meta]) => ({
-            key,
-            ...meta,
-            items: docs.filter((d) => d.category === key),
-        }));
-    }, [docs]);
+        return sections.map((section) => {
+            const meta = categoryMeta[section.category] ?? {
+                icon: <FileText className="w-4 h-4" />,
+                accent: { strip: "#A5D8FF", text: "#1F2937" },
+            };
+            return {
+                key: section.id,
+                category: section.category,
+                title: section.title,
+                icon: meta.icon,
+                accent: meta.accent,
+                items: docs.filter((d) => d.category === section.category),
+            };
+        });
+    }, [sections, docs]);
 
     const toggle = (key: string) => {
         setOpenId((prev) => (prev === key ? null : key));
@@ -100,7 +114,7 @@ export function ParentDocuments() {
                                 >
                                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#1F2937] shadow-sm">
                                         {cat.icon}
-                                        {cat.key === "AUDIO_RHYMES" && (
+                                        {cat.key === "audio-rhymes" && (
                                             <span className="wave-bars" aria-hidden>
                                                 <span />
                                                 <span />

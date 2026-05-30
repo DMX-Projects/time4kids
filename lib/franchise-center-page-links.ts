@@ -90,73 +90,27 @@ export function isLegacyFranchiseUploadUrl(href: string): boolean {
     }
 }
 
-function normalizeMatchKey(value: string): string {
-    return value
-        .toLowerCase()
-        .replace(/\.[a-z0-9]{2,5}$/i, "")
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim();
+function stableRowKeyForLink(link: CenterPageLink): string {
+    if (link.rowKey) return link.rowKey;
+    const href = link.href?.trim();
+    return href ? `href:${href}` : `link:${link.label}`;
 }
 
-function docTitle(doc: FranchiseHubDoc): string {
-    return (doc.display_title || doc.title || "").trim();
-}
-
-function findDocForLink(label: string, docs: FranchiseHubDoc[]): FranchiseHubDoc | undefined {
-    if (!docs.length) return undefined;
-    const labelKey = normalizeMatchKey(label);
-    if (!labelKey) return undefined;
-
-    const exact = docs.find((d) => normalizeMatchKey(docTitle(d)) === labelKey);
-    if (exact) return exact;
-
-    const contains = docs.find((d) => {
-        const key = normalizeMatchKey(docTitle(d));
-        return key.includes(labelKey) || labelKey.includes(key);
-    });
-    return contains;
+function checklistRowSourcePath(link: CenterPageLink): string {
+    if (link.rowKey?.trim()) {
+        return `checklist-row/${link.rowKey.trim().replace(/:/g, "/")}`;
+    }
+    return `checklist-row/${stableRowKeyForLink(link).replace(/:/g, "/")}`;
 }
 
 function normalizeSourcePathKey(path: string): string {
     return path.replace(/\\/g, "/").trim().replace(/^\/+/, "").toLowerCase();
 }
 
-/** Match legacy URL filenames to `source_path` when spacing/underscores differ (pc import vs old site URLs). */
-function looseBasenameKey(pathOrFileName: string): string {
-    const seg = pathOrFileName.split("/").filter(Boolean).pop() || pathOrFileName;
-    const lower = seg.trim().toLowerCase();
-    const extMatch = lower.match(/\.([a-z0-9]{1,8})$/i);
-    const ext = extMatch ? extMatch[1].toLowerCase() : "";
-    const base = ext ? lower.slice(0, lower.length - ext.length - 1) : lower;
-    const slug = base.replace(/[^a-z0-9]+/gi, "");
-    return ext ? `${slug}.${ext}` : slug;
-}
-
-function findFranchiseDocByLooseBasename(
-    legacyRelativePath: string,
-    docsBySourcePath: Map<string, FranchiseHubDoc>,
-    docsByCategory: Map<string, FranchiseHubDoc[]>,
-    adminCategory?: string,
-): FranchiseHubDoc | undefined {
-    const want = looseBasenameKey(legacyRelativePath.split("/").filter(Boolean).pop() || legacyRelativePath);
-    if (!want) return undefined;
-
-    const matches = (d: FranchiseHubDoc) =>
-        Boolean(
-            d.id &&
-                (d.file || d.embed_url) &&
-                looseBasenameKey((d.source_path || "").split("/").filter(Boolean).pop() || "") === want,
-        );
-
-    if (adminCategory) {
-        for (const d of docsByCategory.get(adminCategory) ?? []) {
-            if (matches(d)) return d;
-        }
-    }
-    for (const d of Array.from(docsBySourcePath.values())) {
-        if (matches(d)) return d;
-    }
-    return undefined;
+function hubDocReady(doc: FranchiseHubDoc | undefined, usedDocIds?: Set<number>): FranchiseHubDoc | undefined {
+    if (!doc?.id || !(doc.file || doc.embed_url)) return undefined;
+    if (usedDocIds?.has(doc.id)) return undefined;
+    return doc;
 }
 
 /** e.g. `/franchise-artworks/.../file.png` → `franchise-artworks/.../file.png` (matches DB source_path). */
@@ -201,6 +155,40 @@ function withFranchiseHubDownload(docId: number): ResolvedHubLink {
     return { href: `#franchise-hub-doc-${docId}`, franchiseHubDocId: docId };
 }
 
+export type ResolvedLinkMeta = { href: string; franchiseHubDocId?: number };
+
+export function linkResolutionKey(link: CenterPageLink): string {
+    return link.rowKey?.trim() || stableRowKeyForLink(link);
+}
+
+/** Resolve all links under one top section once — each DB document maps to at most one row. */
+export function buildResolvedLinkLookup(
+    item: CenterPageTopItem,
+    docsByCategory: Map<string, FranchiseHubDoc[]>,
+    docsBySourcePath?: Map<string, FranchiseHubDoc>,
+): Map<string, ResolvedLinkMeta> {
+    const links = collectLinksFromTopItem(item);
+    const usedDocIds = new Set<number>();
+    const lookup = new Map<string, ResolvedLinkMeta>();
+    for (const link of links) {
+        const key = linkResolutionKey(link);
+        const meta = resolveCenterPageLinkMeta(link, docsByCategory, docsBySourcePath, usedDocIds);
+        if (meta.franchiseHubDocId != null) usedDocIds.add(meta.franchiseHubDocId);
+        lookup.set(key, meta);
+    }
+    return lookup;
+}
+
+export function applyResolvedLinkLookup(
+    link: CenterPageLink,
+    lookup?: Map<string, ResolvedLinkMeta>,
+): CenterPageLink {
+    if (!lookup) return link;
+    const meta = lookup.get(linkResolutionKey(link));
+    if (!meta) return link;
+    return { ...link, href: meta.href, franchiseHubDocId: meta.franchiseHubDocId };
+}
+
 /**
  * Resolve centre-page links for live franchise dashboard.
  * PostgreSQL `FranchiseDocument` rows win first; pc folder / static files are fallbacks only.
@@ -209,31 +197,34 @@ export function resolveCenterPageLinkMeta(
     link: CenterPageLink,
     docsByCategory: Map<string, FranchiseHubDoc[]>,
     docsBySourcePath?: Map<string, FranchiseHubDoc>,
+    usedDocIds?: Set<number>,
 ): ResolvedHubLink {
+    void docsByCategory;
+
+    if (docsBySourcePath) {
+        const byChecklist = hubDocReady(
+            docsBySourcePath.get(normalizeSourcePathKey(checklistRowSourcePath(link))),
+            usedDocIds,
+        );
+        if (byChecklist) return withFranchiseHubDownload(byChecklist.id);
+    }
+
     const publicRel = extractPublicFranchiseRelativePath(link.href);
     if (publicRel && docsBySourcePath) {
-        const byPublic = docsBySourcePath.get(normalizeSourcePathKey(publicRel));
-        if (byPublic?.id && (byPublic.file || byPublic.embed_url)) return withFranchiseHubDownload(byPublic.id);
+        const byPublic = hubDocReady(
+            docsBySourcePath.get(normalizeSourcePathKey(publicRel)),
+            usedDocIds,
+        );
+        if (byPublic) return withFranchiseHubDownload(byPublic.id);
     }
 
     const legacyRel = extractLegacyPcRelativePath(link.href);
     if (legacyRel && docsBySourcePath) {
-        const byPath = docsBySourcePath.get(normalizeSourcePathKey(legacyRel));
-        if (byPath?.id && (byPath.file || byPath.embed_url)) return withFranchiseHubDownload(byPath.id);
-        const loose = findFranchiseDocByLooseBasename(legacyRel, docsBySourcePath, docsByCategory, link.adminCategory);
-        if (loose?.id && (loose.file || loose.embed_url)) return withFranchiseHubDownload(loose.id);
-    }
-
-    if (link.adminCategory) {
-        const docs = docsByCategory.get(link.adminCategory) ?? [];
-        const match = findDocForLink(link.label, docs);
-        if (match?.id && (match.file || match.embed_url)) return withFranchiseHubDownload(match.id);
-    }
-
-    /** Match embed/file uploads by title when checklist has no adminCategory (e.g. Parents orientation video). */
-    for (const docs of Array.from(docsByCategory.values())) {
-        const match = findDocForLink(link.label, docs);
-        if (match?.id && (match.file || match.embed_url)) return withFranchiseHubDownload(match.id);
+        const byPath = hubDocReady(
+            docsBySourcePath.get(normalizeSourcePathKey(legacyRel)),
+            usedDocIds,
+        );
+        if (byPath) return withFranchiseHubDownload(byPath.id);
     }
 
     const fromPcFolder = legacyPcHrefToMediaUrl(link.href);
@@ -259,8 +250,10 @@ export function resolveCenterPageLinks(
     docsByCategory: Map<string, FranchiseHubDoc[]>,
     docsBySourcePath?: Map<string, FranchiseHubDoc>,
 ): CenterPageLink[] {
+    const usedDocIds = new Set<number>();
     return links.map((link) => {
-        const meta = resolveCenterPageLinkMeta(link, docsByCategory, docsBySourcePath);
+        const meta = resolveCenterPageLinkMeta(link, docsByCategory, docsBySourcePath, usedDocIds);
+        if (meta.franchiseHubDocId != null) usedDocIds.add(meta.franchiseHubDocId);
         return {
             ...link,
             href: meta.href,

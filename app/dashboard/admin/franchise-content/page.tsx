@@ -11,10 +11,12 @@ import {
     DEFAULT_FRANCHISE_PAGE_DATA,
     FRANCHISE_SUCCESS_STORY_DEFAULT_TITLE,
     mergeFranchisePageData,
+    syncMainBranchContactFields,
     type FranchiseBenefit,
     type FranchisePageData,
     type FranchiseTestimonial,
 } from "@/config/franchise-page-defaults";
+import { FranchiseContactFields } from "@/components/admin/FranchiseContactFields";
 import { MarketingBrochureUploader } from "@/components/admin/MarketingBrochureUploader";
 import { FRANCHISE_BROCHURE_PDF_URL } from "@/config/site-public";
 
@@ -84,16 +86,19 @@ export default function AdminFranchiseContentPage() {
         setError(null);
         setSaving(true);
         try {
+            const payload = {
+                ...data,
+                main_branch: syncMainBranchContactFields(data.main_branch),
+                testimonials: (data.testimonials ?? []).filter(
+                    (t) => (t.video_url || "").trim() || (t.thumbnail_url || "").trim(),
+                ),
+            };
             await authFetch("/common/page-content/franchise-opportunity/", {
                 method: "PUT",
                 headers: jsonHeaders(),
-                body: JSON.stringify({
-                    ...data,
-                    testimonials: (data.testimonials ?? []).filter(
-                        (t) => (t.video_url || "").trim() || (t.thumbnail_url || "").trim(),
-                    ),
-                }),
+                body: JSON.stringify(payload),
             });
+            setData(mergeFranchisePageData(payload));
             setMessage("Saved. Refresh /franchise to see changes.");
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : "Save failed");
@@ -1051,21 +1056,9 @@ export default function AdminFranchiseContentPage() {
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className={labelClass}>Corporate office address ? left card (HTML allowed, use &lt;br /&gt; for new lines)</label>
-                                <textarea className={`${inputClass} min-h-[96px]`} value={data.main_branch.address_html} onChange={(e) => setData({ ...data, main_branch: { ...data.main_branch, address_html: e.target.value } })} />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className={labelClass}>Regional offices address ? right card</label>
-                                <textarea
-                                    className={`${inputClass} min-h-[180px]`}
-                                    value={data.main_branch.regional_address_html ?? ""}
-                                    onChange={(e) =>
-                                        setData({
-                                            ...data,
-                                            main_branch: { ...data.main_branch, regional_address_html: e.target.value },
-                                        })
-                                    }
-                                    placeholder="Uses tk-regional-offices grid HTML (state / city / phone columns). Leave blank to reset to default."
+                                <FranchiseContactFields
+                                    mainBranch={data.main_branch}
+                                    onChange={(main_branch) => setData({ ...data, main_branch })}
                                 />
                             </div>
                             <div>

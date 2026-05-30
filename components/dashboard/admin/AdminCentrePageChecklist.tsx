@@ -11,9 +11,12 @@ import type {
 } from "@/config/franchise-center-page-nav";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
 import {
+    applyResolvedLinkLookup,
+    buildResolvedLinkLookup,
     groupFranchiseHubDocsByCategory,
     groupFranchiseHubDocsBySourcePath,
-    resolveCenterPageLinks,
+    linkResolutionKey,
+    type ResolvedLinkMeta,
 } from "@/lib/franchise-center-page-links";
 import {
     buildAdminUploadContext,
@@ -194,8 +197,7 @@ function LinkRowsBlock({
     topId,
     groupTitle,
     nestedTitle,
-    hubDocsByCategory,
-    hubDocsBySourcePath,
+    linkLookup,
     onManage,
     onDeleteUpload,
     onRemoveRequest,
@@ -207,23 +209,21 @@ function LinkRowsBlock({
     topId: string;
     groupTitle?: string;
     nestedTitle?: string;
-    hubDocsByCategory: Map<string, FranchiseHubDoc[]>;
-    hubDocsBySourcePath: Map<string, FranchiseHubDoc>;
+    linkLookup: Map<string, ResolvedLinkMeta>;
     onManage: (ctx: AdminCenterPageUploadContext) => void;
     onDeleteUpload?: (ctx: AdminCenterPageUploadContext) => void;
     onRemoveRequest?: (req: CentrePageRemoveRequest) => void;
     onRenameRequest?: (req: CentrePageRenameRequest) => void;
     canRemoveLink?: (rowKey?: string) => boolean;
 }) {
-    const resolved = resolveCenterPageLinks(links, hubDocsByCategory, hubDocsBySourcePath);
     const rows = links
-        .map((link, i) =>
+        .map((link) =>
             buildAdminUploadContext({
                 topTitle,
                 groupTitle,
                 nestedTitle,
                 link,
-                matchedDocId: resolved[i]?.franchiseHubDocId,
+                matchedDocId: linkLookup.get(linkResolutionKey(link))?.franchiseHubDocId,
             }),
         )
         .filter((ctx): ctx is AdminCenterPageUploadContext => ctx != null);
@@ -287,8 +287,7 @@ function NestedBlock({
     block,
     item,
     group,
-    hubDocsByCategory,
-    hubDocsBySourcePath,
+    linkLookup,
     onManage,
     onDeleteUpload,
     onAddRequest,
@@ -299,8 +298,7 @@ function NestedBlock({
     block: CenterPageNestedBlock;
     item: CenterPageTopItem;
     group: CenterPageSubsection;
-    hubDocsByCategory: Map<string, FranchiseHubDoc[]>;
-    hubDocsBySourcePath: Map<string, FranchiseHubDoc>;
+    linkLookup: Map<string, ResolvedLinkMeta>;
     onManage: (ctx: AdminCenterPageUploadContext) => void;
     onDeleteUpload?: (ctx: AdminCenterPageUploadContext) => void;
     onAddRequest?: (req: CentrePageAddRequest) => void;
@@ -347,8 +345,7 @@ function NestedBlock({
                 topTitle={item.title}
                 groupTitle={group.title}
                 nestedTitle={block.title}
-                hubDocsByCategory={hubDocsByCategory}
-                hubDocsBySourcePath={hubDocsBySourcePath}
+                linkLookup={linkLookup}
                 onManage={onManage}
                 onDeleteUpload={onDeleteUpload}
                 onRemoveRequest={onRemoveRequest}
@@ -362,8 +359,7 @@ function NestedBlock({
 function GroupBlock({
     group,
     item,
-    hubDocsByCategory,
-    hubDocsBySourcePath,
+    linkLookup,
     onManage,
     onDeleteUpload,
     onAddRequest,
@@ -374,8 +370,7 @@ function GroupBlock({
 }: {
     group: CenterPageSubsection;
     item: CenterPageTopItem;
-    hubDocsByCategory: Map<string, FranchiseHubDoc[]>;
-    hubDocsBySourcePath: Map<string, FranchiseHubDoc>;
+    linkLookup: Map<string, ResolvedLinkMeta>;
     onManage: (ctx: AdminCenterPageUploadContext) => void;
     onDeleteUpload?: (ctx: AdminCenterPageUploadContext) => void;
     onAddRequest?: (req: CentrePageAddRequest) => void;
@@ -425,8 +420,7 @@ function GroupBlock({
                     block={block}
                     item={item}
                     group={group}
-                    hubDocsByCategory={hubDocsByCategory}
-                    hubDocsBySourcePath={hubDocsBySourcePath}
+                    linkLookup={linkLookup}
                     onManage={onManage}
                     onDeleteUpload={onDeleteUpload}
                     onAddRequest={onAddRequest}
@@ -441,8 +435,7 @@ function GroupBlock({
                     topId={item.id}
                     topTitle={item.title}
                     groupTitle={group.title}
-                    hubDocsByCategory={hubDocsByCategory}
-                    hubDocsBySourcePath={hubDocsBySourcePath}
+                    linkLookup={linkLookup}
                     onManage={onManage}
                     onDeleteUpload={onDeleteUpload}
                     onRemoveRequest={onRemoveRequest}
@@ -483,6 +476,10 @@ function SectionBlock({
     canRemoveGroup?: (anchor: CentrePageLinkAnchor & { groupTitle: string }) => boolean;
     canRemoveNested?: (anchor: CentrePageLinkAnchor & { groupTitle: string; nestedTitle: string }) => boolean;
 }) {
+    const linkLookup = useMemo(
+        () => buildResolvedLinkLookup(item, hubDocsByCategory, hubDocsBySourcePath),
+        [item, hubDocsByCategory, hubDocsBySourcePath],
+    );
     const anchor: CentrePageLinkAnchor = { topId: item.id, topTitle: item.title };
     const hasGroups = item.groups.length > 0;
     const hasDirect = (item.directLinks?.length ?? 0) > 0;
@@ -523,8 +520,7 @@ function SectionBlock({
                     links={item.directLinks}
                     topId={item.id}
                     topTitle={item.title}
-                    hubDocsByCategory={hubDocsByCategory}
-                    hubDocsBySourcePath={hubDocsBySourcePath}
+                    linkLookup={linkLookup}
                     onManage={onManage}
                     onDeleteUpload={onDeleteUpload}
                     onRemoveRequest={onRemoveRequest}
@@ -538,8 +534,7 @@ function SectionBlock({
                     key={`${item.id}::${group.title}`}
                     group={group}
                     item={item}
-                    hubDocsByCategory={hubDocsByCategory}
-                    hubDocsBySourcePath={hubDocsBySourcePath}
+                    linkLookup={linkLookup}
                     onManage={onManage}
                     onDeleteUpload={onDeleteUpload}
                     onAddRequest={onAddRequest}
