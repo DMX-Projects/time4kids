@@ -47,7 +47,7 @@ export default function AddFranchisePage() {
         try {
             await addFranchise(form);
             showToast("Franchise added successfully!", "success");
-            router.push("/dashboard/admin/manage-franchise");
+            router.push("/dashboard/admin/locations");
         } catch (err: any) {
             showToast(err?.message || "Unable to save franchise", "error");
         } finally {

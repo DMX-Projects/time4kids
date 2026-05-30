@@ -30,6 +30,7 @@ import {
     isCustomGroup,
     isCustomNested,
     mergeCentrePageBlocks,
+    parseCentrePageNavCustom,
     removeCustomGroup,
     removeCustomLink,
     removeCustomNested,
@@ -73,6 +74,19 @@ function sortDocsByCategoryOrder(list: FranchiseResourceDoc[]): FranchiseResourc
     });
 }
 
+function normalizeSourcePathKey(path: string): string {
+    return path.replace(/\\/g, "/").trim().replace(/^\/+/, "").toLowerCase();
+}
+
+function findDocBySourcePath(
+    list: FranchiseResourceDoc[],
+    sourcePath: string,
+): FranchiseResourceDoc | undefined {
+    const key = normalizeSourcePathKey(sourcePath);
+    if (!key) return undefined;
+    return list.find((row) => normalizeSourcePathKey(row.source_path || "") === key);
+}
+
 const emptyForm = {
     category: "ACADEMIC_DOCUMENTS",
     title: "",
@@ -86,23 +100,7 @@ const emptyForm = {
 };
 
 function parseCustomNav(raw: unknown): CentrePageNavCustomData {
-    if (!raw || typeof raw !== "object") return emptyCentrePageNavCustom();
-    const o = raw as Record<string, unknown>;
-    return {
-        customTopSections: Array.isArray(o.customTopSections)
-            ? (o.customTopSections as CentrePageNavCustomData["customTopSections"])
-            : [],
-        staticExtensions: Array.isArray(o.staticExtensions)
-            ? (o.staticExtensions as CentrePageNavCustomData["staticExtensions"])
-            : [],
-        labelOverrides:
-            o.labelOverrides && typeof o.labelOverrides === "object"
-                ? (o.labelOverrides as Record<string, string>)
-                : {},
-        staticGroupLinkAppends: Array.isArray(o.staticGroupLinkAppends)
-            ? (o.staticGroupLinkAppends as CentrePageNavCustomData["staticGroupLinkAppends"])
-            : [],
-    };
+    return parseCentrePageNavCustom(raw);
 }
 
 export default function AdminFranchiseDocumentsPage() {
@@ -278,6 +276,36 @@ export default function AdminFranchiseDocumentsPage() {
             if (sizeErr) throw new Error(sizeErr);
         }
 
+        const sourcePath = args.sourcePath?.trim() || "";
+        const existing = sourcePath ? findDocBySourcePath(items, sourcePath) : undefined;
+
+        if (existing) {
+            await authFetch(`/documents/admin/franchise-documents/${existing.id}/`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    category: args.category,
+                    title: args.title.trim(),
+                    source_path: sourcePath || null,
+                    embed_url: embedNormalized || "",
+                    description: "",
+                    academic_year: "",
+                    order: 0,
+                    is_active: true,
+                    franchise: null,
+                }),
+            });
+            if (args.file) {
+                const fd = new FormData();
+                fd.append("file", args.file);
+                await authFetch(`/documents/admin/franchise-documents/${existing.id}/`, {
+                    method: "PATCH",
+                    body: fd,
+                });
+            }
+            return;
+        }
+
         if (embedNormalized) {
             await authFetch("/documents/admin/franchise-documents/", {
                 method: "POST",
@@ -285,7 +313,7 @@ export default function AdminFranchiseDocumentsPage() {
                 body: JSON.stringify({
                     category: args.category,
                     title: args.title.trim(),
-                    source_path: args.sourcePath?.trim() || null,
+                    source_path: sourcePath || null,
                     embed_url: embedNormalized,
                     description: "",
                     academic_year: "",
@@ -300,7 +328,7 @@ export default function AdminFranchiseDocumentsPage() {
         const fd = new FormData();
         fd.append("category", args.category);
         fd.append("title", args.title.trim());
-        if (args.sourcePath?.trim()) fd.append("source_path", args.sourcePath.trim());
+        if (sourcePath) fd.append("source_path", sourcePath);
         fd.append("description", "");
         fd.append("academic_year", "");
         fd.append("order", "0");
@@ -389,9 +417,14 @@ export default function AdminFranchiseDocumentsPage() {
 
     const openFromChecklist = (ctx: AdminCenterPageUploadContext) => {
         setUploadContext(ctx);
-        const existing = ctx.matchedDocId
-            ? items.find((row) => row.id === ctx.matchedDocId)
+        const existingByPath = ctx.sourcePath.trim()
+            ? findDocBySourcePath(items, ctx.sourcePath)
             : undefined;
+        const existingByMatch =
+            ctx.matchedDocId != null
+                ? items.find((row) => row.id === ctx.matchedDocId)
+                : undefined;
+        const existing = existingByPath ?? existingByMatch;
         if (existing) {
             setEditing(existing);
             setForm({
@@ -455,12 +488,22 @@ export default function AdminFranchiseDocumentsPage() {
                 form.franchise_id === "" || form.franchise_id === "__global__"
                     ? null
                     : Number(form.franchise_id);
+            const sourcePath =
+                form.source_path.trim() || uploadContext?.sourcePath?.trim() || "";
+            if (uploadContext && !sourcePath) {
+                showToast("Could not identify this checklist row. Close and try Upload again.", "error");
+                setSubmitting(false);
+                return;
+            }
 
-            if (editing) {
+            const existingByPath = sourcePath ? findDocBySourcePath(items, sourcePath) : undefined;
+            const targetId = editing?.id ?? existingByPath?.id;
+
+            if (targetId) {
                 const metaBody = {
                     category: form.category,
                     title: form.title.trim(),
-                    source_path: form.source_path.trim() || null,
+                    source_path: sourcePath || null,
                     embed_url: embedNormalized || "",
                     description: form.description,
                     academic_year: form.academic_year || "",
@@ -468,7 +511,7 @@ export default function AdminFranchiseDocumentsPage() {
                     is_active: form.is_active,
                     franchise,
                 };
-                await authFetch(`/documents/admin/franchise-documents/${editing.id}/`, {
+                await authFetch(`/documents/admin/franchise-documents/${targetId}/`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(metaBody),
@@ -476,7 +519,7 @@ export default function AdminFranchiseDocumentsPage() {
                 if (file) {
                     const fd = new FormData();
                     fd.append("file", file);
-                    await authFetch(`/documents/admin/franchise-documents/${editing.id}/`, {
+                    await authFetch(`/documents/admin/franchise-documents/${targetId}/`, {
                         method: "PATCH",
                         body: fd,
                     });
@@ -495,7 +538,7 @@ export default function AdminFranchiseDocumentsPage() {
                         body: JSON.stringify({
                             category: form.category,
                             title: form.title.trim(),
-                            source_path: form.source_path.trim() || null,
+                            source_path: sourcePath || null,
                             embed_url: embedNormalized,
                             description: form.description,
                             academic_year: form.academic_year,
@@ -508,7 +551,7 @@ export default function AdminFranchiseDocumentsPage() {
                     const fd = new FormData();
                     fd.append("category", form.category);
                     fd.append("title", form.title.trim());
-                    if (form.source_path.trim()) fd.append("source_path", form.source_path.trim());
+                    if (sourcePath) fd.append("source_path", sourcePath);
                     fd.append("description", form.description);
                     fd.append("academic_year", form.academic_year);
                     fd.append("order", String(form.order));

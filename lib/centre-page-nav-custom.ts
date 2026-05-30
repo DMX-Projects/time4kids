@@ -4,6 +4,7 @@ import type {
     CenterPageSubsection,
     CenterPageTopItem,
 } from "@/config/franchise-center-page-nav";
+import { extractLegacyPcRelativePath } from "@/lib/franchise-center-page-links";
 
 export const CENTRE_PAGE_NAV_CUSTOM_SLUG = "centre-page-nav-custom";
 
@@ -97,6 +98,27 @@ export function linkLabelKey(rowKey: string): string {
 
 export function emptyCentrePageNavCustom(): CentrePageNavCustomData {
     return { customTopSections: [], staticExtensions: [], staticGroupLinkAppends: [], labelOverrides: {} };
+}
+
+/** Parse page-content JSON from the CMS API (admin + franchise dashboard). */
+export function parseCentrePageNavCustom(raw: unknown): CentrePageNavCustomData {
+    if (!raw || typeof raw !== "object") return emptyCentrePageNavCustom();
+    const o = raw as Record<string, unknown>;
+    return {
+        customTopSections: Array.isArray(o.customTopSections)
+            ? (o.customTopSections as CentrePageNavCustomData["customTopSections"])
+            : [],
+        staticExtensions: Array.isArray(o.staticExtensions)
+            ? (o.staticExtensions as CentrePageNavCustomData["staticExtensions"])
+            : [],
+        labelOverrides:
+            o.labelOverrides && typeof o.labelOverrides === "object"
+                ? (o.labelOverrides as Record<string, string>)
+                : {},
+        staticGroupLinkAppends: Array.isArray(o.staticGroupLinkAppends)
+            ? (o.staticGroupLinkAppends as CentrePageNavCustomData["staticGroupLinkAppends"])
+            : [],
+    };
 }
 
 export function newCustomId(prefix: string): string {
@@ -256,6 +278,68 @@ function mergeTopWithExtension(
     return { ...item, groups, directLinks };
 }
 
+function slugForRowKey(value: string): string {
+    return value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 48);
+}
+
+function autoRowKey(
+    topId: string,
+    groupTitle: string | undefined,
+    nestedTitle: string | undefined,
+    link: CenterPageLink,
+    index: number,
+): string {
+    if (link.rowKey?.trim()) return link.rowKey.trim();
+    const legacy = extractLegacyPcRelativePath(link.href);
+    const hrefPart = legacy
+        ? slugForRowKey(legacy.split("/").filter(Boolean).pop() || legacy)
+        : slugForRowKey(link.href || link.label);
+    const parts = [topId];
+    if (groupTitle) parts.push(slugForRowKey(groupTitle));
+    if (nestedTitle) parts.push(slugForRowKey(nestedTitle));
+    parts.push(String(index), hrefPart || "link");
+    return parts.filter(Boolean).join("--");
+}
+
+function withStableRowKey(
+    link: CenterPageLink,
+    topId: string,
+    groupTitle: string | undefined,
+    nestedTitle: string | undefined,
+    index: number,
+): CenterPageLink {
+    if (link.rowKey?.trim()) return link;
+    return { ...link, rowKey: autoRowKey(topId, groupTitle, nestedTitle, link, index) };
+}
+
+/** Ensure every checklist link has a unique stable rowKey (for uploads + matching). */
+export function assignStableRowKeysToTopItem(item: CenterPageTopItem): CenterPageTopItem {
+    let directIdx = 0;
+    const directLinks = item.directLinks?.map((link) =>
+        withStableRowKey(link, item.id, undefined, undefined, directIdx++),
+    );
+    const groups = item.groups.map((group) => {
+        let linkIdx = 0;
+        const links = group.links?.map((link) =>
+            withStableRowKey(link, item.id, group.title, undefined, linkIdx++),
+        );
+        const nested = group.nested?.map((block) => {
+            let nestedIdx = 0;
+            const blockLinks = block.links.map((link) =>
+                withStableRowKey(link, item.id, group.title, block.title, nestedIdx++),
+            );
+            return { ...block, links: blockLinks };
+        });
+        return { ...group, links, nested };
+    });
+    return { ...item, directLinks, groups };
+}
+
 /** Merge static checklist with admin-added sections (for franchise + admin UI). */
 export function mergeCentrePageBlocks(
     blockA: CenterPageTopItem[],
@@ -264,15 +348,15 @@ export function mergeCentrePageBlocks(
 ): CenterPageTopItem[][] {
     const data = custom ?? emptyCentrePageNavCustom();
     const overrides = data.labelOverrides ?? {};
-    const mergedA = blockA.map((item) =>
-        applyLabelOverridesToTop(mergeTopWithExtension(item, data), overrides),
-    );
-    const mergedB = blockB.map((item) =>
-        applyLabelOverridesToTop(mergeTopWithExtension(item, data), overrides),
-    );
+
+    const finalizeTop = (item: CenterPageTopItem) =>
+        applyLabelOverridesToTop(assignStableRowKeysToTopItem(mergeTopWithExtension(item, data)), overrides);
+
+    const mergedA = blockA.map(finalizeTop);
+    const mergedB = blockB.map(finalizeTop);
     const customTops = data.customTopSections
         .map(customTopToItem)
-        .map((item) => applyLabelOverridesToTop(item, overrides));
+        .map(finalizeTop);
     return [mergedA, [...mergedB, ...customTops]];
 }
 
@@ -673,7 +757,15 @@ export function rowKeyForUploadedDoc(docId: number): string {
 }
 
 export function rowKeyForChecklistLink(link: CenterPageLink): string {
-    return link.rowKey ?? `link:${link.label}:${link.href}`;
+    if (link.rowKey) return link.rowKey;
+    const href = link.href?.trim() || "";
+    return href ? `href:${href}` : `link:${link.label}`;
+}
+
+/** Unique storage path for a checklist row (used as FranchiseDocument.source_path). */
+export function checklistSourcePathForLink(link: CenterPageLink): string {
+    const rowKey = (link.rowKey?.trim() || rowKeyForChecklistLink(link)).replace(/:/g, "/");
+    return `checklist-row/${rowKey}`;
 }
 
 function patchCustomLinkLabel(

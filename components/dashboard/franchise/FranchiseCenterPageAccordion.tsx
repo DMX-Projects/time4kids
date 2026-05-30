@@ -9,10 +9,12 @@ import { ChevronDown, ChevronRight, Upload, Pencil, Plus, Trash2 } from "lucide-
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
 import {
+  applyResolvedLinkLookup,
+  buildResolvedLinkLookup,
   groupFranchiseHubDocsByCategory,
   groupFranchiseHubDocsBySourcePath,
-  resolveCenterPageLinks,
   shouldOpenFranchiseLinkInNewTab,
+  type ResolvedLinkMeta,
 } from "@/lib/franchise-center-page-links";
 import { downloadFilenameFromLink, extensionFromPath } from "@/lib/franchise-download-filename";
 import {
@@ -394,6 +396,7 @@ function SectionHeading({ title, nested }: { title: string; nested?: boolean }) 
 function TopItemGroupsDocumentTree({
   item,
   mode,
+  linkLookup,
   hubDocsByCategory,
   hubDocsBySourcePath,
   onAdminPickCategory,
@@ -402,6 +405,7 @@ function TopItemGroupsDocumentTree({
 }: {
   item: CenterPageTopItem;
   mode: Mode;
+  linkLookup?: Map<string, ResolvedLinkMeta>;
   hubDocsByCategory?: Map<string, FranchiseHubDoc[]>;
   hubDocsBySourcePath?: Map<string, FranchiseHubDoc>;
   onAdminPickCategory?: (category: string) => void;
@@ -412,6 +416,7 @@ function TopItemGroupsDocumentTree({
     mode,
     topTitle: item.title,
     topId: item.id,
+    linkLookup,
     hubDocsByCategory,
     hubDocsBySourcePath,
     onAdminPickCategory,
@@ -532,6 +537,8 @@ function LinkRows({
 
   nestedTitle,
 
+  linkLookup,
+
   hubDocsByCategory,
 
   hubDocsBySourcePath,
@@ -553,6 +560,8 @@ function LinkRows({
 
   nestedTitle?: string;
 
+  linkLookup?: Map<string, ResolvedLinkMeta>;
+
   hubDocsByCategory?: Map<string, FranchiseHubDoc[]>;
 
   hubDocsBySourcePath?: Map<string, FranchiseHubDoc>;
@@ -565,8 +574,8 @@ function LinkRows({
 }) {
   const { tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
   const displayLinks =
-    (mode === "franchise" || mode === "admin") && hubDocsByCategory
-      ? resolveCenterPageLinks(links, hubDocsByCategory, hubDocsBySourcePath)
+    (mode === "franchise" || mode === "admin") && linkLookup
+      ? links.map((link) => applyResolvedLinkLookup(link, linkLookup))
       : links;
   const franchiseRowClass =
     "group/link flex min-w-0 items-start gap-2.5 font-serif text-sm leading-snug text-slate-600 hover:text-slate-900";
@@ -737,6 +746,8 @@ function BlockItems({
 
   hubDocsBySourcePath,
 
+  linkLookupsByTopId,
+
   onAdminPickCategory,
 
   onAdminManageLink,
@@ -756,6 +767,8 @@ function BlockItems({
   hubDocsByCategory?: Map<string, FranchiseHubDoc[]>;
 
   hubDocsBySourcePath?: Map<string, FranchiseHubDoc>;
+
+  linkLookupsByTopId?: Map<string, Map<string, ResolvedLinkMeta>>;
 
   baseId: string;
 
@@ -790,6 +803,7 @@ function BlockItems({
     <>
       {blocks.map((item) => {
         const expanded = flattenSingleTop || openTop.has(item.id);
+        const linkLookup = linkLookupsByTopId?.get(item.id);
 
         const panelId = `${baseId}-panel-${item.id}`;
 
@@ -884,6 +898,7 @@ function BlockItems({
                       mode={mode}
                       topTitle={item.title}
                       topId={item.id}
+                      linkLookup={linkLookup}
                       hubDocsByCategory={hubDocsByCategory}
                       hubDocsBySourcePath={hubDocsBySourcePath}
                       onAdminPickCategory={onAdminPickCategory}
@@ -895,6 +910,7 @@ function BlockItems({
                   <TopItemGroupsDocumentTree
                     item={item}
                     mode={mode}
+                    linkLookup={linkLookup}
                     hubDocsByCategory={hubDocsByCategory}
                     hubDocsBySourcePath={hubDocsBySourcePath}
                     onAdminPickCategory={onAdminPickCategory}
@@ -998,6 +1014,7 @@ function BlockItems({
                                         <LinkRows
                                           links={block.links}
                                           mode={mode}
+                                          linkLookup={linkLookup}
                                           hubDocsByCategory={hubDocsByCategory}
                                           hubDocsBySourcePath={hubDocsBySourcePath}
                                           onAdminPickCategory={
@@ -1014,6 +1031,7 @@ function BlockItems({
                                   <LinkRows
                                     links={group.links}
                                     mode={mode}
+                                    linkLookup={linkLookup}
                                     hubDocsByCategory={hubDocsByCategory}
                                     hubDocsBySourcePath={hubDocsBySourcePath}
                                     onAdminPickCategory={onAdminPickCategory}
@@ -1066,6 +1084,7 @@ function BlockItems({
                             <LinkRows
                               links={group.links ?? []}
                               mode={mode}
+                              linkLookup={linkLookup}
                               hubDocsByCategory={hubDocsByCategory}
                               hubDocsBySourcePath={hubDocsBySourcePath}
                               onAdminPickCategory={onAdminPickCategory}
@@ -1176,6 +1195,18 @@ export function FranchiseCenterPageAccordion({
     [effectiveHubDocs, mode],
   );
 
+  const linkLookupsByTopId = useMemo(() => {
+    const lookups = new Map<string, Map<string, ResolvedLinkMeta>>();
+    if (!hubDocsByCategory || !hubDocsBySourcePath) return lookups;
+    for (const item of flatItems) {
+      lookups.set(
+        item.id,
+        buildResolvedLinkLookup(item, hubDocsByCategory, hubDocsBySourcePath),
+      );
+    }
+    return lookups;
+  }, [flatItems, hubDocsByCategory, hubDocsBySourcePath]);
+
   const documentTreeLayout =
     mode === "admin" ||
     (mode === "franchise" && Boolean(hub?.flattenTopLevel || hub?.expandAllSections));
@@ -1258,6 +1289,7 @@ export function FranchiseCenterPageAccordion({
               mode={mode}
               hubDocsByCategory={hubDocsByCategory}
               hubDocsBySourcePath={hubDocsBySourcePath}
+              linkLookupsByTopId={linkLookupsByTopId}
               baseId={baseId}
               openTop={openTop}
               openSub={openSub}

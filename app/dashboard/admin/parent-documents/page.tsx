@@ -27,6 +27,7 @@ import {
     PARENT_APP_NAV_CUSTOM_SLUG,
     emptyParentAppNavCustom,
     mergeParentAppChecklist,
+    parseParentAppNavCustom,
     renameParentAppLabel,
     type ParentAppNavCustomData,
 } from "@/lib/parent-app-nav-custom";
@@ -62,18 +63,7 @@ const emptyForm = {
 };
 
 function parseParentNavCustom(raw: unknown): ParentAppNavCustomData {
-    if (!raw || typeof raw !== "object") return emptyParentAppNavCustom();
-    const o = raw as Record<string, unknown>;
-    return {
-        sectionTitles:
-            o.sectionTitles && typeof o.sectionTitles === "object"
-                ? (o.sectionTitles as Record<string, string>)
-                : {},
-        slotLabels:
-            o.slotLabels && typeof o.slotLabels === "object"
-                ? (o.slotLabels as Record<string, string>)
-                : {},
-    };
+    return parseParentAppNavCustom(raw);
 }
 
 export default function AdminParentDocumentsPage() {

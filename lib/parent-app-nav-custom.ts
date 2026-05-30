@@ -21,6 +21,21 @@ export function emptyParentAppNavCustom(): ParentAppNavCustomData {
     return { sectionTitles: {}, slotLabels: {} };
 }
 
+export function parseParentAppNavCustom(raw: unknown): ParentAppNavCustomData {
+    if (!raw || typeof raw !== "object") return emptyParentAppNavCustom();
+    const o = raw as Record<string, unknown>;
+    return {
+        sectionTitles:
+            o.sectionTitles && typeof o.sectionTitles === "object"
+                ? (o.sectionTitles as Record<string, string>)
+                : {},
+        slotLabels:
+            o.slotLabels && typeof o.slotLabels === "object"
+                ? (o.slotLabels as Record<string, string>)
+                : {},
+    };
+}
+
 export function mergeParentAppChecklist(
     custom: ParentAppNavCustomData | null | undefined,
 ): ParentAppDocumentSection[] {

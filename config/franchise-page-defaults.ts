@@ -61,6 +61,10 @@ export type FranchisePageData = {
         map_embed_url: string;
         office_title: string;
         regional_office_title: string;
+        /** Plain address lines — saved to CMS; rendered as HTML on the public page */
+        address_lines?: string[];
+        /** Structured regional rows — saved to CMS; rendered as HTML on the public page */
+        regional_offices?: FranchiseRegionalOffice[];
         regional_address_html: string;
         address_html: string;
         phone: string;
@@ -82,14 +86,16 @@ export type FranchisePageData = {
 
 type RegionalOfficeSubCity = { city: string; phone: string };
 
-type RegionalOfficeEntry = {
+export type FranchiseRegionalOffice = {
     state: string;
     city: string;
     phone: string;
     subCities?: RegionalOfficeSubCity[];
 };
 
-const REGIONAL_OFFICE_ENTRIES: RegionalOfficeEntry[] = [
+export type FranchiseRegionalSubCity = RegionalOfficeSubCity;
+
+const REGIONAL_OFFICE_ENTRIES: FranchiseRegionalOffice[] = [
     { state: "Bihar & Jharkhand", city: "Patna", phone: "7979833564" },
     {
         state: "Kerala",
@@ -155,7 +161,7 @@ function regionalOfficeRowHtml(city: string, phone: string, state?: string): str
 }
 
 /** Regional office lines for the right contact card (aligned state / city / phone grid). */
-export function buildRegionalOfficesAddressHtml(entries: RegionalOfficeEntry[] = REGIONAL_OFFICE_ENTRIES): string {
+export function buildRegionalOfficesAddressHtml(entries: FranchiseRegionalOffice[] = REGIONAL_OFFICE_ENTRIES): string {
     const rows: string[] = [];
     for (const entry of entries) {
         rows.push(regionalOfficeRowHtml(entry.city, entry.phone, entry.state));
@@ -165,6 +171,11 @@ export function buildRegionalOfficesAddressHtml(entries: RegionalOfficeEntry[] =
     }
     return `<ul class="tk-regional-offices">${rows.join("")}</ul>`;
 }
+
+export const DEFAULT_FRANCHISE_REGIONAL_OFFICES: FranchiseRegionalOffice[] = REGIONAL_OFFICE_ENTRIES.map((row) => ({
+    ...row,
+    subCities: row.subCities?.map((sub) => ({ ...sub })),
+}));
 
 export const DEFAULT_REGIONAL_ADDRESS_HTML = buildRegionalOfficesAddressHtml();
 
@@ -188,6 +199,66 @@ function shouldMigrateRegionalAddress(html: string | undefined): boolean {
     const biharPos = trimmed.indexOf("Bihar");
     if (telanganaPos >= 0 && biharPos >= 0 && telanganaPos < biharPos) return true;
     return false;
+}
+
+/** Split legacy corporate address HTML into plain lines for the admin form. */
+export function addressHtmlToLines(html: string | undefined): string[] {
+    if (!html?.trim()) return [];
+    return html
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/?[^>]+(>|$)/g, "")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+}
+
+/** Join address lines for the public /franchise page card. */
+export function addressLinesToHtml(lines: string[]): string {
+    return lines
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) =>
+            line
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;"),
+        )
+        .join("<br />");
+}
+
+function cloneRegionalOffices(rows: FranchiseRegionalOffice[]): FranchiseRegionalOffice[] {
+    return rows.map((row) => ({
+        state: row.state ?? "",
+        city: row.city ?? "",
+        phone: row.phone ?? "",
+        subCities: row.subCities?.map((sub) => ({ city: sub.city ?? "", phone: sub.phone ?? "" })),
+    }));
+}
+
+/** Ensure structured contact fields exist and keep HTML in sync for the live page. */
+export function prepareMainBranchForAdmin(
+    mainBranch: FranchisePageData["main_branch"],
+): FranchisePageData["main_branch"] {
+    const next = { ...mainBranch };
+    if (!Array.isArray(next.address_lines) || !next.address_lines.some((l) => l.trim())) {
+        next.address_lines = addressHtmlToLines(next.address_html);
+    }
+    if (!Array.isArray(next.regional_offices) || !next.regional_offices.length) {
+        next.regional_offices = cloneRegionalOffices(DEFAULT_FRANCHISE_REGIONAL_OFFICES);
+    }
+    return next;
+}
+
+export function syncMainBranchContactFields(
+    mainBranch: FranchisePageData["main_branch"],
+): FranchisePageData["main_branch"] {
+    const next = prepareMainBranchForAdmin(mainBranch);
+    next.address_lines = next.address_lines!.map((l) => l.trim()).filter(Boolean);
+    next.address_html = addressLinesToHtml(next.address_lines);
+    next.regional_offices = cloneRegionalOffices(next.regional_offices!);
+    next.regional_address_html = buildRegionalOfficesAddressHtml(next.regional_offices);
+    return next;
 }
 
 export const DEFAULT_FRANCHISE_PAGE_DATA: FranchisePageData = {
@@ -303,6 +374,17 @@ export const DEFAULT_FRANCHISE_PAGE_DATA: FranchisePageData = {
             "https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=Siddamsetty+Complex+Parklane+Secunderabad+500003&zoom=15",
         office_title: "T.I.M.E. Kids Corporate Office",
         regional_office_title: "T.I.M.E. Kids Regional Offices",
+        address_lines: [
+            "Kids Early Education Pvt. Ltd.",
+            "95B, Second Floor",
+            "Siddamsetty Complex",
+            "Parklane, Secunderabad",
+            "500003",
+        ],
+        regional_offices: DEFAULT_FRANCHISE_REGIONAL_OFFICES.map((row) => ({
+            ...row,
+            subCities: row.subCities?.map((sub) => ({ ...sub })),
+        })),
         regional_address_html: DEFAULT_REGIONAL_ADDRESS_HTML,
         address_html:
             "Kids Early Education Pvt. Ltd.<br />95B, Second Floor<br />Siddamsetty Complex<br />Parklane, Secunderabad<br />500003",
@@ -383,6 +465,7 @@ function ensureFranchiseShape(merged: FranchisePageData): FranchisePageData {
     if (merged.main_branch.email === "info@timekidspreschools.com") {
         merged.main_branch.email = d.main_branch.email;
     }
+    merged.main_branch = prepareMainBranchForAdmin(merged.main_branch);
     return merged;
 }
 
