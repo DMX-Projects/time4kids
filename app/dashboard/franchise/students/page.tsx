@@ -54,13 +54,26 @@ export default function FranchiseStudentsPage() {
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
+    const parentById = useMemo(() => new Map(parents.map((p) => [p.id, p])), [parents]);
+
     const filtered = useMemo(() => {
         const term = query.toLowerCase();
-        return students.filter((s) =>
-            [s.name, s.rollNumber, s.grade, s.section, s.idCardNo, s.academicYear, formatStudentGenderLabel(s.gender)]
-                .some((f) => (f || "").toLowerCase().includes(term))
-        );
-    }, [students, query]);
+        return students.filter((s) => {
+            const parent = s.parentId ? parentById.get(s.parentId) : undefined;
+            return [
+                s.name,
+                s.rollNumber,
+                s.grade,
+                s.section,
+                s.idCardNo,
+                s.academicYear,
+                formatStudentGenderLabel(s.gender),
+                parent?.name,
+                parent?.email,
+                parent?.phone,
+            ].some((f) => (f || "").toLowerCase().includes(term));
+        });
+    }, [students, query, parentById]);
 
     const resetForm = () => {
         setForm(emptyForm());

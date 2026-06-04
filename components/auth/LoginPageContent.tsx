@@ -5,11 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Button from "@/components/ui/Button";
-import { useAuth, type AuthLoginResponse } from "@/components/auth/AuthProvider";
+import { useAuth, postLoginPathForRole } from "@/components/auth/AuthProvider";
 import { Eye, EyeOff, LifeBuoy, Settings } from "lucide-react";
-import { DriverProfileCard, type DriverProfileData } from "@/components/driver/DriverProfileCard";
 
-export type LoginPageVariant = "default" | "parent" | "franchise" | "driver";
+export type LoginPageVariant = "default" | "parent" | "franchise";
 
 const copy: Record<
     LoginPageVariant,
@@ -17,9 +16,9 @@ const copy: Record<
 > = {
     default: {
         title: "Sign In",
-        subtitle: "Enter your credentials to continue",
+        subtitle: "Parents, centres, drivers, and staff — one login for all roles",
         leftTitle: "Welcome Back",
-        leftBody: "Sign in to access your dashboard and manage your account.",
+        leftBody: "Sign in to access your dashboard, parent app, or driver trip screen.",
     },
     parent: {
         title: "Parent sign in",
@@ -33,12 +32,6 @@ const copy: Record<
         leftTitle: "Centre operations",
         leftBody: "Manage parents, events, grades, and resources for your preschool.",
     },
-    driver: {
-        title: "Driver sign in",
-        subtitle: "Use email, username, or mobile number",
-        leftTitle: "Safe transport",
-        leftBody: "Sign in to manage your route, track student attendance, and broadcast live location.",
-    },
 };
 
 function LoginForm({ variant }: { variant: LoginPageVariant }) {
@@ -50,8 +43,6 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [loginResponse, setLoginResponse] = useState<AuthLoginResponse | null>(null);
-    const [driverProfile, setDriverProfile] = useState<DriverProfileData | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     const next = searchParams.get("next");
@@ -64,46 +55,24 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
         e.preventDefault();
         setError(null);
         setSuccess(null);
-        setLoginResponse(null);
-        setDriverProfile(null);
         setSubmitting(true);
         try {
-            const { user, response } = await login(identifier.trim(), password, {
+            const { user } = await login(identifier.trim(), password, {
                 authPath,
-                forceRole: variant === "driver" ? "driver" : undefined,
             });
 
-            if (variant === "driver" && user.role !== "driver") {
-                throw new Error("This login is only for driver accounts.");
+            if (variant === "parent" && user.role !== "parent") {
+                throw new Error("This page is for parent accounts only. Use the main sign in for other roles.");
             }
 
-            // If main login, prevent drivers (force them to use /driver/login)
-            if (variant === "default" && user.role === "driver") {
-                throw new Error("Please use the dedicated Driver Login page.");
+            if (variant === "franchise" && user.role !== "franchise") {
+                throw new Error("This page is for franchise centre accounts only.");
             }
 
             setSubmitting(false);
-
-            if (variant === "driver") {
-                setLoginResponse(response);
-                if (response.driver_profile) {
-                    setDriverProfile(response.driver_profile);
-                }
-                setSuccess(
-                    response.driver_profile?.user?.full_name
-                        ? `Welcome, ${response.driver_profile.user.full_name}! Redirecting to your trip…`
-                        : "Login successful! Redirecting to your trip…",
-                );
-                setTimeout(() => {
-                    router.replace(next || "/driver/trip");
-                }, 2000);
-                return;
-            }
-
             setSuccess("✅ Login successful!");
             setTimeout(() => {
-                const destination = next || `/dashboard/${user.role}`;
-                router.replace(destination);
+                router.replace(postLoginPathForRole(user.role, next));
             }, 1500);
         } catch (err: any) {
             const message = String(err?.message || "").trim();
@@ -112,45 +81,29 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
         }
     };
 
-    const loginResponseJson = loginResponse ? JSON.stringify(loginResponse, null, 4) : "";
-    const profileResponseJson = driverProfile ? JSON.stringify(driverProfile, null, 4) : "";
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50 site-page-below-header flex items-center justify-center px-4 py-8 md:py-12">
-            <div className={`w-full ${variant === "driver" ? "max-w-md" : "max-w-5xl"} grid ${variant === "driver" ? "grid-cols-1" : "md:grid-cols-2"} gap-12 items-center`}>
-                {variant !== "driver" && (
-                    <div className="relative h-full min-h-[400px] md:min-h-[600px] rounded-3xl overflow-hidden shadow-2xl">
-                        <div className="absolute inset-0 bg-blue-50 flex flex-col justify-center p-12 space-y-6">
-                            <div className="relative w-56 h-24 mx-auto flex items-center justify-center">
-                                <Image
-                                    src="/time-kids-logo-new.png"
-                                    alt="T.I.M.E. Kids Logo"
-                                    fill
-                                    sizes="(max-width: 768px) 224px, 280px"
-                                    className="object-contain"
-                                    priority
-                                />
-                            </div>
-                            <h1 className="font-display text-5xl font-bold text-[#003366] leading-tight">{c.leftTitle}</h1>
-                            <p className="text-lg text-gray-600 leading-relaxed max-w-md">{c.leftBody}</p>
+            <div className="w-full max-w-5xl grid md:grid-cols-2 gap-12 items-center">
+                <div className="relative h-full min-h-[400px] md:min-h-[600px] rounded-3xl overflow-hidden shadow-2xl">
+                    <div className="absolute inset-0 bg-blue-50 flex flex-col justify-center p-12 space-y-6">
+                        <div className="relative w-56 h-24 mx-auto flex items-center justify-center">
+                            <Image
+                                src="/time-kids-logo-new.png"
+                                alt="T.I.M.E. Kids Logo"
+                                fill
+                                sizes="(max-width: 768px) 224px, 280px"
+                                className="object-contain"
+                                priority
+                            />
                         </div>
+                        <h1 className="font-display text-5xl font-bold text-[#003366] leading-tight">{c.leftTitle}</h1>
+                        <p className="text-lg text-gray-600 leading-relaxed max-w-md">{c.leftBody}</p>
                     </div>
-                )}
+                </div>
 
                 <div className="bg-white rounded-3xl shadow-2xl p-10 border border-gray-100">
                     <div className="space-y-6">
                         <div className="text-center space-y-2">
-                            {variant === "driver" && (
-                                <div className="relative w-48 h-16 mx-auto mb-4">
-                                    <Image
-                                        src="/time-kids-logo-new.png"
-                                        alt="T.I.M.E. Kids Logo"
-                                        fill
-                                        className="object-contain"
-                                        priority
-                                    />
-                                </div>
-                            )}
                             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-400 to-blue-500 rounded-2xl shadow-lg mb-4">
                                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path
@@ -187,11 +140,9 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                         placeholder={
                                             variant === "franchise"
                                                 ? "Centre username (e.g. domalguda)"
-                                                : variant === "driver"
-                                                  ? "Email, username, or mobile number"
-                                                  : variant === "parent"
-                                                    ? "Email, username, ID card, or mobile"
-                                                    : "Email or username"
+                                                : variant === "parent"
+                                                  ? "Email, username, ID card, or mobile"
+                                                  : "Email, username, or mobile"
                                         }
                                         required
                                     />
@@ -220,7 +171,7 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                         autoComplete="current-password"
                                         required
                                     />
-                                    <div 
+                                    <div
                                         className="absolute right-0 top-0 bottom-0 px-4 flex items-center justify-center cursor-pointer z-50 text-gray-400 hover:text-gray-600"
                                         onClick={(e) => {
                                             e.preventDefault();
@@ -241,48 +192,6 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                 </div>
                             )}
 
-                            {variant === "driver" && loginResponse ? (
-                                <div className="space-y-3">
-                                    {driverProfile ? (
-                                        <DriverProfileCard profile={driverProfile} highlighted />
-                                    ) : (
-                                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                                            No driver profile is linked to this login yet. Ask your centre to
-                                            recreate the driver using this exact email, or sign in with the email
-                                            they used when creating your account.
-                                        </div>
-                                    )}
-
-                                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                                        <p className="text-sm font-semibold text-gray-900">Login API response</p>
-                                        <pre className="mt-3 max-h-48 overflow-auto rounded-lg bg-[#111827] p-4 text-xs leading-relaxed text-green-300 whitespace-pre-wrap break-all">
-                                            {loginResponseJson}
-                                        </pre>
-                                    </div>
-
-                                    {driverProfile ? (
-                                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                                            <p className="text-sm font-semibold text-gray-900">Driver profile response</p>
-                                            <p className="mt-1 text-xs text-gray-500">
-                                                Same data returned when a franchise creates a driver account.
-                                            </p>
-                                            <pre className="mt-3 max-h-48 overflow-auto rounded-lg bg-[#111827] p-4 text-xs leading-relaxed text-green-300 whitespace-pre-wrap break-all">
-                                                {profileResponseJson}
-                                            </pre>
-                                        </div>
-                                    ) : null}
-
-                                    <Button
-                                        type="button"
-                                        size="lg"
-                                        className="w-full bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-semibold py-3 rounded-xl"
-                                        onClick={() => router.replace(next || "/driver/trip")}
-                                    >
-                                        Continue to Trip
-                                    </Button>
-                                </div>
-                            ) : null}
-
                             {error && (
                                 <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
                                     <span className="font-medium">{error}</span>
@@ -293,11 +202,9 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                 type="submit"
                                 size="lg"
                                 className="w-full bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white font-semibold text-lg py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-                                disabled={submitting || (!!success && variant !== "driver") || !!loginResponse}
+                                disabled={submitting || !!success}
                             >
-                                {loginResponse ? (
-                                    <span className="flex items-center justify-center gap-2">Redirecting to trip…</span>
-                                ) : success ? (
+                                {success ? (
                                     <span className="flex items-center justify-center gap-2">Success! Redirecting…</span>
                                 ) : submitting ? (
                                     <span className="flex items-center justify-center gap-2">
@@ -323,7 +230,7 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                 >
                                     Forgot your password?
                                 </Link>
-                                {variant !== "driver" && (
+                                {variant === "default" && (
                                     <div>
                                         <Link
                                             href="/login/register"

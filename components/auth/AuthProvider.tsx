@@ -602,9 +602,15 @@ export const useAuth = () => {
     return ctx;
 };
 
-function dashboardPathForRole(role: Role): string {
+export function postLoginPathForRole(role: Role, next?: string | null): string {
+    const trimmed = next?.trim();
+    if (trimmed) return trimmed;
     if (role === "driver") return "/driver/trip";
     return `/dashboard/${role}`;
+}
+
+function dashboardPathForRole(role: Role): string {
+    return postLoginPathForRole(role);
 }
 
 export const RoleGuard = ({ allowedRole, children }: { allowedRole: Role; children: React.ReactNode }) => {
@@ -615,7 +621,8 @@ export const RoleGuard = ({ allowedRole, children }: { allowedRole: Role; childr
         if (loading) return;
 
         if (!user) {
-            router.replace("/login/");
+            const loginNext = encodeURIComponent(postLoginPathForRole(allowedRole));
+            router.replace(`/login?next=${loginNext}`);
             return;
         }
 
