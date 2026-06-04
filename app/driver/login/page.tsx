@@ -1,9 +1,11 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { LoginPageContent } from "@/components/auth/LoginPageContent";
+type Props = {
+    searchParams?: { next?: string };
+};
 
-export const dynamic = "force-dynamic";
-
-export default function DriverLoginPage() {
-    return <LoginPageContent variant="driver" />;
+/** Legacy URL — same sign-in as everyone else at `/login`. */
+export default function DriverLoginRedirect({ searchParams }: Props) {
+    const next = searchParams?.next?.trim() || "/driver/trip";
+    redirect(`/login?next=${encodeURIComponent(next)}`);
 }

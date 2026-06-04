@@ -71,9 +71,9 @@ export default function FranchisePage() {
 
                 <div className="container relative z-20 mx-auto px-4 sm:px-6">
                     <div className="mx-auto w-full max-w-4xl px-1 text-center">
-                        <h1 className="font-luckiest mx-auto mb-6 flex w-full max-w-full flex-col items-center gap-0.5 text-[1.75rem] leading-tight tracking-normal text-[#003366] sm:block sm:max-w-3xl sm:text-4xl sm:leading-snug md:text-6xl md:leading-tight md:tracking-wider">
-                            <span className="block text-[#E67E22] sm:inline">{hero.title_prefix}</span>
-                            <span className="block sm:inline">{hero.title_accent}</span>
+                        <h1 className="font-display mx-auto mb-6 flex w-full max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[1.75rem] font-black leading-tight tracking-tight text-[#003366] sm:max-w-3xl sm:text-4xl md:text-5xl md:leading-[1.15] lg:text-6xl">
+                            <span>{hero.title_prefix}</span>
+                            <span className="text-[#E67E22]">{hero.title_accent}</span>
                         </h1>
                     </div>
                 </div>

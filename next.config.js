@@ -69,6 +69,13 @@ const nextConfig = {
             { source: '/media/', destination: '/gallery/', permanent: true },
             { source: '/tv-commercial', destination: '/gallery/', permanent: true },
             { source: '/tv-commercial/', destination: '/gallery/', permanent: true },
+            /** Nopaper franchise form — legacy thank-you URLs (form unchanged; static TY page) */
+            { source: '/timekids-2g/thank-you.html', destination: '/thank-you.html', permanent: false },
+            { source: '/timekids-2g/thank-you-fb.html', destination: '/thank-you-fb.html', permanent: false },
+            { source: '/timekids-2g/pages/thank-you.html', destination: '/thank-you.html', permanent: false },
+            { source: '/timekids-2g/pages/thank-you-fb.html', destination: '/thank-you-fb.html', permanent: false },
+            { source: '/franchise/thank-you', destination: '/thank-you.html', permanent: false },
+            { source: '/franchise/thank-you/', destination: '/thank-you.html', permanent: false },
         ];
     },
     experimental: {

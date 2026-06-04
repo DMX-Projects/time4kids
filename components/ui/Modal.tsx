@@ -10,6 +10,8 @@ interface ModalProps {
     children: React.ReactNode;
     title?: string;
     size?: 'sm' | 'md' | 'lg' | 'xl';
+    /** `sheet` = bottom on mobile; `center` = centered popup on all screen sizes */
+    placement?: 'sheet' | 'center';
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -17,7 +19,8 @@ const Modal: React.FC<ModalProps> = ({
     onClose,
     children,
     title,
-    size = 'md'
+    size = 'md',
+    placement = 'sheet',
 }) => {
     const modalContentRef = useRef<HTMLDivElement>(null);
 
@@ -55,8 +58,13 @@ const Modal: React.FC<ModalProps> = ({
         e.stopPropagation();
     };
 
+    const centered = placement === 'center';
     const modalTree = (
-        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+        <div
+            className={`fixed inset-0 z-[9999] flex justify-center animate-fade-in ${
+                centered ? 'items-center p-4' : 'items-end sm:items-center p-0 sm:p-4'
+            }`}
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-[#1e293b]/95 backdrop-blur-sm"
@@ -66,7 +74,9 @@ const Modal: React.FC<ModalProps> = ({
             {/* Modal Content - Fixed height structure */}
             <div
                 ref={modalContentRef}
-                className={`relative isolate bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-[100vw] ${sizes[size]} h-auto max-h-[92dvh] sm:max-h-[85vh] flex flex-col animate-scale-in overflow-hidden z-[10000]`}
+                className={`relative isolate bg-white shadow-2xl w-full max-w-[100vw] ${sizes[size]} h-auto max-h-[92dvh] sm:max-h-[85vh] flex flex-col animate-scale-in overflow-hidden z-[10000] ${
+                    centered ? 'rounded-2xl' : 'rounded-t-2xl sm:rounded-2xl'
+                }`}
                 onWheel={handleWheel}
                 onClick={(e) => e.stopPropagation()}
             >

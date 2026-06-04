@@ -51,6 +51,7 @@ type ApiParent = {
     child_name?: string;
     notes?: string;
     phone?: string;
+    Emailid?: string;
 };
 
 type ApiEvent = {
@@ -86,9 +87,8 @@ const mapParent = (parent: ApiParent): FranchiseParent => ({
     id: String(parent.id),
     name: parent.user?.full_name || parent.user?.email || "",
     student: parent.child_name || "",
-    email: parent.user?.email || "",
-    // phone is stored in the `notes` field on ParentProfile
-    phone: parent.notes || "",
+    email: parent.user?.email || parent.Emailid || "",
+    phone: (parent.phone || parent.notes || "").replace(/\D/g, "").slice(-10) || parent.phone || parent.notes || "",
 });
 
 const mapEvent = (event: ApiEvent): FranchiseEvent => ({
