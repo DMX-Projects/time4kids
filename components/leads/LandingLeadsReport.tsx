@@ -103,11 +103,19 @@ function exportCsv(leads: LandingLead[], filename: string) {
 type Props = {
     citySlug?: string;
     title: string;
+    /** Admin CMS embed — uses logged-in admin JWT (no report key). */
+    embedded?: boolean;
+    /** Base path for city chips (default public report paths). */
+    basePath?: string;
 };
 
 const DEV_REPORT_KEY = process.env.NEXT_PUBLIC_LANDING_LEADS_REPORT_KEY?.trim() || "";
 
-function LandingLeadsReportInner({ citySlug, title }: Props) {
+function isLandingLeadsStaff(role: string | undefined) {
+    return role === "admin" || role === "approver";
+}
+
+function LandingLeadsReportInner({ citySlug, title, embedded = false, basePath }: Props) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -122,17 +130,20 @@ function LandingLeadsReportInner({ citySlug, title }: Props) {
     const [dateTo, setDateTo] = useState("");
 
     const urlKey = searchParams.get("key");
-    const reportKey = (urlKey || getStoredReportKey() || "").trim() || null;
-    const needsKey = !reportKey && !authLoading && user?.role !== "admin";
+    const reportKey = embedded ? null : (urlKey || getStoredReportKey() || "").trim() || null;
+    const staffUser = isLandingLeadsStaff(user?.role);
+    const needsKey = !embedded && !reportKey && !authLoading && !staffUser;
+    const reportBasePath = basePath || "/leads/all/";
 
     useEffect(() => {
-        if (urlKey) persistReportKey(urlKey);
-    }, [urlKey]);
+        if (embedded || !urlKey) return;
+        persistReportKey(urlKey);
+    }, [embedded, urlKey]);
 
     useEffect(() => {
-        if (reportKey || !DEV_REPORT_KEY) return;
+        if (embedded || reportKey || !DEV_REPORT_KEY) return;
         router.replace(withReportKey(pathname || "/leads/all/", DEV_REPORT_KEY));
-    }, [pathname, reportKey, router]);
+    }, [embedded, pathname, reportKey, router]);
 
     const apiCityParam = citySlug?.trim() || "";
 
@@ -153,7 +164,7 @@ function LandingLeadsReportInner({ citySlug, title }: Props) {
                 });
                 if (!res.ok) throw await toApiError(res);
                 data = (await res.json()) as LandingLeadsResponse;
-            } else if (user?.role === "admin") {
+            } else if (staffUser) {
                 data = await authFetch<LandingLeadsResponse>(path);
             } else {
                 return;
@@ -172,7 +183,7 @@ function LandingLeadsReportInner({ citySlug, title }: Props) {
         } finally {
             setLoading(false);
         }
-    }, [apiCityParam, authFetch, reportKey, user?.role]);
+    }, [apiCityParam, authFetch, reportKey, staffUser]);
 
     useEffect(() => {
         if (needsKey) {
@@ -180,9 +191,13 @@ function LandingLeadsReportInner({ citySlug, title }: Props) {
             return;
         }
         if (authLoading) return;
-        if (!reportKey && user?.role !== "admin") return;
+        if (!embedded && !reportKey && !staffUser) return;
+        if (embedded && !staffUser) {
+            setLoading(false);
+            return;
+        }
         load();
-    }, [authLoading, load, needsKey, reportKey, user?.role]);
+    }, [authLoading, embedded, load, needsKey, reportKey, staffUser]);
 
     const hasActiveFilters = Boolean(search.trim() || dateFrom || dateTo);
 
@@ -234,13 +249,20 @@ function LandingLeadsReportInner({ citySlug, title }: Props) {
         ? `landing-leads-${citySlug}.csv`
         : "landing-leads-all.csv";
 
+    const shellClass = embedded ? "space-y-6" : "min-h-screen bg-slate-50";
+    const headerClass = embedded
+        ? "rounded-xl border border-slate-200 bg-white shadow-sm"
+        : "border-b border-slate-200 bg-white";
+
     return (
-        <div className="min-h-screen bg-slate-50">
-            <header className="border-b border-slate-200 bg-white">
-                <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
+        <div className={shellClass}>
+            <header className={headerClass}>
+                <div className={`mx-auto max-w-7xl px-4 py-5 sm:px-6 ${embedded ? "" : ""}`}>
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <p className="text-sm font-medium text-orange-600">Landing page leads</p>
+                            <p className={`text-sm font-medium ${embedded ? "text-slate-500" : "text-orange-600"}`}>
+                                {embedded ? "Admin CMS" : "Landing page leads"}
+                            </p>
                             <h1 className="mt-1 text-2xl font-bold text-slate-900">{title}</h1>
                             {!loading && (
                                 <p className="mt-1 text-sm text-slate-500">
@@ -251,7 +273,11 @@ function LandingLeadsReportInner({ citySlug, title }: Props) {
                         </div>
                         <div className="flex flex-wrap gap-2">
                             <Link
-                                href={withReportKey("/leads/all/", reportKey)}
+                                href={
+                                    embedded
+                                        ? reportBasePath
+                                        : withReportKey("/leads/all/", reportKey)
+                                }
                                 className={`rounded-lg px-3 py-2 text-sm font-medium ${
                                     !citySlug
                                         ? "bg-orange-500 text-white"
@@ -279,7 +305,11 @@ function LandingLeadsReportInner({ citySlug, title }: Props) {
                                 return (
                                     <Link
                                         key={c}
-                                        href={withReportKey(`/leads/${slug}/`, reportKey)}
+                                        href={
+                                            embedded
+                                                ? `${reportBasePath}?city=${encodeURIComponent(slug)}`
+                                                : withReportKey(`/leads/${slug}/`, reportKey)
+                                        }
                                         className={`rounded-full px-3 py-1 text-xs font-medium ${
                                             active
                                                 ? "bg-orange-500 text-white"
@@ -295,7 +325,13 @@ function LandingLeadsReportInner({ citySlug, title }: Props) {
                 </div>
             </header>
 
-            <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+            <main className={`mx-auto max-w-7xl px-4 sm:px-6 ${embedded ? "" : "py-6"}`}>
+                {embedded && !authLoading && !staffUser && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        Sign in as admin to view landing leads.
+                    </div>
+                )}
+
                 {needsKey && (
                     <div className="mx-auto mb-8 max-w-lg rounded-xl border border-amber-200 bg-amber-50 px-6 py-8 text-center">
                         <h2 className="text-lg font-semibold text-amber-900">Report access key required</h2>

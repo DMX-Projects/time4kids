@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
 import { FranchiseCenterPageAccordion } from "@/components/dashboard/franchise/FranchiseCenterPageAccordion";
 import {
     FRANCHISE_CENTER_PAGE_BLOCK_A,
@@ -37,10 +36,8 @@ function SideActionButton({ href, label }: { href: string; label: string }) {
 }
 
 export default function FranchiseDashboardPage() {
-    const { profile } = useFranchiseData();
     const { customNav } = useCentrePageNavCustom();
     const { indentsPlacing } = FRANCHISE_DASHBOARD_RIGHT_ACTION_URLS;
-    const centreName = profile.name?.trim() || profile.centre?.trim() || "your centre";
     const centrePageSections = useMemo(
         () => mergeCentrePageBlocks(FRANCHISE_CENTER_PAGE_BLOCK_A, FRANCHISE_CENTER_PAGE_BLOCK_B, customNav),
         [customNav],
@@ -52,9 +49,8 @@ export default function FranchiseDashboardPage() {
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
                     <p className="mt-1 text-sm text-slate-600">
-                        Welcome to <span className="font-semibold text-slate-800">{centreName}</span>. Use the
-                        sidebar for day-to-day tasks. Head-office documents (SOP, academic files, formats, and
-                        more) are below.
+                        Your centre name and city are shown in the sidebar. Use the menu for day-to-day tasks.
+                        Head-office documents (SOP, academic files, formats, and more) are below.
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2 sm:justify-end shrink-0">

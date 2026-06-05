@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
-
 export type FeeSummaryLine = {
     serial: number;
     fee_type: string;
@@ -12,14 +10,6 @@ export type FeeSummaryLine = {
     balance: number;
     due_date: string;
     status: string;
-};
-
-export type FeeSummaryPayment = {
-    amount_paid: number;
-    payment_type: string;
-    mode_of_payment: string;
-    date_of_payment: string;
-    fee_structure_name?: string;
 };
 
 export type FeeSummaryPayload = {
@@ -49,7 +39,6 @@ export type FeeSummaryPayload = {
         amount_paid?: number;
         balance?: number;
     };
-    payments?: FeeSummaryPayment[];
 };
 
 function money(n: number | undefined) {
@@ -112,14 +101,8 @@ export function ParentFeeDetailsView({ data, loading }: { data: FeeSummaryPayloa
     const alerts = data?.alerts || {};
     const lines = data?.lines || [];
     const totals = data?.totals || {};
-    const payments = data?.payments || [];
 
     const hasLines = lines.length > 0;
-    const sourceLabel = useMemo(() => {
-        if (data?.source === "legacy") return "Live fee records (TiKES)";
-        if (data?.source === "records") return "Centre-entered fee records";
-        return "";
-    }, [data?.source]);
 
     if (loading) {
         return <p className="text-sm text-orange-700">Loading fee details…</p>;
@@ -139,45 +122,29 @@ export function ParentFeeDetailsView({ data, loading }: { data: FeeSummaryPayloa
                         ]}
                     />
                 ) : null}
-                <div className="rounded-2xl border border-orange-100 bg-white p-6 text-sm text-orange-800">
-                    <p>No fee details are available yet for this student.</p>
-                    {data?.lookup_message ? (
-                        <p className="mt-2 text-orange-700">{data.lookup_message}</p>
-                    ) : data?.legacy_configured && idCard ? (
-                        <p className="mt-2 text-orange-700">
-                            TiKES fee database is connected, but there are no fee records for ID card{" "}
-                            <span className="font-semibold">{idCard}</span> in{" "}
-                            <span className="font-mono text-xs">fee_payment</span>. The child may not have
-                            billing set up in TiKES yet, or the ID card on this login may differ from TiKES.
-                        </p>
-                    ) : data?.legacy_configured === false ? (
-                        <p className="mt-2 text-orange-700">
-                            Your centre can add fee entries from the franchise dashboard, or Head Office can connect
-                            the legacy fee database on the server.
-                        </p>
-                    ) : null}
-                </div>
+                <p className="text-sm text-orange-800">No fee details are available for this student.</p>
             </div>
         );
     }
 
     return (
         <div className="space-y-4">
-            {sourceLabel ? (
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{sourceLabel}</p>
-            ) : null}
-
             {alerts.dropped_out ? (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-900">
-                    <p className="font-semibold">This child has dropped out</p>
-                    {alerts.drop_reason ? <p className="mt-1 text-sm">Reason: {alerts.drop_reason}</p> : null}
+                    <p className="font-semibold">This Kid has dropped out</p>
+                    {alerts.drop_reason ? (
+                        <p className="mt-1 text-sm">
+                            <span className="font-semibold text-[#083f88]">Reason: </span>
+                            {alerts.drop_reason}
+                        </p>
+                    ) : null}
                 </div>
             ) : null}
 
             {alerts.refund_done ? (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
                     <p className="font-semibold">
-                        Fee refund has been processed for this student. Subsequent online payment is not available.
+                        Fee Refund has been done to this Student. Cannot make the Subsequent Payment
                     </p>
                 </div>
             ) : null}
@@ -245,34 +212,6 @@ export function ParentFeeDetailsView({ data, loading }: { data: FeeSummaryPayloa
                                     <td className="p-2 border border-orange-100" />
                                     <td className="p-2 border border-orange-100" />
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            ) : null}
-
-            {payments.length > 0 ? (
-                <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4">
-                    <h2 className="text-lg font-semibold text-orange-900 mb-3">Payment Details</h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm border border-orange-100">
-                            <thead className="bg-orange-50 text-orange-900">
-                                <tr>
-                                    <th className="text-left p-2 border border-orange-100">Date</th>
-                                    <th className="text-left p-2 border border-orange-100">Payment Type</th>
-                                    <th className="text-left p-2 border border-orange-100">Mode</th>
-                                    <th className="text-right p-2 border border-orange-100">Amount Paid</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {payments.map((payment, idx) => (
-                                    <tr key={`${payment.date_of_payment}-${idx}`}>
-                                        <td className="p-2 border border-orange-100">{payment.date_of_payment || "—"}</td>
-                                        <td className="p-2 border border-orange-100">{payment.payment_type || "—"}</td>
-                                        <td className="p-2 border border-orange-100">{payment.mode_of_payment || "—"}</td>
-                                        <td className="p-2 border border-orange-100 text-right">{money(payment.amount_paid)}</td>
-                                    </tr>
-                                ))}
                             </tbody>
                         </table>
                     </div>

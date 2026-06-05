@@ -45,12 +45,6 @@ export const PARENT_APP_DOCUMENT_CHECKLIST: ParentAppDocumentSection[] = [
         slots: [globalSlot("PRESCHOOL_POLICIES")],
     },
     {
-        id: "class-timetable",
-        title: catLabel("CLASS_TIMETABLE"),
-        category: "CLASS_TIMETABLE",
-        slots: [globalSlot("CLASS_TIMETABLE")],
-    },
-    {
         id: "holiday-lists",
         title: catLabel("HOLIDAY_LISTS"),
         category: "HOLIDAY_LISTS",

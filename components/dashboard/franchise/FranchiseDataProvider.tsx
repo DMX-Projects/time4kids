@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders, mediaUrl } from "@/lib/api-client";
-import { normalizeApiList } from "@/lib/parent-school-api";
+import { fetchAllApiList, normalizeApiList } from "@/lib/parent-school-api";
 import { randomTempPassword } from "@/lib/utils";
 
 export type FranchiseParent = { id: string; name: string; student: string; email: string; phone: string };
@@ -30,6 +30,9 @@ export type FranchiseProfile = {
 
 export type FranchiseDataContextValue = {
     parents: FranchiseParent[];
+    parentsLoading: boolean;
+    parentsError: string | null;
+    reloadParents: () => Promise<void>;
     addParent: (payload: Omit<FranchiseParent, "id">) => Promise<void>;
     updateParent: (id: string, payload: Partial<FranchiseParent>) => Promise<void>;
     deleteParent: (id: string) => Promise<void>;
@@ -120,9 +123,11 @@ const mapProfile = (profile: ApiProfile): FranchiseProfile => ({
 });
 
 export function FranchiseDataProvider({ children }: { children: React.ReactNode }) {
-    const { user, authFetch } = useAuth();
+    const { user, tokens, loading: authLoading, authFetch } = useAuth();
 
     const [parents, setParents] = useState<FranchiseParent[]>([]);
+    const [parentsLoading, setParentsLoading] = useState(false);
+    const [parentsError, setParentsError] = useState<string | null>(null);
     const [events, setEvents] = useState<FranchiseEvent[]>([]);
     const [profile, setProfile] = useState<FranchiseProfile>({
         name: "",
@@ -145,20 +150,28 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
     });
 
     useEffect(() => {
-        if (user?.role !== "franchise") return;
-        loadProfile();
-        loadParents();
-        loadEvents();
+        if (authLoading || user?.role !== "franchise" || !tokens?.access) return;
+        void loadProfile();
+        void loadParents();
+        void loadEvents();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.role, user?.id]);
+    }, [user?.role, user?.id, authLoading, tokens?.access]);
 
     const loadParents = async () => {
+        setParentsLoading(true);
+        setParentsError(null);
         try {
-            const data = await authFetch<unknown>("/franchises/franchise/parents/");
-            const list = normalizeApiList(data) as ApiParent[];
+            const list = (await fetchAllApiList(authFetch, "/franchises/franchise/parents/")) as ApiParent[];
             setParents(list.map(mapParent));
-        } catch {
+        } catch (err) {
             setParents([]);
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : "Could not load parent records. Check your connection and try again.";
+            setParentsError(message);
+        } finally {
+            setParentsLoading(false);
         }
     };
 
@@ -279,6 +292,9 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
 
     const value: FranchiseDataContextValue = {
         parents,
+        parentsLoading,
+        parentsError,
+        reloadParents: loadParents,
         addParent,
         updateParent,
         deleteParent,

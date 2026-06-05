@@ -1,14 +1,22 @@
 "use client";
 
+import { Newspaper } from "lucide-react";
 import { ParentDocList } from "@/components/dashboard/parent/ParentDocList";
+import {
+    PARENT_NEWSLETTER_CATEGORY,
+    PARENT_NEWSLETTER_DESCRIPTION,
+    PARENT_NEWSLETTER_EMPTY_MESSAGE,
+    PARENT_NEWSLETTER_LABEL,
+} from "@/config/parent-newsletter";
 
-export default function TimetablePage() {
+export default function NewsletterPage() {
     return (
         <ParentDocList
-            category="CLASS_TIMETABLE"
-            title="Class timetable"
-            description="Uploaded class timetables (usually PDF). Your centre publishes these for your batch."
-            emptyMessage="No timetable uploaded for your centre yet. Ask your school to add a class timetable PDF."
+            category={PARENT_NEWSLETTER_CATEGORY}
+            title={PARENT_NEWSLETTER_LABEL}
+            description={PARENT_NEWSLETTER_DESCRIPTION}
+            emptyMessage={PARENT_NEWSLETTER_EMPTY_MESSAGE}
+            headerIcon={<Newspaper className="w-5 h-5" />}
         />
     );
 }

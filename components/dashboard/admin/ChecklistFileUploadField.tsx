@@ -4,6 +4,7 @@ import { Upload } from "lucide-react";
 
 export function ChecklistFileUploadField({
     id,
+    label,
     accept,
     hint,
     required,
@@ -11,6 +12,7 @@ export function ChecklistFileUploadField({
     onChange,
 }: {
     id: string;
+    label?: string;
     accept?: string;
     hint: string;
     required?: boolean;
@@ -19,6 +21,7 @@ export function ChecklistFileUploadField({
 }) {
     return (
         <div className="space-y-2">
+            {label ? <p className="text-xs font-semibold text-slate-600">{label}</p> : null}
             <label
                 htmlFor={id}
                 className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-orange-200 bg-orange-50/60 px-4 py-6 text-center transition hover:border-orange-300 hover:bg-orange-50"

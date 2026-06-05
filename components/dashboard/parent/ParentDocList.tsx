@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Download, FileText } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { openParentDocumentFile } from "@/lib/parent-document-file-open";
@@ -24,11 +24,13 @@ export function ParentDocList({
     title,
     description,
     emptyMessage = "Nothing uploaded yet. Your centre can add PDFs from the franchise portal.",
+    headerIcon,
 }: {
     category: string;
     title: string;
     description: string;
     emptyMessage?: string;
+    headerIcon?: ReactNode;
 }) {
     const { authFetch, tokens, authFetchBlobResponse } = useAuth();
     const [docs, setDocs] = useState<DocRow[]>([]);
@@ -64,7 +66,7 @@ export function ParentDocList({
             <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-6 space-y-2">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
-                        <FileText className="w-5 h-5" />
+                        {headerIcon ?? <FileText className="w-5 h-5" />}
                     </div>
                     <div>
                         <h1 className="text-lg font-semibold text-orange-900">{title}</h1>
