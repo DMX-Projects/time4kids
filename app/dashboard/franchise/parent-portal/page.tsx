@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { ChevronDown, LayoutGrid, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { fetchAllApiList } from "@/lib/parent-school-api";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
 import { jsonHeaders } from "@/lib/api-client";
@@ -133,8 +134,8 @@ export default function ParentPortalAdminPage() {
 
     const loadStudents = useCallback(async () => {
         try {
-            const data = await authFetch<unknown>("/students/franchise/students/");
-            setStudents(normalizeList<MiniStudent>(data));
+            const rows = await fetchAllApiList(authFetch, "/students/franchise/students/mini/");
+            setStudents(rows as MiniStudent[]);
         } catch {
             setStudents([]);
         }

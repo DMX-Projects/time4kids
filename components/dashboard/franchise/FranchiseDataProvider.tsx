@@ -8,6 +8,16 @@ import { randomTempPassword } from "@/lib/utils";
 
 export type FranchiseParent = { id: string; name: string; student: string; email: string; phone: string };
 export type FranchiseEvent = { id: string; title: string; date: string; venue: string; notes: string };
+export type FranchiseCentreAccess = {
+    linked: boolean;
+    resolve_method?: string | null;
+    franchise_id?: number | null;
+    franchise_name?: string;
+    parents_count?: number;
+    students_count?: number;
+    hint?: string;
+};
+
 export type FranchiseProfile = {
     name: string;
     slug: string;
@@ -43,6 +53,7 @@ export type FranchiseDataContextValue = {
     deleteEvent: (id: string) => Promise<void>;
 
     profile: FranchiseProfile;
+    centreAccess: FranchiseCentreAccess | null;
     updateProfile: (payload: Partial<FranchiseProfile>) => Promise<void>;
 };
 
@@ -51,6 +62,8 @@ const FranchiseDataContext = createContext<FranchiseDataContextValue | undefined
 type ApiParent = {
     id: number;
     user?: { full_name?: string; email: string };
+    name?: string;
+    email?: string;
     child_name?: string;
     notes?: string;
     phone?: string;
@@ -84,13 +97,14 @@ type ApiProfile = {
     address?: string;
     state?: string;
     google_map_link?: string;
+    centre_access?: FranchiseCentreAccess;
 };
 
 const mapParent = (parent: ApiParent): FranchiseParent => ({
     id: String(parent.id),
-    name: parent.user?.full_name || parent.user?.email || "",
+    name: parent.name || parent.user?.full_name || parent.user?.email || "",
     student: parent.child_name || "",
-    email: parent.user?.email || parent.Emailid || "",
+    email: parent.email || parent.user?.email || parent.Emailid || "",
     phone: (parent.phone || parent.notes || "").replace(/\D/g, "").slice(-10) || parent.phone || parent.notes || "",
 });
 
@@ -129,6 +143,7 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
     const [parentsLoading, setParentsLoading] = useState(false);
     const [parentsError, setParentsError] = useState<string | null>(null);
     const [events, setEvents] = useState<FranchiseEvent[]>([]);
+    const [centreAccess, setCentreAccess] = useState<FranchiseCentreAccess | null>(null);
     const [profile, setProfile] = useState<FranchiseProfile>({
         name: "",
         slug: "",
@@ -189,8 +204,9 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
         try {
             const data = await authFetch<ApiProfile>("/franchises/franchise/profile/");
             setProfile(mapProfile(data));
+            setCentreAccess(data.centre_access ?? null);
         } catch {
-            // ignore
+            setCentreAccess(null);
         }
     };
 
@@ -303,6 +319,7 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
         updateEvent,
         deleteEvent,
         profile,
+        centreAccess,
         updateProfile,
     };
 

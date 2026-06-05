@@ -7,6 +7,7 @@ import { apiUrl, jsonHeaders, mediaUrl, schoolGalleryMediaUrl, toApiError } from
 import { buildEventMediaFileViewUrl } from "@/lib/event-media-url";
 import { validateEventGalleryImageSize } from "@/lib/franchise-centre-upload";
 import {
+    fetchAllApiList,
     mapApiGrade,
     mapApiStudent,
     normalizeApiList,
@@ -396,14 +397,16 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
 
     const loadFranchiseStudentsAndGrades = async () => {
         try {
-            const [sData, gData] = await Promise.all([
-                authFetch<any>("/students/franchise/students/"),
-                authFetch<any>("/students/franchise/grades/"),
+            const [studentRows, gradeRows] = await Promise.all([
+                fetchAllApiList(authFetch, "/students/franchise/students/"),
+                fetchAllApiList(authFetch, "/students/franchise/grades/"),
             ]);
-            setStudents(normalizeApiList(sData).map((s) => mapApiStudent(s, "")));
-            setGrades(normalizeApiList(gData).map((g) => mapApiGrade(g, "")));
+            setStudents(studentRows.map((s) => mapApiStudent(s, "")));
+            setGrades(gradeRows.map((g) => mapApiGrade(g, "")));
         } catch (err) {
             console.error("Failed to load franchise data", err);
+            setStudents([]);
+            setGrades([]);
         }
     };
 
