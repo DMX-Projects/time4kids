@@ -5,6 +5,7 @@ import { CheckCircle2, Eye, GraduationCap, Pencil, Plus, Search, Sparkles, Trash
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
+import { FranchiseCentreAccessBanner } from "@/components/dashboard/franchise/FranchiseCentreAccessBanner";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -42,7 +43,7 @@ const emptyForm = (): StudentForm => ({
 
 export default function FranchiseStudentsPage() {
     const { students, addOrUpdateStudent, franchiseDeleteStudent } = useSchoolData();
-    const { parents } = useFranchiseData();
+    const { parents, centreAccess } = useFranchiseData();
     const { showToast } = useToast();
 
     const [query, setQuery] = useState("");
@@ -178,6 +179,8 @@ export default function FranchiseStudentsPage() {
                     </Button>
                 </div>
             </header>
+
+            <FranchiseCentreAccessBanner centreAccess={centreAccess} loadedCount={students.length} recordLabel="students" />
 
             <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((student, idx) => (

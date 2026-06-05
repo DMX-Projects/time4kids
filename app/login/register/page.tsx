@@ -35,7 +35,7 @@ export default function RegisterPage() {
 
                         <div className="text-center mb-8 md:mb-10 relative z-10">
                             <h1 className="font-display font-black text-3xl md:text-5xl text-slate-800 mb-3 drop-shadow-sm">
-                                Admission Enquiry Form
+                                Register Form
                             </h1>
                             <p className="text-slate-500 font-bold text-lg">Let&apos;s get to know your little one!</p>
                             <p className="mt-4 text-sm md:text-base text-slate-600 font-medium max-w-2xl mx-auto leading-relaxed">

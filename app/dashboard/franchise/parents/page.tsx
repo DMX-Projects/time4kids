@@ -4,6 +4,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { CheckCircle2, Eye, Mail, Pencil, Phone, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { FranchiseCentreAccessBanner } from "@/components/dashboard/franchise/FranchiseCentreAccessBanner";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
 
 const shells = {
@@ -12,7 +13,8 @@ const shells = {
 };
 
 export default function FranchiseParentsPage() {
-    const { parents, parentsLoading, parentsError, reloadParents, addParent, updateParent, deleteParent } = useFranchiseData();
+    const { parents, parentsLoading, parentsError, centreAccess, reloadParents, addParent, updateParent, deleteParent } =
+        useFranchiseData();
 
     const [query, setQuery] = useState("");
     const [form, setForm] = useState({ name: "", student: "", email: "", phone: "", password: "" });
@@ -123,6 +125,8 @@ export default function FranchiseParentsPage() {
                     </Button>
                 </div>
             </header>
+
+            <FranchiseCentreAccessBanner centreAccess={centreAccess} loadedCount={parents.length} recordLabel="parents" />
 
             {parentsError ? (
                 <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 space-y-2 max-w-2xl">
