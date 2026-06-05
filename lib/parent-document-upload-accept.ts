@@ -1,7 +1,14 @@
+import {
+    PARENT_NEWSLETTER_CATEGORY,
+    PARENT_NEWSLETTER_FILE_ACCEPT,
+    PARENT_NEWSLETTER_FILE_HINT,
+} from "@/config/parent-newsletter";
+
 /** File input `accept` string per parent app document category. */
 export function acceptForParentDocumentCategory(category: string): string | undefined {
     switch (category) {
-        case "CLASS_TIMETABLE":
+        case PARENT_NEWSLETTER_CATEGORY:
+            return PARENT_NEWSLETTER_FILE_ACCEPT;
         case "PRESCHOOL_POLICIES":
             return ".pdf,application/pdf";
         case "AUDIO_RHYMES":
@@ -22,7 +29,8 @@ export function uploadHintForParentDocumentCategory(category: string): string {
             return `MP3, WAV, or other audio files (${limits})`;
         case "VIDEOS":
             return `MP4 or other video files (max 50 MB)`;
-        case "CLASS_TIMETABLE":
+        case PARENT_NEWSLETTER_CATEGORY:
+            return PARENT_NEWSLETTER_FILE_HINT;
         case "PRESCHOOL_POLICIES":
         case "HOLIDAY_LISTS":
             return "PDF files (max 25 MB)";

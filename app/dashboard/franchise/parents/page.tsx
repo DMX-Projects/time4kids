@@ -12,7 +12,7 @@ const shells = {
 };
 
 export default function FranchiseParentsPage() {
-    const { parents, addParent, updateParent, deleteParent } = useFranchiseData();
+    const { parents, parentsLoading, parentsError, reloadParents, addParent, updateParent, deleteParent } = useFranchiseData();
 
     const [query, setQuery] = useState("");
     const [form, setForm] = useState({ name: "", student: "", email: "", phone: "", password: "" });
@@ -124,8 +124,22 @@ export default function FranchiseParentsPage() {
                 </div>
             </header>
 
+            {parentsError ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 space-y-2 max-w-2xl">
+                    <p>{parentsError}</p>
+                    <Button type="button" size="sm" variant="outline" onClick={() => void reloadParents()}>
+                        Retry loading parents
+                    </Button>
+                </div>
+            ) : null}
+
+            {parentsLoading ? (
+                <p className="text-sm text-[#4B5563]">Loading parent records…</p>
+            ) : null}
+
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {filtered.map((parent, idx) => (
+                {!parentsLoading &&
+                    filtered.map((parent, idx) => (
                     <article
                         key={parent.id}
                         className={`${shells.card} blob-card p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_18px_40px_-20px_rgba(17,24,39,0.25)] animate-soft`}
@@ -162,8 +176,15 @@ export default function FranchiseParentsPage() {
                             />
                         </div>
                     </article>
-                ))}
-                {filtered.length === 0 && <p className="text-sm text-[#4B5563]">No parents match your search.</p>}
+                    ))}
+                {!parentsLoading && !parentsError && parents.length === 0 ? (
+                    <p className="text-sm text-[#4B5563] md:col-span-2 xl:col-span-3">
+                        No parent records for your centre yet. Use <strong>Add Parent</strong> to create one.
+                    </p>
+                ) : null}
+                {!parentsLoading && !parentsError && parents.length > 0 && filtered.length === 0 ? (
+                    <p className="text-sm text-[#4B5563] md:col-span-2 xl:col-span-3">No parents match your search.</p>
+                ) : null}
             </section>
 
             {viewingParent && (

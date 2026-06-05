@@ -1,7 +1,7 @@
 /** Parent mobile app document categories (matches Django DocumentCategory). */
 export const PARENT_DOCUMENT_CATEGORIES = [
     { value: "PRESCHOOL_POLICIES", label: "Preschool Policies (PDF)" },
-    { value: "CLASS_TIMETABLE", label: "Class Timetable (PDF)" },
+    { value: "CLASS_TIMETABLE", label: "Newsletter" },
     { value: "HOLIDAY_LISTS", label: "Holiday Lists" },
     { value: "AUDIO_RHYMES", label: "Audio Rhymes" },
     { value: "VIDEOS", label: "Watch • Hear • Learn" },
@@ -9,6 +9,13 @@ export const PARENT_DOCUMENT_CATEGORIES = [
     { value: "STUDENTS_KIT", label: "Students Kit" },
     { value: "PARENTING_TIPS", label: "Parenting Tips & Articles" },
 ] as const;
+
+/** Head-office CMS — Newsletter is uploaded by franchise centres only. */
+export const ADMIN_PARENT_DOCUMENT_CATEGORIES = PARENT_DOCUMENT_CATEGORIES.filter(
+    (c) => c.value !== "CLASS_TIMETABLE",
+);
+
+export const DEFAULT_HOLIDAY_ACADEMIC_YEAR = "AY 2026-27";
 
 /** Indian states for holiday list uploads (matches ParentDocument.State). */
 export const PARENT_DOCUMENT_STATES = [

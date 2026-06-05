@@ -190,6 +190,7 @@ export type SchoolDataContextValue = {
     // Attendance Methods
     loadAttendance: (dateOrStudentId?: string) => Promise<void>;
     markAttendance: (records: Omit<AttendanceRecord, "id">[], date?: string) => Promise<void>;
+    clearAttendanceDate: (date: string) => Promise<number>;
 
     locations: { city_name: string; state: string }[];
     updateEnquiryStatus: (id: string, status: string) => Promise<void>;
@@ -702,29 +703,30 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     const markAttendance = async (records: Omit<AttendanceRecord, "id">[], date?: string) => {
-        const failed: string[] = [];
-        for (const rec of records) {
-            const body = {
-                student: Number(rec.studentId),
-                date: rec.date,
-                status: rec.status,
-                note: rec.note || "",
-            };
-            try {
-                await authFetch("/students/franchise/attendance/", {
-                    method: "POST",
-                    headers: jsonHeaders(),
-                    body: JSON.stringify(body),
-                });
-            } catch (err) {
-                console.error("Failed to mark attendance", err);
-                failed.push(rec.studentId);
-            }
-        }
-        if (failed.length > 0) {
-            throw new Error(`Failed to save ${failed.length} record(s)`);
-        }
+        if (records.length === 0) return;
+        await authFetch("/students/franchise/attendance/bulk/", {
+            method: "POST",
+            headers: jsonHeaders(),
+            body: JSON.stringify({
+                records: records.map((rec) => ({
+                    student: Number(rec.studentId),
+                    date: rec.date,
+                    status: rec.status,
+                    note: rec.note || "",
+                })),
+            }),
+        });
         await loadAttendance(date);
+    };
+
+    const clearAttendanceDate = async (date: string) => {
+        const params = new URLSearchParams({ date });
+        const result = await authFetch<{ deleted?: number }>(
+            `/students/franchise/attendance/clear/?${params.toString()}`,
+            { method: "DELETE" },
+        );
+        await loadAttendance(date);
+        return Number(result?.deleted ?? 0);
     };
 
     // Franchise Specific CRUD Implementations
@@ -870,6 +872,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         franchiseDeleteGrade,
         loadAttendance,
         markAttendance,
+        clearAttendanceDate,
         locations,
         updateEnquiryStatus,
         parentSchoolLoading,

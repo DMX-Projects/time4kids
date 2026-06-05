@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, Download, Eye, FileText, Music, Play, Sparkles } from "lucide-react";
+import { ChevronDown, Download, Eye, FileText, Music, Newspaper, Play, Sparkles } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useParentAppNavCustom } from "@/hooks/useParentAppNavCustom";
 import { openParentDocumentFile } from "@/lib/parent-document-file-open";
@@ -28,7 +28,7 @@ const normalizeDocs = (data: unknown): ParentDoc[] => {
 
 const categoryMeta: Record<string, { icon: JSX.Element; accent: { strip: string; text: string } }> = {
     PRESCHOOL_POLICIES: { icon: <FileText className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
-    CLASS_TIMETABLE: { icon: <FileText className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
+    CLASS_TIMETABLE: { icon: <Newspaper className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
     HOLIDAY_LISTS: { icon: <Sparkles className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
     AUDIO_RHYMES: { icon: <Music className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
     VIDEOS: { icon: <Play className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
@@ -92,7 +92,7 @@ export function ParentDocuments() {
                     <div>
                         <p className="text-xs uppercase tracking-[0.08em] text-[#4B5563] font-semibold">All in one place</p>
                         <h2 className="text-2xl font-bold text-[#1F2937] leading-tight">Centre resources &amp; files</h2>
-                        <p className="text-sm text-[#6B7280] mt-1">Same files as the separate Timetable, Holiday, and Policies pages — shown here by category.</p>
+                        <p className="text-sm text-[#6B7280] mt-1">Same files as the separate Newsletter, Holiday, and Policies pages — shown here by category.</p>
                     </div>
                 </div>
 

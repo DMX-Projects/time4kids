@@ -14,15 +14,25 @@ import {
 } from "@/components/dashboard/admin/AdminParentAppChecklist";
 import { ChecklistFileUploadField } from "@/components/dashboard/admin/ChecklistFileUploadField";
 import {
-    PARENT_DOCUMENT_CATEGORIES,
+    ADMIN_PARENT_DOCUMENT_CATEGORIES,
+    DEFAULT_HOLIDAY_ACADEMIC_YEAR,
     PARENT_DOCUMENT_STATES,
 } from "@/config/parent-document-categories";
+import { PARENT_NEWSLETTER_CATEGORY } from "@/config/parent-newsletter";
 import type { AdminParentAppUploadContext } from "@/lib/admin-parent-app-upload";
 import {
     acceptForParentDocumentCategory,
     uploadHintForParentDocumentCategory,
 } from "@/lib/parent-document-upload-accept";
 import { validateAdminParentDocumentUpload } from "@/lib/franchise-centre-upload";
+import HolidayEntriesEditor from "@/components/dashboard/HolidayEntriesEditor";
+import {
+    emptyHolidayEntry,
+    parseHolidayEntries,
+    requireHolidayEntries,
+    serializeHolidayEntries,
+    type HolidayEntry,
+} from "@/config/holiday-entries";
 import {
     PARENT_APP_NAV_CUSTOM_SLUG,
     emptyParentAppNavCustom,
@@ -49,10 +59,11 @@ export type ParentDocumentRow = {
     is_active: boolean;
     order: number;
     created_at?: string;
+    holiday_entries?: HolidayEntry[] | unknown;
 };
 
 const emptyForm = {
-    category: "CLASS_TIMETABLE",
+    category: "PRESCHOOL_POLICIES",
     title: "",
     description: "",
     academic_year: "AY 2026-27",
@@ -83,8 +94,12 @@ export default function AdminParentDocumentsPage() {
     const [renameModal, setRenameModal] = useState<ParentAppRenameRequest | null>(null);
     const [renameTitle, setRenameTitle] = useState("");
     const [renameSaving, setRenameSaving] = useState(false);
+    const [holidayEntries, setHolidayEntries] = useState<HolidayEntry[]>([emptyHolidayEntry()]);
 
-    const mergedSections = useMemo(() => mergeParentAppChecklist(navCustom), [navCustom]);
+    const mergedSections = useMemo(
+        () => mergeParentAppChecklist(navCustom).filter((s) => s.category !== PARENT_NEWSLETTER_CATEGORY),
+        [navCustom],
+    );
 
     const saveNavCustom = useCallback(
         async (next: ParentAppNavCustomData) => {
@@ -99,7 +114,8 @@ export default function AdminParentDocumentsPage() {
     );
 
     const isHoliday = form.category === "HOLIDAY_LISTS";
-    const isTimetable = form.category === "CLASS_TIMETABLE";
+    const holidayStateLabel =
+        PARENT_DOCUMENT_STATES.find((s) => s.value === form.state)?.label || form.state || "";
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -110,7 +126,11 @@ export default function AdminParentDocumentsPage() {
                     () => emptyParentAppNavCustom(),
                 ),
             ]);
-            setItems(Array.isArray(data) ? data : []);
+            setItems(
+                Array.isArray(data)
+                    ? data.filter((row) => row.category !== PARENT_NEWSLETTER_CATEGORY)
+                    : [],
+            );
             setNavCustom(parseParentNavCustom(navData));
         } catch (e) {
             console.error(e);
@@ -168,6 +188,7 @@ export default function AdminParentDocumentsPage() {
             category: req.section.category,
         });
         setFile(null);
+        setHolidayEntries([emptyHolidayEntry()]);
         setModalOpen(true);
     };
 
@@ -226,6 +247,13 @@ export default function AdminParentDocumentsPage() {
             });
         }
         setFile(null);
+        setHolidayEntries(
+            existing?.category === "HOLIDAY_LISTS"
+                ? parseHolidayEntries(existing.holiday_entries).length > 0
+                    ? parseHolidayEntries(existing.holiday_entries)
+                    : [emptyHolidayEntry()]
+                : [emptyHolidayEntry()],
+        );
         setModalOpen(true);
     };
 
@@ -235,6 +263,7 @@ export default function AdminParentDocumentsPage() {
         setUploadContext(null);
         setAddForCentreOnly(false);
         setFile(null);
+        setHolidayEntries([emptyHolidayEntry()]);
     };
 
     const submit = async (e: React.FormEvent) => {
@@ -243,14 +272,17 @@ export default function AdminParentDocumentsPage() {
             showToast("Select a state for holiday lists.", "error");
             return;
         }
-        if (isTimetable && file) {
-            const name = file.name.toLowerCase();
-            if (file.type !== "application/pdf" && !name.endsWith(".pdf")) {
-                showToast("Class timetable must be a PDF.", "error");
-                return;
-            }
+        if (form.category === PARENT_NEWSLETTER_CATEGORY) {
+            showToast("Newsletter is uploaded by franchise centres in Parent App.", "error");
+            return;
         }
-        if (!editing && !file) {
+        const serializedHolidays = isHoliday ? serializeHolidayEntries(holidayEntries) : [];
+        const holidayErr = isHoliday ? requireHolidayEntries(holidayEntries) : null;
+        if (holidayErr) {
+            showToast(holidayErr, "error");
+            return;
+        }
+        if (!isHoliday && !editing && !file) {
             showToast("Choose a file to upload.", "error");
             return;
         }
@@ -272,41 +304,88 @@ export default function AdminParentDocumentsPage() {
                 form.franchise_id === "" || form.franchise_id === "__global__"
                     ? null
                     : Number(form.franchise_id);
+            const resolvedTitle = isHoliday
+                ? editing?.title || uploadContext?.suggestedTitle || `${holidayStateLabel || "State"} Holiday List`
+                : form.title.trim() || file!.name;
+            const resolvedAcademicYear = isHoliday ? DEFAULT_HOLIDAY_ACADEMIC_YEAR : form.academic_year;
 
             if (editing) {
-                const metaBody = {
-                    category: form.category,
-                    title: form.title.trim() || editing.title,
-                    description: form.description,
-                    academic_year: form.academic_year || "",
-                    state: isHoliday ? form.state : null,
-                    order: form.order,
-                    is_active: form.is_active,
-                    franchise,
-                };
-                await authFetch(`/documents/admin/parent-documents/${editing.id}/`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(metaBody),
-                });
-                if (file) {
-                    const fd = new FormData();
-                    fd.append("file", file);
+                if (isHoliday) {
                     await authFetch(`/documents/admin/parent-documents/${editing.id}/`, {
                         method: "PATCH",
-                        body: fd,
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            category: form.category,
+                            title: editing.title || resolvedTitle,
+                            description: "",
+                            academic_year: resolvedAcademicYear || "",
+                            state: form.state,
+                            order: form.order,
+                            is_active: form.is_active,
+                            franchise,
+                            holiday_entries: serializedHolidays,
+                        }),
+                    });
+                } else if (file) {
+                    const metaBody = {
+                        category: form.category,
+                        title: resolvedTitle,
+                        description: form.description,
+                        academic_year: resolvedAcademicYear || "",
+                        state: null,
+                        order: form.order,
+                        is_active: form.is_active,
+                        franchise,
+                    };
+                    await authFetch(`/documents/admin/parent-documents/${editing.id}/`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(metaBody),
+                    });
+                    const fd = new FormData();
+                    fd.append("file", file);
+                    await authFetch(`/documents/admin/parent-documents/${editing.id}/`, { method: "PATCH", body: fd });
+                } else {
+                    await authFetch(`/documents/admin/parent-documents/${editing.id}/`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            category: form.category,
+                            title: resolvedTitle,
+                            description: form.description,
+                            academic_year: resolvedAcademicYear || "",
+                            order: form.order,
+                            is_active: form.is_active,
+                            franchise,
+                        }),
                     });
                 }
                 showToast("Document updated.", "success");
+            } else if (isHoliday) {
+                await authFetch("/documents/admin/parent-documents/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        category: form.category,
+                        title: resolvedTitle,
+                        description: "",
+                        academic_year: resolvedAcademicYear,
+                        order: form.order,
+                        is_active: form.is_active,
+                        state: form.state,
+                        franchise,
+                        holiday_entries: serializedHolidays,
+                    }),
+                });
+                showToast("Holiday list saved for parents.", "success");
             } else {
                 const fd = new FormData();
                 fd.append("category", form.category);
-                fd.append("title", form.title.trim() || file!.name);
+                fd.append("title", resolvedTitle);
                 fd.append("description", form.description);
-                fd.append("academic_year", form.academic_year);
+                fd.append("academic_year", resolvedAcademicYear);
                 fd.append("order", String(form.order));
                 fd.append("is_active", form.is_active ? "true" : "false");
-                if (isHoliday) fd.append("state", form.state);
                 if (franchise != null) fd.append("franchise", String(franchise));
                 fd.append("file", file!);
                 await authFetch("/documents/admin/parent-documents/", { method: "POST", body: fd });
@@ -330,6 +409,9 @@ export default function AdminParentDocumentsPage() {
                     Each section matches the parent app. Use <strong>Rename</strong> on section or row names.
                     Click <strong>Add</strong> on an existing section to add another file — no new subsection needed.
                     Uploaded file titles can also be changed with <strong>Edit</strong>.
+                    <strong className="text-slate-800"> Holiday Lists</strong> — add holidays per state (date, name, city). Centres can add or update on top of this.
+                    <strong className="text-slate-800"> Newsletter</strong> is uploaded by franchise centres from{" "}
+                    <strong className="text-slate-800">Franchise → Parent App → Newsletter</strong>.
                 </p>
             </div>
 
@@ -406,7 +488,7 @@ export default function AdminParentDocumentsPage() {
                                 className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
                                 required
                             >
-                                {PARENT_DOCUMENT_CATEGORIES.map((c) => (
+                                {ADMIN_PARENT_DOCUMENT_CATEGORIES.map((c) => (
                                     <option key={c.value} value={c.value}>
                                         {c.label}
                                     </option>
@@ -437,60 +519,49 @@ export default function AdminParentDocumentsPage() {
                             </select>
                         </label>
                     ) : null}
-                    {isHoliday && (
+                    {isHoliday ? (
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
+                            <p>
+                                <span className="font-semibold text-slate-900">State:</span>{" "}
+                                {holidayStateLabel || "Select a state row from the checklist"}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                                Add holidays below. Title and academic year are filled automatically.
+                            </p>
+                        </div>
+                    ) : (
                         <>
                             <label className="text-xs font-semibold text-slate-600 block">
-                                State
-                                <select
-                                    value={form.state}
-                                    onChange={(e) => setForm((p) => ({ ...p, state: e.target.value }))}
+                                Title
+                                <input
+                                    value={form.title}
+                                    onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                                    placeholder={editing ? "" : "Defaults to file name"}
                                     className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                                    required
-                                >
-                                    <option value="">Select state</option>
-                                    {PARENT_DOCUMENT_STATES.map((s) => (
-                                        <option key={s.value} value={s.value}>
-                                            {s.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                             </label>
                             <label className="text-xs font-semibold text-slate-600 block">
-                                Academic year
-                                <input
-                                    value={form.academic_year}
-                                    onChange={(e) => setForm((p) => ({ ...p, academic_year: e.target.value }))}
+                                Description
+                                <textarea
+                                    value={form.description}
+                                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                                    rows={2}
                                     className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
                                 />
                             </label>
                         </>
                     )}
-                    <label className="text-xs font-semibold text-slate-600 block">
-                        Title
-                        <input
-                            value={form.title}
-                            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                            placeholder={editing ? "" : "Defaults to file name"}
-                            className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+                    {isHoliday ? <HolidayEntriesEditor rows={holidayEntries} onChange={setHolidayEntries} /> : null}
+                    {!isHoliday ? (
+                        <ChecklistFileUploadField
+                            id="parent-app-file"
+                            accept={acceptForParentDocumentCategory(form.category)}
+                            hint={uploadHintForParentDocumentCategory(form.category)}
+                            required={!editing}
+                            currentName={file?.name ?? (editing?.file ? "Current file on server" : null)}
+                            onChange={setFile}
                         />
-                    </label>
-                    <label className="text-xs font-semibold text-slate-600 block">
-                        Description
-                        <textarea
-                            value={form.description}
-                            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                            rows={2}
-                            className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                        />
-                    </label>
-                    <ChecklistFileUploadField
-                        id="parent-app-file"
-                        accept={acceptForParentDocumentCategory(form.category)}
-                        hint={uploadHintForParentDocumentCategory(form.category)}
-                        required={!editing}
-                        currentName={file?.name ?? (editing?.file ? "Current file on server" : null)}
-                        onChange={setFile}
-                    />
+                    ) : null}
                     <label className="flex items-center gap-2 text-sm text-slate-700">
                         <input
                             type="checkbox"

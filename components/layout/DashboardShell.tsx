@@ -121,7 +121,7 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                                                 System Control
                                             </span>
                                         </>
-                                    ) : (
+                                    ) : role === "franchise" ? null : (
                                         <>
                                             <div className="flex flex-col min-w-0">
                                                 <span className="text-sm font-semibold text-[#1F2937] truncate">{brand.title}</span>
@@ -135,7 +135,7 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                                     )}
                                 </div>
                             </div>
-                            <div className="flex items-center flex-shrink-0">
+                            <div className="flex items-center gap-2 flex-shrink-0">
                                 <button
                                     onClick={handleLogoutClick}
                                     className={`group relative overflow-hidden text-white font-semibold transition-all duration-150 rounded-full shadow-sm px-3 py-2 sm:px-4 ${isAdmin

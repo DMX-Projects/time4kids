@@ -14,6 +14,39 @@ export function normalizeApiList(data: unknown): unknown[] {
     return [];
 }
 
+/** Turn DRF ``next`` (absolute or relative) into a path ``authFetch`` accepts. */
+export function apiPathFromPaginatedNext(next: unknown): string | null {
+    if (typeof next !== "string" || !next.trim()) return null;
+    const trimmed = next.trim();
+    if (/^https?:\/\//i.test(trimmed)) {
+        try {
+            const u = new URL(trimmed);
+            return `${u.pathname.replace(/^\/api/, "")}${u.search}`;
+        } catch {
+            return null;
+        }
+    }
+    return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
+
+/** Follow DRF pagination until all rows are loaded (live may still page at 20). */
+export async function fetchAllApiList(authFetch: AuthFetchFn, startPath: string): Promise<unknown[]> {
+    const all: unknown[] = [];
+    let path: string | null = startPath;
+    let guard = 0;
+    while (path && guard < 500) {
+        guard += 1;
+        const data = await authFetch<unknown>(path);
+        all.push(...normalizeApiList(data));
+        if (!data || typeof data !== "object") break;
+        const next = apiPathFromPaginatedNext((data as Record<string, unknown>).next);
+        path = next;
+    }
+    return all;
+}
+
 export function normalizeStudentList(data: unknown): unknown[] {
     if (Array.isArray(data)) return data;
     if (data && typeof data === "object") {

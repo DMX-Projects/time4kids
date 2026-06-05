@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
     ParentFeeDetailsView,
@@ -32,23 +31,11 @@ export default function FeesPage() {
 
     return (
         <div className="space-y-6">
-            {(data?.student?.parent_name || data?.student?.kid_name) && !loading ? (
-                <p className="text-lg font-semibold text-slate-800">
+            {!loading ? (
+                <h1 className="text-lg font-semibold text-slate-800">
                     Welcome {data?.student?.parent_name || "Parent"}
-                </p>
+                </h1>
             ) : null}
-
-            <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-6 space-y-2">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
-                        <CreditCard className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <h1 className="text-lg font-semibold text-orange-900">Fee</h1>
-                        <p className="text-sm text-orange-700">Pending dues and paid history shared by your centre.</p>
-                    </div>
-                </div>
-            </section>
 
             <ParentFeeDetailsView data={data} loading={loading} />
         </div>
