@@ -251,6 +251,19 @@ function persistSession(next: StoredAuth | null, previousUser: User | null) {
     storage.setItem(LAST_ROLE_KEY, role);
 }
 
+/** JWT `exp` in ms — used to refresh before document downloads after idle time. */
+function jwtAccessExpiresAtMs(token: string): number | null {
+    try {
+        const segment = token.split(".")[1];
+        if (!segment) return null;
+        const json = atob(segment.replace(/-/g, "+").replace(/_/g, "/"));
+        const payload = JSON.parse(json) as { exp?: number };
+        return typeof payload.exp === "number" ? payload.exp * 1000 : null;
+    } catch {
+        return null;
+    }
+}
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [tokens, setTokens] = useState<Tokens | null>(null);
@@ -258,6 +271,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     /** Always-current tokens for `authFetch` (avoids stale closure vs. memoized context). */
     const tokensRef = useRef<Tokens | null>(null);
     tokensRef.current = tokens;
+    const userRef = useRef<User | null>(null);
+    userRef.current = user;
     /** Serialize refresh so parallel 401s do not race and invalidate the session. */
     const refreshInFlightRef = useRef<Promise<Tokens | false> | null>(null);
 
@@ -393,6 +408,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return refreshTokensInner(current, user);
     };
 
+    /** Refresh access JWT before file fetch when user has been idle (no token in browser URL). */
+    const ensureAccessTokenFresh = async (): Promise<boolean> => {
+        const current = tokensRef.current;
+        const access = current?.access;
+        if (!access) return false;
+        const exp = jwtAccessExpiresAtMs(access);
+        const needsRefresh = exp == null || exp <= Date.now() + 120_000;
+        if (!needsRefresh) return true;
+        const refreshed = await refreshTokensInner(current, userRef.current);
+        return Boolean(refreshed?.access);
+    };
+
     const refreshUser = async () => {
         if (!tokens?.access) return;
         try {
@@ -461,6 +488,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const authFetchBlob = async (path: string, init?: RequestInit, retry = true): Promise<Blob> => {
+        if (!(await ensureAccessTokenFresh())) {
+            const err = new Error("Authentication required. Please sign in.");
+            (err as Error & { code?: string }).code = "AUTH_REQUIRED";
+            throw err;
+        }
         const access = tokensRef.current?.access;
         if (!access) {
             const err = new Error("Authentication required. Please sign in.");
@@ -491,6 +523,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         init?: RequestInit,
         retry = true,
     ): Promise<{ blob: Blob; filename?: string }> => {
+        if (!(await ensureAccessTokenFresh())) {
+            const err = new Error("Authentication required. Please sign in.");
+            (err as Error & { code?: string }).code = "AUTH_REQUIRED";
+            throw err;
+        }
         const access = tokensRef.current?.access;
         if (!access) {
             const err = new Error("Authentication required. Please sign in.");
@@ -542,6 +579,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return authFetchBlobResponse(normalizeApiPath(trimmed), init, retry);
         }
 
+        if (!(await ensureAccessTokenFresh())) {
+            throw new Error("Authentication required. Please sign in.");
+        }
         const access = tokensRef.current?.access;
         const headers = new Headers(init?.headers || {});
         if (access) headers.set("Authorization", `Bearer ${access}`);

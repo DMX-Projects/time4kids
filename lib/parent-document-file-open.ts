@@ -1,14 +1,13 @@
 /**
- * Parent portal / franchise parent-documents: open files in a new tab with inline content.
+ * Parent documents — opens in a new tab without tokens in the URL.
  */
 
-import { apiUrl } from "@/lib/api-client";
 import {
     downloadFilenameFromLinkLabel,
     extensionFromPath,
     shouldViewFileInline,
 } from "@/lib/franchise-download-filename";
-import { openBlobInlineInNewTab, openViewUrlInNewTab } from "@/lib/inline-document-open";
+import { openBlobInlineInNewTab } from "@/lib/inline-document-open";
 
 export type ParentDocFileInput = { id: number; title: string; file: string; display_title?: string };
 
@@ -19,16 +18,6 @@ export type AuthFetchBlobResponse = (
 
 function linkLabel(doc: ParentDocFileInput): string {
     return (doc.display_title || doc.title || "").trim() || "document";
-}
-
-export function buildParentDocumentFileViewUrl(accessToken: string, doc: ParentDocFileInput): string | null {
-    const token = accessToken.trim();
-    if (!token) return null;
-    const name = downloadFilenameFromLinkLabel(linkLabel(doc), extensionFromPath(doc.file) || undefined);
-    const params = new URLSearchParams();
-    params.set("access", token);
-    params.set("name", name);
-    return `${apiUrl(`/documents/parent/documents/${doc.id}/file/`)}?${params}`;
 }
 
 function saveBlobFile(blob: Blob, fileName: string): void {
@@ -49,23 +38,16 @@ function saveBlobFile(blob: Blob, fileName: string): void {
 }
 
 export function openParentDocumentFile(
-    accessToken: string | undefined,
+    _accessToken: string | undefined,
     authFetchBlobResponse: AuthFetchBlobResponse,
     doc: ParentDocFileInput,
 ): void {
     const name = downloadFilenameFromLinkLabel(linkLabel(doc), extensionFromPath(doc.file) || undefined);
+    const fetchDoc = () =>
+        authFetchBlobResponse(`/documents/parent/documents/${doc.id}/file/`).then((r) => r.blob);
 
     if (shouldViewFileInline(name)) {
-        const viewUrl = accessToken?.trim() ? buildParentDocumentFileViewUrl(accessToken, doc) : null;
-        if (viewUrl) {
-            openViewUrlInNewTab(viewUrl);
-            return;
-        }
-
-        openBlobInlineInNewTab(
-            () => authFetchBlobResponse(`/documents/parent/documents/${doc.id}/file/`).then((r) => r.blob),
-            name,
-        );
+        openBlobInlineInNewTab(fetchDoc, name);
         return;
     }
 

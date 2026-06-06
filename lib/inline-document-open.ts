@@ -114,8 +114,21 @@ export function openBlobInlineInNewTab(
             }
 
             window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
-        } catch {
-            if (tab && !tab.closed) tab.close();
+        } catch (err) {
+            const message =
+                err instanceof Error && /session expired|sign in|authentication required/i.test(err.message)
+                    ? "Your session expired. Close this tab, go back to the dashboard, and sign in again."
+                    : "Could not load this file. Close this tab and try again from the dashboard.";
+            const target = tab && !tab.closed ? tab : null;
+            if (target) {
+                target.document.open();
+                target.document.write(
+                    `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Unable to open file</title>` +
+                        `<style>body{margin:0;font-family:system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#f8fafc;color:#334155;padding:24px}</style></head>` +
+                        `<body><p style="max-width:28rem;text-align:center;line-height:1.5">${escapeHtml(message)}</p></body></html>`,
+                );
+                target.document.close();
+            }
         }
     })();
 }
