@@ -417,7 +417,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const needsRefresh = exp == null || exp <= Date.now() + 120_000;
         if (!needsRefresh) return true;
         const refreshed = await refreshTokensInner(current, userRef.current);
-        return Boolean(refreshed?.access);
+        return refreshed !== false && Boolean(refreshed.access);
     };
 
     const refreshUser = async () => {
