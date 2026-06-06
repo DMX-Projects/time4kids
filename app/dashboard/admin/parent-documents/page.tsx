@@ -31,6 +31,7 @@ import {
     parseHolidayEntries,
     requireHolidayEntries,
     serializeHolidayEntries,
+    validateHolidayEntries,
     type HolidayEntry,
 } from "@/config/holiday-entries";
 import {
@@ -277,12 +278,22 @@ export default function AdminParentDocumentsPage() {
             return;
         }
         const serializedHolidays = isHoliday ? serializeHolidayEntries(holidayEntries) : [];
-        const holidayErr = isHoliday ? requireHolidayEntries(holidayEntries) : null;
-        if (holidayErr) {
-            showToast(holidayErr, "error");
-            return;
-        }
-        if (!isHoliday && !editing && !file) {
+        const hasHolidayFile = Boolean(file || editing?.file);
+        if (isHoliday) {
+            if (!hasHolidayFile) {
+                const holidayErr = requireHolidayEntries(holidayEntries);
+                if (holidayErr) {
+                    showToast(holidayErr, "error");
+                    return;
+                }
+            } else if (serializedHolidays.length > 0) {
+                const holidayErr = validateHolidayEntries(holidayEntries);
+                if (holidayErr) {
+                    showToast(holidayErr, "error");
+                    return;
+                }
+            }
+        } else if (!editing && !file) {
             showToast("Choose a file to upload.", "error");
             return;
         }
@@ -326,6 +337,14 @@ export default function AdminParentDocumentsPage() {
                             holiday_entries: serializedHolidays,
                         }),
                     });
+                    if (file) {
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        await authFetch(`/documents/admin/parent-documents/${editing.id}/`, {
+                            method: "PATCH",
+                            body: fd,
+                        });
+                    }
                 } else if (file) {
                     const metaBody = {
                         category: form.category,
@@ -362,21 +381,38 @@ export default function AdminParentDocumentsPage() {
                 }
                 showToast("Document updated.", "success");
             } else if (isHoliday) {
-                await authFetch("/documents/admin/parent-documents/", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        category: form.category,
-                        title: resolvedTitle,
-                        description: "",
-                        academic_year: resolvedAcademicYear,
-                        order: form.order,
-                        is_active: form.is_active,
-                        state: form.state,
-                        franchise,
-                        holiday_entries: serializedHolidays,
-                    }),
-                });
+                if (file) {
+                    const fd = new FormData();
+                    fd.append("category", form.category);
+                    fd.append("title", resolvedTitle);
+                    fd.append("description", "");
+                    fd.append("academic_year", resolvedAcademicYear);
+                    fd.append("order", String(form.order));
+                    fd.append("is_active", form.is_active ? "true" : "false");
+                    fd.append("state", form.state);
+                    if (franchise != null) fd.append("franchise", String(franchise));
+                    fd.append("file", file);
+                    if (serializedHolidays.length > 0) {
+                        fd.append("holiday_entries", JSON.stringify(serializedHolidays));
+                    }
+                    await authFetch("/documents/admin/parent-documents/", { method: "POST", body: fd });
+                } else {
+                    await authFetch("/documents/admin/parent-documents/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            category: form.category,
+                            title: resolvedTitle,
+                            description: "",
+                            academic_year: resolvedAcademicYear,
+                            order: form.order,
+                            is_active: form.is_active,
+                            state: form.state,
+                            franchise,
+                            holiday_entries: serializedHolidays,
+                        }),
+                    });
+                }
                 showToast("Holiday list saved for parents.", "success");
             } else {
                 const fd = new FormData();
@@ -409,7 +445,7 @@ export default function AdminParentDocumentsPage() {
                     Each section matches the parent app. Use <strong>Rename</strong> on section or row names.
                     Click <strong>Add</strong> on an existing section to add another file — no new subsection needed.
                     Uploaded file titles can also be changed with <strong>Edit</strong>.
-                    <strong className="text-slate-800"> Holiday Lists</strong> — add holidays per state (date, name, city). Centres can add or update on top of this.
+                    <strong className="text-slate-800"> Holiday Lists</strong> — upload a state PDF and/or add holidays manually (date, name, city). Centres can add or update on top of this.
                     <strong className="text-slate-800"> Newsletter</strong> is uploaded by franchise centres from{" "}
                     <strong className="text-slate-800">Franchise → Parent App → Newsletter</strong>.
                 </p>
@@ -526,7 +562,7 @@ export default function AdminParentDocumentsPage() {
                                 {holidayStateLabel || "Select a state row from the checklist"}
                             </p>
                             <p className="mt-1 text-xs text-slate-500">
-                                Add holidays below. Title and academic year are filled automatically.
+                                Upload the state holiday PDF below, or add holidays manually. Title and academic year are filled automatically.
                             </p>
                         </div>
                     ) : (
@@ -551,16 +587,21 @@ export default function AdminParentDocumentsPage() {
                             </label>
                         </>
                     )}
-                    {isHoliday ? <HolidayEntriesEditor rows={holidayEntries} onChange={setHolidayEntries} /> : null}
-                    {!isHoliday ? (
-                        <ChecklistFileUploadField
-                            id="parent-app-file"
-                            accept={acceptForParentDocumentCategory(form.category)}
-                            hint={uploadHintForParentDocumentCategory(form.category)}
-                            required={!editing}
-                            currentName={file?.name ?? (editing?.file ? "Current file on server" : null)}
-                            onChange={setFile}
-                        />
+                    <ChecklistFileUploadField
+                        id="parent-app-file"
+                        accept={acceptForParentDocumentCategory(form.category)}
+                        hint={uploadHintForParentDocumentCategory(form.category)}
+                        required={!editing && (!isHoliday || serializeHolidayEntries(holidayEntries).length === 0)}
+                        currentName={file?.name ?? (editing?.file ? "Current file on server" : null)}
+                        onChange={setFile}
+                    />
+                    {isHoliday ? (
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold text-slate-600">
+                                Optional — add holidays manually (parents see PDF and/or this table)
+                            </p>
+                            <HolidayEntriesEditor rows={holidayEntries} onChange={setHolidayEntries} />
+                        </div>
                     ) : null}
                     <label className="flex items-center gap-2 text-sm text-slate-700">
                         <input

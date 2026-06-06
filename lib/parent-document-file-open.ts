@@ -72,20 +72,11 @@ function openInlineViaBlob(
 }
 
 export function openParentDocumentFile(
-    accessToken: string | undefined,
+    _accessToken: string | undefined,
     authFetchBlobResponse: AuthFetchBlobResponse,
     doc: ParentDocFileInput,
 ): void {
     const name = downloadFilenameFromLinkLabel(linkLabel(doc), extensionFromPath(doc.file) || undefined);
-    const token = accessToken?.trim();
-
-    if (shouldViewFileInline(name) && token) {
-        const viewUrl = buildParentDocumentFileViewUrl(token, doc);
-        if (viewUrl) {
-            window.open(viewUrl, "_blank", "noopener,noreferrer");
-            return;
-        }
-    }
 
     if (shouldViewFileInline(name)) {
         openInlineViaBlob(authFetchBlobResponse, doc.id, name);

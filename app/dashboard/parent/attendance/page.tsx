@@ -1,20 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { CalendarCheck } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 
+const ParentPortalCalendarPanel = dynamic(
+    () => import("@/components/dashboard/shared/ParentPortalCalendarPanel").then((m) => m.ParentPortalCalendarPanel),
+    { ssr: false },
+);
+
 type Row = { id: number; date: string; status: string; note?: string; student_name?: string };
-type EventRow = { id: string; title: string; date: string; venue: string };
 type CombinedPayload = {
-    calendar_events?: unknown;
     attendance?: unknown;
 };
 
 export default function AttendancePage() {
     const { authFetch } = useAuth();
     const [rows, setRows] = useState<Row[]>([]);
-    const [calendarEvents, setCalendarEvents] = useState<EventRow[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -23,7 +26,6 @@ export default function AttendancePage() {
             try {
                 const payload = await authFetch<CombinedPayload>("/students/parent/calendar-attendance/");
                 const attendanceRaw = payload?.attendance;
-                const eventsRaw = payload?.calendar_events;
 
                 const attendanceList = Array.isArray(attendanceRaw)
                     ? attendanceRaw
@@ -31,28 +33,9 @@ export default function AttendancePage() {
                       ? (attendanceRaw as { results: unknown[] }).results
                       : [];
 
-                const eventList = Array.isArray(eventsRaw)
-                    ? eventsRaw
-                    : eventsRaw && typeof eventsRaw === "object" && Array.isArray((eventsRaw as { results?: unknown[] }).results)
-                      ? (eventsRaw as { results: unknown[] }).results
-                      : [];
-
-                const mappedEvents = (eventList as Array<{ id: number | string; title?: string; start_date?: string; end_date?: string; location?: string }>).map((e) => ({
-                    id: String(e.id),
-                    title: e.title || "Event",
-                    date: e.start_date || e.end_date || "",
-                    venue: e.location || "",
-                }));
-
-                if (!c) {
-                    setRows(attendanceList as Row[]);
-                    setCalendarEvents(mappedEvents);
-                }
+                if (!c) setRows(attendanceList as Row[]);
             } catch {
-                if (!c) {
-                    setRows([]);
-                    setCalendarEvents([]);
-                }
+                if (!c) setRows([]);
             } finally {
                 if (!c) setLoading(false);
             }
@@ -73,6 +56,8 @@ export default function AttendancePage() {
 
     return (
         <div className="space-y-6">
+            <ParentPortalCalendarPanel mode="parent" />
+
             <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-6 space-y-2">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
@@ -85,25 +70,7 @@ export default function AttendancePage() {
                 </div>
             </section>
 
-            <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4 space-y-3">
-                <h2 className="text-sm font-semibold text-orange-900">School calendar</h2>
-                {calendarEvents.length === 0 && <p className="text-sm text-orange-700">No events shared yet.</p>}
-                <div className="space-y-2">
-                    {calendarEvents.map((ev) => (
-                        <div key={ev.id} className="rounded-lg border border-orange-100 px-3 py-2 text-sm flex items-center justify-between gap-2">
-                            <div>
-                                <p className="font-semibold text-orange-900">{ev.title}</p>
-                                <p className="text-xs text-orange-700">{ev.venue || "Venue TBD"}</p>
-                            </div>
-                            <span className="text-xs px-2 py-1 rounded-full bg-orange-50 border border-orange-100 text-orange-700">
-                                {ev.date || "TBD"}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {loading && <p className="text-sm text-orange-700">Loading…</p>}
+            {loading && <p className="text-sm text-orange-700">Loading attendance…</p>}
             {!loading && rows.length === 0 && <p className="text-sm text-orange-700">No attendance records yet.</p>}
 
             <div className="space-y-6">

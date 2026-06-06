@@ -1,43 +1,16 @@
 "use client";
 
-import { Calendar } from "lucide-react";
-import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
-import { filterCalendarEvents } from "@/lib/showcase-events";
+import dynamic from "next/dynamic";
+
+const ParentPortalCalendarPanel = dynamic(
+    () => import("@/components/dashboard/shared/ParentPortalCalendarPanel").then((m) => m.ParentPortalCalendarPanel),
+    { ssr: false },
+);
 
 export default function ParentCalendarPage() {
-    const { events } = useSchoolData();
-    const calendarEvents = filterCalendarEvents(events);
-
     return (
         <div className="space-y-6">
-            <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-6 space-y-3">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
-                        <Calendar className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <h1 className="text-lg font-semibold text-orange-900">Calendar</h1>
-                        <p className="text-sm text-orange-700">School events and dates from your centre (same list as on the Events page).</p>
-                    </div>
-                </div>
-                <div className="flex flex-col gap-3 text-sm text-orange-800">
-                    {calendarEvents.map((ev) => (
-                        <div key={ev.id} className="flex items-center justify-between bg-white border border-orange-100 rounded-lg px-3 py-2 shadow-sm">
-                            <div>
-                                <p className="font-semibold text-orange-900">{ev.title}</p>
-                                <p className="text-xs text-orange-700">{ev.venue || "Venue TBD"}</p>
-                            </div>
-                            <div className="text-right">
-                                <span className="text-xs px-2 py-1 bg-orange-50 border border-orange-100 rounded-full">{ev.date || "TBD"}</span>
-                                <div className="text-[11px] text-orange-600 mt-1">RSVP: {ev.rsvp || "Maybe"}</div>
-                            </div>
-                        </div>
-                    ))}
-                    {calendarEvents.length === 0 && (
-                        <p className="text-sm text-orange-700">No events published yet. Your centre will add dates here.</p>
-                    )}
-                </div>
-            </section>
+            <ParentPortalCalendarPanel mode="parent" />
         </div>
     );
 }

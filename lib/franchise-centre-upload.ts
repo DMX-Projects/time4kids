@@ -165,7 +165,10 @@ export function validateAdminParentDocumentUpload(file: File): string | null {
     if (kind === "skip") {
         return `${file.name}: file type not supported for parent app uploads.`;
     }
-    return validateFileSize(file, kind);
+    if (validateFileSize(file, kind)) {
+        return `${file.name}: file is too large. Choose a smaller file.`;
+    }
+    return null;
 }
 
 export type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
