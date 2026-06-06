@@ -1,12 +1,11 @@
 /**
  * Open a JWT-protected hub/parent document in a new tab with the correct download name.
- * Uses the same signed URL pattern as event gallery media (proven on live):
- * `/api/documents/.../file/?name=...&access=<fresh token>`
  *
- * Token is refreshed before open so idle sessions still work.
+ * Uses POST /document-open/ so the full JWT is sent in the request body (not the URL).
+ * Long ?access= tokens are often truncated by proxies and cause 401 after idle.
  */
 
-import { apiUrl } from "@/lib/api-client";
+const DOCUMENT_OPEN_PATH = "/document-open/";
 
 const ALLOWED_API_PREFIXES = [
     "documents/franchise/documents/",
@@ -50,37 +49,47 @@ function splitDocumentApiPath(apiPath: string): { pathname: string; name?: strin
     return name ? { pathname, name } : { pathname };
 }
 
-export function buildProtectedDocumentViewUrl(apiPath: string, accessToken: string): string | null {
-    const normalized = normalizeProtectedDocumentApiPath(apiPath);
-    const token = accessToken.trim();
-    if (!normalized || !token) return null;
+function submitDocumentOpenForm(fields: Record<string, string>): void {
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = DOCUMENT_OPEN_PATH;
+    form.target = "_blank";
+    form.acceptCharset = "UTF-8";
+    form.style.display = "none";
 
-    const { pathname, name } = splitDocumentApiPath(normalized);
-    const params = new URLSearchParams();
-    if (name) params.set("name", name);
-    params.set("access", token);
-    const query = params.toString();
-    return `${apiUrl(pathname)}?${query}`;
+    for (const [name, value] of Object.entries(fields)) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
 }
 
 export function openProtectedDocumentView(
     getAccessToken: GetAccessToken,
     apiPath: string,
 ): void {
-    const tab = window.open("about:blank", "_blank");
-    if (tab) tab.opener = null;
-
     void (async () => {
+        const normalized = normalizeProtectedDocumentApiPath(apiPath);
+        if (!normalized) return;
+
         const token = (await getAccessToken())?.trim();
-        const url = token ? buildProtectedDocumentViewUrl(apiPath, token) : null;
-        if (!url) {
-            if (tab && !tab.closed) tab.close();
-            return;
-        }
-        if (tab && !tab.closed) {
-            tab.location.href = url;
-            return;
-        }
-        window.open(url, "_blank", "noopener,noreferrer");
+        if (!token) return;
+
+        const { pathname, name } = splitDocumentApiPath(normalized);
+        const pathForForm = pathname.startsWith("/") ? pathname.slice(1) : pathname;
+
+        const fields: Record<string, string> = {
+            p: pathForForm,
+            token,
+        };
+        if (name) fields.name = name;
+
+        submitDocumentOpenForm(fields);
     })();
 }

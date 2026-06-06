@@ -253,6 +253,10 @@ function persistSession(next: StoredAuth | null, previousUser: User | null) {
     storage.setItem(LAST_ROLE_KEY, role);
 }
 
+/** Refresh access token this long before it expires (silent background + pre-open). */
+const ACCESS_TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+const ACCESS_TOKEN_REFRESH_CHECK_MS = 60 * 1000;
+
 /** JWT `exp` in ms — used to refresh before document downloads after idle time. */
 function jwtAccessExpiresAtMs(token: string): number | null {
     try {
@@ -416,7 +420,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const access = current?.access;
         if (!access) return false;
         const exp = jwtAccessExpiresAtMs(access);
-        const needsRefresh = exp == null || exp <= Date.now() + 120_000;
+        const needsRefresh = exp == null || exp <= Date.now() + ACCESS_TOKEN_REFRESH_BUFFER_MS;
         if (!needsRefresh) return true;
         const refreshed = await refreshTokensInner(current, userRef.current);
         return refreshed !== false && Boolean(refreshed.access);
@@ -426,6 +430,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!(await ensureAccessTokenFresh())) return null;
         return tokensRef.current?.access ?? null;
     };
+
+    /** Keep session alive silently while the dashboard tab stays open (no UI). */
+    useEffect(() => {
+        if (!tokens?.access || !tokens?.refresh) return;
+
+        const refreshIfNeeded = async () => {
+            const current = tokensRef.current;
+            if (!current?.access || !current?.refresh) return;
+            const exp = jwtAccessExpiresAtMs(current.access);
+            const needsRefresh = exp == null || exp <= Date.now() + ACCESS_TOKEN_REFRESH_BUFFER_MS;
+            if (!needsRefresh) return;
+            await refreshTokensInner(current, userRef.current);
+        };
+
+        const interval = window.setInterval(() => {
+            void refreshIfNeeded();
+        }, ACCESS_TOKEN_REFRESH_CHECK_MS);
+
+        const onVisible = () => {
+            if (document.visibilityState === "visible") void refreshIfNeeded();
+        };
+        const onFocus = () => {
+            void refreshIfNeeded();
+        };
+
+        document.addEventListener("visibilitychange", onVisible);
+        window.addEventListener("focus", onFocus);
+        void refreshIfNeeded();
+
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener("visibilitychange", onVisible);
+            window.removeEventListener("focus", onFocus);
+        };
+        // Re-schedule when access token changes after a silent refresh.
+    }, [tokens?.access, tokens?.refresh]);
 
     const refreshUser = async () => {
         if (!tokens?.access) return;
