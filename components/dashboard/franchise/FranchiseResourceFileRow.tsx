@@ -17,7 +17,7 @@ import {
     franchiseResourceRowAccentClasses,
     type FranchiseResourceFileKind,
 } from "@/lib/franchise-resource-file-meta";
-import { downloadFilenameFromLink, extensionFromPath } from "@/lib/franchise-download-filename";
+import { downloadFilenameForHubDoc } from "@/lib/franchise-download-filename";
 import { openFranchiseEmbedLink, openFranchiseHubDocument } from "@/lib/franchise-hub-document-open";
 import {
     franchiseHubDocHasContent,
@@ -75,16 +75,12 @@ export function FranchiseResourceFileRow({ doc }: { doc: FranchiseHubDoc }) {
             return;
         }
         const title = doc.display_title || doc.title;
-        const ext =
-            extensionFromPath(doc.source_path) ||
-            extensionFromPath(doc.file) ||
-            ".pdf";
         openFranchiseHubDocument(
             tokens?.access,
             authFetchBlobResponse,
             authFetchBlobFromHref,
             `/documents/franchise/documents/${doc.id}/file/`,
-            downloadFilenameFromLink(title, doc.file || doc.source_path || "", ext),
+            downloadFilenameForHubDoc(doc, title),
             doc.id,
             doc.file || doc.source_path || "",
         );
