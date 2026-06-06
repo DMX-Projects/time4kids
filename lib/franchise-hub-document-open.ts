@@ -7,6 +7,7 @@ import { apiUrl, mediaUrl } from "@/lib/api-client";
 import { isLegacyFranchiseUploadUrl, legacyPcHrefToMediaUrl } from "@/lib/franchise-center-page-links";
 import { resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
 import {
+    extensionFromPath,
     parseFilenameFromContentDisposition,
     shouldViewFileInline,
 } from "@/lib/franchise-download-filename";
@@ -90,8 +91,31 @@ function openViaBlobFetch(
     })();
 }
 
+function openInlineViaBlob(
+    fetcher: () => Promise<Blob>,
+    downloadName: string,
+): void {
+    const name = downloadName.trim() || "document";
+    const tab = window.open("about:blank", "_blank", "noopener,noreferrer");
+    void (async () => {
+        try {
+            const blob = await fetcher();
+            const ext = extensionFromPath(name).replace(/^\./, "");
+            const file = new File([blob], name, {
+                type: blob.type || (ext === "pdf" ? "application/pdf" : "application/octet-stream"),
+            });
+            const url = URL.createObjectURL(file);
+            if (tab && !tab.closed) tab.location.href = url;
+            else window.open(url, "_blank", "noopener,noreferrer");
+            window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
+        } catch {
+            if (tab && !tab.closed) tab.close();
+        }
+    })();
+}
+
 function openFranchiseFile(
-    accessToken: string | undefined,
+    _accessToken: string | undefined,
     downloadName: string,
     options: {
         hubDocId?: number;
@@ -102,23 +126,30 @@ function openFranchiseFile(
 ): void {
     const name = downloadName.trim() || "document";
 
-    if (shouldViewFileInline(name) && accessToken) {
-        const viewUrl = buildFranchiseFileViewUrl(accessToken, name, {
-            hubDocId: options.hubDocId,
-            href: options.href,
-        });
-        if (viewUrl) {
-            window.open(viewUrl, "_blank", "noopener,noreferrer");
+    if (shouldViewFileInline(name)) {
+        if (options.hubDocId != null) {
+            openInlineViaBlob(
+                () =>
+                    options
+                        .authFetchBlobResponse(`/documents/franchise/documents/${options.hubDocId}/file/`)
+                        .then((r) => r.blob),
+                name,
+            );
             return;
         }
+
+        const href = options.href.trim();
+        if (!href) return;
+        openInlineViaBlob(() => options.authFetchBlobFromHref(href).then((r) => r.blob), name);
+        return;
     }
 
     if (options.hubDocId != null) {
         openViaBlobFetch(
             () =>
-                options.authFetchBlobResponse(
-                    `/documents/franchise/documents/${options.hubDocId}/file/`,
-                ).then((r) => r.blob),
+                options
+                    .authFetchBlobResponse(`/documents/franchise/documents/${options.hubDocId}/file/`)
+                    .then((r) => r.blob),
             name,
         );
         return;
@@ -126,24 +157,6 @@ function openFranchiseFile(
 
     const href = options.href.trim();
     if (!href) return;
-
-    if (shouldViewFileInline(name)) {
-        const tab = window.open("about:blank", "_blank", "noopener,noreferrer");
-        void (async () => {
-            try {
-                const { blob } = await options.authFetchBlobFromHref(href);
-                const file = new File([blob], name, { type: blob.type || "application/pdf" });
-                const url = URL.createObjectURL(file);
-                if (tab && !tab.closed) tab.location.href = url;
-                else window.open(url, "_blank", "noopener,noreferrer");
-                window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
-            } catch {
-                if (tab && !tab.closed) tab.close();
-            }
-        })();
-        return;
-    }
-
     openViaBlobFetch(() => options.authFetchBlobFromHref(href).then((r) => r.blob), name);
 }
 

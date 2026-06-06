@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FileText } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatHolidayDate, parseHolidayEntries, type HolidayEntry } from "@/config/holiday-entries";
+import { openParentDocumentFile } from "@/lib/parent-document-file-open";
 
 type HolidayDoc = {
     id: number;
@@ -11,6 +12,8 @@ type HolidayDoc = {
     display_title?: string;
     state_display?: string | null;
     academic_year?: string;
+    file?: string;
+    file_view_path?: string | null;
     holiday_entries?: HolidayEntry[] | unknown;
 };
 
@@ -26,7 +29,7 @@ const normalizeDocs = (data: unknown): HolidayDoc[] => {
 };
 
 export function ParentHolidayList() {
-    const { authFetch } = useAuth();
+    const { authFetch, tokens, authFetchBlobResponse } = useAuth();
     const [docs, setDocs] = useState<HolidayDoc[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -54,8 +57,9 @@ export function ParentHolidayList() {
                     ...doc,
                     entries: parseHolidayEntries(doc.holiday_entries),
                     label: doc.display_title || doc.title,
+                    hasFile: Boolean(doc.file || doc.file_view_path),
                 }))
-                .filter((doc) => doc.entries.length > 0),
+                .filter((doc) => doc.entries.length > 0 || doc.hasFile),
         [docs],
     );
 
@@ -88,28 +92,47 @@ export function ParentHolidayList() {
                                 ) : null}
                             </div>
 
-                            <div className="overflow-x-auto rounded-xl border border-orange-100">
-                                <table className="min-w-full text-sm">
-                                    <thead className="bg-orange-50/70 text-left text-xs text-orange-800">
-                                        <tr>
-                                            <th className="px-3 py-2 font-semibold">Date</th>
-                                            <th className="px-3 py-2 font-semibold">Holiday</th>
-                                            <th className="px-3 py-2 font-semibold">City</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-orange-50">
-                                        {doc.entries.map((row, index) => (
-                                            <tr key={`${doc.id}-${index}`}>
-                                                <td className="px-3 py-2 text-orange-900 whitespace-nowrap">
-                                                    {formatHolidayDate(row.date)}
-                                                </td>
-                                                <td className="px-3 py-2 text-orange-900 font-medium">{row.name}</td>
-                                                <td className="px-3 py-2 text-orange-800">{row.city || "—"}</td>
+                            {doc.hasFile ? (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        openParentDocumentFile(tokens?.access, authFetchBlobResponse, {
+                                            id: doc.id,
+                                            title: doc.label,
+                                            file: doc.file || doc.file_view_path || "",
+                                        })
+                                    }
+                                    className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    View / download PDF
+                                </button>
+                            ) : null}
+
+                            {doc.entries.length > 0 ? (
+                                <div className="overflow-x-auto rounded-xl border border-orange-100">
+                                    <table className="min-w-full text-sm">
+                                        <thead className="bg-orange-50/70 text-left text-xs text-orange-800">
+                                            <tr>
+                                                <th className="px-3 py-2 font-semibold">Date</th>
+                                                <th className="px-3 py-2 font-semibold">Holiday</th>
+                                                <th className="px-3 py-2 font-semibold">City</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="divide-y divide-orange-50">
+                                            {doc.entries.map((row, index) => (
+                                                <tr key={`${doc.id}-${index}`}>
+                                                    <td className="px-3 py-2 text-orange-900 whitespace-nowrap">
+                                                        {formatHolidayDate(row.date)}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-orange-900 font-medium">{row.name}</td>
+                                                    <td className="px-3 py-2 text-orange-800">{row.city || "—"}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : null}
                         </section>
                     ))}
                 </div>

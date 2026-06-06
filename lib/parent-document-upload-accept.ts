@@ -23,18 +23,17 @@ export function acceptForParentDocumentCategory(category: string): string | unde
 }
 
 export function uploadHintForParentDocumentCategory(category: string): string {
-    const limits = "Images max 15 MB · videos 50 MB · other files 25 MB";
     switch (category) {
         case "AUDIO_RHYMES":
-            return `MP3, WAV, or other audio files (${limits})`;
+            return "MP3, WAV, or other audio files";
         case "VIDEOS":
-            return `MP4 or other video files (max 50 MB)`;
+            return "MP4 or other video files";
         case PARENT_NEWSLETTER_CATEGORY:
             return PARENT_NEWSLETTER_FILE_HINT;
         case "PRESCHOOL_POLICIES":
         case "HOLIDAY_LISTS":
-            return "PDF files (max 25 MB)";
+            return "PDF files";
         default:
-            return `PDF, documents, images, audio, or video (${limits})`;
+            return "PDF, documents, images, audio, or video";
     }
 }

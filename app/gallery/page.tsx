@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import CmsImage from '@/components/ui/CmsImage';
+import { GalleryMediaThumb } from '@/components/ui/GalleryMediaThumb';
 import { Play, ArrowLeft, AlertCircle, Image as ImageIcon, Hand, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { apiUrl, mediaUrl } from '@/lib/api-client';
+import { apiUrl } from '@/lib/api-client';
+import { galleryMediaUrl } from '@/lib/gallery-media-url';
 import { buildFallbackGalleryFromMock } from '@/lib/mock-media-data';
 import { resolveFranchiseEmbedSrc } from '@/lib/franchise-embed-url';
 
@@ -231,35 +232,18 @@ export default function GalleryPage() {
                                                 const thumb = thumbnailForEvent(event.media);
                                                 if (!thumb) {
                                                     return (
-                                                <div className="flex items-center justify-center h-full text-gray-300">
-                                                    <ImageIcon size={48} />
-                                                </div>
-                                                    );
-                                                }
-                                                if (thumb.media_type === 'embed') {
-                                                    return (
-                                                <div className="flex items-center justify-center h-full bg-slate-800 text-white">
-                                                    <Play size={48} className="opacity-80" />
-                                                </div>
-                                                    );
-                                                }
-                                                if (thumb.media_type === 'video') {
-                                                    return (
-                                                <video
-                                                    src={mediaUrl(thumb.file)}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                    muted
-                                                    preload="metadata"
-                                                />
+                                                        <div className="flex h-full items-center justify-center text-gray-300">
+                                                            <ImageIcon size={48} />
+                                                        </div>
                                                     );
                                                 }
                                                 return (
-                                                <CmsImage
-                                                    src={thumb.file}
-                                                    alt={event.title}
-                                                    fill
-                                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                                />
+                                                    <GalleryMediaThumb
+                                                        item={thumb}
+                                                        alt={event.title}
+                                                        className="transition-transform duration-700 group-hover:scale-110"
+                                                        showVideoPlay={false}
+                                                    />
                                                 );
                                             })()}
                                             <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-700 shadow-sm flex items-center gap-1">
@@ -331,43 +315,18 @@ export default function GalleryPage() {
                             {/* Media Grid */}
                             {filteredMedia.length > 0 ? (
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                    {filteredMedia.map((item, index) => (
-                                        <motion.div
+                                    {filteredMedia.map((item) => (
+                                        <div
                                             key={item.id}
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-all hover:scale-[1.02] bg-gray-200"
+                                            className="group relative aspect-square cursor-pointer overflow-hidden rounded-2xl bg-gray-200 shadow-md transition-all hover:scale-[1.02] hover:shadow-xl"
                                             onClick={() => handleMediaClick(item)}
                                         >
-                                            {item.media_type === 'embed' ? (
-                                                <div className="w-full h-full flex items-center justify-center bg-slate-800 text-white">
-                                                    <Play className="w-10 h-10 opacity-90" />
-                                                </div>
-                                            ) : item.media_type === 'video' ? (
-                                                <video
-                                                    src={mediaUrl(item.file)}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                    preload="metadata"
-                                                    muted
-                                                />
-                                            ) : (
-                                                <CmsImage
-                                                    src={item.file}
-                                                    alt={item.caption || "Event Media"}
-                                                    fill
-                                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                                    sizes="(max-width: 768px) 50vw, 33vw"
-                                                />
-                                            )}
-                                            {(item.media_type === 'video' || item.media_type === 'embed') && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-                                                    <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                                                        <Play className="w-5 h-5 text-red-600 fill-current translate-x-0.5" />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </motion.div>
+                                            <GalleryMediaThumb
+                                                item={item}
+                                                alt={item.caption || "Event Media"}
+                                                className="transition-transform duration-700 group-hover:scale-110"
+                                            />
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
@@ -449,7 +408,7 @@ export default function GalleryPage() {
                                                     initial={{ opacity: 0, scale: 0.98 }}
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     exit={{ opacity: 0, scale: 0.98 }}
-                                                    src={mediaUrl(selectedMedia.file)}
+                                                    src={galleryMediaUrl(selectedMedia.file)}
                                                     controls
                                                     autoPlay
                                                     playsInline
@@ -461,7 +420,7 @@ export default function GalleryPage() {
                                                     initial={{ opacity: 0, scale: 0.98 }}
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     exit={{ opacity: 0, scale: 0.98 }}
-                                                    src={mediaUrl(selectedMedia.file)}
+                                                    src={galleryMediaUrl(selectedMedia.file)}
                                                     alt={selectedMedia.caption || 'Gallery photo'}
                                                     className="mx-auto block h-auto w-auto max-h-[min(88dvh,calc(100dvh-7rem))] max-w-[min(96vw,calc(100vw-1.5rem))] select-none object-contain object-center"
                                                     decoding="async"

@@ -44,7 +44,14 @@ const HOMEWORK_CARD_PREVIEW = 3;
 const HOMEWORK_VISIBLE_CLASSES = 3;
 
 /** Existing franchise pages — embedded here instead of separate sidebar links. */
-const FranchiseAttendancePanel = dynamic(() => import("../attendance/page"), { ssr: false });
+const FranchiseAttendancePanel = dynamic(
+    () => import("@/components/dashboard/franchise/FranchiseAttendancePanel").then((m) => m.FranchiseAttendancePanel),
+    { ssr: false },
+);
+const ParentPortalCalendarPanel = dynamic(
+    () => import("@/components/dashboard/shared/ParentPortalCalendarPanel").then((m) => m.ParentPortalCalendarPanel),
+    { ssr: false },
+);
 const FranchiseEventsPanel = dynamic(() => import("../events/page"), { ssr: false });
 type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 type ShowToastFn = (message: string, variant?: "success" | "error") => void;
@@ -93,7 +100,7 @@ const TAB_CONFIG: { id: Tab; label: string }[] = [
     { id: "notifications", label: "Notifications" },
     { id: "timetable", label: "Newsletter" },
     { id: "transport", label: "Transport" },
-    { id: "calendar", label: "Attendance" },
+    { id: "calendar", label: "Calendar & Attendance" },
     { id: "showcase", label: "Event Gallery" },
     { id: "fees", label: "Fee" },
     { id: "holidays", label: "Holiday list" },
@@ -175,7 +182,7 @@ export default function ParentPortalAdminPage() {
             {tab === "notifications" && <AnnouncementsTab authFetch={authFetch} showToast={showToast} students={students} />}
             {tab === "timetable" && <NewsLetterTab authFetch={authFetch} showToast={showToast} />}
             {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} />}
-            {tab === "calendar" && <FranchiseAttendancePanel />}
+            {tab === "calendar" && <CalendarAttendanceTab />}
             {tab === "showcase" && <FranchiseEventsPanel />}
             {tab === "fees" && <FeesTab authFetch={authFetch} showToast={showToast} students={students} />}
             {tab === "holidays" && <HolidayListTab authFetch={authFetch} showToast={showToast} />}
@@ -195,6 +202,21 @@ type NewsLetterRow = {
 
 const newsletterRowDate = (row: NewsLetterRow) =>
     homeworkDate(row.period_start) || homeworkDate(row.period_end) || homeworkDate(row.created_at) || "—";
+
+function CalendarAttendanceTab() {
+    const [attendanceDate, setAttendanceDate] = useState(todayLocal);
+
+    return (
+        <div className="space-y-6">
+            <ParentPortalCalendarPanel
+                mode="franchise"
+                linkedDate={attendanceDate}
+                onLinkedDateChange={setAttendanceDate}
+            />
+            <FranchiseAttendancePanel controlledDate={attendanceDate} onControlledDateChange={setAttendanceDate} />
+        </div>
+    );
+}
 
 function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
     const { tokens, authFetchBlobResponse } = useAuth();
