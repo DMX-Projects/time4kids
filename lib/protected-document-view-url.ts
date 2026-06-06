@@ -1,14 +1,12 @@
 /**
- * Open a JWT-protected Django document in a new tab so the browser PDF viewer
- * receives Content-Disposition (Chrome toolbar Download uses the real filename).
- * Auth is passed via a short-lived cookie — not in the address bar.
+ * Open a JWT-protected hub/parent document in a new tab with the correct download name.
+ * Uses the same signed URL pattern as event gallery media (proven on live):
+ * `/api/documents/.../file/?name=...&access=<fresh token>`
  *
- * Served at `/doc-view` (not `/api/doc-view`) so live nginx/Next rewrites do not
- * forward the request to Django before this route runs.
+ * Token is refreshed before open so idle sessions still work.
  */
 
-const DOC_VIEW_COOKIE = "tk_dva";
-const DOC_VIEW_PATH = "/doc-view";
+import { apiUrl } from "@/lib/api-client";
 
 const ALLOWED_API_PREFIXES = [
     "documents/franchise/documents/",
@@ -52,28 +50,37 @@ function splitDocumentApiPath(apiPath: string): { pathname: string; name?: strin
     return name ? { pathname, name } : { pathname };
 }
 
-export async function openProtectedDocumentView(
-    getAccessToken: GetAccessToken,
-    apiPath: string,
-): Promise<void> {
+export function buildProtectedDocumentViewUrl(apiPath: string, accessToken: string): string | null {
     const normalized = normalizeProtectedDocumentApiPath(apiPath);
-    if (!normalized) return;
-
-    const token = (await getAccessToken())?.trim();
-    if (!token) return;
+    const token = accessToken.trim();
+    if (!normalized || !token) return null;
 
     const { pathname, name } = splitDocumentApiPath(normalized);
-
-    const secure =
-        typeof window !== "undefined" && window.location.protocol === "https:";
-    document.cookie = `${DOC_VIEW_COOKIE}=${encodeURIComponent(token)}; path=${DOC_VIEW_PATH}; max-age=120; SameSite=Lax${secure ? "; Secure" : ""}`;
-
     const params = new URLSearchParams();
-    const pathForQuery = pathname.startsWith("/") ? pathname.slice(1) : pathname;
-    params.set("p", pathForQuery);
     if (name) params.set("name", name);
+    params.set("access", token);
+    const query = params.toString();
+    return `${apiUrl(pathname)}?${query}`;
+}
 
-    const viewUrl = `${DOC_VIEW_PATH}?${params.toString()}`;
-    const tab = window.open(viewUrl, "_blank");
+export function openProtectedDocumentView(
+    getAccessToken: GetAccessToken,
+    apiPath: string,
+): void {
+    const tab = window.open("about:blank", "_blank");
     if (tab) tab.opener = null;
+
+    void (async () => {
+        const token = (await getAccessToken())?.trim();
+        const url = token ? buildProtectedDocumentViewUrl(apiPath, token) : null;
+        if (!url) {
+            if (tab && !tab.closed) tab.close();
+            return;
+        }
+        if (tab && !tab.closed) {
+            tab.location.href = url;
+            return;
+        }
+        window.open(url, "_blank", "noopener,noreferrer");
+    })();
 }
