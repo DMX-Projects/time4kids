@@ -2,10 +2,13 @@
  * Open a JWT-protected Django document in a new tab so the browser PDF viewer
  * receives Content-Disposition (Chrome toolbar Download uses the real filename).
  * Auth is passed via a short-lived cookie — not in the address bar.
+ *
+ * Served at `/doc-view` (not `/api/doc-view`) so live nginx/Next rewrites do not
+ * forward the request to Django before this route runs.
  */
 
 const DOC_VIEW_COOKIE = "tk_dva";
-const DOC_VIEW_PATH = "/api/doc-view";
+const DOC_VIEW_PATH = "/doc-view";
 
 const ALLOWED_API_PREFIXES = [
     "documents/franchise/documents/",
@@ -38,6 +41,17 @@ export function normalizeProtectedDocumentApiPath(path: string): string | null {
     return isProtectedDocumentApiPath(trimmed) ? trimmed : null;
 }
 
+function splitDocumentApiPath(apiPath: string): { pathname: string; name?: string } {
+    const qIdx = apiPath.indexOf("?");
+    if (qIdx === -1) {
+        return { pathname: apiPath };
+    }
+    const pathname = apiPath.slice(0, qIdx);
+    const params = new URLSearchParams(apiPath.slice(qIdx + 1));
+    const name = params.get("name")?.trim();
+    return name ? { pathname, name } : { pathname };
+}
+
 export async function openProtectedDocumentView(
     getAccessToken: GetAccessToken,
     apiPath: string,
@@ -48,12 +62,18 @@ export async function openProtectedDocumentView(
     const token = (await getAccessToken())?.trim();
     if (!token) return;
 
+    const { pathname, name } = splitDocumentApiPath(normalized);
+
     const secure =
         typeof window !== "undefined" && window.location.protocol === "https:";
     document.cookie = `${DOC_VIEW_COOKIE}=${encodeURIComponent(token)}; path=${DOC_VIEW_PATH}; max-age=120; SameSite=Lax${secure ? "; Secure" : ""}`;
 
-    const pathForQuery = normalized.startsWith("/") ? normalized.slice(1) : normalized;
-    const viewUrl = `${DOC_VIEW_PATH}?p=${encodeURIComponent(pathForQuery)}`;
+    const params = new URLSearchParams();
+    const pathForQuery = pathname.startsWith("/") ? pathname.slice(1) : pathname;
+    params.set("p", pathForQuery);
+    if (name) params.set("name", name);
+
+    const viewUrl = `${DOC_VIEW_PATH}?${params.toString()}`;
     const tab = window.open(viewUrl, "_blank");
     if (tab) tab.opener = null;
 }

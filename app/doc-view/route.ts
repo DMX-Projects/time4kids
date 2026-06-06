@@ -15,10 +15,10 @@ function djangoApiOrigin(): string {
     ).replace(/\/$/, "");
 }
 
-function isAllowedProxyPath(relPath: string): boolean {
-    const pathname = relPath.replace(/^\/+/, "").split("?")[0].split("#")[0];
+function isAllowedProxyPath(pathname: string): boolean {
+    const clean = pathname.replace(/^\/+/, "").split("?")[0].split("#")[0];
     return ALLOWED_API_PREFIXES.some(
-        (prefix) => pathname.startsWith(prefix) && pathname.endsWith("/file/"),
+        (prefix) => clean.startsWith(prefix) && clean.endsWith("/file/"),
     );
 }
 
@@ -26,8 +26,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-    const relPath = (request.nextUrl.searchParams.get("p") || "").trim();
-    if (!relPath || !isAllowedProxyPath(relPath)) {
+    const pathname = (request.nextUrl.searchParams.get("p") || "").trim();
+    if (!pathname || !isAllowedProxyPath(pathname)) {
         return NextResponse.json({ detail: "Invalid document path" }, { status: 400 });
     }
 
@@ -36,7 +36,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ detail: "Authentication required" }, { status: 401 });
     }
 
-    const upstream = `${djangoApiOrigin()}/api/${relPath.replace(/^\/+/, "")}`;
+    const upstreamParams = new URLSearchParams();
+    const name = request.nextUrl.searchParams.get("name");
+    if (name?.trim()) upstreamParams.set("name", name.trim());
+
+    const rel = pathname.replace(/^\/+/, "");
+    const query = upstreamParams.toString();
+    const upstream = `${djangoApiOrigin()}/api/${rel}${query ? `?${query}` : ""}`;
+
     let upstreamRes: Response;
     try {
         upstreamRes = await fetch(upstream, {
@@ -60,7 +67,7 @@ export async function GET(request: NextRequest) {
     const secure = request.nextUrl.protocol === "https:";
     headers.append(
         "Set-Cookie",
-        `${DOC_VIEW_COOKIE}=; Path=/api/doc-view; Max-Age=0; SameSite=Lax${secure ? "; Secure" : ""}`,
+        `${DOC_VIEW_COOKIE}=; Path=/doc-view; Max-Age=0; SameSite=Lax${secure ? "; Secure" : ""}`,
     );
 
     return new NextResponse(upstreamRes.body, {
