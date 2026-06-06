@@ -13,11 +13,18 @@ const VIEW_INLINE_EXTS = new Set([
     "gif",
     "webp",
     "svg",
+    "bmp",
     "htm",
     "html",
     "mp4",
     "webm",
+    "mov",
+    "m4v",
     "mp3",
+    "wav",
+    "m4a",
+    "aac",
+    "ogg",
 ]);
 
 export function extensionFromPath(file: string | null | undefined): string {

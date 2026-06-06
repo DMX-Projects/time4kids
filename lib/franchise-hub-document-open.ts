@@ -1,9 +1,7 @@
 /**
- * Franchise centre files: PDFs open in a new tab with the correct filename;
- * ZIPs download directly. Uses direct URLs + ?name= so browser Save uses link text.
+ * Franchise centre files: viewable types open in a new tab; archives download directly.
  */
 
-import { apiUrl, mediaUrl } from "@/lib/api-client";
 import { isLegacyFranchiseUploadUrl, legacyPcHrefToMediaUrl } from "@/lib/franchise-center-page-links";
 import { resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
 import {
@@ -11,6 +9,8 @@ import {
     parseFilenameFromContentDisposition,
     shouldViewFileInline,
 } from "@/lib/franchise-download-filename";
+import { openBlobInlineInNewTab, openViewUrlInNewTab } from "@/lib/inline-document-open";
+import { apiUrl, mediaUrl } from "@/lib/api-client";
 
 export type AuthFetchBlobResponse = (
     path: string,
@@ -22,7 +22,7 @@ export type AuthFetchBlobFromHref = (
     init?: RequestInit,
 ) => Promise<{ blob: Blob; filename?: string }>;
 
-/** Build authenticated view URL — browser PDF viewer gets correct Content-Disposition name. */
+/** Build authenticated view URL — browser PDF viewer loads content inline in one tab. */
 export function buildFranchiseFileViewUrl(
     accessToken: string,
     downloadName: string,
@@ -91,31 +91,21 @@ function openViaBlobFetch(
     })();
 }
 
-function openInlineViaBlob(
-    fetcher: () => Promise<Blob>,
+function tryOpenInlineViewUrl(
+    accessToken: string | undefined,
     downloadName: string,
-): void {
-    const name = downloadName.trim() || "document";
-    const tab = window.open("about:blank", "_blank", "noopener,noreferrer");
-    void (async () => {
-        try {
-            const blob = await fetcher();
-            const ext = extensionFromPath(name).replace(/^\./, "");
-            const file = new File([blob], name, {
-                type: blob.type || (ext === "pdf" ? "application/pdf" : "application/octet-stream"),
-            });
-            const url = URL.createObjectURL(file);
-            if (tab && !tab.closed) tab.location.href = url;
-            else window.open(url, "_blank", "noopener,noreferrer");
-            window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
-        } catch {
-            if (tab && !tab.closed) tab.close();
-        }
-    })();
+    options: { hubDocId?: number; href: string },
+): boolean {
+    const token = accessToken?.trim();
+    if (!token) return false;
+    const viewUrl = buildFranchiseFileViewUrl(token, downloadName, options);
+    if (!viewUrl) return false;
+    openViewUrlInNewTab(viewUrl);
+    return true;
 }
 
 function openFranchiseFile(
-    _accessToken: string | undefined,
+    accessToken: string | undefined,
     downloadName: string,
     options: {
         hubDocId?: number;
@@ -127,8 +117,17 @@ function openFranchiseFile(
     const name = downloadName.trim() || "document";
 
     if (shouldViewFileInline(name)) {
+        if (
+            tryOpenInlineViewUrl(accessToken, name, {
+                hubDocId: options.hubDocId,
+                href: options.href,
+            })
+        ) {
+            return;
+        }
+
         if (options.hubDocId != null) {
-            openInlineViaBlob(
+            openBlobInlineInNewTab(
                 () =>
                     options
                         .authFetchBlobResponse(`/documents/franchise/documents/${options.hubDocId}/file/`)
@@ -140,7 +139,7 @@ function openFranchiseFile(
 
         const href = options.href.trim();
         if (!href) return;
-        openInlineViaBlob(() => options.authFetchBlobFromHref(href).then((r) => r.blob), name);
+        openBlobInlineInNewTab(() => options.authFetchBlobFromHref(href).then((r) => r.blob), name);
         return;
     }
 
@@ -169,6 +168,7 @@ export function openFranchiseHubDocument(
     hubDocId: number,
     href: string,
 ): void {
+    void fileApiPath;
     openFranchiseFile(accessToken, downloadName, {
         hubDocId,
         href,
@@ -181,7 +181,7 @@ export function openFranchiseHubDocument(
 export function openFranchiseEmbedLink(rawEmbedUrl: string): void {
     const embedSrc = resolveFranchiseEmbedSrc(rawEmbedUrl);
     if (!embedSrc) return;
-    window.open(embedSrc, "_blank", "noopener,noreferrer");
+    openViewUrlInNewTab(embedSrc);
 }
 
 export function openFranchiseFileFromHref(
