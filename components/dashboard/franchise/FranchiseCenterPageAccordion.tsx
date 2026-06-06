@@ -572,7 +572,7 @@ function LinkRows({
 
   adminTools?: CentrePageAdminTools;
 }) {
-  const { tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
+  const { authFetchBlobResponse, authFetchBlobFromHref, getAccessTokenForDocumentView } = useAuth();
   const displayLinks =
     (mode === "franchise" || mode === "admin") && linkLookup
       ? links.map((link) => applyResolvedLinkLookup(link, linkLookup))
@@ -608,10 +608,9 @@ function LinkRows({
       ".pdf";
     const downloadName = downloadFilenameFromLink(link.label, link.href, ext);
 
-    const access = tokens?.access;
     if (link.franchiseHubDocId != null) {
       openFranchiseHubDocument(
-        access,
+        getAccessTokenForDocumentView,
         authFetchBlobResponse,
         authFetchBlobFromHref,
         `/documents/franchise/documents/${link.franchiseHubDocId}/file/`,
@@ -623,7 +622,7 @@ function LinkRows({
     }
     if (shouldOpenFranchiseLinkInNewTab(link.href)) {
       openFranchiseFileFromHref(
-        access,
+        getAccessTokenForDocumentView,
         authFetchBlobResponse,
         authFetchBlobFromHref,
         link.href,

@@ -62,7 +62,7 @@ function KindIcon({ kind, className }: { kind: FranchiseResourceFileKind; classN
 }
 
 export function FranchiseResourceFileRow({ doc }: { doc: FranchiseHubDoc }) {
-    const { tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
+    const { authFetchBlobResponse, authFetchBlobFromHref, getAccessTokenForDocumentView } = useAuth();
     const meta = getFranchiseResourceFileMetaFromDoc(doc);
     const title = doc.display_title || doc.title;
     const iconWrap = franchiseResourceIconWrapClasses(meta.kind);
@@ -76,7 +76,7 @@ export function FranchiseResourceFileRow({ doc }: { doc: FranchiseHubDoc }) {
         }
         const title = doc.display_title || doc.title;
         openFranchiseHubDocument(
-            tokens?.access,
+            getAccessTokenForDocumentView,
             authFetchBlobResponse,
             authFetchBlobFromHref,
             `/documents/franchise/documents/${doc.id}/file/`,

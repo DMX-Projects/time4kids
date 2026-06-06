@@ -8,6 +8,7 @@ import {
     shouldViewFileInline,
 } from "@/lib/franchise-download-filename";
 import { openBlobInlineInNewTab } from "@/lib/inline-document-open";
+import { GetAccessToken, openProtectedDocumentView } from "@/lib/protected-document-view-url";
 
 export type ParentDocFileInput = { id: number; title: string; file: string; display_title?: string };
 
@@ -50,15 +51,20 @@ function saveBlobFile(blob: Blob, fileName: string): void {
 }
 
 export function openParentDocumentFile(
-    _accessToken: string | undefined,
+    getAccessToken: GetAccessToken,
     authFetchBlobResponse: AuthFetchBlobResponse,
     doc: ParentDocFileInput,
 ): void {
     const name = downloadFilenameFromLinkLabel(linkLabel(doc), extensionFromPath(doc.file) || undefined);
     const apiPath = filePathWithDownloadName(doc.id, name);
     const fetchDoc = () => authFetchBlobResponse(apiPath);
+    const isPdf = extensionFromPath(name).toLowerCase() === ".pdf";
 
     if (shouldViewFileInline(name)) {
+        if (isPdf) {
+            void openProtectedDocumentView(getAccessToken, apiPath);
+            return;
+        }
         openBlobInlineInNewTab(
             () => fetchDoc().then((r) => ({ blob: r.blob, filename: resolveDownloadName(name, r.filename) })),
             name,

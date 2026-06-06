@@ -90,6 +90,8 @@ type AuthContextValue = {
         href: string,
         init?: RequestInit,
     ) => Promise<{ blob: Blob; filename?: string }>;
+    /** Fresh JWT for opening protected documents in a new tab (no token in the URL). */
+    getAccessTokenForDocumentView: () => Promise<string | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -420,6 +422,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return refreshed !== false && Boolean(refreshed.access);
     };
 
+    const getAccessTokenForDocumentView = async (): Promise<string | null> => {
+        if (!(await ensureAccessTokenFresh())) return null;
+        return tokensRef.current?.access ?? null;
+    };
+
     const refreshUser = async () => {
         if (!tokens?.access) return;
         try {
@@ -631,6 +638,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         authFetchBlob,
         authFetchBlobResponse,
         authFetchBlobFromHref,
+        getAccessTokenForDocumentView,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

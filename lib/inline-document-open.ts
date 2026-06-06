@@ -73,7 +73,6 @@ export function openBlobInlineInNewTab(
             const file = new File([blob], resolvedName, { type });
             const url = URL.createObjectURL(file);
             const safeTitle = escapeHtml(resolvedName);
-            const safeDownloadAttr = escapeHtml(resolvedName);
 
             const target = tab && !tab.closed ? tab : window.open("about:blank", "_blank");
             if (!target || target.closed) {
@@ -84,18 +83,7 @@ export function openBlobInlineInNewTab(
             if (target !== tab) target.opener = null;
 
             if (ext === "pdf") {
-                target.document.open();
-                target.document.write(
-                    `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safeTitle}</title>` +
-                        `<style>html,body{margin:0;height:100%;background:#525659;font-family:system-ui,sans-serif}` +
-                        `.bar{display:flex;align-items:center;gap:12px;padding:8px 12px;background:#1e293b;color:#f8fafc}` +
-                        `.bar a{color:#fdba74;font-weight:600;text-decoration:none}` +
-                        `iframe{border:0;width:100%;height:calc(100% - 40px);display:block}</style></head>` +
-                        `<body><div class="bar"><span>${safeTitle}</span>` +
-                        `<a href="${url}" download="${safeDownloadAttr}">Download</a></div>` +
-                        `<iframe src="${url}" title="${safeTitle}"></iframe></body></html>`,
-                );
-                target.document.close();
+                target.location.href = url;
             } else if (["mp4", "webm", "mov", "m4v"].includes(ext)) {
                 target.document.open();
                 target.document.write(

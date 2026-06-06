@@ -219,7 +219,7 @@ function CalendarAttendanceTab() {
 }
 
 function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
-    const { tokens, authFetchBlobResponse } = useAuth();
+    const { authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
     const [rows, setRows] = useState<NewsLetterRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -439,7 +439,7 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                                 <div className="min-w-0 flex-1">
                                     <button
                                         type="button"
-                                        onClick={() => openParentDocumentFile(tokens?.access, authFetchBlobResponse, row)}
+                                        onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, row)}
                                         className="block w-full truncate text-left font-medium text-[#1F2937] hover:text-[#FF922B] hover:underline"
                                     >
                                         {row.display_title || row.title}

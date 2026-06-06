@@ -29,7 +29,7 @@ const normalizeDocs = (data: unknown): HolidayDoc[] => {
 };
 
 export function ParentHolidayList() {
-    const { authFetch, tokens, authFetchBlobResponse } = useAuth();
+    const { authFetch, authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
     const [docs, setDocs] = useState<HolidayDoc[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -96,7 +96,7 @@ export function ParentHolidayList() {
                                 <button
                                     type="button"
                                     onClick={() =>
-                                        openParentDocumentFile(tokens?.access, authFetchBlobResponse, {
+                                        openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, {
                                             id: doc.id,
                                             title: doc.label,
                                             file: doc.file || doc.file_view_path || "",

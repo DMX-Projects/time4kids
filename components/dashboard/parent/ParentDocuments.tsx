@@ -41,7 +41,7 @@ export function ParentDocuments() {
     const [openId, setOpenId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [docs, setDocs] = useState<ParentDoc[]>([]);
-    const { authFetch, tokens, authFetchBlobResponse } = useAuth();
+    const { authFetch, authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
     const { navCustom } = useParentAppNavCustom();
 
     const sections = useMemo(() => mergeParentAppChecklist(navCustom), [navCustom]);
@@ -153,7 +153,7 @@ export function ParentDocuments() {
                                                         type="button"
                                                         className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
                                                         onClick={() =>
-                                                            openParentDocumentFile(tokens?.access, authFetchBlobResponse, item)
+                                                            openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, item)
                                                         }
                                                     >
                                                         <Eye className="w-3.5 h-3.5" />
@@ -163,7 +163,7 @@ export function ParentDocuments() {
                                                         type="button"
                                                         className="inline-flex items-center gap-2 rounded-full bg-[#FF922B] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
                                                         onClick={() =>
-                                                            openParentDocumentFile(tokens?.access, authFetchBlobResponse, item)
+                                                            openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, item)
                                                         }
                                                     >
                                                         <Download className="w-3.5 h-3.5" />

@@ -53,7 +53,7 @@ export function FranchiseCentreBulkUpload({
     onHubCategoryChange,
     onComplete,
 }: Props) {
-    const { authFetch, tokens, authFetchBlobResponse, authFetchBlobFromHref } = useAuth();
+    const { authFetch, authFetchBlobResponse, authFetchBlobFromHref, getAccessTokenForDocumentView } = useAuth();
     const { showToast } = useToast();
 
     const [publishShowcase, setPublishShowcase] = useState(!adminHub);
@@ -214,7 +214,7 @@ export function FranchiseCentreBulkUpload({
     const hubDocOpen = (doc: FranchiseHubDoc) => {
         const title = doc.display_title || doc.title;
         openFranchiseHubDocument(
-            tokens?.access,
+            getAccessTokenForDocumentView,
             authFetchBlobResponse,
             authFetchBlobFromHref,
             `/documents/franchise/documents/${doc.id}/file/`,
@@ -367,7 +367,7 @@ export function FranchiseCentreBulkUpload({
                             id: d.id,
                             label: d.display_title || d.title,
                             sub: d.category_display,
-                            onOpen: () => openParentDocumentFile(tokens?.access, authFetchBlobResponse, d),
+                            onOpen: () => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, d),
                         }))}
                     />
                     <ManageList
