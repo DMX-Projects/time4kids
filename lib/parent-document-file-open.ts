@@ -20,6 +20,18 @@ function linkLabel(doc: ParentDocFileInput): string {
     return (doc.display_title || doc.title || "").trim() || "document";
 }
 
+function filePathWithDownloadName(docId: number, downloadName: string): string {
+    const params = new URLSearchParams();
+    params.set("name", downloadName.trim() || "document");
+    return `/documents/parent/documents/${docId}/file/?${params}`;
+}
+
+function resolveDownloadName(preferred: string, fromServer?: string): string {
+    const server = fromServer?.trim();
+    if (server) return server;
+    return preferred.trim() || "document";
+}
+
 function saveBlobFile(blob: Blob, fileName: string): void {
     const safeName = fileName.trim() || "document";
     const named =
@@ -43,18 +55,21 @@ export function openParentDocumentFile(
     doc: ParentDocFileInput,
 ): void {
     const name = downloadFilenameFromLinkLabel(linkLabel(doc), extensionFromPath(doc.file) || undefined);
-    const fetchDoc = () =>
-        authFetchBlobResponse(`/documents/parent/documents/${doc.id}/file/`).then((r) => r.blob);
+    const apiPath = filePathWithDownloadName(doc.id, name);
+    const fetchDoc = () => authFetchBlobResponse(apiPath);
 
     if (shouldViewFileInline(name)) {
-        openBlobInlineInNewTab(fetchDoc, name);
+        openBlobInlineInNewTab(
+            () => fetchDoc().then((r) => ({ blob: r.blob, filename: resolveDownloadName(name, r.filename) })),
+            name,
+        );
         return;
     }
 
     void (async () => {
         try {
-            const { blob, filename } = await authFetchBlobResponse(`/documents/parent/documents/${doc.id}/file/`);
-            saveBlobFile(blob, filename || name);
+            const { blob, filename } = await fetchDoc();
+            saveBlobFile(blob, resolveDownloadName(name, filename));
         } catch {
             /* silent */
         }

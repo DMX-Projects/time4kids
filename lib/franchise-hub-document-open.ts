@@ -20,6 +20,19 @@ export type AuthFetchBlobFromHref = (
     init?: RequestInit,
 ) => Promise<{ blob: Blob; filename?: string }>;
 
+function filePathWithDownloadName(apiPath: string, downloadName: string): string {
+    const params = new URLSearchParams();
+    params.set("name", downloadName.trim() || "document");
+    const joiner = apiPath.includes("?") ? "&" : "?";
+    return `${apiPath}${joiner}${params}`;
+}
+
+function resolveDownloadName(preferred: string, fromServer?: string): string {
+    const server = fromServer?.trim();
+    if (server) return server;
+    return preferred.trim() || "document";
+}
+
 function saveBlobFile(blob: Blob, fileName: string): void {
     const safeName = fileName.trim() || "document";
     const named =
@@ -37,14 +50,16 @@ function saveBlobFile(blob: Blob, fileName: string): void {
     window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
 }
 
+type BlobFetchResult = { blob: Blob; filename?: string };
+
 function openViaBlobFetch(
-    fetcher: () => Promise<Blob>,
+    fetcher: () => Promise<BlobFetchResult>,
     downloadName: string,
 ): void {
     void (async () => {
         try {
-            const blob = await fetcher();
-            saveBlobFile(blob, downloadName);
+            const { blob, filename } = await fetcher();
+            saveBlobFile(blob, resolveDownloadName(downloadName, filename));
         } catch {
             /* silent */
         }
@@ -64,30 +79,39 @@ function openFranchiseFile(
     const fetchHub =
         options.hubDocId != null
             ? () =>
-                  options
-                      .authFetchBlobResponse(`/documents/franchise/documents/${options.hubDocId}/file/`)
-                      .then((r) => r.blob)
+                  options.authFetchBlobResponse(
+                      filePathWithDownloadName(
+                          `/documents/franchise/documents/${options.hubDocId}/file/`,
+                          name,
+                      ),
+                  )
             : null;
     const href = options.href.trim();
-    const fetchHref = href ? () => options.authFetchBlobFromHref(href).then((r) => r.blob) : null;
+    const fetchHref = href ? () => options.authFetchBlobFromHref(href) : null;
 
     if (shouldViewFileInline(name)) {
         if (fetchHub) {
-            openBlobInlineInNewTab(fetchHub, name);
+            openBlobInlineInNewTab(
+                () => fetchHub().then((r) => ({ blob: r.blob, filename: resolveDownloadName(name, r.filename) })),
+                name,
+            );
             return;
         }
         if (fetchHref) {
-            openBlobInlineInNewTab(fetchHref, name);
+            openBlobInlineInNewTab(
+                () => fetchHref().then((r) => ({ blob: r.blob, filename: resolveDownloadName(name, r.filename) })),
+                name,
+            );
         }
         return;
     }
 
     if (fetchHub) {
-        openViaBlobFetch(fetchHub, name);
+        openViaBlobFetch(() => fetchHub(), name);
         return;
     }
     if (fetchHref) {
-        openViaBlobFetch(fetchHref, name);
+        openViaBlobFetch(() => fetchHref(), name);
     }
 }
 
