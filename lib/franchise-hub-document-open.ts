@@ -8,7 +8,13 @@ import {
     parseFilenameFromContentDisposition,
     shouldViewFileInline,
 } from "@/lib/franchise-download-filename";
+import { extensionFromPath } from "@/lib/franchise-download-filename";
 import { openBlobInlineInNewTab, openViewUrlInNewTab } from "@/lib/inline-document-open";
+import {
+    GetAccessToken,
+    normalizeProtectedDocumentApiPath,
+    openProtectedDocumentView,
+} from "@/lib/protected-document-view-url";
 
 export type AuthFetchBlobResponse = (
     path: string,
@@ -67,6 +73,7 @@ function openViaBlobFetch(
 }
 
 function openFranchiseFile(
+    getAccessToken: GetAccessToken,
     downloadName: string,
     options: {
         hubDocId?: number;
@@ -76,20 +83,24 @@ function openFranchiseFile(
     },
 ): void {
     const name = downloadName.trim() || "document";
-    const fetchHub =
+    const hubApiPath =
         options.hubDocId != null
-            ? () =>
-                  options.authFetchBlobResponse(
-                      filePathWithDownloadName(
-                          `/documents/franchise/documents/${options.hubDocId}/file/`,
-                          name,
-                      ),
-                  )
+            ? filePathWithDownloadName(
+                  `/documents/franchise/documents/${options.hubDocId}/file/`,
+                  name,
+              )
             : null;
+    const fetchHub = hubApiPath ? () => options.authFetchBlobResponse(hubApiPath) : null;
     const href = options.href.trim();
     const fetchHref = href ? () => options.authFetchBlobFromHref(href) : null;
+    const isPdf = extensionFromPath(name).toLowerCase() === ".pdf";
 
     if (shouldViewFileInline(name)) {
+        const protectedPath = hubApiPath || normalizeProtectedDocumentApiPath(href);
+        if (isPdf && protectedPath) {
+            void openProtectedDocumentView(getAccessToken, protectedPath);
+            return;
+        }
         if (fetchHub) {
             openBlobInlineInNewTab(
                 () => fetchHub().then((r) => ({ blob: r.blob, filename: resolveDownloadName(name, r.filename) })),
@@ -116,7 +127,7 @@ function openFranchiseFile(
 }
 
 export function openFranchiseHubDocument(
-    _accessToken: string | undefined,
+    getAccessToken: GetAccessToken,
     authFetchBlobResponse: AuthFetchBlobResponse,
     authFetchBlobFromHref: AuthFetchBlobFromHref,
     _fileApiPath: string,
@@ -124,7 +135,7 @@ export function openFranchiseHubDocument(
     hubDocId: number,
     href: string,
 ): void {
-    openFranchiseFile(downloadName, {
+    openFranchiseFile(getAccessToken, downloadName, {
         hubDocId,
         href,
         authFetchBlobResponse,
@@ -140,13 +151,13 @@ export function openFranchiseEmbedLink(rawEmbedUrl: string): void {
 }
 
 export function openFranchiseFileFromHref(
-    _accessToken: string | undefined,
+    getAccessToken: GetAccessToken,
     authFetchBlobResponse: AuthFetchBlobResponse,
     authFetchBlobFromHref: AuthFetchBlobFromHref,
     href: string,
     downloadName: string,
 ): void {
-    openFranchiseFile(downloadName, {
+    openFranchiseFile(getAccessToken, downloadName, {
         href,
         authFetchBlobResponse,
         authFetchBlobFromHref,

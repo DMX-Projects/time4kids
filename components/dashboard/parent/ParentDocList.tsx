@@ -32,7 +32,7 @@ export function ParentDocList({
     emptyMessage?: string;
     headerIcon?: ReactNode;
 }) {
-    const { authFetch, tokens, authFetchBlobResponse } = useAuth();
+    const { authFetch, authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
     const [docs, setDocs] = useState<DocRow[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -83,7 +83,7 @@ export function ParentDocList({
                         <span className="font-medium text-orange-900 text-sm">{d.title}</span>
                         <button
                             type="button"
-                            onClick={() => openParentDocumentFile(tokens?.access, authFetchBlobResponse, d)}
+                            onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
                             className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
                         >
                             <Download className="w-4 h-4" />
