@@ -1,6 +1,5 @@
 /**
- * Parent portal / franchise parent-documents: open files via authenticated API
- * (`/documents/parent/documents/<id>/file/`) so the browser does not depend on public `/media/…`.
+ * Parent portal / franchise parent-documents: open files in a new tab with inline content.
  */
 
 import { apiUrl } from "@/lib/api-client";
@@ -9,6 +8,7 @@ import {
     extensionFromPath,
     shouldViewFileInline,
 } from "@/lib/franchise-download-filename";
+import { openBlobInlineInNewTab, openViewUrlInNewTab } from "@/lib/inline-document-open";
 
 export type ParentDocFileInput = { id: number; title: string; file: string; display_title?: string };
 
@@ -48,38 +48,24 @@ function saveBlobFile(blob: Blob, fileName: string): void {
     window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
 }
 
-function openInlineViaBlob(
-    authFetchBlobResponse: AuthFetchBlobResponse,
-    docId: number,
-    filename: string,
-): void {
-    const tab = window.open("about:blank", "_blank", "noopener,noreferrer");
-    void (async () => {
-        try {
-            const { blob } = await authFetchBlobResponse(`/documents/parent/documents/${docId}/file/`);
-            const ext = extensionFromPath(filename).replace(/^\./, "");
-            const file = new File([blob], filename, {
-                type: blob.type || (ext === "pdf" ? "application/pdf" : "application/octet-stream"),
-            });
-            const url = URL.createObjectURL(file);
-            if (tab && !tab.closed) tab.location.href = url;
-            else window.open(url, "_blank", "noopener,noreferrer");
-            window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
-        } catch {
-            if (tab && !tab.closed) tab.close();
-        }
-    })();
-}
-
 export function openParentDocumentFile(
-    _accessToken: string | undefined,
+    accessToken: string | undefined,
     authFetchBlobResponse: AuthFetchBlobResponse,
     doc: ParentDocFileInput,
 ): void {
     const name = downloadFilenameFromLinkLabel(linkLabel(doc), extensionFromPath(doc.file) || undefined);
 
     if (shouldViewFileInline(name)) {
-        openInlineViaBlob(authFetchBlobResponse, doc.id, name);
+        const viewUrl = accessToken?.trim() ? buildParentDocumentFileViewUrl(accessToken, doc) : null;
+        if (viewUrl) {
+            openViewUrlInNewTab(viewUrl);
+            return;
+        }
+
+        openBlobInlineInNewTab(
+            () => authFetchBlobResponse(`/documents/parent/documents/${doc.id}/file/`).then((r) => r.blob),
+            name,
+        );
         return;
     }
 
