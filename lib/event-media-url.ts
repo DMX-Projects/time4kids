@@ -24,14 +24,18 @@ export function resolveEventMediaPlaybackSources(options: {
         if (u && !out.includes(u)) out.push(u);
     };
 
-    if (token && mediaId != null && Number.isFinite(mediaId)) {
+    if (/^https?:\/\//i.test(filePath)) {
+        push(filePath);
+    }
+
+    if (token && mediaId != null && Number.isFinite(mediaId) && mediaId > 0) {
         const signed = buildEventMediaFileViewUrl(token, mediaId, {
             caption: options.caption || "",
             filePath,
         });
         if (signed) push(signed);
     }
-    if (slug && mediaId != null && Number.isFinite(mediaId)) {
+    if (slug && mediaId != null && Number.isFinite(mediaId) && mediaId > 0) {
         push(buildPublicEventMediaFileUrl(slug, mediaId));
     }
     const publicFb = publicStaticFallbackForMediaPath(filePath);

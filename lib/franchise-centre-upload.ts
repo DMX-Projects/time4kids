@@ -3,6 +3,7 @@
  */
 
 import { jsonHeaders } from "@/lib/api-client";
+import { validateParentDocumentFileForCategory } from "@/lib/parent-document-file-kind";
 
 export type ParentUploadKind = "document" | "image" | "video" | "skip";
 
@@ -160,7 +161,11 @@ export function validateAdminHubDocumentUpload(file: File): string | null {
 }
 
 /** Admin parent-app document checklist uploads (new file picks only). */
-export function validateAdminParentDocumentUpload(file: File): string | null {
+export function validateAdminParentDocumentUpload(file: File, category?: string): string | null {
+    if (category) {
+        const catErr = validateParentDocumentFileForCategory(file, category);
+        if (catErr) return catErr;
+    }
     const kind = classifyParentUploadFile(file);
     if (kind === "skip") {
         return `${file.name}: file type not supported for parent app uploads.`;

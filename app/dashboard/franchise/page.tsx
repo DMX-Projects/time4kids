@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
+import { ClipboardList, UserCircle } from "lucide-react";
 import { FranchiseCenterPageAccordion } from "@/components/dashboard/franchise/FranchiseCenterPageAccordion";
 import {
     FRANCHISE_CENTER_PAGE_BLOCK_A,

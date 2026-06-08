@@ -1,13 +1,20 @@
 import type { ParentAppDocumentSlot, ParentAppDocumentSection } from "@/config/parent-app-document-checklist";
 
+import { fileMatchesParentDocumentCategory } from "@/lib/parent-document-file-kind";
+
 export type ParentDocumentForMatch = {
     id: number;
     category: string;
     title: string;
     display_title?: string;
+    file?: string;
     franchise: number | null;
     state?: string | null;
 };
+
+function docMatchesCategory(doc: ParentDocumentForMatch): boolean {
+    return fileMatchesParentDocumentCategory(doc.file || "", doc.category);
+}
 
 export type AdminParentAppUploadContext = ParentAppDocumentSlot & {
     matchedDocId?: number;
@@ -22,7 +29,7 @@ export function matchParentDocToSlot(
     slot: ParentAppDocumentSlot,
     docs: ParentDocumentForMatch[],
 ): ParentDocumentForMatch | undefined {
-    const inCategory = docs.filter((d) => d.category === slot.category);
+    const inCategory = docs.filter((d) => d.category === slot.category && docMatchesCategory(d));
     if (!inCategory.length) return undefined;
 
     if (slot.category === "HOLIDAY_LISTS" && slot.state) {
@@ -61,6 +68,7 @@ export function buildParentAppUploadContexts(
     const extras: AdminParentAppUploadContext[] = [];
     for (const doc of docs) {
         if (usedIds.has(doc.id)) continue;
+        if (!docMatchesCategory(doc)) continue;
         const sectionTitle =
             sections.find((s) => s.category === doc.category)?.title ?? doc.category;
         const centre = doc.franchise != null ? `Centre #${doc.franchise}` : "All centres";

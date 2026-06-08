@@ -8,6 +8,7 @@ import { EventGalleryImage } from '@/components/ui/EventGalleryImage';
 import { EventGalleryVideo } from '@/components/ui/EventGalleryVideo';
 import { franchisePublicLocationLine } from '@/lib/utils';
 import Modal from '@/components/ui/Modal';
+import { mergeEventGalleryVideoLinks } from '@/lib/event-gallery-video-links';
 
 interface MediaItem {
     id: number;
@@ -102,7 +103,7 @@ export default function GallerySection({
     const lifeAtHeading = lifeAtCentreName ? `Life at ${lifeAtCentreName}` : 'Life at T.I.M.E. Kids';
 
     const displayEvents = useMemo(() => {
-        if (events.length > 0) return events;
+        if (events.length > 0) return mergeEventGalleryVideoLinks(events);
         return galleryItemsAsEvents(galleryItems);
     }, [events, galleryItems]);
 

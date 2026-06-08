@@ -302,7 +302,7 @@ export default function AdminParentDocumentsPage() {
             return;
         }
         if (file) {
-            const sizeErr = validateAdminParentDocumentUpload(file);
+            const sizeErr = validateAdminParentDocumentUpload(file, form.category);
             if (sizeErr) {
                 showToast(sizeErr, "error");
                 return;

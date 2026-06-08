@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useParentAppNavCustom } from "@/hooks/useParentAppNavCustom";
 import { openParentDocumentFile } from "@/lib/parent-document-file-open";
 import { mergeParentAppChecklist } from "@/lib/parent-app-nav-custom";
+import { fileMatchesParentDocumentCategory, parentDocumentFileKind } from "@/lib/parent-document-file-kind";
 
 type ParentDoc = {
     id: number;
@@ -73,7 +74,11 @@ export function ParentDocuments() {
                 title: section.title,
                 icon: meta.icon,
                 accent: meta.accent,
-                items: docs.filter((d) => d.category === section.category),
+                items: docs.filter(
+                    (d) =>
+                        d.category === section.category &&
+                        fileMatchesParentDocumentCategory(d.file || "", section.category),
+                ),
             };
         });
     }, [sections, docs]);
@@ -124,7 +129,15 @@ export function ParentDocuments() {
                                     </span>
                                     <div className="flex flex-col leading-tight text-[#1F2937] flex-1">
                                         <span>{cat.title}</span>
-                                        <span className="text-[11px] text-[#4B5563]">Tap to view or download</span>
+                                        <span className="text-[11px] text-[#4B5563]">
+                                            {cat.category === "VIDEOS"
+                                                ? "Videos, audio, PDFs, and learning files"
+                                                : cat.category === "AUDIO_RHYMES"
+                                                  ? "Audio files only"
+                                                  : cat.category === "PRESCHOOL_POLICIES" || cat.category === "HOLIDAY_LISTS"
+                                                    ? "PDF files only"
+                                                    : "Tap to view or download"}
+                                        </span>
                                     </div>
                                     <span
                                         className={`transition-transform duration-300 text-[#1F2937] ${isOpen ? "rotate-180" : ""}`}
@@ -149,26 +162,125 @@ export function ParentDocuments() {
                                                     <span className="font-semibold text-[#1F2937]">{item.display_title || item.title}</span>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 pl-7">
-                                                    <button
-                                                        type="button"
-                                                        className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
-                                                        onClick={() =>
-                                                            openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, item)
-                                                        }
-                                                    >
-                                                        <Eye className="w-3.5 h-3.5" />
-                                                        View
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className="inline-flex items-center gap-2 rounded-full bg-[#FF922B] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
-                                                        onClick={() =>
-                                                            openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, item)
-                                                        }
-                                                    >
-                                                        <Download className="w-3.5 h-3.5" />
-                                                        Download
-                                                    </button>
+                                                    {cat.category === "VIDEOS" ? (
+                                                        (() => {
+                                                            const kind = parentDocumentFileKind(item.file || "");
+                                                            if (kind === "video") {
+                                                                return (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
+                                                                        onClick={() =>
+                                                                            openParentDocumentFile(
+                                                                                getAccessTokenForDocumentView,
+                                                                                authFetchBlobResponse,
+                                                                                item,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Play className="w-3.5 h-3.5" />
+                                                                        Play video
+                                                                    </button>
+                                                                );
+                                                            }
+                                                            if (kind === "audio") {
+                                                                return (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
+                                                                        onClick={() =>
+                                                                            openParentDocumentFile(
+                                                                                getAccessTokenForDocumentView,
+                                                                                authFetchBlobResponse,
+                                                                                item,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Eye className="w-3.5 h-3.5" />
+                                                                        Play audio
+                                                                    </button>
+                                                                );
+                                                            }
+                                                            return (
+                                                                <>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
+                                                                        onClick={() =>
+                                                                            openParentDocumentFile(
+                                                                                getAccessTokenForDocumentView,
+                                                                                authFetchBlobResponse,
+                                                                                item,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Eye className="w-3.5 h-3.5" />
+                                                                        View
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="inline-flex items-center gap-2 rounded-full bg-[#FF922B] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
+                                                                        onClick={() =>
+                                                                            openParentDocumentFile(
+                                                                                getAccessTokenForDocumentView,
+                                                                                authFetchBlobResponse,
+                                                                                item,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Download className="w-3.5 h-3.5" />
+                                                                        Download
+                                                                    </button>
+                                                                </>
+                                                            );
+                                                        })()
+                                                    ) : cat.category === "AUDIO_RHYMES" ? (
+                                                        <button
+                                                            type="button"
+                                                            className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
+                                                            onClick={() =>
+                                                                openParentDocumentFile(
+                                                                    getAccessTokenForDocumentView,
+                                                                    authFetchBlobResponse,
+                                                                    item,
+                                                                )
+                                                            }
+                                                        >
+                                                            <Eye className="w-3.5 h-3.5" />
+                                                            Play audio
+                                                        </button>
+                                                    ) : (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
+                                                                onClick={() =>
+                                                                    openParentDocumentFile(
+                                                                        getAccessTokenForDocumentView,
+                                                                        authFetchBlobResponse,
+                                                                        item,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Eye className="w-3.5 h-3.5" />
+                                                                View
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                className="inline-flex items-center gap-2 rounded-full bg-[#FF922B] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
+                                                                onClick={() =>
+                                                                    openParentDocumentFile(
+                                                                        getAccessTokenForDocumentView,
+                                                                        authFetchBlobResponse,
+                                                                        item,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Download className="w-3.5 h-3.5" />
+                                                                Download
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </li>
                                         ))}

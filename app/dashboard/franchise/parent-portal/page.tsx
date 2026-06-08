@@ -22,7 +22,11 @@ import {
 import { DEFAULT_HOLIDAY_ACADEMIC_YEAR } from "@/config/parent-document-categories";
 import {
     emptyHolidayEntry,
+    filterHolidayEntries,
     formatHolidayDate,
+    formatHolidayDateFilter,
+    holidayEntryYears,
+    monthSelectOptions,
     parseHolidayEntries,
     mergeHolidayEntries,
     serializeHolidayEntries,
@@ -60,6 +64,13 @@ type MiniStudent = { id: number; full_name: string; class_name: string };
 
 /** API dates may arrive as YYYY-MM-DD or ISO datetime — compare using first 10 chars. */
 const homeworkDate = (value: string | undefined | null) => String(value || "").slice(0, 10);
+
+const formatUploadDate = (value: string | undefined | null) => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return homeworkDate(value);
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
 
 const todayLocal = () => {
     const d = new Date();
@@ -530,12 +541,29 @@ type HolidayRow = {
     title: string;
     display_title?: string;
     file: string;
+    file_view_path?: string | null;
     state?: string | null;
     state_display?: string | null;
     academic_year?: string;
     franchise?: number | null;
     holiday_entries?: HolidayEntry[] | unknown;
+    created_at?: string;
+    updated_at?: string;
 };
+
+function holidayRowHasFile(row: HolidayRow | null | undefined): boolean {
+    if (!row) return false;
+    return Boolean((row.file || "").trim() || (row.file_view_path || "").trim());
+}
+
+function holidayRowOpenDoc(row: HolidayRow) {
+    return {
+        id: row.id,
+        title: row.title,
+        display_title: row.display_title,
+        file: row.file || row.file_view_path || "",
+    };
+}
 
 type HolidayStateGroup = {
     state: string;
@@ -546,6 +574,7 @@ type HolidayStateGroup = {
 };
 
 function HolidayListTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
+    const { authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
     const [rows, setRows] = useState<HolidayRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [editModal, setEditModal] = useState<{
@@ -559,6 +588,10 @@ function HolidayListTab({ authFetch, showToast }: { authFetch: AuthFetchFn; show
     const [editGlobalEntries, setEditGlobalEntries] = useState<HolidayEntry[]>([]);
     const [editSaving, setEditSaving] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
+    const [selectedState, setSelectedState] = useState<string | null>(null);
+    const [trackMonth, setTrackMonth] = useState("");
+    const [trackYear, setTrackYear] = useState("");
+    const [trackDate, setTrackDate] = useState("");
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -610,6 +643,30 @@ function HolidayListTab({ authFetch, showToast }: { authFetch: AuthFetchFn; show
             });
     }, [rows]);
 
+    const selectedGroup = useMemo(() => {
+        if (!stateGroups.length) return null;
+        return stateGroups.find((g) => g.state === selectedState) ?? stateGroups[0];
+    }, [stateGroups, selectedState]);
+
+    const holidayFilterYears = useMemo(() => {
+        if (!selectedGroup) return [];
+        const globalEntries = parseHolidayEntries(selectedGroup.global?.holiday_entries);
+        const centreEntries = parseHolidayEntries(selectedGroup.centre?.holiday_entries);
+        return holidayEntryYears(mergeHolidayEntries(globalEntries, centreEntries));
+    }, [selectedGroup]);
+
+    const holidayFilterLabel = formatHolidayDateFilter(trackMonth, trackYear, trackDate);
+
+    useEffect(() => {
+        if (!stateGroups.length) {
+            setSelectedState(null);
+            return;
+        }
+        if (!selectedState || !stateGroups.some((g) => g.state === selectedState)) {
+            setSelectedState(stateGroups[0].state);
+        }
+    }, [stateGroups, selectedState]);
+
     const openCentreEdit = async (group: HolidayStateGroup) => {
         setEditModal({
             isOpen: true,
@@ -637,6 +694,91 @@ function HolidayListTab({ authFetch, showToast }: { authFetch: AuthFetchFn; show
         setEditModal({ isOpen: false, centreId: null, state: "", stateDisplay: "", academicYear: DEFAULT_HOLIDAY_ACADEMIC_YEAR });
         setEditHolidayEntries([emptyHolidayEntry()]);
         setEditGlobalEntries([]);
+    };
+
+    const renderHolidayDateFilters = (years: string[]) => (
+        <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-3 space-y-2">
+            <p className="text-[11px] font-semibold text-[#374151]">Filter by date</p>
+            <div className="flex flex-wrap items-end gap-3">
+                <label className="block text-[11px] font-semibold text-[#4B5563]">
+                    Date
+                    <input
+                        type="date"
+                        value={trackDate}
+                        onChange={(e) => {
+                            const next = e.target.value.slice(0, 10);
+                            setTrackDate(next);
+                            if (next.length >= 10) {
+                                setTrackYear(next.slice(0, 4));
+                                setTrackMonth(next.slice(5, 7));
+                            }
+                        }}
+                        className="mt-1 block w-full min-w-[9.5rem] rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs"
+                    />
+                </label>
+                <label className="block text-[11px] font-semibold text-[#4B5563]">
+                    Month
+                    <select
+                        value={trackMonth}
+                        onChange={(e) => {
+                            setTrackMonth(e.target.value);
+                            setTrackDate("");
+                        }}
+                        className="mt-1 block w-full min-w-[7.5rem] rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs"
+                    >
+                        {monthSelectOptions().map((opt) => (
+                            <option key={opt.value || "all"} value={opt.value}>
+                                {opt.label}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label className="block text-[11px] font-semibold text-[#4B5563]">
+                    Year
+                    <select
+                        value={trackYear}
+                        onChange={(e) => {
+                            setTrackYear(e.target.value);
+                            setTrackDate("");
+                        }}
+                        className="mt-1 block w-full min-w-[5.5rem] rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs"
+                    >
+                        <option value="">All years</option>
+                        {years.map((y) => (
+                            <option key={y} value={y}>
+                                {y}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                {trackDate || trackMonth || trackYear ? (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setTrackDate("");
+                            setTrackMonth("");
+                            setTrackYear("");
+                        }}
+                        className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs font-semibold text-[#6B7280] hover:bg-[#F3F4F6]"
+                    >
+                        Clear
+                    </button>
+                ) : null}
+            </div>
+            <p className="text-[10px] text-[#6B7280]">Showing: {holidayFilterLabel}</p>
+        </div>
+    );
+
+    const overrideHeadOfficeHoliday = (row: HolidayEntry) => {
+        setEditHolidayEntries((prev) => {
+            const idx = prev.findIndex((r) => r.date === row.date);
+            const next = { city: row.city, name: row.name, date: row.date };
+            if (idx >= 0) {
+                return prev.map((r, i) => (i === idx ? { ...r, ...next } : r));
+            }
+            const cleaned = prev.filter((r) => r.city || r.name || r.date);
+            return [...cleaned, next];
+        });
     };
 
     const saveCentreHoliday = async (e: FormEvent) => {
@@ -700,98 +842,261 @@ function HolidayListTab({ authFetch, showToast }: { authFetch: AuthFetchFn; show
         }
     };
 
-    return (
-        <div className="max-w-3xl rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
-            <div className="space-y-1">
-                <h3 className="text-sm font-semibold text-[#111827]">Holiday list</h3>
-                <p className="text-xs text-[#6B7280]">
-                    Head office adds state holidays in Admin CMS. Your centre can add extra holidays or update a date — parents see
-                    head office + your changes together.
-                </p>
-            </div>
+    const renderHolidayListCard = (group: HolidayStateGroup) => {
+        const globalEntries = parseHolidayEntries(group.global?.holiday_entries);
+        const centreEntries = parseHolidayEntries(group.centre?.holiday_entries);
+        const merged = mergeHolidayEntries(globalEntries, centreEntries);
+        const filteredMerged = filterHolidayEntries(merged, {
+            month: trackMonth,
+            year: trackYear,
+            date: trackDate,
+        });
+        const adminHasPdf = holidayRowHasFile(group.global);
+        const parentsPdfSource = adminHasPdf && group.global ? group.global : null;
+        const centreDateKeys = new Set(centreEntries.map((r) => r.date).filter(Boolean));
 
-            {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
+        return (
+            <div className="rounded-xl border border-[#BFDBFE] bg-[#F8FAFC] p-4 space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <p className="font-semibold text-[#111827]">{group.stateDisplay}</p>
+                        <p className="text-[11px] text-[#6B7280]">{group.academicYear}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => openCentreEdit(group)}
+                            className="text-xs font-semibold text-[#2563EB] hover:underline"
+                        >
+                            Edit
+                        </button>
+                        {group.centre ? (
+                            <button
+                                type="button"
+                                onClick={() => setConfirmDelete({ isOpen: true, id: group.centre!.id })}
+                                className="text-xs font-semibold text-red-600 hover:underline"
+                            >
+                                Remove
+                            </button>
+                        ) : null}
+                    </div>
+                </div>
 
-            {!loading && stateGroups.length > 0 ? (
-                <ul className="divide-y border rounded-xl max-h-[520px] overflow-y-auto">
-                    {stateGroups.map((group) => (
-                        <li key={group.state} className="px-4 py-3 text-sm space-y-2">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <p className="font-semibold text-[#111827]">{group.stateDisplay}</p>
-                                    <p className="text-[11px] text-[#6B7280]">{group.academicYear}</p>
-                                </div>
-                                <div className="flex shrink-0 items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => openCentreEdit(group)}
-                                        className="text-xs font-semibold text-[#2563EB] hover:underline"
-                                    >
-                                        {group.centre ? "Edit centre changes" : "Add for centre"}
-                                    </button>
-                                    {group.centre ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => setConfirmDelete({ isOpen: true, id: group.centre!.id })}
-                                            className="text-xs font-semibold text-red-600 hover:underline"
+                {parentsPdfSource ? (
+                    <button
+                        type="button"
+                        onClick={() =>
+                            openParentDocumentFile(
+                                getAccessTokenForDocumentView,
+                                authFetchBlobResponse,
+                                holidayRowOpenDoc(parentsPdfSource),
+                            )
+                        }
+                        className="inline-flex items-center gap-2 rounded-full border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] hover:bg-[#EFF6FF]"
+                    >
+                        View holiday PDF (head office)
+                    </button>
+                ) : null}
+
+                {merged.length > 0 ? (
+                    filteredMerged.length > 0 ? (
+                        <div className="overflow-x-auto rounded-lg border border-[#E2E8F0] bg-white px-2 py-2">
+                            <table className="min-w-full text-xs">
+                                <thead>
+                                    <tr className="text-left text-slate-500">
+                                        <th className="px-2 py-1 font-semibold">Date</th>
+                                        <th className="px-2 py-1 font-semibold">Holiday</th>
+                                        <th className="px-2 py-1 font-semibold">City</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredMerged.map((row, index) => (
+                                        <tr
+                                            key={`${row.date}-${index}`}
+                                            className={centreDateKeys.has(row.date) ? "text-[#9A3412]" : "text-slate-800"}
                                         >
-                                            Remove
-                                        </button>
-                                    ) : null}
-                                </div>
-                            </div>
-                            {(() => {
-                                const globalEntries = parseHolidayEntries(group.global?.holiday_entries);
-                                const centreEntries = parseHolidayEntries(group.centre?.holiday_entries);
-                                const merged = mergeHolidayEntries(globalEntries, centreEntries);
-                                return (
-                                    <>
-                                        {globalEntries.length > 0 ? (
-                                            <p className="text-[11px] text-[#6B7280]">
-                                                Head office: {globalEntries.length} holiday{globalEntries.length === 1 ? "" : "s"}
-                                                {centreEntries.length > 0
-                                                    ? ` · Your centre: ${centreEntries.length} change${centreEntries.length === 1 ? "" : "s"}`
-                                                    : ""}
-                                                {merged.length > 0 ? ` · Parents see: ${merged.length}` : ""}
-                                            </p>
-                                        ) : null}
-                                        {!group.centre ? (
-                                            <p className="text-[11px] text-[#6B7280]">
-                                                No centre changes yet — parents see the head office list only.
-                                            </p>
-                                        ) : null}
-                                        {centreEntries.length > 0 ? (
-                                            <div className="rounded-lg border border-[#FED7AA] bg-[#FFF7ED]/50 px-3 py-2">
-                                                <p className="text-[11px] font-semibold text-[#C2410C] mb-1">Your centre additions / updates</p>
-                                                <ul className="space-y-0.5 text-[11px] text-[#374151]">
-                                                    {centreEntries.map((row, index) => (
-                                                        <li key={`c-${group.state}-${index}`}>
-                                                            {formatHolidayDate(row.date)} — {row.name}
-                                                            {row.city ? ` (${row.city})` : ""}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        ) : null}
-                                    </>
-                                );
-                            })()}
-                        </li>
-                    ))}
-                </ul>
+                                            <td className="px-2 py-1 whitespace-nowrap">{formatHolidayDate(row.date)}</td>
+                                            <td className="px-2 py-1 font-medium">{row.name}</td>
+                                            <td className="px-2 py-1">{row.city || "—"}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-[#6B7280] text-center rounded-lg border border-dashed border-[#E5E7EB] bg-white px-4 py-6">
+                            No holidays in {holidayFilterLabel}. Change date, month, or year above.
+                        </p>
+                    )
+                ) : (
+                    <p className="text-sm text-[#6B7280] text-center rounded-lg border border-dashed border-[#E5E7EB] bg-white px-4 py-6">
+                        No holidays yet. Click Edit to add dates or override head office holidays.
+                    </p>
+                )}
+            </div>
+        );
+    };
+
+    const renderHolidayTracking = (group: HolidayStateGroup) => {
+        const globalEntries = parseHolidayEntries(group.global?.holiday_entries);
+        const centreEntries = parseHolidayEntries(group.centre?.holiday_entries);
+        const allAdminRows = globalEntries;
+        const filteredAdmin = filterHolidayEntries(allAdminRows, {
+            month: trackMonth,
+            year: trackYear,
+            date: trackDate,
+        });
+        const adminHasPdf = holidayRowHasFile(group.global);
+        const adminUpdated = formatUploadDate(group.global?.updated_at || group.global?.created_at);
+
+        return (
+            <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-3 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span
+                        className={`inline-flex rounded-full px-2 py-0.5 font-semibold ${
+                            adminHasPdf ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#FEE2E2] text-[#991B1B]"
+                        }`}
+                    >
+                        PDF {adminHasPdf ? "uploaded" : "missing"}
+                    </span>
+                    <span className="text-[#64748B]">Updated {adminUpdated}</span>
+                </div>
+
+                {group.global && adminHasPdf ? (
+                    <button
+                        type="button"
+                        onClick={() =>
+                            openParentDocumentFile(
+                                getAccessTokenForDocumentView,
+                                authFetchBlobResponse,
+                                holidayRowOpenDoc(group.global!),
+                            )
+                        }
+                        className="inline-flex items-center gap-2 rounded-full border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] hover:bg-[#DBEAFE]"
+                    >
+                        View admin PDF
+                    </button>
+                ) : (
+                    <p className="text-[11px] text-[#64748B]">No admin PDF for this state.</p>
+                )}
+
+                {allAdminRows.length > 0 ? (
+                    filteredAdmin.length > 0 ? (
+                        <HolidayEntriesReadOnly
+                            rows={filteredAdmin}
+                            title={`Admin holidays — ${holidayFilterLabel} (${filteredAdmin.length})`}
+                            emptyMessage=""
+                        />
+                    ) : (
+                        <p className="text-[11px] text-[#6B7280]">No admin holidays in {holidayFilterLabel}.</p>
+                    )
+                ) : (
+                    <p className="text-[11px] text-[#6B7280]">Admin has not added holiday rows for this state.</p>
+                )}
+
+                {centreEntries.length > 0 ? (
+                    <p className="text-[11px] text-[#9A3412]">
+                        Your centre: {centreEntries.length} override{centreEntries.length === 1 ? "" : "s"} — use Edit on the
+                        left to change.
+                    </p>
+                ) : null}
+            </div>
+        );
+    };
+
+    return (
+        <>
+        <div className="grid gap-4 lg:grid-cols-2 lg:items-start max-w-5xl">
+            {!loading && selectedGroup ? (
+                <div className="lg:col-span-2">{renderHolidayDateFilters(holidayFilterYears)}</div>
             ) : null}
 
-            <Modal isOpen={editModal.isOpen} onClose={closeCentreEdit} title={`Holiday list — ${editModal.stateDisplay}`}>
+            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
+                <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-[#111827]">Holiday list</h3>
+                    <p className="text-xs text-[#6B7280]">
+                        One list for parents. Use Edit to add holidays or override head office dates (same date replaces the
+                        head office row).
+                    </p>
+                </div>
+
+                {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
+
+                {!loading && stateGroups.length > 1 ? (
+                    <div className="flex flex-wrap gap-2">
+                        {stateGroups.map((group) => (
+                            <button
+                                key={group.state}
+                                type="button"
+                                onClick={() => setSelectedState(group.state)}
+                                className={`rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors ${
+                                    selectedGroup?.state === group.state
+                                        ? "bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]"
+                                        : "bg-white border-[#E5E7EB] text-[#374151] hover:bg-[#F9FAFB]"
+                                }`}
+                            >
+                                {group.stateDisplay}
+                            </button>
+                        ))}
+                    </div>
+                ) : null}
+
+                {!loading && stateGroups.length === 0 ? (
+                    <p className="text-sm text-[#6B7280]">
+                        No holiday list for your state yet. Head office adds it in Admin CMS → Parent app documents → Holiday Lists.
+                    </p>
+                ) : null}
+
+                {!loading && selectedGroup ? renderHolidayListCard(selectedGroup) : null}
+            </div>
+
+            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-3 lg:sticky lg:top-4 flex flex-col max-h-[calc(100vh-6rem)] overflow-y-auto">
+                <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-[#111827]">Tracking</h3>
+                    {selectedGroup ? (
+                        <p className="text-xs text-[#6B7280]">
+                            {selectedGroup.stateDisplay} · {selectedGroup.academicYear}
+                        </p>
+                    ) : (
+                        <p className="text-xs text-[#6B7280]">Admin upload for selected state.</p>
+                    )}
+                </div>
+                {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
+                {!loading && selectedGroup ? renderHolidayTracking(selectedGroup) : null}
+            </div>
+        </div>
+
+            <Modal isOpen={editModal.isOpen} onClose={closeCentreEdit} title={`Edit holidays — ${editModal.stateDisplay}`}>
                 <form onSubmit={saveCentreHoliday} className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
                     <p className="text-xs text-[#6B7280]">
-                        Head office holidays are shown below (read only). Add new rows for your centre, or use the same date to
-                        update a head office holiday. Parents see both combined.
+                        Add new holidays or override head office: use the <strong>same date</strong> as a head office row and
+                        enter your updated name/city. Parents see head office PDF plus this combined list.
                     </p>
-                    <HolidayEntriesReadOnly
-                        rows={editGlobalEntries}
-                        title="Head office holidays"
-                        emptyMessage="Head office has not added holidays for this state yet."
-                    />
+                    {editGlobalEntries.length > 0 ? (
+                        <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                            <p className="text-xs font-semibold text-slate-700">Head office holidays (reference)</p>
+                            <ul className="space-y-1">
+                                {editGlobalEntries.map((row, index) => (
+                                    <li
+                                        key={`ho-${row.date}-${index}`}
+                                        className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700"
+                                    >
+                                        <span>
+                                            {formatHolidayDate(row.date)} — {row.name}
+                                            {row.city ? ` (${row.city})` : ""}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => overrideHeadOfficeHoliday(row)}
+                                            className="shrink-0 font-semibold text-[#2563EB] hover:underline"
+                                        >
+                                            Override
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : null}
                     <HolidayEntriesEditor rows={editHolidayEntries} onChange={setEditHolidayEntries} compact />
                     <div className="flex gap-2 pt-1">
                         <Button type="submit" disabled={editSaving} className="bg-[#FF922B] text-white">
@@ -813,7 +1118,7 @@ function HolidayListTab({ authFetch, showToast }: { authFetch: AuthFetchFn; show
                 confirmText="Yes, remove"
                 variant="danger"
             />
-        </div>
+        </>
     );
 }
 

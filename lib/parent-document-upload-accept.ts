@@ -3,6 +3,7 @@ import {
     PARENT_NEWSLETTER_FILE_ACCEPT,
     PARENT_NEWSLETTER_FILE_HINT,
 } from "@/config/parent-newsletter";
+import { validateParentDocumentFileForCategory } from "@/lib/parent-document-file-kind";
 
 /** File input `accept` string per parent app document category. */
 export function acceptForParentDocumentCategory(category: string): string | undefined {
@@ -14,7 +15,7 @@ export function acceptForParentDocumentCategory(category: string): string | unde
         case "AUDIO_RHYMES":
             return ".mp3,.wav,.m4a,.ogg,audio/*";
         case "VIDEOS":
-            return ".mp4,.webm,.mov,video/*";
+            return ".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.mp3,.wav,.m4a,.mp4,.webm,.mov,video/*,audio/*";
         case "HOLIDAY_LISTS":
             return ".pdf,application/pdf";
         default:
@@ -27,7 +28,7 @@ export function uploadHintForParentDocumentCategory(category: string): string {
         case "AUDIO_RHYMES":
             return "MP3, WAV, or other audio files";
         case "VIDEOS":
-            return "MP4 or other video files";
+            return "Videos, audio, PDFs, images, and documents";
         case PARENT_NEWSLETTER_CATEGORY:
             return PARENT_NEWSLETTER_FILE_HINT;
         case "PRESCHOOL_POLICIES":
