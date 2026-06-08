@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EventGalleryEmbed } from "@/components/ui/EventGalleryEmbed";
+import { isFranchiseEmbedUrl } from "@/lib/franchise-embed-url";
 import { resolveEventMediaPlaybackSources } from "@/lib/event-media-url";
 
 type EventGalleryVideoProps = {
@@ -19,7 +21,8 @@ type EventGalleryVideoProps = {
 };
 
 /**
- * Event gallery video — tries Django stream API, then `/public` marketing files, then `/cms-media`.
+ * Event gallery video — YouTube/Bunny iframe, direct MP4 URL, Django stream API,
+ * then `/public` marketing files, then `/cms-media`.
  */
 export function EventGalleryVideo({
     filePath,
@@ -39,7 +42,10 @@ export function EventGalleryVideo({
     const [index, setIndex] = useState(0);
     const [failed, setFailed] = useState(false);
 
+    const embed = isFranchiseEmbedUrl(filePath);
+
     useEffect(() => {
+        if (embed) return;
         const list = resolveEventMediaPlaybackSources({
             filePath,
             mediaId,
@@ -50,7 +56,17 @@ export function EventGalleryVideo({
         setSources(list);
         setIndex(0);
         setFailed(list.length === 0);
-    }, [filePath, mediaId, centreSlug, accessToken, caption]);
+    }, [filePath, mediaId, centreSlug, accessToken, caption, embed]);
+
+    if (embed) {
+        return (
+            <EventGalleryEmbed
+                embedUrl={filePath}
+                title={caption || ariaLabel || "Event video"}
+                className={className}
+            />
+        );
+    }
 
     const src = sources[index];
 

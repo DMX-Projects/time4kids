@@ -10,11 +10,23 @@ type HolidayDoc = {
     id: number;
     title: string;
     display_title?: string;
+    state?: string | null;
     state_display?: string | null;
     academic_year?: string;
+    franchise?: number | null;
     file?: string;
     file_view_path?: string | null;
     holiday_entries?: HolidayEntry[] | unknown;
+};
+
+type PreparedHoliday = {
+    id: number;
+    label: string;
+    state_display?: string | null;
+    academic_year?: string;
+    entries: HolidayEntry[];
+    hasFile: boolean;
+    openDoc: { id: number; title: string; file: string; display_title?: string };
 };
 
 const normalizeDocs = (data: unknown): HolidayDoc[] => {
@@ -27,6 +39,89 @@ const normalizeDocs = (data: unknown): HolidayDoc[] => {
     }
     return [];
 };
+
+function holidayStateKey(doc: HolidayDoc): string {
+    return `${doc.state || ""}|${doc.academic_year || ""}`;
+}
+
+function docHasFile(doc: HolidayDoc | undefined): boolean {
+    if (!doc) return false;
+    return Boolean((doc.file || "").trim() || (doc.file_view_path || "").trim());
+}
+
+function toOpenDoc(doc: HolidayDoc): PreparedHoliday["openDoc"] {
+    return {
+        id: doc.id,
+        title: doc.title,
+        display_title: doc.display_title,
+        file: doc.file || doc.file_view_path || "",
+    };
+}
+
+function toPreparedHoliday(display: HolidayDoc, pdfSource: HolidayDoc | null, entries: HolidayEntry[]): PreparedHoliday {
+    return {
+        id: display.id,
+        label: display.display_title || display.title,
+        state_display: display.state_display,
+        academic_year: display.academic_year,
+        entries,
+        hasFile: Boolean(pdfSource && docHasFile(pdfSource)),
+        openDoc: toOpenDoc(pdfSource && docHasFile(pdfSource) ? pdfSource : display),
+    };
+}
+
+/** One card per state/year — PDF from HO or centre; entries merged on centre rows. */
+function prepareHolidayDocs(docs: HolidayDoc[]): PreparedHoliday[] {
+    const globalByKey = new Map<string, HolidayDoc>();
+    const centreByKey = new Map<string, HolidayDoc>();
+    const standalone: HolidayDoc[] = [];
+
+    for (const doc of docs) {
+        const key = holidayStateKey(doc);
+        const hasKey = Boolean(key.replace("|", "").trim());
+        if (!hasKey) {
+            if (docHasFile(doc) || parseHolidayEntries(doc.holiday_entries).length > 0) {
+                standalone.push(doc);
+            }
+            continue;
+        }
+        if (doc.franchise != null) centreByKey.set(key, doc);
+        else globalByKey.set(key, doc);
+    }
+
+    const keys = new Set([...Array.from(globalByKey.keys()), ...Array.from(centreByKey.keys())]);
+    const out: PreparedHoliday[] = [];
+    const usedIds = new Set<number>();
+
+    for (const key of Array.from(keys)) {
+        const global = globalByKey.get(key);
+        const centre = centreByKey.get(key);
+        const display = centre || global;
+        if (!display) continue;
+
+        // Centre PDF wins when present; otherwise show head-office PDF for the same state/year.
+        const pdfSource: HolidayDoc | null =
+            centre && docHasFile(centre) ? centre : global && docHasFile(global) ? global : null;
+        const entries = centre
+            ? parseHolidayEntries(centre.holiday_entries)
+            : parseHolidayEntries(global?.holiday_entries);
+
+        if (!pdfSource && entries.length === 0) continue;
+
+        usedIds.add(display.id);
+        if (pdfSource?.id) usedIds.add(pdfSource.id);
+        out.push(toPreparedHoliday(display, pdfSource, entries));
+    }
+
+    for (const doc of standalone) {
+        if (usedIds.has(doc.id)) continue;
+        const entries = parseHolidayEntries(doc.holiday_entries);
+        if (!docHasFile(doc) && entries.length === 0) continue;
+        out.push(toPreparedHoliday(doc, docHasFile(doc) ? doc : null, entries));
+    }
+
+    return out.sort((a, b) => a.label.localeCompare(b.label));
+}
 
 export function ParentHolidayList() {
     const { authFetch, authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
@@ -50,18 +145,7 @@ export function ParentHolidayList() {
         };
     }, [authFetch]);
 
-    const prepared = useMemo(
-        () =>
-            docs
-                .map((doc) => ({
-                    ...doc,
-                    entries: parseHolidayEntries(doc.holiday_entries),
-                    label: doc.display_title || doc.title,
-                    hasFile: Boolean(doc.file || doc.file_view_path),
-                }))
-                .filter((doc) => doc.entries.length > 0 || doc.hasFile),
-        [docs],
-    );
+    const prepared = useMemo(() => prepareHolidayDocs(docs), [docs]);
 
     return (
         <div className="space-y-6">
@@ -82,7 +166,7 @@ export function ParentHolidayList() {
             {!loading && prepared.length > 0 ? (
                 <div className="space-y-4">
                     {prepared.map((doc) => (
-                        <section key={doc.id} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm space-y-3">
+                        <section key={`${doc.id}-${doc.label}`} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm space-y-3">
                             <div>
                                 <h2 className="text-sm font-semibold text-orange-900">{doc.label}</h2>
                                 {doc.state_display || doc.academic_year ? (
@@ -96,11 +180,7 @@ export function ParentHolidayList() {
                                 <button
                                     type="button"
                                     onClick={() =>
-                                        openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, {
-                                            id: doc.id,
-                                            title: doc.label,
-                                            file: doc.file || doc.file_view_path || "",
-                                        })
+                                        openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, doc.openDoc)
                                     }
                                     className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
                                 >

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarRange, Eye, MapPin, Pencil, Search, Trash2 } from "lucide-react";
+import { CalendarRange, CheckCircle2, AlertCircle, Eye, MapPin, Pencil, Search, Trash2, XCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
@@ -20,12 +21,36 @@ import {
 
 const pastelCard = "bg-white border border-orange-100 rounded-xl shadow-sm";
 
+type MediaAlert = { type: "success" | "error" | "warning"; message: string };
+
+function MediaUploadAlert({ alert }: { alert: MediaAlert }) {
+    const styles =
+        alert.type === "success"
+            ? "border-green-200 bg-green-50 text-green-900"
+            : alert.type === "warning"
+              ? "border-amber-200 bg-amber-50 text-amber-950"
+              : "border-red-200 bg-red-50 text-red-900";
+    const Icon = alert.type === "success" ? CheckCircle2 : alert.type === "warning" ? AlertCircle : XCircle;
+    const title =
+        alert.type === "success" ? "Uploaded successfully" : alert.type === "warning" ? "Partially uploaded" : "Upload failed";
+
+    return (
+        <div className={`flex gap-3 rounded-xl border px-4 py-3 ${styles}`} role="status" aria-live="polite">
+            <Icon className="h-5 w-5 shrink-0 mt-0.5" aria-hidden />
+            <div>
+                <p className="text-sm font-semibold">{title}</p>
+                <p className="text-sm mt-0.5 leading-relaxed">{alert.message}</p>
+            </div>
+        </div>
+    );
+}
+
 export default function FranchiseEventsPage() {
     const { tokens } = useAuth();
+    const { showToast } = useToast();
     const { profile } = useFranchiseData();
     const { events, eventMedia, addEvent, updateEvent, deleteEvent, addEventMedia, deleteEventMedia, refreshEvents } =
         useSchoolData();
-    const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
     const publicCentrePath =
         profile.slug && profile.city ? centrePublicPagePath(profile.city, profile.slug) : null;
 
@@ -40,8 +65,10 @@ export default function FranchiseEventsPage() {
     const [mediaFileInputKey, setMediaFileInputKey] = useState(0);
     const [mediaType, setMediaType] = useState<"image" | "video">("image");
     const [mediaCaption, setMediaCaption] = useState("");
+    const [videoLinkUrl, setVideoLinkUrl] = useState("");
 
-    const [error, setError] = useState<string | null>(null);
+    const [eventError, setEventError] = useState<string | null>(null);
+    const [mediaAlert, setMediaAlert] = useState<MediaAlert | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [mediaSubmitting, setMediaSubmitting] = useState(false);
     const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
@@ -70,10 +97,10 @@ export default function FranchiseEventsPage() {
         e.preventDefault();
         if (!form.title.trim()) return;
         if (!form.date?.trim()) {
-            setError("Please choose an event date.");
+            setEventError("Please choose an event date.");
             return;
         }
-        setError(null);
+        setEventError(null);
         setSubmitting(true);
         try {
             if (editingId) {
@@ -83,29 +110,66 @@ export default function FranchiseEventsPage() {
             }
             resetForm();
         } catch (err: any) {
-            setError(err?.message || "Unable to save event");
+            setEventError(err?.message || "Unable to save event");
         } finally {
             setSubmitting(false);
         }
     };
 
+    const selectedEventTitle = events.find((ev) => ev.id === mediaEventId)?.title || "this event";
+
+    const showMediaResult = (alert: MediaAlert) => {
+        setMediaAlert(alert);
+        showToast(alert.message, alert.type === "error" ? "error" : alert.type === "warning" ? "info" : "success");
+    };
+
     const handleUploadMedia = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!mediaEventId) {
-            setError("Select an event before uploading media");
+            showMediaResult({ type: "error", message: "Select an event before uploading photos or videos." });
             return;
         }
-        if (mediaFiles.length === 0) {
-            setError("Choose one or more files to upload");
+        const hasVideoLink = mediaType === "video" && videoLinkUrl.trim().length > 0;
+        const hasFiles = mediaFiles.length > 0;
+        if (mediaType === "video") {
+            if (!hasVideoLink && !hasFiles) {
+                showMediaResult({
+                    type: "error",
+                    message: "Add a YouTube/Bunny link or choose at least one video file to upload.",
+                });
+                return;
+            }
+        } else if (!hasFiles) {
+            showMediaResult({ type: "error", message: "Choose one or more image files to upload." });
             return;
         }
-        setError(null);
-        setUploadSuccess(null);
+        setMediaAlert(null);
         setMediaSubmitting(true);
         try {
+            let linkSaved = false;
             let ok = 0;
             let failed = 0;
             const sizeErrors: string[] = [];
+
+            if (hasVideoLink) {
+                try {
+                    await addEventMedia({
+                        eventId: mediaEventId,
+                        title: mediaCaption.trim() || "Video",
+                        description: mediaCaption || undefined,
+                        type: "video",
+                        url: videoLinkUrl.trim(),
+                    });
+                    linkSaved = true;
+                } catch (err: unknown) {
+                    showMediaResult({
+                        type: "error",
+                        message: err instanceof Error ? err.message : "Video link could not be saved. Check the URL and try again.",
+                    });
+                    return;
+                }
+            }
+
             for (const file of mediaFiles) {
                 const isImage = mediaType === "image";
                 if (isImage && !isImageUploadFile(file)) {
@@ -137,30 +201,52 @@ export default function FranchiseEventsPage() {
                     failed++;
                 }
             }
-            if (failed > 0 && ok === 0) {
-                setError(
+
+            const visibilityNote =
+                " It will appear on your centre page and in the parent Event Gallery after refresh.";
+
+            if (failed > 0 && ok === 0 && !linkSaved) {
+                const detail =
                     sizeErrors.length > 0
                         ? sizeErrors.slice(0, 5).join(" ")
                         : mediaType === "image"
-                          ? "Unable to upload. Use JPG, PNG, WEBP, GIF, HEIC, or other image files (max 1 MB each). You can select any number of photos at once."
-                          : "Unable to upload. Use MP4, WEBM, MOV, or other video files.",
-                );
+                          ? "Use JPG, PNG, WEBP, GIF, or HEIC images (max 1 MB each)."
+                          : "Use MP4, WEBM, MOV, or other supported video files.";
+                showMediaResult({
+                    type: "error",
+                    message: `Nothing was uploaded to “${selectedEventTitle}”. ${detail}`,
+                });
             } else if (failed > 0) {
-                const extra =
-                    sizeErrors.length > 0 ? ` ${sizeErrors.slice(0, 3).join(" ")}` : "";
-                setError(`Uploaded ${ok} file(s); ${failed} failed (wrong type, over 1 MB, or server error).${extra}`);
+                const extra = sizeErrors.length > 0 ? ` ${sizeErrors.slice(0, 3).join(" ")}` : "";
+                showMediaResult({
+                    type: "warning",
+                    message: `${ok} file${ok === 1 ? "" : "s"} uploaded to “${selectedEventTitle}”, but ${failed} failed (wrong type, over 1 MB, or server error).${extra}${visibilityNote}`,
+                });
             }
+
+            const successParts: string[] = [];
+            if (linkSaved) successParts.push("Video link saved");
             if (ok > 0) {
                 await refreshEvents();
-                setUploadSuccess(
-                    `Uploaded ${ok} file${ok === 1 ? "" : "s"}. Visible on your centre page (Life at…) and in the parent app after parents refresh Event Gallery.`,
-                );
+                const label = mediaType === "image" ? "photo" : "video";
+                successParts.push(`${ok} ${label}${ok === 1 ? "" : "s"} uploaded`);
             }
-            setMediaCaption("");
-            setMediaFiles([]);
-            setMediaFileInputKey((k) => k + 1);
+            if (successParts.length > 0 && failed === 0) {
+                const msg = `${successParts.join(" and ")} to “${selectedEventTitle}”.${visibilityNote}`;
+                showMediaResult({ type: "success", message: msg });
+            }
+
+            if (linkSaved || ok > 0) {
+                setMediaCaption("");
+                setMediaFiles([]);
+                setMediaFileInputKey((k) => k + 1);
+                setVideoLinkUrl("");
+            }
         } catch (err: any) {
-            setError(err?.message || "Unable to upload media");
+            showMediaResult({
+                type: "error",
+                message: err?.message || "Upload failed. Please try again.",
+            });
         } finally {
             setMediaSubmitting(false);
         }
@@ -183,8 +269,8 @@ export default function FranchiseEventsPage() {
                         &ldquo;Life at [your centre]&rdquo;.
                     </p>
                     <p className="text-xs text-orange-600 mt-1">
-                        Photos: <strong>max 1 MB each</strong>, upload <strong>as many as you need</strong> in one go
-                        (multi-select or add more batches).
+                        Photos: <strong>max 1 MB each</strong>, upload <strong>as many as you need</strong> in one go.
+                        Videos: paste a <strong>YouTube or Bunny link</strong> and/or <strong>upload MP4 files</strong> (Type → Video).
                     </p>
                     {publicCentrePath && (
                         <p className="text-sm text-orange-800 mt-2">
@@ -232,7 +318,7 @@ export default function FranchiseEventsPage() {
                     </div>
                     <span className="px-3 py-1 text-xs font-semibold rounded-full bg-orange-50 text-orange-700">{events.length} total</span>
                 </div>
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {eventError && <p className="text-sm text-red-600">{eventError}</p>}
                 <form className="space-y-3" onSubmit={handleSaveEvent}>
                     <div className="grid md:grid-cols-2 gap-3">
                         <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
@@ -286,11 +372,15 @@ export default function FranchiseEventsPage() {
                                         onClick={async () => {
                                             if (!confirm("Remove this photo or video from the event?")) return;
                                             setDeletingMediaId(m.id);
-                                            setError(null);
+                                            setMediaAlert(null);
                                             try {
                                                 await deleteEventMedia(editingId, m.id);
+                                                showMediaResult({ type: "success", message: "Photo or video removed from this event." });
                                             } catch (err: unknown) {
-                                                setError(err instanceof Error ? err.message : "Could not remove media");
+                                                showMediaResult({
+                                                    type: "error",
+                                                    message: err instanceof Error ? err.message : "Could not remove media.",
+                                                });
                                             } finally {
                                                 setDeletingMediaId(null);
                                             }
@@ -317,11 +407,15 @@ export default function FranchiseEventsPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-xs uppercase font-semibold text-orange-600">Add Media</p>
-                        <h2 className="text-lg font-semibold text-orange-900">Upload photos or videos</h2>
+                        <h2 className="text-lg font-semibold text-orange-900">
+                            {mediaType === "video" ? "Add videos (link or upload)" : "Upload photos"}
+                        </h2>
                     </div>
                 </div>
-                {error && <p className="text-sm text-red-600">{error}</p>}
-                {uploadSuccess && <p className="text-sm text-green-700">{uploadSuccess}</p>}
+                {mediaAlert ? <MediaUploadAlert alert={mediaAlert} /> : null}
+                {mediaSubmitting ? (
+                    <p className="text-sm text-orange-700 font-medium">Uploading… please wait.</p>
+                ) : null}
                 <form className="space-y-3" onSubmit={handleUploadMedia}>
                     <div className="grid md:grid-cols-2 gap-3">
                         <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
@@ -339,41 +433,83 @@ export default function FranchiseEventsPage() {
                                 ))}
                             </select>
                         </label>
-                        <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
-                            Files{" "}
-                            {mediaType === "image"
-                                ? "(select any number — max 1 MB each)"
-                                : "(multiple videos)"}
-                            <input
-                                key={mediaFileInputKey}
-                                type="file"
-                                accept={mediaType === "image" ? IMAGE_FILE_ACCEPT : VIDEO_FILE_ACCEPT}
-                                multiple
-                                onChange={(e) => {
-                                    const picked = Array.from(e.target.files || []);
-                                    setMediaFiles((prev) => [...prev, ...picked]);
-                                    e.target.value = "";
-                                }}
-                                className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
-                            />
-                            {mediaFiles.length > 0 && (
-                                <span className="text-[11px] font-normal text-orange-600">
-                                    {mediaFiles.length} file{mediaFiles.length === 1 ? "" : "s"} selected
-                                    {mediaType === "image" ? " · 1 MB max per image" : ""}
-                                    {" · "}
-                                    <button
-                                        type="button"
-                                        className="underline hover:text-orange-800"
-                                        onClick={() => {
-                                            setMediaFiles([]);
-                                            setMediaFileInputKey((k) => k + 1);
+                        {mediaType === "image" ? (
+                            <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
+                                Files (select any number — max 1 MB each)
+                                <input
+                                    key={mediaFileInputKey}
+                                    type="file"
+                                    accept={IMAGE_FILE_ACCEPT}
+                                    multiple
+                                    onChange={(e) => {
+                                        const picked = Array.from(e.target.files || []);
+                                        setMediaFiles((prev) => [...prev, ...picked]);
+                                        e.target.value = "";
+                                    }}
+                                    className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                                />
+                                {mediaFiles.length > 0 && (
+                                    <span className="text-[11px] font-normal text-orange-600">
+                                        {mediaFiles.length} file{mediaFiles.length === 1 ? "" : "s"} selected · 1 MB max per image ·{" "}
+                                        <button
+                                            type="button"
+                                            className="underline hover:text-orange-800"
+                                            onClick={() => {
+                                                setMediaFiles([]);
+                                                setMediaFileInputKey((k) => k + 1);
+                                            }}
+                                        >
+                                            Clear all
+                                        </button>
+                                    </span>
+                                )}
+                            </label>
+                        ) : (
+                            <>
+                                <label className="flex flex-col gap-1 text-xs font-medium text-orange-700 md:col-span-2">
+                                    Video link (YouTube or Bunny) — optional
+                                    <input
+                                        value={videoLinkUrl}
+                                        onChange={(e) => setVideoLinkUrl(e.target.value)}
+                                        placeholder="https://www.youtube.com/watch?v=… or Bunny iframe embed URL"
+                                        className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                                    />
+                                    <span className="text-[11px] font-normal text-orange-600">
+                                        Paste a watch link, shorts URL, or full Bunny iframe embed code.
+                                    </span>
+                                </label>
+                                <label className="flex flex-col gap-1 text-xs font-medium text-orange-700 md:col-span-2">
+                                    Upload video file(s) — optional
+                                    <input
+                                        key={mediaFileInputKey}
+                                        type="file"
+                                        accept={VIDEO_FILE_ACCEPT}
+                                        multiple
+                                        onChange={(e) => {
+                                            const picked = Array.from(e.target.files || []);
+                                            setMediaFiles((prev) => [...prev, ...picked]);
+                                            e.target.value = "";
                                         }}
-                                    >
-                                        Clear all
-                                    </button>
-                                </span>
-                            )}
-                        </label>
+                                        className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                                    />
+                                    {mediaFiles.length > 0 && (
+                                        <span className="text-[11px] font-normal text-orange-600">
+                                            {mediaFiles.length} video{mediaFiles.length === 1 ? "" : "s"} selected ·{" "}
+                                            <button
+                                                type="button"
+                                                className="underline hover:text-orange-800"
+                                                onClick={() => {
+                                                    setMediaFiles([]);
+                                                    setMediaFileInputKey((k) => k + 1);
+                                                }}
+                                            >
+                                                Clear all
+                                            </button>
+                                        </span>
+                                    )}
+                                </label>
+                            </>
+                        )}
                         <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
                             Type
                             <select
@@ -382,6 +518,8 @@ export default function FranchiseEventsPage() {
                                     setMediaType(e.target.value as "image" | "video");
                                     setMediaFiles([]);
                                     setMediaFileInputKey((k) => k + 1);
+                                    setVideoLinkUrl("");
+                                    setMediaAlert(null);
                                 }}
                                 className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
                             >
@@ -390,22 +528,36 @@ export default function FranchiseEventsPage() {
                             </select>
                         </label>
                         <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
-                            Caption (optional, same for all)
+                            {mediaType === "video" ? "Caption (optional)" : "Caption (optional, same for all)"}
                             <input
                                 value={mediaCaption}
                                 onChange={(e) => setMediaCaption(e.target.value)}
                                 className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
-                                placeholder="Short description applied to each file"
+                                placeholder={
+                                    mediaType === "video"
+                                        ? "Short label for this video"
+                                        : "Short description applied to each file"
+                                }
                             />
                         </label>
                     </div>
                     <div className="flex gap-2">
                         <Button type="submit" size="sm" disabled={mediaSubmitting}>
                             {mediaSubmitting
-                                ? "Uploading..."
-                                : mediaFiles.length > 1
-                                  ? `Upload ${mediaFiles.length} files`
-                                  : "Upload"}
+                                ? "Saving..."
+                                : mediaType === "video"
+                                  ? videoLinkUrl.trim() && mediaFiles.length > 0
+                                      ? "Save link & upload"
+                                      : videoLinkUrl.trim()
+                                        ? "Save video link"
+                                        : mediaFiles.length > 1
+                                          ? `Upload ${mediaFiles.length} videos`
+                                          : mediaFiles.length === 1
+                                            ? "Upload video"
+                                            : "Add video"
+                                  : mediaFiles.length > 1
+                                    ? `Upload ${mediaFiles.length} files`
+                                    : "Upload"}
                         </Button>
                         <Button
                             type="button"
@@ -416,7 +568,9 @@ export default function FranchiseEventsPage() {
                                 setMediaCaption("");
                                 setMediaFiles([]);
                                 setMediaFileInputKey((k) => k + 1);
+                                setVideoLinkUrl("");
                                 setMediaEventId(null);
+                                setMediaAlert(null);
                             }}
                         >
                             Reset
@@ -543,11 +697,15 @@ export default function FranchiseEventsPage() {
                                                     onClick={async () => {
                                                         if (!viewing?.id || !confirm("Remove this photo or video from the event?")) return;
                                                         setDeletingMediaId(m.id);
-                                                        setError(null);
+                                                        setMediaAlert(null);
                                                         try {
                                                             await deleteEventMedia(viewing.id, m.id);
+                                                            showMediaResult({ type: "success", message: "Photo or video removed from this event." });
                                                         } catch (err: unknown) {
-                                                            setError(err instanceof Error ? err.message : "Could not remove media");
+                                                            showMediaResult({
+                                                                type: "error",
+                                                                message: err instanceof Error ? err.message : "Could not remove media.",
+                                                            });
                                                         } finally {
                                                             setDeletingMediaId(null);
                                                         }

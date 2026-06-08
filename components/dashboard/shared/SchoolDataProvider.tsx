@@ -5,7 +5,16 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { apiUrl, jsonHeaders, mediaUrl, schoolGalleryMediaUrl, toApiError } from "@/lib/api-client";
 import { buildEventMediaFileViewUrl } from "@/lib/event-media-url";
+import {
+    embedEventVideoLinks,
+    EVENT_VIDEO_LINK_ID_PREFIX,
+    EventVideoLink,
+    isEventVideoLinkMediaId,
+    parseEventVideoLinks,
+    stripEventVideoLinks,
+} from "@/lib/event-gallery-video-links";
 import { validateEventGalleryImageSize } from "@/lib/franchise-centre-upload";
+import { isFranchiseEmbedUrl, parseEmbedInput, resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
 import {
     fetchAllApiList,
     mapApiGrade,
@@ -57,6 +66,8 @@ export type EventRecord = {
     venue: string;
     notes?: string;
     rsvp?: string;
+    /** YouTube / Bunny links stored in event description (not shown in notes field). */
+    videoLinks?: EventVideoLink[];
 };
 
 export type EventMedia = {
@@ -242,12 +253,26 @@ const toDateOnly = (raw: string | undefined): string => {
     return m ? m[1] : "";
 };
 
-const mapEvent = (ev: ApiEvent): EventRecord => ({
-    id: String(ev.id),
-    title: ev.title,
-    date: toDateOnly(ev.start_date) || toDateOnly(ev.end_date) || "",
-    venue: ev.location || "",
-    notes: ev.description || "",
+const mapEvent = (ev: ApiEvent): EventRecord => {
+    const description = ev.description || "";
+    return {
+        id: String(ev.id),
+        title: ev.title,
+        date: toDateOnly(ev.start_date) || toDateOnly(ev.end_date) || "",
+        venue: ev.location || "",
+        notes: stripEventVideoLinks(description),
+        videoLinks: parseEventVideoLinks(description),
+    };
+};
+
+const mapEventVideoLinkMedia = (link: EventVideoLink, eventId: string): EventMedia => ({
+    id: link.id,
+    type: "video",
+    title: link.title?.trim() || link.description?.trim() || "Video",
+    url: link.url,
+    filePath: link.url,
+    description: link.description,
+    eventId,
 });
 
 const mapMedia = (media: ApiEventMedia, eventId?: string, accessToken?: string | null): EventMedia => {
@@ -445,11 +470,14 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         (items: ApiEvent[]) => {
             const accessToken = tokens?.access ?? null;
             const mappedEvents = items.map(mapEvent);
-            const flattenedMedia = items.flatMap((ev) =>
+            const apiMedia = items.flatMap((ev) =>
                 (ev.media || []).map((m) => mapMedia(m, String(ev.id), accessToken)),
             );
+            const linkMedia = mappedEvents.flatMap((ev) =>
+                (ev.videoLinks || []).map((link) => mapEventVideoLinkMedia(link, ev.id)),
+            );
             setEvents(mappedEvents);
-            setEventMedia(flattenedMedia);
+            setEventMedia([...apiMedia, ...linkMedia]);
         },
         [tokens?.access],
     );
@@ -545,9 +573,10 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         if (!start) {
             throw new Error("Please choose a valid event date.");
         }
+        const existing = events.find((e) => e.id === id);
         const body = {
             title: payload.title,
-            description: payload.notes || "",
+            description: embedEventVideoLinks(payload.notes || "", existing?.videoLinks || []),
             start_date: start,
             end_date: start,
             location: payload.venue,
@@ -583,6 +612,34 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         await refreshEvents();
     };
 
+    const persistEventVideoLinks = async (eventId: string, links: EventVideoLink[]) => {
+        const event = events.find((e) => e.id === eventId);
+        if (!event) throw new Error("Event not found");
+        const start = toDateOnly(event.date);
+        if (!start) throw new Error("Event date is missing");
+        const body = {
+            title: event.title,
+            description: embedEventVideoLinks(event.notes || "", links),
+            start_date: start,
+            end_date: start,
+            location: event.venue,
+        };
+        const updated = await authFetch<ApiEvent>(`/events/franchise/${eventId}/`, {
+            method: "PATCH",
+            headers: jsonHeaders(),
+            body: JSON.stringify(body),
+        });
+        const mapped = mapEvent(updated);
+        setEvents((prev) => prev.map((e) => (e.id === eventId ? mapped : e)));
+        setEventMedia((prev) => {
+            const without = prev.filter((m) => m.eventId !== eventId || !isEventVideoLinkMediaId(m.id));
+            const nextLinks = (mapped.videoLinks || []).map((link) => mapEventVideoLinkMedia(link, eventId));
+            const apiForEvent = prev.filter((m) => m.eventId === eventId && !isEventVideoLinkMediaId(m.id));
+            const other = prev.filter((m) => m.eventId !== eventId);
+            return [...other, ...apiForEvent, ...nextLinks];
+        });
+    };
+
     const addEventMedia = async (payload: AddEventMediaInput) => {
         if ("file" in payload && payload.file) {
             return addMedia(payload);
@@ -594,27 +651,32 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             eventId: string;
             description?: string;
         };
-        if (p.url?.trim()) {
-            setEventMedia((prev) => [
-                {
-                    id: `ext-${Date.now()}`,
-                    type: p.type,
-                    title: p.title || "Link",
-                    url: p.url,
-                    filePath: p.url,
-                    description: p.description,
-                    eventId: p.eventId,
-                },
-                ...prev,
-            ]);
-            return;
+        const rawUrl = parseEmbedInput(p.url || "");
+        if (!rawUrl) throw new Error("Paste a YouTube, Bunny, or video link");
+        const normalized = resolveFranchiseEmbedSrc(rawUrl) || rawUrl;
+        if (p.type === "video" && !isFranchiseEmbedUrl(normalized) && !/^https?:\/\//i.test(normalized)) {
+            throw new Error("Could not read that link. Paste a YouTube or Bunny embed URL.");
         }
-        throw new Error("Upload a file or provide a media URL");
+        if (!p.eventId) throw new Error("Select an event before adding a video link");
+
+        const event = events.find((e) => e.id === p.eventId);
+        if (!event) throw new Error("Event not found");
+
+        const newLink: EventVideoLink = {
+            id: `${EVENT_VIDEO_LINK_ID_PREFIX}${Date.now()}`,
+            url: normalized,
+            title: p.title?.trim() || undefined,
+            description: p.description?.trim() || undefined,
+        };
+        await persistEventVideoLinks(p.eventId, [...(event.videoLinks || []), newLink]);
     };
 
     const deleteEventMedia = async (eventId: string, mediaId: string) => {
-        if (mediaId.startsWith("ext-")) {
-            setEventMedia((prev) => prev.filter((m) => !(m.eventId === eventId && m.id === mediaId)));
+        if (isEventVideoLinkMediaId(mediaId) || mediaId.startsWith("ext-")) {
+            const event = events.find((e) => e.id === eventId);
+            if (!event) return;
+            const links = (event.videoLinks || []).filter((l) => l.id !== mediaId);
+            await persistEventVideoLinks(eventId, links);
             return;
         }
         await authFetch(`/events/franchise/${eventId}/media/${mediaId}/`, { method: "DELETE" });

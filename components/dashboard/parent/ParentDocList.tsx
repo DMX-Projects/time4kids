@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, Play } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { openParentDocumentFile } from "@/lib/parent-document-file-open";
+import { fileMatchesParentDocumentCategory, parentDocumentFileKind } from "@/lib/parent-document-file-kind";
 
-type DocRow = { id: number; title: string; file: string };
+type DocRow = { id: number; title: string; file: string; display_title?: string; file_view_path?: string | null };
 type ParentDocRow = DocRow & { category?: string };
 
 const normalizeDocs = (data: unknown): DocRow[] => {
@@ -25,12 +26,20 @@ export function ParentDocList({
     description,
     emptyMessage = "Nothing uploaded yet. Your centre can add PDFs from the franchise portal.",
     headerIcon,
+    videoOnly = false,
+    audioOnly = false,
+    mixedMedia = false,
 }: {
     category: string;
     title: string;
     description: string;
     emptyMessage?: string;
     headerIcon?: ReactNode;
+    /** @deprecated Use mixedMedia for Watch • Hear • Learn */
+    videoOnly?: boolean;
+    audioOnly?: boolean;
+    /** Watch • Hear • Learn — videos, audio, PDFs, and documents together. */
+    mixedMedia?: boolean;
 }) {
     const { authFetch, authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
     const [docs, setDocs] = useState<DocRow[]>([]);
@@ -41,14 +50,26 @@ export function ParentDocList({
         (async () => {
             try {
                 const data = await authFetch<unknown>(`/documents/parent/documents/category/${category}/`);
-                if (!cancelled) setDocs(normalizeDocs(data));
+                if (!cancelled) {
+                    setDocs(
+                        normalizeDocs(data).filter((d) =>
+                            fileMatchesParentDocumentCategory(d.file || "", category),
+                        ),
+                    );
+                }
             } catch {
                 // Fallback for environments where category endpoint is stricter/misconfigured.
                 try {
                     const all = await authFetch<unknown>("/documents/parent/documents/");
                     const list = normalizeDocs(all) as ParentDocRow[];
                     const filtered = list.filter((d) => String(d.category || "").toUpperCase() === category.toUpperCase());
-                    if (!cancelled) setDocs(filtered);
+                    if (!cancelled) {
+                        setDocs(
+                            filtered.filter((d) =>
+                                fileMatchesParentDocumentCategory(d.file || "", category),
+                            ),
+                        );
+                    }
                 } catch {
                     if (!cancelled) setDocs([]);
                 }
@@ -80,15 +101,73 @@ export function ParentDocList({
             <ul className="space-y-3">
                 {docs.map((d) => (
                     <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-100 bg-white p-4 shadow-sm">
-                        <span className="font-medium text-orange-900 text-sm">{d.title}</span>
-                        <button
-                            type="button"
-                            onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
-                            className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
-                        >
-                            <Download className="w-4 h-4" />
-                            View / download
-                        </button>
+                        <span className="font-medium text-orange-900 text-sm">{d.display_title || d.title}</span>
+                        {mixedMedia ? (
+                            (() => {
+                                const kind = parentDocumentFileKind(d.file || "");
+                                if (kind === "video") {
+                                    return (
+                                        <button
+                                            type="button"
+                                            onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
+                                            className="inline-flex items-center gap-2 rounded-full bg-orange-600 px-4 py-2 text-xs font-semibold text-white border border-orange-700 hover:bg-orange-700"
+                                        >
+                                            <Play className="w-4 h-4" />
+                                            Play video
+                                        </button>
+                                    );
+                                }
+                                if (kind === "audio") {
+                                    return (
+                                        <button
+                                            type="button"
+                                            onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
+                                            className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            Play audio
+                                        </button>
+                                    );
+                                }
+                                return (
+                                    <button
+                                        type="button"
+                                        onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
+                                        className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        View / download
+                                    </button>
+                                );
+                            })()
+                        ) : videoOnly ? (
+                            <button
+                                type="button"
+                                onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
+                                className="inline-flex items-center gap-2 rounded-full bg-orange-600 px-4 py-2 text-xs font-semibold text-white border border-orange-700 hover:bg-orange-700"
+                            >
+                                <Play className="w-4 h-4" />
+                                Play video
+                            </button>
+                        ) : audioOnly ? (
+                            <button
+                                type="button"
+                                onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
+                                className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
+                            >
+                                <Download className="w-4 h-4" />
+                                Play audio
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
+                                className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
+                            >
+                                <Download className="w-4 h-4" />
+                                View / download
+                            </button>
+                        )}
                     </li>
                 ))}
             </ul>

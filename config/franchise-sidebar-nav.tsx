@@ -3,7 +3,6 @@
  *
  * - Array order = top-to-bottom in the sidebar.
  * - Remove an entry to hide that link everywhere under the franchise dashboard.
- * - Set ``SHOW_FRANCHISE_SIDEBAR_NAV`` to ``true`` when the full sidebar should appear again.
  */
 
 import {
@@ -17,10 +16,7 @@ import {
 } from "lucide-react";
 import type { DashboardNavItem } from "@/components/layout/DashboardShell";
 
-/** Set to `true` to show the franchise left nav again. */
-export const SHOW_FRANCHISE_SIDEBAR_NAV = true;
-
-const FRANCHISE_SIDEBAR_NAV_ALL: DashboardNavItem[] = [
+export const FRANCHISE_SIDEBAR_NAV: DashboardNavItem[] = [
     { label: "Dashboard", href: "/dashboard/franchise/", icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: "Parent Records", href: "/dashboard/franchise/parents/", icon: <ClipboardList className="w-4 h-4" /> },
     { label: "Students", href: "/dashboard/franchise/students/", icon: <UserCircle className="w-4 h-4" /> },
@@ -32,5 +28,3 @@ const FRANCHISE_SIDEBAR_NAV_ALL: DashboardNavItem[] = [
     { label: "Enquiries", href: "/dashboard/franchise/enquiries/", icon: <MessageSquare className="w-4 h-4" /> },
     { label: "Profile", href: "/dashboard/franchise/profile/", icon: <UserCircle className="w-4 h-4" /> },
 ];
-
-export const FRANCHISE_SIDEBAR_NAV: DashboardNavItem[] = SHOW_FRANCHISE_SIDEBAR_NAV ? FRANCHISE_SIDEBAR_NAV_ALL : [];
