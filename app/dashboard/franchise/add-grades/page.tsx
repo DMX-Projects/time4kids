@@ -1,15 +1,62 @@
 "use client";
 
-import { useState } from "react";
-import { ClipboardList, Upload } from "lucide-react";
+import { useState, useRef } from "react";
+import { ClipboardList, Upload, Download, FileSpreadsheet } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useSchoolData, BulkGradeRow } from "@/components/dashboard/shared/SchoolDataProvider";
+
+const CSV_HEADERS = "roll_number,subject,term,grade,score,grade_level,section";
+const CSV_SAMPLE = `A101,Math,Term 1,A,92,KG-2,A
+A102,English,Term 1,B+,88,KG-1,B
+A103,Science,Term 2,A+,97,KG-2,A`;
 
 export default function AddGradesPage() {
     const { addGradesBulk, grades } = useSchoolData();
     const [form, setForm] = useState({ rollNumber: "", studentName: "", gradeLevel: "", section: "", subject: "", term: "Term 1", grade: "", score: "" });
     const [bulkText, setBulkText] = useState("");
-    const [bulkResult, setBulkResult] = useState<string | null>(null);
+    const [bulkResult, setBulkResult] = useState<{ type: "success" | "error" | "loading"; msg: string } | null>(null);
+    const [singleResult, setSingleResult] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const showBulkResult = (type: "success" | "error", msg: string) => {
+        setBulkResult({ type, msg });
+        setTimeout(() => setBulkResult(null), 5000);
+    };
+
+    const showSingleResult = (type: "success" | "error", msg: string) => {
+        setSingleResult({ type, msg });
+        setTimeout(() => setSingleResult(null), 4000);
+    };
+
+    const downloadTemplate = () => {
+        const content = CSV_HEADERS + "\n" + CSV_SAMPLE;
+        const blob = new Blob([content], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "grades_template.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleCSVFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const text = ev.target?.result as string;
+            // Strip header row if it matches our template header
+            const lines = text.split(/\r?\n/).filter(Boolean);
+            const firstLine = lines[0]?.toLowerCase().replace(/\s/g, "");
+            const isHeader = firstLine.startsWith("roll") || firstLine.startsWith("rollnumber");
+            const dataLines = isHeader ? lines.slice(1) : lines;
+            setBulkText(dataLines.join("\n"));
+            setBulkResult(null);
+        };
+        reader.readAsText(file);
+        // Reset input so same file can be re-uploaded
+        e.target.value = "";
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -27,6 +74,7 @@ export default function AddGradesPage() {
             },
         ]);
         setForm({ rollNumber: "", studentName: "", gradeLevel: "", section: "", subject: "", term: "Term 1", grade: "", score: "" });
+        showSingleResult("success", `Grade added successfully for Roll No. ${form.rollNumber}`);
     };
 
     const parsedRows: BulkGradeRow[] = bulkText
@@ -39,15 +87,35 @@ export default function AddGradesPage() {
         });
 
     const submitBulk = async () => {
-        setBulkResult("Uploading...");
-        const result = await addGradesBulk(parsedRows);
-        setBulkResult(`Inserted ${result.inserted}, skipped ${result.skipped}`);
+        setBulkResult({ type: "loading", msg: "Uploading grades, please wait..." });
+        try {
+            const result = await addGradesBulk(parsedRows);
+            if (result.inserted > 0) {
+                showBulkResult("success", `✅ Successfully inserted ${result.inserted} grade${result.inserted !== 1 ? "s" : ""}${result.skipped > 0 ? `. ${result.skipped} row(s) skipped (duplicates or invalid).` : "!"}`);
+                setBulkText("");
+            } else {
+                showBulkResult("error", `⚠️ No grades inserted. ${result.skipped} row(s) were skipped (check for duplicates or missing roll numbers).`);
+            }
+        } catch {
+            showBulkResult("error", "❌ Upload failed. Please check your CSV format and try again.");
+        }
     };
 
     const recentGrades = grades.slice(-6).reverse();
 
     return (
         <div className="space-y-6">
+            {/* Single grade success banner */}
+            {singleResult && (
+                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border ${
+                    singleResult.type === "success"
+                        ? "bg-green-50 border-green-200 text-green-800"
+                        : "bg-red-50 border-red-200 text-red-800"
+                }`}>
+                    <span>{singleResult.msg}</span>
+                    <button onClick={() => setSingleResult(null)} className="ml-auto text-lg leading-none opacity-60 hover:opacity-100">&times;</button>
+                </div>
+            )}
             <Section
                 id="add-grades"
                 title="Add Marks / Grades"
@@ -80,20 +148,75 @@ export default function AddGradesPage() {
 
             <Section
                 id="bulk-upload"
-                title="Bulk Upload (CSV rows)"
-                description="Paste rows: roll, subject, term, grade, score, gradeLevel, section"
+                title="Bulk Upload (CSV)"
+                description="Download the template, fill it in, then upload the CSV file — or paste rows directly."
                 icon={<Upload className="w-5 h-5 text-orange-500" />}
             >
+                {/* Action buttons row */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={downloadTemplate}
+                        className="flex items-center gap-1.5"
+                    >
+                        <Download className="w-4 h-4" />
+                        Download CSV Template
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1.5"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Upload CSV File
+                    </Button>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv,text/csv"
+                        className="hidden"
+                        onChange={handleCSVFile}
+                    />
+                </div>
+
+                <p className="text-xs text-orange-600 mb-2">
+                    CSV columns: <code className="bg-orange-50 px-1 rounded">roll_number, subject, term, grade, score, grade_level, section</code>
+                </p>
+
                 <textarea
-                    className="w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none min-h-[120px]"
-                    placeholder="A101,Math,Term 1,A,92,KG-2,A\nA102,English,Term 1,B+,88,KG-1,B"
+                    className="w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none min-h-[140px] font-mono"
+                    placeholder={`A101,Math,Term 1,A,92,KG-2,A\nA102,English,Term 1,B+,88,KG-1,B`}
                     value={bulkText}
                     onChange={(e) => setBulkText(e.target.value)}
                 />
-                <div className="flex gap-2 mt-2">
-                    <Button type="button" size="sm" onClick={submitBulk}>Upload</Button>
-                    {bulkResult && <span className="text-xs text-orange-700">{bulkResult}</span>}
+                <div className="flex items-center gap-3 mt-2">
+                    <Button type="button" size="sm" onClick={submitBulk} disabled={!bulkText.trim() || bulkResult?.type === "loading"}>
+                        {bulkResult?.type === "loading" ? "Uploading..." : "Submit Bulk Upload"}
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" onClick={() => { setBulkText(""); setBulkResult(null); }}>
+                        Clear
+                    </Button>
                 </div>
+
+                {/* Bulk upload result banner */}
+                {bulkResult && (
+                    <div className={`flex items-start gap-3 px-4 py-3 rounded-xl text-sm font-medium border mt-3 ${
+                        bulkResult.type === "success"
+                            ? "bg-green-50 border-green-200 text-green-800"
+                            : bulkResult.type === "error"
+                            ? "bg-red-50 border-red-200 text-red-800"
+                            : "bg-orange-50 border-orange-200 text-orange-800"
+                    }`}>
+                        <span className="flex-1">{bulkResult.msg}</span>
+                        {bulkResult.type !== "loading" && (
+                            <button onClick={() => setBulkResult(null)} className="text-lg leading-none opacity-60 hover:opacity-100">&times;</button>
+                        )}
+                    </div>
+                )}
             </Section>
 
             <Section
