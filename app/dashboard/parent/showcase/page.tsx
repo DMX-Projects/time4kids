@@ -44,7 +44,7 @@ export default function ShowcasePage() {
                     <div>
                         <h1 className="text-lg font-semibold text-orange-900">Event Gallery</h1>
                         <p className="text-sm text-orange-700">
-                            Photos and videos from your centre. Use the tabs to view photos or videos only.
+                            Photos and videos for your child&apos;s class (and centre-wide events). Filter by class, then photos or videos.
                         </p>
                     </div>
                     <button
@@ -57,7 +57,7 @@ export default function ShowcasePage() {
                 </div>
             </section>
 
-            <ParentEventGalleryGrid media={eventMedia} eventTitleById={eventTitleById} />
+            <ParentEventGalleryGrid media={eventMedia} events={events} eventTitleById={eventTitleById} />
         </div>
     );
 }

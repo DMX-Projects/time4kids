@@ -24,6 +24,18 @@ function normState(s: string | null | undefined): string {
     return (s || "").trim().toUpperCase();
 }
 
+function normTitle(s: string | null | undefined): string {
+    return (s || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\.pdf$/i, "")
+        .replace(/\s*-\s*(video|audio)$/i, "");
+}
+
+function docTitle(doc: ParentDocumentForMatch): string {
+    return (doc.display_title || doc.title || "").trim();
+}
+
 /** Match a checklist slot to an uploaded parent document (global vs centre, state for holidays). */
 export function matchParentDocToSlot(
     slot: ParentAppDocumentSlot,
@@ -38,6 +50,17 @@ export function matchParentDocToSlot(
         const global = byState.find((d) => d.franchise == null);
         if (global) return global;
         return byState[0];
+    }
+
+    if (slot.suggestedTitle) {
+        const want = normTitle(slot.suggestedTitle);
+        const byTitle = inCategory.filter((d) => normTitle(docTitle(d)) === want);
+        if (byTitle.length) {
+            if (slot.franchiseId === null) {
+                return byTitle.find((d) => d.franchise == null) ?? byTitle[0];
+            }
+            return byTitle.find((d) => d.franchise === slot.franchiseId) ?? byTitle[0];
+        }
     }
 
     if (slot.franchiseId === null) {

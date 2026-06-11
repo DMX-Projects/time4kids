@@ -46,11 +46,14 @@ export interface Franchise {
         description: string;
         start_date: string;
         year: number;
+        class_name?: string;
+        audience_label?: string;
         media: {
             id: number;
             file: string;
-            media_type: 'IMAGE' | 'VIDEO';
+            media_type: 'IMAGE' | 'VIDEO' | 'URL';
             caption: string;
+            is_external_url?: boolean;
         }[];
     }[];
 }

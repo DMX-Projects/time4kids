@@ -83,7 +83,7 @@ export function eventVideoLinkGalleryId(linkId: string): number {
 export type EventWithDescriptionAndMedia = {
     id: number;
     description?: string;
-    media: { id: number; file: string; media_type: "IMAGE" | "VIDEO"; caption: string }[];
+    media: { id: number; file: string; media_type: "IMAGE" | "VIDEO" | "URL"; caption: string }[];
 };
 
 /** Merge embed/link videos from event description into `media` for centre-page gallery. */
@@ -94,7 +94,7 @@ export function mergeEventGalleryVideoLinks<T extends EventWithDescriptionAndMed
         const extra = links.map((link) => ({
             id: eventVideoLinkGalleryId(link.id),
             file: link.url.trim(),
-            media_type: "VIDEO" as const,
+            media_type: "URL" as const,
             caption: link.description?.trim() || link.title?.trim() || "Video",
         }));
         return { ...ev, media: [...ev.media, ...extra] };

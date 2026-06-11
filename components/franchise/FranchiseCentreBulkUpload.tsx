@@ -167,7 +167,7 @@ export function FranchiseCentreBulkUpload({
                     } else if (kind === "document") {
                         result.skipped++;
                         result.errors.push(
-                            `${file.name}: parent PDFs/docs are uploaded by head office (Admin → Parent app documents)`,
+                            `${file.name}: parent PDFs/docs are uploaded by head office (Admin → Parent documents)`,
                         );
                     } else if (kind === "skip") {
                         result.skipped++;

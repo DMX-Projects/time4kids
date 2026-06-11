@@ -245,6 +245,7 @@ export default function AdminParentDocumentsPage() {
                 category: ctx.category,
                 title: ctx.suggestedTitle || "",
                 state: ctx.state || "",
+                order: ctx.suggestedOrder ?? 0,
             });
         }
         setFile(null);
@@ -317,7 +318,7 @@ export default function AdminParentDocumentsPage() {
                     : Number(form.franchise_id);
             const resolvedTitle = isHoliday
                 ? editing?.title || uploadContext?.suggestedTitle || `${holidayStateLabel || "State"} Holiday List`
-                : form.title.trim() || file!.name;
+                : form.title.trim() || uploadContext?.suggestedTitle || file!.name;
             const resolvedAcademicYear = isHoliday ? DEFAULT_HOLIDAY_ACADEMIC_YEAR : form.academic_year;
 
             if (editing) {
@@ -440,7 +441,7 @@ export default function AdminParentDocumentsPage() {
     return (
         <div className="space-y-6">
             <div className="max-w-2xl">
-                <h1 className="text-2xl font-semibold text-slate-900">Parent app documents</h1>
+                <h1 className="text-2xl font-semibold text-slate-900">Parent documents</h1>
                 <p className="mt-2 text-sm text-slate-600">
                     Each section matches the parent app. Use <strong>Rename</strong> on section or row names.
                     Click <strong>Add</strong> on an existing section to add another file — no new subsection needed.

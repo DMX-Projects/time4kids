@@ -105,7 +105,11 @@ export default function AdminEnquiriesPage() {
     }, [enquiries, activeTab, search, statusFilter, cityFilter]);
 
     const handleStatusChange = async (id: string, newStatus: string) => {
-        await updateEnquiryStatus(id, newStatus);
+        try {
+            await updateEnquiryStatus(id, newStatus);
+        } catch {
+            // SchoolDataProvider shows the error toast and reloads the list.
+        }
     };
 
     // Color helpers

@@ -7,10 +7,19 @@ import {
     extensionFromPath,
     shouldViewFileInline,
 } from "@/lib/franchise-download-filename";
-import { openBlobInlineInNewTab } from "@/lib/inline-document-open";
+import { isNewsletterAudioMediaUrl } from "@/config/parent-newsletter";
+import { openFranchiseEmbedLink } from "@/lib/franchise-hub-document-open";
+import { resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
+import { openBlobInlineInNewTab, openDirectAudioUrlInNewTab } from "@/lib/inline-document-open";
 import { GetAccessToken, openProtectedDocumentView } from "@/lib/protected-document-view-url";
 
-export type ParentDocFileInput = { id: number; title: string; file: string; display_title?: string };
+export type ParentDocFileInput = {
+    id: number;
+    title: string;
+    file: string;
+    display_title?: string;
+    audio_file?: string;
+};
 
 export type AuthFetchBlobResponse = (
     path: string,
@@ -48,6 +57,38 @@ function saveBlobFile(blob: Blob, fileName: string): void {
     a.click();
     a.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
+}
+
+/** Play newsletter video embed; uses audio player when the link is audio, not a blank video frame. */
+export function openNewsletterVideoEmbedLink(rawEmbedUrl: string, title?: string): void {
+    const candidate = rawEmbedUrl.trim();
+    if (!candidate) return;
+    if (isNewsletterAudioMediaUrl(candidate)) {
+        openDirectAudioUrlInNewTab(candidate, title || "Audio");
+        return;
+    }
+    const resolved = resolveFranchiseEmbedSrc(candidate);
+    if (resolved && isNewsletterAudioMediaUrl(resolved)) {
+        openDirectAudioUrlInNewTab(resolved, title || "Audio");
+        return;
+    }
+    openFranchiseEmbedLink(candidate);
+}
+
+export function openParentDocumentAudioFile(
+    getAccessToken: GetAccessToken,
+    authFetchBlobResponse: AuthFetchBlobResponse,
+    doc: ParentDocFileInput,
+): void {
+    const name = downloadFilenameFromLinkLabel(linkLabel(doc), extensionFromPath(doc.audio_file || "") || ".mp3");
+    const params = new URLSearchParams();
+    params.set("name", name.trim() || "audio");
+    const apiPath = `/documents/parent/documents/${doc.id}/audio/?${params}`;
+    openBlobInlineInNewTab(
+        () => authFetchBlobResponse(apiPath).then((r) => ({ blob: r.blob, filename: resolveDownloadName(name, r.filename) })),
+        name,
+        { forceAudio: true },
+    );
 }
 
 export function openParentDocumentFile(

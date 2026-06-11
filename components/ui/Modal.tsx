@@ -25,22 +25,22 @@ const Modal: React.FC<ModalProps> = ({
     const modalContentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (isOpen) {
-            // Prevent background scroll
-            document.body.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.width = '100%';
-        } else {
-            // Restore background scroll
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
-        }
+        if (!isOpen) return;
+
+        const scrollY = window.scrollY;
+        const { overflow, position, top, width } = document.body.style;
+
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.width = '100%';
 
         return () => {
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
+            document.body.style.overflow = overflow;
+            document.body.style.position = position;
+            document.body.style.top = top;
+            document.body.style.width = width;
+            window.scrollTo(0, scrollY);
         };
     }, [isOpen]);
 

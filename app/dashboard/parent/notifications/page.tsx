@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { stripEventVideoLinks } from "@/lib/event-gallery-video-links";
 
 type AnnouncementRow = { id: number; title: string; body?: string; published_at?: string };
 type HomeworkRow = { id: number; title: string; description?: string; assigned_date?: string; student_name?: string | null; class_name?: string };
@@ -90,7 +91,7 @@ export default function NotificationsPage() {
                 const aggregatedRows: NotificationRow[] = normalizeList<ApiNotificationRow>(aggregatedRaw).map((r) => ({
                     id: r.id,
                     title: r.title || "Notification",
-                    body: r.body,
+                    body: r.source === "event" && r.body ? stripEventVideoLinks(r.body) || undefined : r.body,
                     publishedAt: r.published_at,
                     source: r.source,
                     read: Boolean(r.read),
@@ -145,7 +146,10 @@ export default function NotificationsPage() {
                 const eventRows: NotificationRow[] = normalizeList<EventRow>(eventRaw).map((r) => ({
                     id: `event-${r.id}`,
                     title: r.title || "New event",
-                    body: [r.location ? `Venue: ${r.location}` : "", r.description || ""].filter(Boolean).join(" • ") || undefined,
+                    body:
+                        [r.location ? `Venue: ${r.location}` : "", stripEventVideoLinks(r.description) || ""]
+                            .filter(Boolean)
+                            .join(" • ") || undefined,
                     publishedAt: r.start_date || r.end_date,
                     source: "event",
                 }));

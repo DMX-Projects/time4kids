@@ -34,3 +34,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local CRM clone (separate app, not part of main site)
+/timekids_crm_clone/

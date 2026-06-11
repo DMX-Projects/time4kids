@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/components/ui/Toast";
 import { apiUrl, jsonHeaders, mediaUrl, schoolGalleryMediaUrl, toApiError } from "@/lib/api-client";
 import { buildEventMediaFileViewUrl } from "@/lib/event-media-url";
 import {
@@ -64,6 +65,9 @@ export type EventRecord = {
     title: string;
     date: string;
     venue: string;
+    /** Empty = all classes; otherwise limits parent app visibility. */
+    className?: string;
+    audienceLabel?: string;
     notes?: string;
     rsvp?: string;
     /** YouTube / Bunny links stored in event description (not shown in notes field). */
@@ -72,7 +76,7 @@ export type EventRecord = {
 
 export type EventMedia = {
     id: string;
-    type: "image" | "video";
+    type: "image" | "video" | "url";
     title: string;
     url: string;
     /** Raw Django path e.g. `events/media/chennai2.mp4` for stream/fallback URLs. */
@@ -212,6 +216,13 @@ export type SchoolDataContextValue = {
 
 const SchoolDataContext = createContext<SchoolDataContextValue | undefined>(undefined);
 
+type ApiEventVideoLink = {
+    id: string;
+    url: string;
+    title?: string;
+    description?: string;
+};
+
 type ApiEvent = {
     id: number;
     title: string;
@@ -219,7 +230,10 @@ type ApiEvent = {
     start_date?: string;
     end_date?: string;
     location?: string;
+    class_name?: string;
+    audience_label?: string;
     media?: ApiEventMedia[];
+    video_links?: ApiEventVideoLink[];
 };
 
 type ApiEventMedia = {
@@ -253,21 +267,51 @@ const toDateOnly = (raw: string | undefined): string => {
     return m ? m[1] : "";
 };
 
+const mapApiVideoLinks = (ev: ApiEvent): EventVideoLink[] => {
+    if (Array.isArray(ev.video_links) && ev.video_links.length > 0) {
+        return ev.video_links
+            .map((row) => {
+                const url = String(row.url || "").trim();
+                if (!url) return null;
+                const rawId = String(row.id || "").trim() || `${EVENT_VIDEO_LINK_ID_PREFIX}0`;
+                const id = rawId.startsWith(EVENT_VIDEO_LINK_ID_PREFIX) ? rawId : `${EVENT_VIDEO_LINK_ID_PREFIX}${rawId}`;
+                const link: EventVideoLink = { id, url };
+                if (row.title) link.title = String(row.title);
+                if (row.description) link.description = String(row.description);
+                return link;
+            })
+            .filter((row): row is EventVideoLink => row !== null);
+    }
+    return parseEventVideoLinks(ev.description || "");
+};
+
 const mapEvent = (ev: ApiEvent): EventRecord => {
     const description = ev.description || "";
+    const rawClass = (ev.class_name || "").trim();
+    const className =
+        !rawClass || /^all(\s+classes)?$/i.test(rawClass) ? "" : rawClass;
     return {
         id: String(ev.id),
         title: ev.title,
         date: toDateOnly(ev.start_date) || toDateOnly(ev.end_date) || "",
         venue: ev.location || "",
+        className,
+        audienceLabel: (ev.audience_label || "").trim() || (className || "All classes"),
         notes: stripEventVideoLinks(description),
-        videoLinks: parseEventVideoLinks(description),
+        videoLinks: mapApiVideoLinks(ev),
     };
+};
+
+const mapApiMediaType = (mediaType: string | undefined): EventMedia["type"] => {
+    const mt = (mediaType || "image").toUpperCase();
+    if (mt === "URL") return "url";
+    if (mt === "VIDEO") return "video";
+    return "image";
 };
 
 const mapEventVideoLinkMedia = (link: EventVideoLink, eventId: string): EventMedia => ({
     id: link.id,
-    type: "video",
+    type: "url",
     title: link.title?.trim() || link.description?.trim() || "Video",
     url: link.url,
     filePath: link.url,
@@ -278,22 +322,34 @@ const mapEventVideoLinkMedia = (link: EventVideoLink, eventId: string): EventMed
 const mapMedia = (media: ApiEventMedia, eventId?: string, accessToken?: string | null): EventMedia => {
     const filePath = media.file || "";
     const mediaId = Number(media.id);
+    const isExternalUrl = /^https?:\/\//i.test(filePath);
     const signed =
+        !isExternalUrl &&
+        mediaId > 0 &&
         accessToken &&
         Number.isFinite(mediaId) &&
         buildEventMediaFileViewUrl(accessToken, mediaId, {
             caption: media.caption || "",
             filePath,
         });
-    const url = signed || schoolGalleryMediaUrl(filePath) || mediaUrl(filePath);
+    const url = isExternalUrl ? filePath : signed || schoolGalleryMediaUrl(filePath) || mediaUrl(filePath);
     return {
         id: String(media.id),
-        type: (media.media_type || "image").toLowerCase() === "video" ? "video" : "image",
+        type: mapApiMediaType(media.media_type),
         title: media.caption || "",
         url,
         filePath,
         eventId,
     };
+};
+
+const normalizeEnquiryStatus = (raw: string | undefined | null): Enquiry["status"] => {
+    const value = String(raw || "new")
+        .trim()
+        .toLowerCase()
+        .replace(/_/g, "-");
+    if (value === "in-progress" || value === "closed" || value === "new") return value;
+    return "new";
 };
 
 const mapEnquiry = (enq: ApiEnquiry): Enquiry => {
@@ -311,7 +367,7 @@ const mapEnquiry = (enq: ApiEnquiry): Enquiry => {
         childAge: enq.child_age,
         message: enq.message || "",
         createdAt: enq.created_at,
-        status: (enq.status as any) || "new",
+        status: normalizeEnquiryStatus(enq.status),
         channel: "dashboard",
         franchiseName: enq.franchise_name || undefined,
     };
@@ -328,6 +384,7 @@ const mapAttendance = (raw: any): AttendanceRecord => ({
 
 export function SchoolDataProvider({ children }: { children: React.ReactNode }) {
     const { user, authFetch, tokens } = useAuth();
+    const { showToast } = useToast();
 
     const [parents, setParents] = useState<SchoolParent[]>([]);
     const [students, setStudents] = useState<SchoolStudent[]>([]);
@@ -473,8 +530,15 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             const apiMedia = items.flatMap((ev) =>
                 (ev.media || []).map((m) => mapMedia(m, String(ev.id), accessToken)),
             );
+            const seenVideoUrls = new Set(
+                apiMedia
+                    .filter((m) => m.type === "video" || m.type === "url")
+                    .map((m) => (m.url || m.filePath || "").trim().toLowerCase()),
+            );
             const linkMedia = mappedEvents.flatMap((ev) =>
-                (ev.videoLinks || []).map((link) => mapEventVideoLinkMedia(link, ev.id)),
+                (ev.videoLinks || [])
+                    .filter((link) => !seenVideoUrls.has(link.url.trim().toLowerCase()))
+                    .map((link) => mapEventVideoLinkMedia(link, ev.id)),
             );
             setEvents(mappedEvents);
             setEventMedia([...apiMedia, ...linkMedia]);
@@ -559,6 +623,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             start_date: start,
             end_date: start,
             location: payload.venue,
+            class_name: (payload.className || "").trim(),
         };
         const created = await authFetch<ApiEvent>("/events/franchise/", {
             method: "POST",
@@ -580,6 +645,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             start_date: start,
             end_date: start,
             location: payload.venue,
+            class_name: (payload.className ?? existing?.className ?? "").trim(),
         };
         const updated = await authFetch<ApiEvent>(`/events/franchise/${id}/`, {
             method: "PATCH",
@@ -623,6 +689,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             start_date: start,
             end_date: start,
             location: event.venue,
+            class_name: (event.className || "").trim(),
         };
         const updated = await authFetch<ApiEvent>(`/events/franchise/${eventId}/`, {
             method: "PATCH",
@@ -720,29 +787,72 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         if (!res.ok) throw await toApiError(res);
     };
 
-    const patchEnquiryStatusRemote = async (id: string, status: string) => {
+    const enquiryStatusPaths = (id: string): string[] => {
         const isFranchiseLead = id.startsWith("f-");
         const numericId = id.startsWith("f-") || id.startsWith("e-") ? id.slice(2) : id;
-        let path: string;
+        const isFranchiseUser = user?.role === "franchise";
         if (isFranchiseLead) {
-            path =
-                user?.role === "franchise"
-                    ? `/enquiries/franchise/lead/${numericId}/`
-                    : `/enquiries/admin/franchise/${numericId}/`;
-        } else {
-            path =
-                user?.role === "franchise"
-                    ? `/enquiries/franchise/${numericId}/`
-                    : `/enquiries/admin/${numericId}/`;
+            const primary = isFranchiseUser
+                ? `/enquiries/franchise/lead/${numericId}/`
+                : `/enquiries/admin/franchise/${numericId}/`;
+            const fallback = isFranchiseUser
+                ? `/enquiries/franchise/${numericId}/`
+                : `/enquiries/admin/${numericId}/`;
+            return [primary, fallback];
         }
-        await authFetch(path, {
-            method: "PATCH",
-            headers: jsonHeaders(),
-            body: JSON.stringify({ status }),
-        });
+        const primary = isFranchiseUser
+            ? `/enquiries/franchise/${numericId}/`
+            : `/enquiries/admin/${numericId}/`;
+        const fallback = isFranchiseUser
+            ? `/enquiries/franchise/lead/${numericId}/`
+            : `/enquiries/admin/franchise/${numericId}/`;
+        return [primary, fallback];
+    };
+
+    const patchEnquiryStatusRemote = async (id: string, status: string) => {
+        const normalizedStatus = normalizeEnquiryStatus(status);
+        const previous = enquiries.find((e) => e.id === id)?.status;
+        const phone = enquiries.find((e) => e.id === id)?.phone?.trim();
+
         setEnquiries((prev) =>
-            prev.map((e) => (e.id === id ? { ...e, status: status as Enquiry["status"] } : e)),
+            prev.map((e) => {
+                if (e.id === id) return { ...e, status: normalizedStatus };
+                if (phone && e.phone?.trim() === phone) return { ...e, status: normalizedStatus };
+                return e;
+            }),
         );
+
+        const body = JSON.stringify({ status: normalizedStatus });
+        const headers = jsonHeaders();
+        let lastError: unknown = null;
+
+        for (const path of enquiryStatusPaths(id)) {
+            try {
+                await authFetch(path, { method: "PATCH", headers, body });
+                if (user?.role === "admin") await loadAdminEnquiries();
+                else if (user?.role === "franchise") await loadFranchiseEnquiries();
+                return;
+            } catch (err) {
+                lastError = err;
+                const apiStatus = (err as { status?: number })?.status;
+                if (apiStatus !== 404) break;
+            }
+        }
+
+        try {
+            if (user?.role === "admin") await loadAdminEnquiries();
+            else if (user?.role === "franchise") await loadFranchiseEnquiries();
+        } catch {
+            if (previous) {
+                setEnquiries((prev) =>
+                    prev.map((e) => (e.id === id ? { ...e, status: previous } : e)),
+                );
+            }
+        }
+        const message =
+            lastError instanceof Error ? lastError.message : "Could not update enquiry status.";
+        showToast(message, "error");
+        throw lastError instanceof Error ? lastError : new Error(message);
     };
 
     const resolveEnquiry = async (id: string) => {

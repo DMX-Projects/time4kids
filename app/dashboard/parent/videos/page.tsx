@@ -18,7 +18,7 @@ export default function ParentVideosPage() {
 
             category="VIDEOS"
 
-            title="Watch • Hear • Learn"
+            title="Watch Hear and Learn (AY 2026-27)"
 
             description="Videos, audio clips, PDFs, and other learning resources from your centre — all in one place."
 

@@ -3,10 +3,19 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Download, FileText, Play } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { openParentDocumentFile } from "@/lib/parent-document-file-open";
+import { PARENT_NEWSLETTER_CATEGORY } from "@/config/parent-newsletter";
+import { openNewsletterVideoEmbedLink, openParentDocumentAudioFile, openParentDocumentFile } from "@/lib/parent-document-file-open";
 import { fileMatchesParentDocumentCategory, parentDocumentFileKind } from "@/lib/parent-document-file-kind";
 
-type DocRow = { id: number; title: string; file: string; display_title?: string; file_view_path?: string | null };
+type DocRow = {
+    id: number;
+    title: string;
+    file: string;
+    display_title?: string;
+    file_view_path?: string | null;
+    video_embed_url?: string;
+    audio_file?: string;
+};
 type ParentDocRow = DocRow & { category?: string };
 
 const normalizeDocs = (data: unknown): DocRow[] => {
@@ -99,10 +108,49 @@ export function ParentDocList({
             {loading && <p className="text-sm text-orange-700">Loading…</p>}
 
             <ul className="space-y-3">
-                {docs.map((d) => (
+                {docs.map((d) => {
+                    const showNewsletterEmbeds = category === PARENT_NEWSLETTER_CATEGORY;
+                    const hasPdfFile = Boolean((d.file || "").trim());
+                    const hasVideoEmbed = Boolean((d.video_embed_url || "").trim());
+                    const hasAudioFile = Boolean((d.audio_file || "").trim());
+
+                    return (
                     <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-100 bg-white p-4 shadow-sm">
                         <span className="font-medium text-orange-900 text-sm">{d.display_title || d.title}</span>
-                        {mixedMedia ? (
+                        {showNewsletterEmbeds ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                                {hasPdfFile ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
+                                        className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        View PDF / document
+                                    </button>
+                                ) : null}
+                                {hasVideoEmbed ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => openNewsletterVideoEmbedLink(d.video_embed_url || "", d.display_title || d.title)}
+                                        className="inline-flex items-center gap-2 rounded-full bg-orange-600 px-4 py-2 text-xs font-semibold text-white border border-orange-700 hover:bg-orange-700"
+                                    >
+                                        <Play className="w-4 h-4" />
+                                        Play video
+                                    </button>
+                                ) : null}
+                                {hasAudioFile ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => openParentDocumentAudioFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
+                                        className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
+                                    >
+                                        <Play className="w-4 h-4" />
+                                        Play audio
+                                    </button>
+                                ) : null}
+                            </div>
+                        ) : mixedMedia ? (
                             (() => {
                                 const kind = parentDocumentFileKind(d.file || "");
                                 if (kind === "video") {
@@ -169,7 +217,8 @@ export function ParentDocList({
                             </button>
                         )}
                     </li>
-                ))}
+                    );
+                })}
             </ul>
 
             {!loading && docs.length === 0 && (

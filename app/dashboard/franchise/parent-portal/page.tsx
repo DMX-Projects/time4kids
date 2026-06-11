@@ -13,11 +13,18 @@ import Modal from "@/components/ui/Modal";
 import { openParentDocumentFile } from "@/lib/parent-document-file-open";
 import { acceptForParentDocumentCategory, uploadHintForParentDocumentCategory } from "@/lib/parent-document-upload-accept";
 import {
+    PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT,
+    PARENT_NEWSLETTER_AUDIO_FILE_HINT,
+    PARENT_NEWSLETTER_AUDIO_UPLOAD_LABEL,
     PARENT_NEWSLETTER_CATEGORY,
     PARENT_NEWSLETTER_DESCRIPTION,
     PARENT_NEWSLETTER_LABEL,
     PARENT_NEWSLETTER_UPLOAD_LABEL,
+    PARENT_NEWSLETTER_VIDEO_EMBED_HINT,
+    PARENT_NEWSLETTER_VIDEO_EMBED_LABEL,
+    validateNewsletterAudioUpload,
     validateNewsletterUpload,
+    validateNewsletterVideoEmbedUrl,
 } from "@/config/parent-newsletter";
 import { DEFAULT_HOLIDAY_ACADEMIC_YEAR } from "@/config/parent-document-categories";
 import {
@@ -206,6 +213,8 @@ type NewsLetterRow = {
     title: string;
     display_title?: string;
     file: string;
+    video_embed_url?: string;
+    audio_file?: string;
     period_start?: string | null;
     period_end?: string | null;
     created_at?: string;
@@ -213,6 +222,17 @@ type NewsLetterRow = {
 
 const newsletterRowDate = (row: NewsLetterRow) =>
     homeworkDate(row.period_start) || homeworkDate(row.period_end) || homeworkDate(row.created_at) || "—";
+
+const newsletterCoversDate = (row: NewsLetterRow, date: string) => {
+    const start = homeworkDate(row.period_start);
+    const end = homeworkDate(row.period_end);
+    const created = homeworkDate(row.created_at);
+    if (start && end && date >= start && date <= end) return true;
+    return start === date || end === date || created === date;
+};
+
+const apiErrorMessage = (err: unknown, fallback: string) =>
+    err instanceof Error && err.message.trim() ? err.message : fallback;
 
 function CalendarAttendanceTab() {
     const [attendanceDate, setAttendanceDate] = useState(todayLocal);
@@ -237,6 +257,8 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
     const [title, setTitle] = useState("");
     const [assignedDate, setAssignedDate] = useState(todayLocal);
     const [file, setFile] = useState<File | null>(null);
+    const [videoEmbedUrl, setVideoEmbedUrl] = useState("");
+    const [audioFile, setAudioFile] = useState<File | null>(null);
     const [trackDate, setTrackDate] = useState(todayLocal);
     const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
     const [editModal, setEditModal] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
@@ -246,6 +268,9 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
         assigned_date: "",
         file: null as File | null,
         existingFileName: "",
+        video_embed_url: "",
+        audio_file: null as File | null,
+        existingAudioName: "",
     });
 
     const load = useCallback(async () => {
@@ -265,19 +290,132 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
         void load();
     }, [load]);
 
+    const fetchNewslettersForDate = useCallback(
+        async (date: string) => {
+            const params = new URLSearchParams({ manage: "newsletter", date });
+            const data = await authFetch<unknown>(`/documents/franchise/parent-documents/?${params.toString()}`);
+            return normalizeList<NewsLetterRow>(data);
+        },
+        [authFetch],
+    );
+
+    const resolveExistingNewsletter = useCallback(
+        async (date: string): Promise<NewsLetterRow | "none" | "many"> => {
+            const inRows = rows.filter((r) => newsletterCoversDate(r, date));
+            if (inRows.length === 1) return inRows[0];
+            if (inRows.length > 1) return "many";
+            const fetched = await fetchNewslettersForDate(date);
+            if (fetched.length === 1) return fetched[0];
+            if (fetched.length > 1) return "many";
+            return "none";
+        },
+        [fetchNewslettersForDate, rows],
+    );
+
+    const patchNewsletterRecord = async (
+        rowId: number,
+        opts: {
+            title: string;
+            date: string;
+            videoEmbedUrl?: string;
+            audioFile?: File | null;
+            pdfFile?: File | null;
+        },
+    ) => {
+        const video = (opts.videoEmbedUrl || "").trim();
+        const videoErr = validateNewsletterVideoEmbedUrl(video);
+        if (videoErr) throw new Error(videoErr);
+        if (opts.audioFile) {
+            const audioErr = validateNewsletterAudioUpload(opts.audioFile);
+            if (audioErr) throw new Error(audioErr);
+        }
+        if (opts.pdfFile) {
+            const pdfErr = validateNewsletterUpload(opts.pdfFile);
+            if (pdfErr) throw new Error(pdfErr);
+        }
+
+        const fd = new FormData();
+        fd.append("title", opts.title.trim() || "Newsletter");
+        fd.append("period_start", opts.date);
+        fd.append("period_end", opts.date);
+        if (video) fd.append("video_embed_url", video);
+        if (opts.pdfFile) fd.append("file", opts.pdfFile);
+        if (opts.audioFile) fd.append("audio_file", opts.audioFile);
+        await authFetch(`/documents/franchise/parent-documents/${rowId}/`, { method: "PATCH", body: fd });
+    };
+
     const submit = async (e: FormEvent) => {
         e.preventDefault();
-        if (!file) {
-            showToast("Choose a PDF or Word document to upload.", "error");
-            return;
-        }
         if (!assignedDate) {
             showToast("Select a date.", "error");
             return;
         }
+
+        const hasVideo = videoEmbedUrl.trim().length > 0;
+        const hasAudio = Boolean(audioFile);
+
+        if (!file) {
+            if (!hasVideo && !hasAudio) {
+                showToast("Choose a PDF or Word document to upload.", "error");
+                return;
+            }
+            setUploading(true);
+            try {
+                let lookupDate = assignedDate;
+                let resolved = await resolveExistingNewsletter(lookupDate);
+                if (resolved === "none" && trackDate !== assignedDate) {
+                    resolved = await resolveExistingNewsletter(trackDate);
+                    if (typeof resolved === "object") {
+                        lookupDate = trackDate;
+                        setAssignedDate(trackDate);
+                    }
+                }
+                if (resolved === "none") {
+                    showToast(
+                        `No newsletter found for ${assignedDate}. Upload the PDF first (same date), or match the Track date on the right.`,
+                        "error",
+                    );
+                    return;
+                }
+                if (resolved === "many") {
+                    showToast("Multiple newsletters on this date — click Edit on the one you want.", "error");
+                    return;
+                }
+                const row = resolved;
+                await patchNewsletterRecord(row.id, {
+                    title: title.trim() || row.title,
+                    date: lookupDate,
+                    videoEmbedUrl: hasVideo ? videoEmbedUrl : undefined,
+                    audioFile: hasAudio ? audioFile : null,
+                });
+                if (hasVideo) setVideoEmbedUrl("");
+                if (hasAudio) setAudioFile(null);
+                setTrackDate(lookupDate);
+                showToast(
+                    hasVideo && hasAudio
+                        ? "Video and audio added to your newsletter."
+                        : hasVideo
+                          ? "Video link saved to your newsletter."
+                          : "Audio file saved to your newsletter.",
+                    "success",
+                );
+                await load();
+            } catch (err: unknown) {
+                showToast(apiErrorMessage(err, "Could not add video or audio."), "error");
+            } finally {
+                setUploading(false);
+            }
+            return;
+        }
+
         const sizeErr = validateNewsletterUpload(file);
         if (sizeErr) {
             showToast(sizeErr, "error");
+            return;
+        }
+        const videoErr = validateNewsletterVideoEmbedUrl(videoEmbedUrl);
+        if (videoErr) {
+            showToast(videoErr, "error");
             return;
         }
         setUploading(true);
@@ -287,15 +425,33 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
             fd.append("period_start", assignedDate);
             fd.append("period_end", assignedDate);
             fd.append("file", file);
+            if (hasVideo) fd.append("video_embed_url", videoEmbedUrl.trim());
+            if (audioFile) {
+                const audioErr = validateNewsletterAudioUpload(audioFile);
+                if (audioErr) {
+                    showToast(audioErr, "error");
+                    setUploading(false);
+                    return;
+                }
+                fd.append("audio_file", audioFile);
+            }
             await authFetch("/documents/franchise/parent-documents/", { method: "POST", body: fd });
+            const uploadedDate = assignedDate;
             setTitle("");
-            setAssignedDate(todayLocal());
             setFile(null);
-            setTrackDate(assignedDate);
-            showToast("Newsletter uploaded for parents.", "success");
+            setVideoEmbedUrl("");
+            setAudioFile(null);
+            setTrackDate(uploadedDate);
+            setAssignedDate(uploadedDate);
+            showToast(
+                hasVideo || hasAudio
+                    ? "Newsletter uploaded with PDF and media for parents."
+                    : "Newsletter PDF uploaded. You can add video or audio separately next.",
+                "success",
+            );
             await load();
-        } catch {
-            showToast("Upload failed. Use a PDF or Word file.", "error");
+        } catch (err: unknown) {
+            showToast(apiErrorMessage(err, "Upload failed. Use a PDF or Word file."), "error");
         } finally {
             setUploading(false);
         }
@@ -313,6 +469,9 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                     "",
                 file: null,
                 existingFileName: detail.display_title || detail.title || "Current file",
+                video_embed_url: detail.video_embed_url || "",
+                audio_file: null,
+                existingAudioName: detail.audio_file ? detail.audio_file.split("/").pop() || "Current audio" : "",
             });
             setEditModal({ isOpen: true, id: row.id });
         } catch {
@@ -322,7 +481,7 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
 
     const closeEdit = () => {
         setEditModal({ isOpen: false, id: null });
-        setEditForm({ title: "", assigned_date: "", file: null, existingFileName: "" });
+        setEditForm({ title: "", assigned_date: "", file: null, existingFileName: "", video_embed_url: "", audio_file: null, existingAudioName: "" });
     };
 
     const saveEdit = async (e: FormEvent) => {
@@ -339,31 +498,34 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                 return;
             }
         }
+        if (editForm.audio_file) {
+            const audioErr = validateNewsletterAudioUpload(editForm.audio_file);
+            if (audioErr) {
+                showToast(audioErr, "error");
+                return;
+            }
+        }
+        const videoErr = validateNewsletterVideoEmbedUrl(editForm.video_embed_url);
+        if (videoErr) {
+            showToast(videoErr, "error");
+            return;
+        }
         setEditSaving(true);
         try {
-            if (editForm.file) {
-                const fd = new FormData();
-                fd.append("title", editForm.title.trim());
-                fd.append("period_start", editForm.assigned_date);
-                fd.append("period_end", editForm.assigned_date);
-                fd.append("file", editForm.file);
-                await authFetch(`/documents/franchise/parent-documents/${editModal.id}/`, { method: "PATCH", body: fd });
-            } else {
-                await authFetch(`/documents/franchise/parent-documents/${editModal.id}/`, {
-                    method: "PATCH",
-                    headers: jsonHeaders(),
-                    body: JSON.stringify({
-                        title: editForm.title.trim(),
-                        period_start: editForm.assigned_date,
-                        period_end: editForm.assigned_date,
-                    }),
-                });
-            }
+            await patchNewsletterRecord(editModal.id, {
+                title: editForm.title,
+                date: editForm.assigned_date,
+                videoEmbedUrl: editForm.video_embed_url,
+                audioFile: editForm.audio_file,
+                pdfFile: editForm.file,
+            });
             closeEdit();
+            setTrackDate(editForm.assigned_date);
+            setAssignedDate(editForm.assigned_date);
             showToast("Newsletter updated.", "success");
             await load();
-        } catch {
-            showToast("Update failed.", "error");
+        } catch (err: unknown) {
+            showToast(apiErrorMessage(err, "Update failed."), "error");
         } finally {
             setEditSaving(false);
         }
@@ -385,6 +547,10 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                 <div>
                     <h3 className="text-sm font-semibold text-[#111827]">Upload {PARENT_NEWSLETTER_LABEL}</h3>
                     <p className="text-xs text-[#6B7280] mt-1">{PARENT_NEWSLETTER_DESCRIPTION}</p>
+                    <p className="text-[11px] text-[#6B7280] mt-2 leading-relaxed">
+                        Step 1: Upload PDF. Step 2: Add <strong>video only</strong> or <strong>audio only</strong> (same date, leave PDF
+                        empty) — you can do them in separate saves. Or use <strong>Edit</strong> on the list.
+                    </p>
                 </div>
                 <label className="block text-xs font-semibold text-[#4B5563]">
                     Title
@@ -409,7 +575,6 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                     {PARENT_NEWSLETTER_UPLOAD_LABEL}
                     <input
                         type="file"
-                        required
                         accept={acceptForParentDocumentCategory(PARENT_NEWSLETTER_CATEGORY)}
                         onChange={(e) => setFile(e.target.files?.[0] || null)}
                         className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
@@ -418,8 +583,36 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                         {uploadHintForParentDocumentCategory(PARENT_NEWSLETTER_CATEGORY)}
                     </span>
                 </label>
+                <label className="block text-xs font-semibold text-[#4B5563]">
+                    {PARENT_NEWSLETTER_VIDEO_EMBED_LABEL}
+                    <input
+                        value={videoEmbedUrl}
+                        onChange={(e) => setVideoEmbedUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=… or Bunny iframe embed"
+                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
+                    />
+                    <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_VIDEO_EMBED_HINT}</span>
+                </label>
+                <label className="block text-xs font-semibold text-[#4B5563]">
+                    {PARENT_NEWSLETTER_AUDIO_UPLOAD_LABEL}
+                    <input
+                        type="file"
+                        accept={PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT}
+                        onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
+                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
+                    />
+                    <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_AUDIO_FILE_HINT}</span>
+                </label>
                 <Button type="submit" disabled={uploading} className="bg-[#FF922B] text-white">
-                    {uploading ? "Uploading…" : `Upload ${PARENT_NEWSLETTER_LABEL}`}
+                    {uploading
+                        ? "Saving…"
+                        : !file && videoEmbedUrl.trim() && audioFile
+                          ? "Add video & audio"
+                          : !file && videoEmbedUrl.trim()
+                            ? "Add video link only"
+                            : !file && audioFile
+                              ? "Add audio file only"
+                              : `Upload ${PARENT_NEWSLETTER_LABEL}`}
                 </Button>
             </form>
 
@@ -433,7 +626,11 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                     <input
                         type="date"
                         value={trackDate}
-                        onChange={(e) => setTrackDate(e.target.value)}
+                        onChange={(e) => {
+                            const next = e.target.value;
+                            setTrackDate(next);
+                            setAssignedDate(next);
+                        }}
                         className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
                     />
                 </label>
@@ -456,6 +653,15 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                                         {row.display_title || row.title}
                                     </button>
                                     <p className="text-[11px] text-[#6B7280] mt-0.5">{newsletterRowDate(row)}</p>
+                                    <p className="text-[10px] text-[#9CA3AF] mt-0.5">
+                                        {[
+                                            row.file ? "PDF" : null,
+                                            row.video_embed_url ? "Video" : "No video yet",
+                                            row.audio_file ? "Audio" : "No audio yet",
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" · ")}
+                                    </p>
                                 </div>
                                 <div className="flex shrink-0 items-center gap-2">
                                     <button
@@ -510,6 +716,28 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                         />
                         <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
                             Current: {editForm.existingFileName}
+                        </span>
+                    </label>
+                    <label className="block text-xs font-semibold text-[#4B5563]">
+                        {PARENT_NEWSLETTER_VIDEO_EMBED_LABEL}
+                        <input
+                            value={editForm.video_embed_url}
+                            onChange={(e) => setEditForm((p) => ({ ...p, video_embed_url: e.target.value }))}
+                            placeholder="YouTube or Bunny iframe embed"
+                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
+                        />
+                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_VIDEO_EMBED_HINT}</span>
+                    </label>
+                    <label className="block text-xs font-semibold text-[#4B5563]">
+                        {PARENT_NEWSLETTER_AUDIO_UPLOAD_LABEL}
+                        <input
+                            type="file"
+                            accept={PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT}
+                            onChange={(e) => setEditForm((p) => ({ ...p, audio_file: e.target.files?.[0] || null }))}
+                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
+                        />
+                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
+                            {editForm.existingAudioName ? `Current: ${editForm.existingAudioName}` : PARENT_NEWSLETTER_AUDIO_FILE_HINT}
                         </span>
                     </label>
                     <div className="flex gap-2 pt-1">
@@ -1043,7 +1271,7 @@ function HolidayListTab({ authFetch, showToast }: { authFetch: AuthFetchFn; show
 
                 {!loading && stateGroups.length === 0 ? (
                     <p className="text-sm text-[#6B7280]">
-                        No holiday list for your state yet. Head office adds it in Admin CMS → Parent app documents → Holiday Lists.
+                        No holiday list for your state yet. Head office adds it in Admin CMS → Parent documents → Holiday Lists.
                     </p>
                 ) : null}
 
@@ -1449,6 +1677,9 @@ function HomeworkTab({
                 <label className="text-xs font-semibold text-[#4B5563]">
                     Date
                     <input type="date" required value={form.assigned_date} onChange={(e) => setForm((p) => ({ ...p, assigned_date: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
+                    <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
+                        Parents only see homework on this date (from midnight IST), not before.
+                    </span>
                 </label>
                 <label className="text-xs font-semibold text-[#4B5563] md:col-span-2">
                     Description
@@ -1701,6 +1932,7 @@ type AnnouncementRow = {
     student_name?: string;
     class_name?: string;
     audience_label?: string;
+    is_scheduled?: boolean;
 };
 
 const NOTIFICATION_CLASS_OPTIONS = HOMEWORK_CLASS_OPTIONS.filter((o) => o.value);
@@ -1723,8 +1955,14 @@ const announcementPayload = (input: {
     audience: NotificationAudience;
     class_name: string;
     student: string;
+    schedule_date: string;
 }) => {
-    const base = { title: input.title.trim(), body: input.body.trim(), is_active: true };
+    const base = {
+        title: input.title.trim(),
+        body: input.body.trim(),
+        is_active: true,
+        schedule_date: input.schedule_date.trim() || todayLocal(),
+    };
     if (input.audience === "student") {
         return { ...base, student: Number(input.student), class_name: "" };
     }
@@ -1886,15 +2124,25 @@ function StudentSearchPicker({
     );
 }
 
-const sendSuccessMessage = (audience: NotificationAudience, className: string, studentId: string, students: MiniStudent[]) => {
+const sendSuccessMessage = (
+    audience: NotificationAudience,
+    className: string,
+    studentId: string,
+    students: MiniStudent[],
+    scheduleDate: string,
+) => {
+    const when =
+        scheduleDate && scheduleDate > todayLocal()
+            ? `Scheduled for ${scheduleDate}. Parents will see it on that date.`
+            : "Parents will see it now.";
     if (audience === "student") {
         const name = students.find((s) => String(s.id) === studentId)?.full_name || "selected parent";
-        return `Notification sent to ${name}.`;
+        return `Notification for ${name}. ${when}`;
     }
     if (audience === "class") {
-        return `Notification sent to ${className || "selected class"} parents.`;
+        return `Notification for ${className || "selected class"}. ${when}`;
     }
-    return "Notification sent to all parents.";
+    return `Notification for all parents. ${when}`;
 };
 
 const announcementRowDate = (row: AnnouncementRow) => homeworkDate(row.published_at) || "—";
@@ -1917,6 +2165,7 @@ function AnnouncementsTab({
         audience: "all" as NotificationAudience,
         class_name: NOTIFICATION_CLASS_OPTIONS[0]?.value || "",
         student: "",
+        schedule_date: todayLocal(),
     });
     const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
     const [editModal, setEditModal] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
@@ -1927,6 +2176,7 @@ function AnnouncementsTab({
         audience: "all" as NotificationAudience,
         class_name: NOTIFICATION_CLASS_OPTIONS[0]?.value || "",
         student: "",
+        schedule_date: todayLocal(),
     });
 
     const load = useCallback(
@@ -1970,16 +2220,17 @@ function AnnouncementsTab({
                 headers: jsonHeaders(),
                 body: JSON.stringify(announcementPayload(form)),
             });
+            const sentDate = form.schedule_date.trim() || todayLocal();
             setForm({
                 title: "",
                 body: "",
                 audience: "all",
                 class_name: NOTIFICATION_CLASS_OPTIONS[0]?.value || "",
                 student: "",
+                schedule_date: todayLocal(),
             });
-            const sentDate = todayLocal();
             setTrackDate(sentDate);
-            showToast(sendSuccessMessage(form.audience, form.class_name, form.student, students), "success");
+            showToast(sendSuccessMessage(form.audience, form.class_name, form.student, students, sentDate), "success");
             await load(sentDate);
         } catch {
             showToast("Save failed", "error");
@@ -1996,6 +2247,7 @@ function AnnouncementsTab({
                 audience,
                 class_name: (detail.class_name || "").trim() || NOTIFICATION_CLASS_OPTIONS[0]?.value || "",
                 student: detail.student ? String(detail.student) : "",
+                schedule_date: homeworkDate(detail.published_at) || todayLocal(),
             });
             setEditModal({ isOpen: true, id: row.id });
         } catch {
@@ -2011,6 +2263,7 @@ function AnnouncementsTab({
             audience: "all",
             class_name: NOTIFICATION_CLASS_OPTIONS[0]?.value || "",
             student: "",
+            schedule_date: todayLocal(),
         });
     };
 
@@ -2061,7 +2314,7 @@ function AnnouncementsTab({
                 <div>
                     <h3 className="text-sm font-semibold text-[#111827]">Send manual notification</h3>
                     <p className="text-xs text-[#6B7280] mt-1">
-                        Send a message to all parents, a class (e.g. Nursery), or one student&apos;s family. It appears in their Notifications tab and parents may receive email if enabled.
+                        Send a message to all parents, a class (e.g. Nursery), or one student&apos;s family. Choose a publish date — parents only see it on that day (from midnight IST). Email is sent when it goes live.
                     </p>
                 </div>
                 <label className="block text-xs font-semibold text-[#4B5563]">
@@ -2106,6 +2359,16 @@ function AnnouncementsTab({
                         />
                     </label>
                 ) : null}
+                <label className="block text-xs font-semibold text-[#4B5563]">
+                    Publish date
+                    <input
+                        type="date"
+                        required
+                        value={form.schedule_date}
+                        onChange={(e) => setForm((p) => ({ ...p, schedule_date: e.target.value }))}
+                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
+                    />
+                </label>
                 <input
                     required
                     placeholder="Title — e.g. PTM reminder"
@@ -2159,6 +2422,11 @@ function AnnouncementsTab({
                                         <span className="shrink-0 rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-semibold text-[#4B5563]">
                                             {r.audience_label || "All parents"}
                                         </span>
+                                        {r.is_scheduled ? (
+                                            <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-100">
+                                                Scheduled
+                                            </span>
+                                        ) : null}
                                     </div>
                                     <p className="text-[11px] text-[#6B7280] mt-0.5">
                                         {r.published_at ? new Date(r.published_at).toLocaleString() : announcementRowDate(r)}
@@ -2230,6 +2498,19 @@ function AnnouncementsTab({
                             />
                         </label>
                     ) : null}
+                    <label className="block text-xs font-semibold text-[#4B5563]">
+                        Publish date
+                        <input
+                            type="date"
+                            required
+                            value={editForm.schedule_date}
+                            onChange={(e) => setEditForm((p) => ({ ...p, schedule_date: e.target.value }))}
+                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
+                        />
+                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
+                            Parents only see this on that date (from midnight IST). Email is sent when it goes live.
+                        </span>
+                    </label>
                     <label className="block text-xs font-semibold text-[#4B5563]">
                         Title
                         <input
