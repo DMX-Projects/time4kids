@@ -13,7 +13,7 @@ export function acceptForParentDocumentCategory(category: string): string | unde
         case "PRESCHOOL_POLICIES":
             return ".pdf,application/pdf";
         case "AUDIO_RHYMES":
-            return ".mp3,.wav,.m4a,.ogg,audio/*";
+            return ".mp3,.wav,.m4a,.ogg,.mp4,audio/*,video/mp4";
         case "VIDEOS":
             return ".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.mp3,.wav,.m4a,.mp4,.webm,.mov,video/*,audio/*";
         case "HOLIDAY_LISTS":
@@ -26,7 +26,7 @@ export function acceptForParentDocumentCategory(category: string): string | unde
 export function uploadHintForParentDocumentCategory(category: string): string {
     switch (category) {
         case "AUDIO_RHYMES":
-            return "MP3, WAV, or other audio files";
+            return "MP3, WAV, MP4, or other audio/video files";
         case "VIDEOS":
             return "Videos, audio, PDFs, images, and documents";
         case PARENT_NEWSLETTER_CATEGORY:

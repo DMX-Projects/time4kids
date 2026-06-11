@@ -52,7 +52,7 @@ export function fileMatchesParentDocumentCategory(filePath: string, category: st
     if (MIXED_MEDIA_CATEGORIES.has(cat)) return true;
     const kind = parentDocumentFileKind(filePath);
     if (PDF_ONLY_CATEGORIES.has(cat)) return kind === "pdf";
-    if (AUDIO_ONLY_CATEGORIES.has(cat)) return kind === "audio";
+    if (AUDIO_ONLY_CATEGORIES.has(cat)) return kind === "audio" || kind === "video";
     if (!filePath.trim()) return true;
     return kind !== "video" && kind !== "audio";
 }
@@ -72,7 +72,8 @@ export function validateParentDocumentFileForCategory(file: File, category: stri
     }
     if (AUDIO_ONLY_CATEGORIES.has(cat)) {
         if (mime.startsWith("audio/") || AUDIO_EXT.has(ext)) return null;
-        return `${name}: this section accepts audio files only (MP3, WAV, etc.).`;
+        if (ext === ".mp4" || mime === "video/mp4") return null;
+        return `${name}: this section accepts MP3, WAV, MP4, or other audio/video files.`;
     }
     return null;
 }
