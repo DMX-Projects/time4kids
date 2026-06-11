@@ -243,20 +243,30 @@ export function ParentDocuments() {
                                                             );
                                                         })()
                                                     ) : cat.category === "AUDIO_RHYMES" ? (
-                                                        <button
-                                                            type="button"
-                                                            className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
-                                                            onClick={() =>
-                                                                openParentDocumentFile(
-                                                                    getAccessTokenForDocumentView,
-                                                                    authFetchBlobResponse,
-                                                                    item,
-                                                                )
-                                                            }
-                                                        >
-                                                            <Eye className="w-3.5 h-3.5" />
-                                                            Play audio
-                                                        </button>
+                                                        (() => {
+                                                            const kind = parentDocumentFileKind(item.file || "");
+                                                            const isVideo = kind === "video";
+                                                            return (
+                                                                <button
+                                                                    type="button"
+                                                                    className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
+                                                                    onClick={() =>
+                                                                        openParentDocumentFile(
+                                                                            getAccessTokenForDocumentView,
+                                                                            authFetchBlobResponse,
+                                                                            item,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {isVideo ? (
+                                                                        <Play className="w-3.5 h-3.5" />
+                                                                    ) : (
+                                                                        <Eye className="w-3.5 h-3.5" />
+                                                                    )}
+                                                                    {isVideo ? "Play video" : "Play audio"}
+                                                                </button>
+                                                            );
+                                                        })()
                                                     ) : (
                                                         <>
                                                             <button
