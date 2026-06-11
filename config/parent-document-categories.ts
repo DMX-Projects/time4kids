@@ -3,10 +3,13 @@ export const PARENT_DOCUMENT_CATEGORIES = [
     { value: "PRESCHOOL_POLICIES", label: "Preschool Policies (PDF)" },
     { value: "CLASS_TIMETABLE", label: "Newsletter" },
     { value: "HOLIDAY_LISTS", label: "Holiday Lists" },
-    { value: "AUDIO_RHYMES", label: "Audio Rhymes" },
-    { value: "VIDEOS", label: "Watch • Hear • Learn" },
+    { value: "AUDIO_RHYMES", label: "Audio Rhymes (AY 2026-27)" },
+    { value: "VIDEOS", label: "Watch Hear and Learn (AY 2026-27)" },
     { value: "NEWSLETTERS", label: "Newsletters" },
-    { value: "STUDENTS_KIT", label: "Students Kit" },
+    { value: "STUDENTS_KIT", label: "Students Kit AY 2026-27" },
+    { value: "CONTACT_US", label: "Contact Us" },
+    { value: "GENERAL_RHYMES", label: "General Rhymes" },
+    { value: "STUDENT_TRANSFER_POLICY", label: "Student Transfer Policy" },
     { value: "PARENTING_TIPS", label: "Parenting Tips & Articles" },
 ] as const;
 

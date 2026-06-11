@@ -2,7 +2,14 @@
 
 const VIDEO_EXT = new Set([".mp4", ".webm", ".mov", ".m4v", ".avi", ".mkv", ".mpeg", ".mpg", ".3gp", ".flv", ".wmv"]);
 const AUDIO_EXT = new Set([".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac", ".wma"]);
-const PDF_ONLY_CATEGORIES = new Set(["PRESCHOOL_POLICIES", "HOLIDAY_LISTS"]);
+const PDF_ONLY_CATEGORIES = new Set([
+    "PRESCHOOL_POLICIES",
+    "HOLIDAY_LISTS",
+    "STUDENT_TRANSFER_POLICY",
+    "CONTACT_US",
+    "GENERAL_RHYMES",
+    "PARENTING_TIPS",
+]);
 const AUDIO_ONLY_CATEGORIES = new Set(["AUDIO_RHYMES"]);
 /** Watch • Hear • Learn — mixed videos, audio, PDFs, and other learning files. */
 const MIXED_MEDIA_CATEGORIES = new Set(["VIDEOS"]);

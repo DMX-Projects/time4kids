@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, Download, Eye, FileText, Music, Newspaper, Play, Sparkles } from "lucide-react";
+import { ChevronDown, Download, Eye, FileText, LifeBuoy, Music, Play, Sparkles } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { mergeParentDashboardSections } from "@/config/parent-dashboard-sections";
 import { useParentAppNavCustom } from "@/hooks/useParentAppNavCustom";
 import { openParentDocumentFile } from "@/lib/parent-document-file-open";
-import { mergeParentAppChecklist } from "@/lib/parent-app-nav-custom";
 import { fileMatchesParentDocumentCategory, parentDocumentFileKind } from "@/lib/parent-document-file-kind";
 
 type ParentDoc = {
@@ -27,16 +27,18 @@ const normalizeDocs = (data: unknown): ParentDoc[] => {
     return [];
 };
 
-const categoryMeta: Record<string, { icon: JSX.Element; accent: { strip: string; text: string } }> = {
-    PRESCHOOL_POLICIES: { icon: <FileText className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
-    CLASS_TIMETABLE: { icon: <Newspaper className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
-    HOLIDAY_LISTS: { icon: <Sparkles className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
-    AUDIO_RHYMES: { icon: <Music className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
-    VIDEOS: { icon: <Play className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
-    NEWSLETTERS: { icon: <FileText className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
-    STUDENTS_KIT: { icon: <Sparkles className="w-4 h-4" />, accent: { strip: "#FFE066", text: "#1F2937" } },
-    PARENTING_TIPS: { icon: <Sparkles className="w-4 h-4" />, accent: { strip: "#A5D8FF", text: "#1F2937" } },
+const sectionIcons: Record<string, JSX.Element> = {
+    "audio-rhymes": <Music className="w-4 h-4" />,
+    videos: <Play className="w-4 h-4" />,
+    "students-kit": <Sparkles className="w-4 h-4" />,
+    "contact-us": <LifeBuoy className="w-4 h-4" />,
+    "general-rhymes": <Music className="w-4 h-4" />,
+    "student-transfer-policy": <FileText className="w-4 h-4" />,
+    "parenting-tips": <Sparkles className="w-4 h-4" />,
 };
+
+const accentForIndex = (idx: number) =>
+    idx % 2 === 0 ? { strip: "#FFE066", text: "#1F2937" } : { strip: "#A5D8FF", text: "#1F2937" };
 
 export function ParentDocuments() {
     const [openId, setOpenId] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export function ParentDocuments() {
     const { authFetch, authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
     const { navCustom } = useParentAppNavCustom();
 
-    const sections = useMemo(() => mergeParentAppChecklist(navCustom), [navCustom]);
+    const sections = useMemo(() => mergeParentDashboardSections(navCustom), [navCustom]);
 
     const load = useCallback(async () => {
         try {
@@ -63,17 +65,29 @@ export function ParentDocuments() {
     }, [load]);
 
     const categories = useMemo(() => {
-        return sections.map((section) => {
-            const meta = categoryMeta[section.category] ?? {
-                icon: <FileText className="w-4 h-4" />,
-                accent: { strip: "#A5D8FF", text: "#1F2937" },
-            };
+        return sections.map((section, idx) => {
+            const accent = accentForIndex(idx);
+            const icon = sectionIcons[section.id] ?? <FileText className="w-4 h-4" />;
+            if (section.kind === "link") {
+                return {
+                    key: section.id,
+                    kind: "link" as const,
+                    title: section.title,
+                    subtitle: section.subtitle,
+                    href: section.href,
+                    icon,
+                    accent,
+                    items: [] as ParentDoc[],
+                };
+            }
             return {
                 key: section.id,
+                kind: "documents" as const,
                 category: section.category,
                 title: section.title,
-                icon: meta.icon,
-                accent: meta.accent,
+                subtitle: section.subtitle,
+                icon,
+                accent,
                 items: docs.filter(
                     (d) =>
                         d.category === section.category &&
@@ -97,7 +111,9 @@ export function ParentDocuments() {
                     <div>
                         <p className="text-xs uppercase tracking-[0.08em] text-[#4B5563] font-semibold">All in one place</p>
                         <h2 className="text-2xl font-bold text-[#1F2937] leading-tight">Centre resources &amp; files</h2>
-                        <p className="text-sm text-[#6B7280] mt-1">Same files as the separate Newsletter, Holiday, and Policies pages — shown here by category.</p>
+                        <p className="text-sm text-[#6B7280] mt-1">
+                            Same sections as the classic parent app menu. Newsletter, holidays, and policies are also in the sidebar.
+                        </p>
                     </div>
                 </div>
 
@@ -129,15 +145,7 @@ export function ParentDocuments() {
                                     </span>
                                     <div className="flex flex-col leading-tight text-[#1F2937] flex-1">
                                         <span>{cat.title}</span>
-                                        <span className="text-[11px] text-[#4B5563]">
-                                            {cat.category === "VIDEOS"
-                                                ? "Videos, audio, PDFs, and learning files"
-                                                : cat.category === "AUDIO_RHYMES"
-                                                  ? "Audio files only"
-                                                  : cat.category === "PRESCHOOL_POLICIES" || cat.category === "HOLIDAY_LISTS"
-                                                    ? "PDF files only"
-                                                    : "Tap to view or download"}
-                                        </span>
+                                        <span className="text-[11px] text-[#4B5563]">{cat.subtitle}</span>
                                     </div>
                                     <span
                                         className={`transition-transform duration-300 text-[#1F2937] ${isOpen ? "rotate-180" : ""}`}
@@ -150,12 +158,12 @@ export function ParentDocuments() {
                                     className={`overflow-hidden transition-all duration-300 ease-out ${isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
                                 >
                                     <ul className="divide-y divide-[#E5E7EB] px-4 pb-3">
-                                        {cat.items.length === 0 && (
+                                        {cat.kind === "documents" && cat.items.length === 0 && (
                                             <li className="py-3 text-sm text-[#6B7280]">
                                                 No files uploaded yet for this section.
                                             </li>
                                         )}
-                                        {cat.items.map((item) => (
+                                        {cat.kind === "documents" && cat.items.map((item) => (
                                             <li key={item.id} className="flex flex-col gap-2 py-3 text-sm">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-lg" aria-hidden>🧸</span>

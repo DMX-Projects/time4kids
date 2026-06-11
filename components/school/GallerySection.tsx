@@ -2,18 +2,19 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Play, Hand, Clock, ArrowLeft, Calendar, MapPin, AlertCircle, Image as ImageIcon, X, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Hand, Clock, ArrowLeft, Calendar, MapPin, AlertCircle, Image as ImageIcon, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EventGalleryImage } from '@/components/ui/EventGalleryImage';
 import { EventGalleryVideo } from '@/components/ui/EventGalleryVideo';
 import { franchisePublicLocationLine } from '@/lib/utils';
 import Modal from '@/components/ui/Modal';
 import { mergeEventGalleryVideoLinks } from '@/lib/event-gallery-video-links';
+import { PORTAL_CLASS_OPTIONS, portalClassLabel } from '@/config/portal-class-options';
 
 interface MediaItem {
     id: number;
     file: string;
-    media_type: 'IMAGE' | 'VIDEO';
+    media_type: 'IMAGE' | 'VIDEO' | 'URL';
     caption: string;
 }
 
@@ -23,7 +24,13 @@ interface EventItem {
     description: string;
     start_date: string;
     year: number;
+    class_name?: string;
+    audience_label?: string;
     media: MediaItem[];
+}
+
+function eventClassLabel(event: EventItem): string {
+    return portalClassLabel(event.class_name || event.audience_label);
 }
 
 // Fallback for old gallery items if needed, though we prioritize events
@@ -48,6 +55,9 @@ interface GallerySectionProps {
     galleryItems?: OldGalleryItem[];
     events?: EventItem[];
 }
+
+const EVENTS_PAGE_SIZE = 12;
+const MEDIA_PAGE_SIZE = 24;
 
 /** Legacy franchise gallery rows (pre–Event Gallery migration). */
 function galleryItemsAsEvents(items: OldGalleryItem[]): EventItem[] {
@@ -96,8 +106,11 @@ export default function GallerySection({
 }: GallerySectionProps) {
     const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
     const [filterYear, setFilterYear] = useState<string>('');
-    const [filterMediaType, setFilterMediaType] = useState<'all' | 'IMAGE' | 'VIDEO'>('all');
+    const [filterClass, setFilterClass] = useState<string>('');
+    const [filterMediaType, setFilterMediaType] = useState<'all' | 'IMAGE' | 'VIDEO' | 'URL'>('all');
     const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+    const [eventsVisibleCount, setEventsVisibleCount] = useState(EVENTS_PAGE_SIZE);
+    const [mediaVisibleCount, setMediaVisibleCount] = useState(MEDIA_PAGE_SIZE);
 
     const lifeAtCentreName = franchisePublicLocationLine(schoolName ?? '', { city, state, urlCityFallback });
     const lifeAtHeading = lifeAtCentreName ? `Life at ${lifeAtCentreName}` : 'Life at T.I.M.E. Kids';
@@ -113,11 +126,53 @@ export default function GallerySection({
         return Array.from(years).sort().reverse();
     }, [displayEvents]);
 
-    // Filter Events by Year
+    const eventClasses = useMemo(() => {
+        const known = new Set(PORTAL_CLASS_OPTIONS.map((o) => o.label));
+        const extras: string[] = [];
+        for (const e of displayEvents) {
+            const label = eventClassLabel(e);
+            if (!known.has(label)) {
+                known.add(label);
+                extras.push(label);
+            }
+        }
+        return [...PORTAL_CLASS_OPTIONS.map((o) => o.label), ...extras.sort((a, b) => a.localeCompare(b))];
+    }, [displayEvents]);
+
+    // Filter Events by year + class
     const filteredEvents = useMemo(() => {
-        if (!filterYear) return displayEvents;
-        return displayEvents.filter(e => (e.year || new Date(e.start_date).getFullYear()).toString() === filterYear);
-    }, [displayEvents, filterYear]);
+        let list = displayEvents;
+        if (filterYear) {
+            list = list.filter((e) => (e.year || new Date(e.start_date).getFullYear()).toString() === filterYear);
+        }
+        if (filterClass) {
+            list = list.filter((e) => eventClassLabel(e) === filterClass);
+        }
+        return list;
+    }, [displayEvents, filterYear, filterClass]);
+
+    const visibleEvents = useMemo(
+        () => filteredEvents.slice(0, eventsVisibleCount),
+        [filteredEvents, eventsVisibleCount],
+    );
+
+    const galleryStats = useMemo(() => {
+        let photos = 0;
+        let videos = 0;
+        let links = 0;
+        for (const ev of displayEvents) {
+            for (const m of ev.media || []) {
+                if (m.media_type === 'IMAGE') photos += 1;
+                else if (m.media_type === 'URL') links += 1;
+                else videos += 1;
+            }
+        }
+        return { events: displayEvents.length, photos, videos, links };
+    }, [displayEvents]);
+
+    useEffect(() => {
+        setEventsVisibleCount(EVENTS_PAGE_SIZE);
+    }, [filterYear, filterClass]);
 
     // Filter Media within Selected Event
     const filteredMedia = useMemo(() => {
@@ -126,9 +181,30 @@ export default function GallerySection({
         return selectedEvent.media.filter(m => m.media_type === filterMediaType);
     }, [selectedEvent, filterMediaType]);
 
+    const visibleMedia = useMemo(
+        () => filteredMedia.slice(0, mediaVisibleCount),
+        [filteredMedia, mediaVisibleCount],
+    );
+
+    const mediaTabCounts = useMemo(() => {
+        if (!selectedEvent) return { all: 0, image: 0, video: 0, url: 0 };
+        const media = selectedEvent.media || [];
+        return {
+            all: media.length,
+            image: media.filter((m) => m.media_type === 'IMAGE').length,
+            video: media.filter((m) => m.media_type === 'VIDEO').length,
+            url: media.filter((m) => m.media_type === 'URL').length,
+        };
+    }, [selectedEvent]);
+
+    useEffect(() => {
+        setMediaVisibleCount(MEDIA_PAGE_SIZE);
+    }, [selectedEvent?.id, filterMediaType]);
+
     const handleEventClick = (event: EventItem) => {
         setSelectedEvent(event);
-        setFilterMediaType('all'); // Reset media filter when opening an event
+        setFilterMediaType('all');
+        setMediaVisibleCount(MEDIA_PAGE_SIZE);
     };
 
     const handleBackToEvents = () => {
@@ -244,7 +320,20 @@ export default function GallerySection({
                     </h2>
 
                     {!selectedEvent && (
-                        <div className="flex justify-center">
+                        <div className="flex flex-col sm:flex-row justify-center gap-3">
+                            <div className="relative inline-block group">
+                                <select
+                                    value={filterClass}
+                                    onChange={(e) => setFilterClass(e.target.value)}
+                                    className="appearance-none bg-white text-gray-700 py-3 px-10 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.05)] border-2 border-transparent focus:outline-none focus:border-yellow-200 font-bold text-base cursor-pointer transition-all hover:scale-105 min-w-[200px] text-center"
+                                >
+                                    {eventClasses.map((label) => (
+                                        <option key={label} value={label === 'All classes' ? '' : label}>
+                                            {label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className="relative inline-block group">
                                 <select
                                     value={filterYear}
@@ -260,6 +349,16 @@ export default function GallerySection({
                             </div>
                         </div>
                     )}
+
+                    {!selectedEvent && displayEvents.length > 0 ? (
+                        <p className="mt-6 text-center text-sm font-semibold text-gray-500">
+                            {filteredEvents.length} of {galleryStats.events} event{galleryStats.events === 1 ? '' : 's'}
+                            {galleryStats.photos + galleryStats.videos + galleryStats.links > 0
+                                ? ` · ${galleryStats.photos} photos · ${galleryStats.videos} videos${galleryStats.links ? ` · ${galleryStats.links} links` : ''}`
+                                : ''}
+                            {filterClass || filterYear ? ' (filtered)' : ''}
+                        </p>
+                    ) : null}
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -269,10 +368,10 @@ export default function GallerySection({
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 px-4"
                         >
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 px-4">
                             {filteredEvents.length > 0 ? (
-                                filteredEvents.map((event, idx) => {
+                                visibleEvents.map((event, idx) => {
                                     const glowColors = [
                                         'shadow-lg group-hover:shadow-xl border-orange-200/50 hover:border-orange-300',
                                         'shadow-lg group-hover:shadow-xl border-green-200/50 hover:border-green-300',
@@ -286,7 +385,7 @@ export default function GallerySection({
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             whileInView={{ opacity: 1, scale: 1 }}
                                             viewport={{ once: true }}
-                                            transition={{ delay: idx * 0.05 }}
+                                            transition={{ delay: Math.min(idx * 0.05, 0.4) }}
                                             onClick={() => handleEventClick(event)}
                                             className={`group relative bg-white rounded-2xl overflow-hidden border-2 cursor-pointer transition-all duration-300 hover:-translate-y-1 ${cardGlow}`}
                                         >
@@ -302,7 +401,7 @@ export default function GallerySection({
                                                     const thumb =
                                                         event.media.find((m) => m.media_type === "IMAGE") ?? event.media[0];
                                                     if (!thumb) return null;
-                                                    return thumb.media_type === "VIDEO" ? (
+                                                    return thumb.media_type === "VIDEO" || thumb.media_type === "URL" ? (
                                                         <EventGalleryVideo
                                                             filePath={thumb.file}
                                                             mediaId={thumb.id}
@@ -337,9 +436,12 @@ export default function GallerySection({
                                                     <Calendar className="w-3 h-3" />
                                                     {new Date(event.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                                 </div>
-                                                <h3 className="text-base font-bold text-gray-800 mb-3 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                                <h3 className="text-base font-bold text-gray-800 mb-2 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
                                                     {event.title}
                                                 </h3>
+                                                <span className="inline-block mb-3 rounded-full bg-violet-50 px-2.5 py-0.5 text-[10px] font-bold text-violet-700 border border-violet-100">
+                                                    {eventClassLabel(event)}
+                                                </span>
 
                                                 {/* Bottom Badge */}
                                                 <div className="inline-flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100 group-hover:bg-orange-100 transition-colors">
@@ -362,10 +464,28 @@ export default function GallerySection({
                                     <p className="text-gray-400 text-xl font-bold">
                                         {displayEvents.length === 0
                                             ? "Photos and videos from your centre will appear here once uploaded in Event Gallery."
-                                            : `No events found for ${filterYear}.`}
+                                            : filterClass && filterYear
+                                              ? `No events for ${filterClass} in ${filterYear}.`
+                                              : filterClass
+                                                ? `No events for ${filterClass} yet.`
+                                                : filterYear
+                                                  ? `No events found for ${filterYear}.`
+                                                  : 'No events match your filters.'}
                                     </p>
                                 </div>
                             )}
+                        </div>
+                        {filteredEvents.length > visibleEvents.length ? (
+                            <div className="mt-10 flex justify-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setEventsVisibleCount((n) => n + EVENTS_PAGE_SIZE)}
+                                    className="rounded-full bg-[#2D3142] px-8 py-3 text-sm font-black text-white shadow-lg hover:bg-[#1f2230] transition-colors"
+                                >
+                                    Load more events ({filteredEvents.length - visibleEvents.length} remaining)
+                                </button>
+                            </div>
+                        ) : null}
                         </motion.div>
                     ) : (
                         /* VIEW 2: EVENT MEDIA DETAIL */
@@ -385,11 +505,16 @@ export default function GallerySection({
                                     <ArrowLeft className="w-5 h-5" /> Back to Album
                                 </button>
 
-                                <div className="flex bg-[#F8F9FA] p-2 rounded-3xl border border-gray-100 shadow-inner">
+                                <p className="text-sm font-bold text-gray-500 md:mx-auto">
+                                    {selectedEvent.title} · {filteredMedia.length} item{filteredMedia.length === 1 ? '' : 's'}
+                                </p>
+
+                                <div className="flex flex-wrap justify-center bg-[#F8F9FA] p-2 rounded-3xl border border-gray-100 shadow-inner gap-1">
                                     {[
-                                        { id: 'all', label: 'All Media' },
-                                        { id: 'IMAGE', label: 'Photos' },
-                                        { id: 'VIDEO', label: 'Videos' }
+                                        { id: 'all', label: `All (${mediaTabCounts.all})` },
+                                        { id: 'IMAGE', label: `Photos (${mediaTabCounts.image})` },
+                                        { id: 'VIDEO', label: `Videos (${mediaTabCounts.video})` },
+                                        ...(mediaTabCounts.url > 0 ? [{ id: 'URL', label: `Links (${mediaTabCounts.url})` }] : []),
                                     ].map((tab) => (
                                         <button
                                             key={tab.id}
@@ -404,17 +529,18 @@ export default function GallerySection({
 
                             {/* Media Grid */}
                             {filteredMedia.length > 0 ? (
+                                <>
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                                    {filteredMedia.map((item, index) => (
+                                    {visibleMedia.map((item, index) => (
                                         <motion.div
                                             key={item.id}
                                             initial={{ opacity: 0, y: 30 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.05 }}
+                                            transition={{ delay: Math.min(index * 0.03, 0.35) }}
                                             className="group relative aspect-[4/5] rounded-[32px] overflow-hidden cursor-pointer shadow-xl hover:shadow-[0_20px_40px_rgba(45,49,66,0.2)] transition-all hover:-translate-y-2"
                                             onClick={() => handleMediaClick(item)}
                                         >
-                                            {item.media_type === "VIDEO" ? (
+                                            {item.media_type === "VIDEO" || item.media_type === "URL" ? (
                                                 <EventGalleryVideo
                                                     filePath={item.file}
                                                     mediaId={item.id}
@@ -449,12 +575,28 @@ export default function GallerySection({
                                         </motion.div>
                                     ))}
                                 </div>
+                                {filteredMedia.length > visibleMedia.length ? (
+                                    <div className="mt-10 flex justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMediaVisibleCount((n) => n + MEDIA_PAGE_SIZE)}
+                                            className="rounded-full border-2 border-[#2D3142] px-8 py-3 text-sm font-black text-[#2D3142] hover:bg-[#2D3142] hover:text-white transition-colors"
+                                        >
+                                            Load more photos & videos ({filteredMedia.length - visibleMedia.length} remaining)
+                                        </button>
+                                    </div>
+                                ) : null}
+                                </>
                             ) : (
                                 <div className="text-center py-32">
                                     <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300">
                                         <ImageIcon size={40} />
                                     </div>
-                                    <p className="text-gray-400 font-bold text-lg">No {filterMediaType.toLowerCase()} found in this album.</p>
+                                    <p className="text-gray-400 font-bold text-lg">
+                                        {filterMediaType === 'all'
+                                            ? 'No media in this event yet.'
+                                            : `No ${filterMediaType === 'URL' ? 'links' : filterMediaType.toLowerCase()} in this album.`}
+                                    </p>
                                 </div>
                             )}
                         </motion.div>
@@ -469,13 +611,6 @@ export default function GallerySection({
                 >
                     {selectedMedia && (
                         <div className="relative w-full h-[80vh] flex flex-col items-center justify-center bg-transparent rounded-3xl overflow-hidden">
-                            <button
-                                onClick={closeLightbox}
-                                className="absolute top-6 right-6 z-50 p-3 bg-white/20 hover:bg-white text-gray-800 rounded-full transition-all shadow-xl backdrop-blur-md"
-                            >
-                                <X size={24} />
-                            </button>
-
                             {/* Navigation Arrows */}
                             {filteredMedia.length > 1 && (
                                 <>
@@ -494,7 +629,7 @@ export default function GallerySection({
                                 </>
                             )}
 
-                            {selectedMedia.media_type === 'VIDEO' ? (
+                            {selectedMedia.media_type === 'VIDEO' || selectedMedia.media_type === 'URL' ? (
                                 <EventGalleryVideo
                                     filePath={selectedMedia.file}
                                     mediaId={selectedMedia.id}

@@ -25,13 +25,13 @@ export default function EventGalleryPage() {
                     <div>
                         <h2 className="text-lg font-semibold text-orange-900">Event Media</h2>
                         <p className="text-sm text-orange-700">
-                            Images and videos shared by your centre. Photos and videos are shown in separate tabs.
+                            Images and videos for your child&apos;s class. Use class and photo/video tabs to filter.
                         </p>
                     </div>
                 </div>
             </section>
 
-            <ParentEventGalleryGrid media={eventMedia} eventTitleById={eventTitleById} />
+            <ParentEventGalleryGrid media={eventMedia} events={events} eventTitleById={eventTitleById} />
         </div>
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { CalendarRange, CheckCircle2, AlertCircle, Eye, MapPin, Pencil, Search, Trash2, XCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -18,10 +18,208 @@ import {
     isVideoUploadFile,
     validateEventGalleryImageSize,
 } from "@/lib/franchise-centre-upload";
+import { PORTAL_CLASS_OPTIONS, portalClassLabel } from "@/config/portal-class-options";
 
 const pastelCard = "bg-white border border-orange-100 rounded-xl shadow-sm";
 
 type MediaAlert = { type: "success" | "error" | "warning"; message: string };
+
+type EventMediaUploadFormProps = {
+    events: { id: string; title: string }[];
+    mediaEventId: string | null;
+    setMediaEventId: (id: string | null) => void;
+    showEventSelector: boolean;
+    mediaType: "image" | "video";
+    setMediaType: (type: "image" | "video") => void;
+    mediaFiles: File[];
+    setMediaFiles: React.Dispatch<React.SetStateAction<File[]>>;
+    mediaFileInputKey: number;
+    setMediaFileInputKey: React.Dispatch<React.SetStateAction<number>>;
+    videoLinkUrl: string;
+    setVideoLinkUrl: (url: string) => void;
+    mediaCaption: string;
+    setMediaCaption: (caption: string) => void;
+    mediaSubmitting: boolean;
+    onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+    onReset: () => void;
+};
+
+function mediaUploadSubmitLabel(
+    mediaType: "image" | "video",
+    videoLinkUrl: string,
+    mediaFilesCount: number,
+    mediaSubmitting: boolean,
+): string {
+    if (mediaSubmitting) return "Saving...";
+    if (mediaType === "video") {
+        const hasLink = videoLinkUrl.trim().length > 0;
+        if (hasLink && mediaFilesCount > 0) return "Save link & upload";
+        if (hasLink) return "Save video link";
+        if (mediaFilesCount > 1) return `Upload ${mediaFilesCount} videos`;
+        if (mediaFilesCount === 1) return "Upload video";
+        return "Add video";
+    }
+    if (mediaFilesCount > 1) return `Upload ${mediaFilesCount} files`;
+    return "Upload";
+}
+
+function EventMediaUploadForm({
+    events,
+    mediaEventId,
+    setMediaEventId,
+    showEventSelector,
+    mediaType,
+    setMediaType,
+    mediaFiles,
+    setMediaFiles,
+    mediaFileInputKey,
+    setMediaFileInputKey,
+    videoLinkUrl,
+    setVideoLinkUrl,
+    mediaCaption,
+    setMediaCaption,
+    mediaSubmitting,
+    onSubmit,
+    onReset,
+}: EventMediaUploadFormProps) {
+    return (
+        <form className="space-y-3" onSubmit={onSubmit}>
+            <div className="grid md:grid-cols-2 gap-3">
+                {showEventSelector ? (
+                    <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
+                        Event
+                        <select
+                            value={mediaEventId || ""}
+                            onChange={(e) => setMediaEventId(e.target.value || null)}
+                            className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                        >
+                            <option value="">Select an event</option>
+                            {events.map((event) => (
+                                <option key={event.id} value={event.id}>
+                                    {event.title}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                ) : null}
+                {mediaType === "image" ? (
+                    <label
+                        className={`flex flex-col gap-1 text-xs font-medium text-orange-700 ${showEventSelector ? "" : "md:col-span-2"}`}
+                    >
+                        Files (select any number — max 1 MB each)
+                        <input
+                            key={mediaFileInputKey}
+                            type="file"
+                            accept={IMAGE_FILE_ACCEPT}
+                            multiple
+                            onChange={(e) => {
+                                const picked = Array.from(e.target.files || []);
+                                setMediaFiles((prev) => [...prev, ...picked]);
+                                e.target.value = "";
+                            }}
+                            className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                        />
+                        {mediaFiles.length > 0 && (
+                            <span className="text-[11px] font-normal text-orange-600">
+                                {mediaFiles.length} file{mediaFiles.length === 1 ? "" : "s"} selected · 1 MB max per image ·{" "}
+                                <button
+                                    type="button"
+                                    className="underline hover:text-orange-800"
+                                    onClick={() => {
+                                        setMediaFiles([]);
+                                        setMediaFileInputKey((k) => k + 1);
+                                    }}
+                                >
+                                    Clear all
+                                </button>
+                            </span>
+                        )}
+                    </label>
+                ) : (
+                    <>
+                        <label className="flex flex-col gap-1 text-xs font-medium text-orange-700 md:col-span-2">
+                            Video link (YouTube or Bunny) — optional
+                            <input
+                                value={videoLinkUrl}
+                                onChange={(e) => setVideoLinkUrl(e.target.value)}
+                                placeholder="https://www.youtube.com/watch?v=… or Bunny iframe embed URL"
+                                className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                            />
+                            <span className="text-[11px] font-normal text-orange-600">
+                                Paste a watch link, shorts URL, or full Bunny iframe embed code.
+                            </span>
+                        </label>
+                        <label className="flex flex-col gap-1 text-xs font-medium text-orange-700 md:col-span-2">
+                            Upload video file(s) — optional
+                            <input
+                                key={mediaFileInputKey}
+                                type="file"
+                                accept={VIDEO_FILE_ACCEPT}
+                                multiple
+                                onChange={(e) => {
+                                    const picked = Array.from(e.target.files || []);
+                                    setMediaFiles((prev) => [...prev, ...picked]);
+                                    e.target.value = "";
+                                }}
+                                className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                            />
+                            {mediaFiles.length > 0 && (
+                                <span className="text-[11px] font-normal text-orange-600">
+                                    {mediaFiles.length} video{mediaFiles.length === 1 ? "" : "s"} selected ·{" "}
+                                    <button
+                                        type="button"
+                                        className="underline hover:text-orange-800"
+                                        onClick={() => {
+                                            setMediaFiles([]);
+                                            setMediaFileInputKey((k) => k + 1);
+                                        }}
+                                    >
+                                        Clear all
+                                    </button>
+                                </span>
+                            )}
+                        </label>
+                    </>
+                )}
+                <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
+                    Type
+                    <select
+                        value={mediaType}
+                        onChange={(e) => {
+                            setMediaType(e.target.value as "image" | "video");
+                            setMediaFiles([]);
+                            setMediaFileInputKey((k) => k + 1);
+                            setVideoLinkUrl("");
+                        }}
+                        className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                    >
+                        <option value="image">Image</option>
+                        <option value="video">Video</option>
+                    </select>
+                </label>
+                <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
+                    {mediaType === "video" ? "Caption (optional)" : "Caption (optional, same for all)"}
+                    <input
+                        value={mediaCaption}
+                        onChange={(e) => setMediaCaption(e.target.value)}
+                        className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                        placeholder={
+                            mediaType === "video" ? "Short label for this video" : "Short description applied to each file"
+                        }
+                    />
+                </label>
+            </div>
+            <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={mediaSubmitting}>
+                    {mediaUploadSubmitLabel(mediaType, videoLinkUrl, mediaFiles.length, mediaSubmitting)}
+                </Button>
+                <Button type="button" size="sm" variant="outline" disabled={mediaSubmitting} onClick={onReset}>
+                    Reset
+                </Button>
+            </div>
+        </form>
+    );
+}
 
 function MediaUploadAlert({ alert }: { alert: MediaAlert }) {
     const styles =
@@ -54,9 +252,9 @@ export default function FranchiseEventsPage() {
     const publicCentrePath =
         profile.slug && profile.city ? centrePublicPagePath(profile.city, profile.slug) : null;
 
-    const editSectionRef = useRef<HTMLElement>(null);
     const [query, setQuery] = useState("");
-    const [form, setForm] = useState({ title: "", date: "", venue: "", notes: "" });
+    const [addForm, setAddForm] = useState({ title: "", date: "", venue: "", notes: "", className: "" });
+    const [editForm, setEditForm] = useState({ title: "", date: "", venue: "", notes: "", className: "" });
     const [editingId, setEditingId] = useState<string | null>(null);
     const [viewId, setViewId] = useState<string | null>(null);
 
@@ -74,49 +272,104 @@ export default function FranchiseEventsPage() {
     const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
 
     const filtered = useMemo(() => {
-        const term = query.toLowerCase();
-        return events.filter((e) => [e.title, e.venue, e.date].some((f) => (f || "").toLowerCase().includes(term)));
+        const term = query.toLowerCase().trim();
+        if (!term) return events;
+        return events.filter((e) =>
+            [e.title, e.venue, e.date, e.audienceLabel, e.className, portalClassLabel(e.className)]
+                .some((f) => (f || "").toLowerCase().includes(term)),
+        );
     }, [events, query]);
 
-    useEffect(() => {
-        if (editingId && editSectionRef.current) {
-            editSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-    }, [editingId]);
-
-    useEffect(() => {
-        if (editingId) setMediaEventId(editingId);
-    }, [editingId]);
-
-    const resetForm = () => {
-        setForm({ title: "", date: "", venue: "", notes: "" });
-        setEditingId(null);
+    const resetAddForm = () => {
+        setAddForm({ title: "", date: "", venue: "", notes: "", className: "" });
     };
 
-    const handleSaveEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+    const resetMediaUploadFields = (clearEvent = false) => {
+        setMediaCaption("");
+        setMediaFiles([]);
+        setMediaFileInputKey((k) => k + 1);
+        setVideoLinkUrl("");
+        setMediaType("image");
+        setMediaAlert(null);
+        if (clearEvent) setMediaEventId(null);
+    };
+
+    const closeEditModal = () => {
+        setEditingId(null);
+        setEditForm({ title: "", date: "", venue: "", notes: "", className: "" });
+        setEventError(null);
+        resetMediaUploadFields();
+    };
+
+    const openEditModal = (event: (typeof events)[number]) => {
+        const rawDate = event.date || "";
+        const dateOnly = rawDate.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? rawDate.slice(0, 10);
+        setEditingId(event.id);
+        setMediaEventId(event.id);
+        resetMediaUploadFields();
+        setEditForm({
+            title: event.title || "",
+            date: dateOnly,
+            venue: event.venue || "",
+            notes: event.notes || "",
+            className: event.className || "",
+        });
+        setEventError(null);
+    };
+
+    const handleSaveAdd = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!form.title.trim()) return;
-        if (!form.date?.trim()) {
+        if (!addForm.title.trim()) return;
+        if (!addForm.date?.trim()) {
             setEventError("Please choose an event date.");
             return;
         }
         setEventError(null);
         setSubmitting(true);
         try {
-            if (editingId) {
-                await updateEvent(editingId, form);
-            } else {
-                await addEvent(form);
-            }
-            resetForm();
-        } catch (err: any) {
-            setEventError(err?.message || "Unable to save event");
+            await addEvent(addForm);
+            resetAddForm();
+            showToast("Event created.", "success");
+        } catch (err: unknown) {
+            setEventError(err instanceof Error ? err.message : "Unable to save event");
         } finally {
             setSubmitting(false);
         }
     };
 
-    const selectedEventTitle = events.find((ev) => ev.id === mediaEventId)?.title || "this event";
+    const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!editingId || !editForm.title.trim()) return;
+        if (!editForm.date?.trim()) {
+            setEventError("Please choose an event date.");
+            return;
+        }
+        setEventError(null);
+        setSubmitting(true);
+        try {
+            await updateEvent(editingId, editForm);
+            showToast("Event updated.", "success");
+            closeEditModal();
+        } catch (err: unknown) {
+            setEventError(err instanceof Error ? err.message : "Unable to save event");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDeleteEventFromModal = async () => {
+        if (!editingId || !confirm("Delete this event and all its photos/videos?")) return;
+        try {
+            await deleteEvent(editingId);
+            showToast("Event deleted.", "success");
+            closeEditModal();
+        } catch (err: unknown) {
+            showToast(err instanceof Error ? err.message : "Could not delete event.", "error");
+        }
+    };
+
+    const uploadTargetEventId = editingId || mediaEventId;
+    const selectedEventTitle = events.find((ev) => ev.id === uploadTargetEventId)?.title || "this event";
 
     const showMediaResult = (alert: MediaAlert) => {
         setMediaAlert(alert);
@@ -125,7 +378,8 @@ export default function FranchiseEventsPage() {
 
     const handleUploadMedia = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!mediaEventId) {
+        const targetEventId = editingId || mediaEventId;
+        if (!targetEventId) {
             showMediaResult({ type: "error", message: "Select an event before uploading photos or videos." });
             return;
         }
@@ -154,7 +408,7 @@ export default function FranchiseEventsPage() {
             if (hasVideoLink) {
                 try {
                     await addEventMedia({
-                        eventId: mediaEventId,
+                        eventId: targetEventId,
                         title: mediaCaption.trim() || "Video",
                         description: mediaCaption || undefined,
                         type: "video",
@@ -190,7 +444,7 @@ export default function FranchiseEventsPage() {
                 }
                 try {
                     await addEventMedia({
-                        eventId: mediaEventId,
+                        eventId: targetEventId,
                         title: file.name,
                         description: mediaCaption || undefined,
                         type: mediaType,
@@ -265,8 +519,8 @@ export default function FranchiseEventsPage() {
                 <div>
                     <h1 className="text-2xl font-semibold text-orange-900">Event Gallery</h1>
                     <p className="text-sm text-orange-700">
-                        Create events and upload photos/videos. They appear on your public centre page under
-                        &ldquo;Life at [your centre]&rdquo;.
+                        Create events class-wise and upload photos/videos. <strong>All classes</strong> events also appear on your public centre page;
+                        class-specific events are visible only to parents in that class.
                     </p>
                     <p className="text-xs text-orange-600 mt-1">
                         Photos: <strong>max 1 MB each</strong>, upload <strong>as many as you need</strong> in one go.
@@ -298,109 +552,54 @@ export default function FranchiseEventsPage() {
                     <input
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search events"
+                        placeholder="Search events, class, or venue"
                         className="w-full rounded-xl border border-orange-200 bg-white py-2.5 pl-10 pr-3 text-sm text-orange-900 focus:border-orange-400 focus:outline-none shadow-sm"
                     />
                 </div>
             </header>
 
-            <section ref={editSectionRef} className={`${pastelCard} p-6 space-y-3`}>
+            <section className={`${pastelCard} p-6 space-y-3`}>
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-xs uppercase font-semibold text-orange-600">{editingId ? "Edit" : "Add"} Event</p>
-                        <h2 className="text-lg font-semibold text-orange-900">{editingId ? "Update event details" : "Create a new event"}</h2>
-                        {editingId && (
-                            <p className="text-xs text-orange-600 mt-1">
-                                Update title, date, venue, and notes below. Remove photos or videos in the grid below, or add more in{" "}
-                                <strong>Add Media</strong>.
-                            </p>
-                        )}
+                        <p className="text-xs uppercase font-semibold text-orange-600">Add Event</p>
+                        <h2 className="text-lg font-semibold text-orange-900">Create a new event</h2>
                     </div>
                     <span className="px-3 py-1 text-xs font-semibold rounded-full bg-orange-50 text-orange-700">{events.length} total</span>
                 </div>
-                {eventError && <p className="text-sm text-red-600">{eventError}</p>}
-                <form className="space-y-3" onSubmit={handleSaveEvent}>
+                {eventError && !editingId ? <p className="text-sm text-red-600">{eventError}</p> : null}
+                <form className="space-y-3" onSubmit={handleSaveAdd}>
                     <div className="grid md:grid-cols-2 gap-3">
-                        <Input label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-                        <Input label="Date" type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-                        <Input label="Venue" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} />
-                        <Input label="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                        <Input label="Title" value={addForm.title} onChange={(e) => setAddForm({ ...addForm, title: e.target.value })} required />
+                        <Input label="Date" type="date" required value={addForm.date} onChange={(e) => setAddForm({ ...addForm, date: e.target.value })} />
+                        <label className="flex flex-col gap-1 text-xs font-medium text-orange-700 md:col-span-2">
+                            Class
+                            <select
+                                value={addForm.className}
+                                onChange={(e) => setAddForm({ ...addForm, className: e.target.value })}
+                                className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                            >
+                                {PORTAL_CLASS_OPTIONS.map((opt) => (
+                                    <option key={opt.value || "all"} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <span className="text-[11px] font-normal text-orange-600">
+                                Choose &ldquo;All classes&rdquo; for centre-wide and public page gallery.
+                            </span>
+                        </label>
+                        <Input label="Venue" value={addForm.venue} onChange={(e) => setAddForm({ ...addForm, venue: e.target.value })} />
+                        <Input label="Notes" value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} />
                     </div>
                     <div className="flex gap-2">
                         <Button type="submit" size="sm" disabled={submitting}>
-                            {submitting ? "Saving..." : editingId ? "Save Changes" : "Add Event"}
+                            {submitting ? "Saving..." : "Add Event"}
                         </Button>
-                        <Button type="button" size="sm" variant="outline" disabled={submitting} onClick={resetForm}>
+                        <Button type="button" size="sm" variant="outline" disabled={submitting} onClick={resetAddForm}>
                             Reset
                         </Button>
                     </div>
                 </form>
-
-                {editingId && mediaForEditing.length > 0 && (
-                    <div className="rounded-xl border border-orange-100 bg-orange-50/60 p-4 mt-4">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-orange-700 mb-3">Photos & videos for this event</p>
-                        <p className="text-[11px] text-orange-600 mb-3">Tap remove to delete one file from this event (does not delete the event).</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                            {mediaForEditing.map((m) => (
-                                <div key={m.id} className="relative aspect-square rounded-lg overflow-hidden border border-orange-100 bg-white shadow-sm">
-                                    {m.type === "video" ? (
-                                        <EventGalleryVideo
-                                            filePath={m.filePath}
-                                            mediaId={Number(m.id)}
-                                            accessToken={tokens?.access}
-                                            caption={m.title}
-                                            className="h-full w-full object-cover"
-                                            controls={false}
-                                            muted
-                                            playsInline
-                                            preload="metadata"
-                                        />
-                                    ) : (
-                                        <EventGalleryImage
-                                            file={m.filePath}
-                                            mediaId={Number(m.id)}
-                                            accessToken={tokens?.access}
-                                            caption={m.title}
-                                            alt={m.title || ""}
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    )}
-                                    <button
-                                        type="button"
-                                        disabled={deletingMediaId !== null}
-                                        onClick={async () => {
-                                            if (!confirm("Remove this photo or video from the event?")) return;
-                                            setDeletingMediaId(m.id);
-                                            setMediaAlert(null);
-                                            try {
-                                                await deleteEventMedia(editingId, m.id);
-                                                showMediaResult({ type: "success", message: "Photo or video removed from this event." });
-                                            } catch (err: unknown) {
-                                                showMediaResult({
-                                                    type: "error",
-                                                    message: err instanceof Error ? err.message : "Could not remove media.",
-                                                });
-                                            } finally {
-                                                setDeletingMediaId(null);
-                                            }
-                                        }}
-                                        className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 disabled:opacity-50 transition-colors"
-                                        title="Remove from event"
-                                        aria-label="Remove from event"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                    {(m.description || m.title) && (
-                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5">
-                                            <p className="text-[10px] text-white truncate">{m.description || m.title}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </section>
 
             <section className={`${pastelCard} p-6 space-y-3`}>
@@ -412,171 +611,32 @@ export default function FranchiseEventsPage() {
                         </h2>
                     </div>
                 </div>
-                {mediaAlert ? <MediaUploadAlert alert={mediaAlert} /> : null}
-                {mediaSubmitting ? (
+                {mediaAlert && !editingId ? <MediaUploadAlert alert={mediaAlert} /> : null}
+                {mediaSubmitting && !editingId ? (
                     <p className="text-sm text-orange-700 font-medium">Uploading… please wait.</p>
                 ) : null}
-                <form className="space-y-3" onSubmit={handleUploadMedia}>
-                    <div className="grid md:grid-cols-2 gap-3">
-                        <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
-                            Event
-                            <select
-                                value={mediaEventId || ""}
-                                onChange={(e) => setMediaEventId(e.target.value || null)}
-                                className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
-                            >
-                                <option value="">Select an event</option>
-                                {events.map((event) => (
-                                    <option key={event.id} value={event.id}>
-                                        {event.title}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        {mediaType === "image" ? (
-                            <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
-                                Files (select any number — max 1 MB each)
-                                <input
-                                    key={mediaFileInputKey}
-                                    type="file"
-                                    accept={IMAGE_FILE_ACCEPT}
-                                    multiple
-                                    onChange={(e) => {
-                                        const picked = Array.from(e.target.files || []);
-                                        setMediaFiles((prev) => [...prev, ...picked]);
-                                        e.target.value = "";
-                                    }}
-                                    className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
-                                />
-                                {mediaFiles.length > 0 && (
-                                    <span className="text-[11px] font-normal text-orange-600">
-                                        {mediaFiles.length} file{mediaFiles.length === 1 ? "" : "s"} selected · 1 MB max per image ·{" "}
-                                        <button
-                                            type="button"
-                                            className="underline hover:text-orange-800"
-                                            onClick={() => {
-                                                setMediaFiles([]);
-                                                setMediaFileInputKey((k) => k + 1);
-                                            }}
-                                        >
-                                            Clear all
-                                        </button>
-                                    </span>
-                                )}
-                            </label>
-                        ) : (
-                            <>
-                                <label className="flex flex-col gap-1 text-xs font-medium text-orange-700 md:col-span-2">
-                                    Video link (YouTube or Bunny) — optional
-                                    <input
-                                        value={videoLinkUrl}
-                                        onChange={(e) => setVideoLinkUrl(e.target.value)}
-                                        placeholder="https://www.youtube.com/watch?v=… or Bunny iframe embed URL"
-                                        className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
-                                    />
-                                    <span className="text-[11px] font-normal text-orange-600">
-                                        Paste a watch link, shorts URL, or full Bunny iframe embed code.
-                                    </span>
-                                </label>
-                                <label className="flex flex-col gap-1 text-xs font-medium text-orange-700 md:col-span-2">
-                                    Upload video file(s) — optional
-                                    <input
-                                        key={mediaFileInputKey}
-                                        type="file"
-                                        accept={VIDEO_FILE_ACCEPT}
-                                        multiple
-                                        onChange={(e) => {
-                                            const picked = Array.from(e.target.files || []);
-                                            setMediaFiles((prev) => [...prev, ...picked]);
-                                            e.target.value = "";
-                                        }}
-                                        className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
-                                    />
-                                    {mediaFiles.length > 0 && (
-                                        <span className="text-[11px] font-normal text-orange-600">
-                                            {mediaFiles.length} video{mediaFiles.length === 1 ? "" : "s"} selected ·{" "}
-                                            <button
-                                                type="button"
-                                                className="underline hover:text-orange-800"
-                                                onClick={() => {
-                                                    setMediaFiles([]);
-                                                    setMediaFileInputKey((k) => k + 1);
-                                                }}
-                                            >
-                                                Clear all
-                                            </button>
-                                        </span>
-                                    )}
-                                </label>
-                            </>
-                        )}
-                        <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
-                            Type
-                            <select
-                                value={mediaType}
-                                onChange={(e) => {
-                                    setMediaType(e.target.value as "image" | "video");
-                                    setMediaFiles([]);
-                                    setMediaFileInputKey((k) => k + 1);
-                                    setVideoLinkUrl("");
-                                    setMediaAlert(null);
-                                }}
-                                className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
-                            >
-                                <option value="image">Image</option>
-                                <option value="video">Video</option>
-                            </select>
-                        </label>
-                        <label className="flex flex-col gap-1 text-xs font-medium text-orange-700">
-                            {mediaType === "video" ? "Caption (optional)" : "Caption (optional, same for all)"}
-                            <input
-                                value={mediaCaption}
-                                onChange={(e) => setMediaCaption(e.target.value)}
-                                className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
-                                placeholder={
-                                    mediaType === "video"
-                                        ? "Short label for this video"
-                                        : "Short description applied to each file"
-                                }
-                            />
-                        </label>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button type="submit" size="sm" disabled={mediaSubmitting}>
-                            {mediaSubmitting
-                                ? "Saving..."
-                                : mediaType === "video"
-                                  ? videoLinkUrl.trim() && mediaFiles.length > 0
-                                      ? "Save link & upload"
-                                      : videoLinkUrl.trim()
-                                        ? "Save video link"
-                                        : mediaFiles.length > 1
-                                          ? `Upload ${mediaFiles.length} videos`
-                                          : mediaFiles.length === 1
-                                            ? "Upload video"
-                                            : "Add video"
-                                  : mediaFiles.length > 1
-                                    ? `Upload ${mediaFiles.length} files`
-                                    : "Upload"}
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={mediaSubmitting}
-                            onClick={() => {
-                                setMediaCaption("");
-                                setMediaFiles([]);
-                                setMediaFileInputKey((k) => k + 1);
-                                setVideoLinkUrl("");
-                                setMediaEventId(null);
-                                setMediaAlert(null);
-                            }}
-                        >
-                            Reset
-                        </Button>
-                    </div>
-                </form>
+                <EventMediaUploadForm
+                    events={events}
+                    mediaEventId={mediaEventId}
+                    setMediaEventId={setMediaEventId}
+                    showEventSelector
+                    mediaType={mediaType}
+                    setMediaType={(type) => {
+                        setMediaType(type);
+                        setMediaAlert(null);
+                    }}
+                    mediaFiles={mediaFiles}
+                    setMediaFiles={setMediaFiles}
+                    mediaFileInputKey={mediaFileInputKey}
+                    setMediaFileInputKey={setMediaFileInputKey}
+                    videoLinkUrl={videoLinkUrl}
+                    setVideoLinkUrl={setVideoLinkUrl}
+                    mediaCaption={mediaCaption}
+                    setMediaCaption={setMediaCaption}
+                    mediaSubmitting={mediaSubmitting}
+                    onSubmit={handleUploadMedia}
+                    onReset={() => resetMediaUploadFields(true)}
+                />
             </section>
 
             <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -592,6 +652,9 @@ export default function FranchiseEventsPage() {
                                     <p className="text-xs text-orange-700 flex items-center gap-1">
                                         <MapPin className="w-3 h-3" /> {event.venue || "—"}
                                     </p>
+                                    <span className="mt-1 inline-block rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-orange-700 border border-orange-100">
+                                        {portalClassLabel(event.className)}
+                                    </span>
                                 </div>
                             </div>
                             <span className="px-2 py-1 text-[11px] rounded-full bg-orange-50 text-orange-700">{event.date || "Date"}</span>
@@ -601,22 +664,7 @@ export default function FranchiseEventsPage() {
                             <Button size="sm" variant="outline" onClick={() => setViewId(event.id)}>
                                 <Eye className="w-4 h-4" /> View
                             </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                    setEditingId(event.id);
-                                    const { id, ...rest } = event;
-                                    const rawDate = rest.date || "";
-                                    const dateOnly = rawDate.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? rawDate.slice(0, 10);
-                                    setForm({
-                                        title: rest.title || "",
-                                        date: dateOnly,
-                                        venue: rest.venue || "",
-                                        notes: rest.notes || "",
-                                    });
-                                }}
-                            >
+                            <Button size="sm" variant="outline" onClick={() => openEditModal(event)}>
                                 <Pencil className="w-4 h-4" /> Edit
                             </Button>
                             <Button
@@ -633,8 +681,192 @@ export default function FranchiseEventsPage() {
                 {filtered.length === 0 && <p className="text-sm text-orange-700">No events match your search.</p>}
             </section>
 
+            {editingId && (
+                <Modal isOpen onClose={closeEditModal} title="Edit event" size="lg" placement="center">
+                    <div className="space-y-5">
+                    <form id="edit-event-form" className="space-y-5" onSubmit={handleSaveEdit}>
+                        {eventError ? <p className="text-sm text-red-600">{eventError}</p> : null}
+                        <div className="grid md:grid-cols-2 gap-3">
+                            <Input
+                                label="Title"
+                                value={editForm.title}
+                                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                required
+                            />
+                            <Input
+                                label="Date"
+                                type="date"
+                                required
+                                value={editForm.date}
+                                onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                            />
+                            <label className="flex flex-col gap-1 text-xs font-medium text-orange-700 md:col-span-2">
+                                Class
+                                <select
+                                    value={editForm.className}
+                                    onChange={(e) => setEditForm({ ...editForm, className: e.target.value })}
+                                    className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
+                                >
+                                    {PORTAL_CLASS_OPTIONS.map((opt) => (
+                                        <option key={opt.value || "all"} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                            <Input
+                                label="Venue"
+                                value={editForm.venue}
+                                onChange={(e) => setEditForm({ ...editForm, venue: e.target.value })}
+                            />
+                            <Input
+                                label="Notes"
+                                value={editForm.notes}
+                                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                            />
+                        </div>
+
+                    </form>
+
+                        <div className="rounded-xl border border-orange-100 bg-orange-50/60 p-4 space-y-4">
+                            <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-orange-700 mb-1">
+                                Photos & videos for this event
+                            </p>
+                            <p className="text-[11px] text-orange-600">
+                                Remove items you no longer need, or upload more photos and videos below.
+                            </p>
+                            </div>
+                            {mediaForEditing.length === 0 ? (
+                                <p className="text-sm text-orange-700">No media yet for this event.</p>
+                            ) : (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {mediaForEditing.map((m) => (
+                                        <div
+                                            key={m.id}
+                                            className="flex flex-col rounded-lg overflow-hidden border border-orange-100 bg-white shadow-sm"
+                                        >
+                                            <div className="relative aspect-square">
+                                                {m.type === "video" || m.type === "url" ? (
+                                                    <EventGalleryVideo
+                                                        filePath={m.filePath}
+                                                        mediaId={m.type === "url" ? undefined : Number(m.id)}
+                                                        accessToken={tokens?.access}
+                                                        caption={m.title}
+                                                        className="h-full w-full object-cover"
+                                                        controls={false}
+                                                        muted
+                                                        playsInline
+                                                        preload="metadata"
+                                                    />
+                                                ) : (
+                                                    <EventGalleryImage
+                                                        file={m.filePath}
+                                                        mediaId={Number(m.id)}
+                                                        accessToken={tokens?.access}
+                                                        caption={m.title}
+                                                        alt={m.title || ""}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                )}
+                                            </div>
+                                            <div className="flex items-center justify-between gap-2 px-2 py-2 border-t border-orange-50">
+                                                <span className="text-[10px] font-semibold uppercase text-orange-700">
+                                                    {m.type === "url" ? "Link" : m.type === "video" ? "Video" : "Photo"}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    disabled={deletingMediaId !== null}
+                                                    onClick={async () => {
+                                                        if (!confirm("Remove this file from the event?")) return;
+                                                        setDeletingMediaId(m.id);
+                                                        try {
+                                                            await deleteEventMedia(editingId, m.id);
+                                                            showToast("File removed.", "success");
+                                                        } catch (err: unknown) {
+                                                            showToast(
+                                                                err instanceof Error ? err.message : "Could not remove file.",
+                                                                "error",
+                                                            );
+                                                        } finally {
+                                                            setDeletingMediaId(null);
+                                                        }
+                                                    }}
+                                                    className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="pt-4 border-t border-orange-100 space-y-3">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">
+                                        Add photos or videos
+                                    </p>
+                                    <p className="text-[11px] text-orange-600 mt-0.5">
+                                        Photos: max 1 MB each. Videos: YouTube/Bunny link and/or MP4 upload.
+                                    </p>
+                                </div>
+                                {mediaAlert ? <MediaUploadAlert alert={mediaAlert} /> : null}
+                                {mediaSubmitting ? (
+                                    <p className="text-sm text-orange-700 font-medium">Uploading… please wait.</p>
+                                ) : null}
+                                <EventMediaUploadForm
+                                    events={events}
+                                    mediaEventId={editingId}
+                                    setMediaEventId={setMediaEventId}
+                                    showEventSelector={false}
+                                    mediaType={mediaType}
+                                    setMediaType={(type) => {
+                                        setMediaType(type);
+                                        setMediaAlert(null);
+                                    }}
+                                    mediaFiles={mediaFiles}
+                                    setMediaFiles={setMediaFiles}
+                                    mediaFileInputKey={mediaFileInputKey}
+                                    setMediaFileInputKey={setMediaFileInputKey}
+                                    videoLinkUrl={videoLinkUrl}
+                                    setVideoLinkUrl={setVideoLinkUrl}
+                                    mediaCaption={mediaCaption}
+                                    setMediaCaption={setMediaCaption}
+                                    mediaSubmitting={mediaSubmitting}
+                                    onSubmit={handleUploadMedia}
+                                    onReset={() => resetMediaUploadFields()}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-orange-100">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="!text-red-600 !border-red-200 hover:!bg-red-50"
+                                onClick={() => void handleDeleteEventFromModal()}
+                            >
+                                <Trash2 className="w-4 h-4" /> Delete event
+                            </Button>
+                            <div className="flex gap-2">
+                                <Button type="button" size="sm" variant="outline" onClick={closeEditModal}>
+                                    Cancel
+                                </Button>
+                                <Button form="edit-event-form" type="submit" size="sm" disabled={submitting}>
+                                    {submitting ? "Saving…" : "Save changes"}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
             {viewing && (
-                <Modal isOpen onClose={() => setViewId(null)} title="Event details" size="lg">
+                <Modal isOpen onClose={() => setViewId(null)} title="Event details" size="lg" placement="center">
                     <div className="space-y-4 text-sm text-orange-900 max-h-[min(85vh,720px)] overflow-y-auto pr-1">
                         <div>
                             <p className="text-xl font-semibold text-orange-950">{viewing.title}</p>
@@ -646,6 +878,9 @@ export default function FranchiseEventsPage() {
                                 <span className="inline-flex items-center gap-1">
                                     <MapPin className="w-3.5 h-3.5 shrink-0" />
                                     {viewing.venue || "—"}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-800 border border-orange-100">
+                                    {portalClassLabel(viewing.className)}
                                 </span>
                             </div>
                             {viewing.notes ? (
@@ -672,10 +907,10 @@ export default function FranchiseEventsPage() {
                                                 key={m.id}
                                                 className="relative aspect-square rounded-lg overflow-hidden border border-orange-100 bg-orange-100/50 shadow-sm"
                                             >
-                                                {m.type === "video" ? (
+                                                {m.type === "video" || m.type === "url" ? (
                                                     <EventGalleryVideo
                                                         filePath={m.filePath}
-                                                        mediaId={Number(m.id)}
+                                                        mediaId={m.type === "url" ? undefined : Number(m.id)}
                                                         accessToken={tokens?.access}
                                                         caption={m.title}
                                                         className="h-full w-full object-cover"
