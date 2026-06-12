@@ -13,6 +13,8 @@ import Modal from "@/components/ui/Modal";
 import { openParentDocumentFile } from "@/lib/parent-document-file-open";
 import { acceptForParentDocumentCategory, uploadHintForParentDocumentCategory } from "@/lib/parent-document-upload-accept";
 import {
+    PARENT_NEWSLETTER_AUDIO_EMBED_HINT,
+    PARENT_NEWSLETTER_AUDIO_EMBED_LABEL,
     PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT,
     PARENT_NEWSLETTER_AUDIO_FILE_HINT,
     PARENT_NEWSLETTER_AUDIO_UPLOAD_LABEL,
@@ -22,6 +24,7 @@ import {
     PARENT_NEWSLETTER_UPLOAD_LABEL,
     PARENT_NEWSLETTER_VIDEO_EMBED_HINT,
     PARENT_NEWSLETTER_VIDEO_EMBED_LABEL,
+    validateNewsletterAudioEmbedUrl,
     validateNewsletterAudioUpload,
     validateNewsletterUpload,
     validateNewsletterVideoEmbedUrl,
@@ -215,6 +218,7 @@ type NewsLetterRow = {
     file: string;
     video_embed_url?: string;
     audio_file?: string;
+    audio_embed_url?: string;
     period_start?: string | null;
     period_end?: string | null;
     created_at?: string;
@@ -253,12 +257,13 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
     const { authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
     const [rows, setRows] = useState<NewsLetterRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [uploading, setUploading] = useState(false);
+    const [uploadingKind, setUploadingKind] = useState<"pdf" | "video" | "audio" | null>(null);
     const [title, setTitle] = useState("");
     const [assignedDate, setAssignedDate] = useState(todayLocal);
     const [file, setFile] = useState<File | null>(null);
     const [videoEmbedUrl, setVideoEmbedUrl] = useState("");
     const [audioFile, setAudioFile] = useState<File | null>(null);
+    const [audioEmbedUrl, setAudioEmbedUrl] = useState("");
     const [trackDate, setTrackDate] = useState(todayLocal);
     const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
     const [editModal, setEditModal] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
@@ -271,6 +276,8 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
         video_embed_url: "",
         audio_file: null as File | null,
         existingAudioName: "",
+        audio_embed_url: "",
+        existingAudioEmbed: "",
     });
 
     const load = useCallback(async () => {
@@ -312,19 +319,20 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
         [fetchNewslettersForDate, rows],
     );
 
-    const patchNewsletterRecord = async (
-        rowId: number,
-        opts: {
-            title: string;
-            date: string;
-            videoEmbedUrl?: string;
-            audioFile?: File | null;
-            pdfFile?: File | null;
-        },
-    ) => {
+    const upsertNewsletter = async (opts: {
+        date: string;
+        title: string;
+        pdfFile?: File;
+        videoEmbedUrl?: string;
+        audioFile?: File;
+        audioEmbedUrl?: string;
+    }) => {
         const video = (opts.videoEmbedUrl || "").trim();
+        const audioLink = (opts.audioEmbedUrl || "").trim();
         const videoErr = validateNewsletterVideoEmbedUrl(video);
         if (videoErr) throw new Error(videoErr);
+        const audioLinkErr = validateNewsletterAudioEmbedUrl(audioLink);
+        if (audioLinkErr) throw new Error(audioLinkErr);
         if (opts.audioFile) {
             const audioErr = validateNewsletterAudioUpload(opts.audioFile);
             if (audioErr) throw new Error(audioErr);
@@ -334,126 +342,129 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
             if (pdfErr) throw new Error(pdfErr);
         }
 
+        let lookupDate = opts.date;
+        let resolved = await resolveExistingNewsletter(lookupDate);
+        if (resolved === "none" && trackDate !== lookupDate) {
+            const alt = await resolveExistingNewsletter(trackDate);
+            if (typeof alt === "object") {
+                resolved = alt;
+                lookupDate = trackDate;
+            }
+        }
+        if (resolved === "many") {
+            throw new Error("Multiple newsletters on this date — click Edit on the one you want.");
+        }
+
         const fd = new FormData();
-        fd.append("title", opts.title.trim() || "Newsletter");
-        fd.append("period_start", opts.date);
-        fd.append("period_end", opts.date);
-        if (video) fd.append("video_embed_url", video);
+        const rowTitle =
+            opts.title.trim() ||
+            (typeof resolved === "object" ? resolved.title : "") ||
+            (opts.pdfFile ? opts.pdfFile.name.replace(/\.[^.]+$/i, "") : "Newsletter");
+        fd.append("title", rowTitle);
+        fd.append("period_start", lookupDate);
+        fd.append("period_end", lookupDate);
         if (opts.pdfFile) fd.append("file", opts.pdfFile);
+        if (video) fd.append("video_embed_url", video);
         if (opts.audioFile) fd.append("audio_file", opts.audioFile);
-        await authFetch(`/documents/franchise/parent-documents/${rowId}/`, { method: "PATCH", body: fd });
+        if (audioLink) fd.append("audio_embed_url", audioLink);
+
+        if (typeof resolved === "object") {
+            await authFetch(`/documents/franchise/parent-documents/${resolved.id}/`, { method: "PATCH", body: fd });
+        } else {
+            await authFetch("/documents/franchise/parent-documents/", { method: "POST", body: fd });
+        }
+        return lookupDate;
     };
 
-    const submit = async (e: FormEvent) => {
-        e.preventDefault();
+    const submitPdfOnly = async () => {
         if (!assignedDate) {
             showToast("Select a date.", "error");
             return;
         }
-
-        const hasVideo = videoEmbedUrl.trim().length > 0;
-        const hasAudio = Boolean(audioFile);
-
         if (!file) {
-            if (!hasVideo && !hasAudio) {
-                showToast("Choose a PDF or Word document to upload.", "error");
-                return;
-            }
-            setUploading(true);
-            try {
-                let lookupDate = assignedDate;
-                let resolved = await resolveExistingNewsletter(lookupDate);
-                if (resolved === "none" && trackDate !== assignedDate) {
-                    resolved = await resolveExistingNewsletter(trackDate);
-                    if (typeof resolved === "object") {
-                        lookupDate = trackDate;
-                        setAssignedDate(trackDate);
-                    }
-                }
-                if (resolved === "none") {
-                    showToast(
-                        `No newsletter found for ${assignedDate}. Upload the PDF first (same date), or match the Track date on the right.`,
-                        "error",
-                    );
-                    return;
-                }
-                if (resolved === "many") {
-                    showToast("Multiple newsletters on this date — click Edit on the one you want.", "error");
-                    return;
-                }
-                const row = resolved;
-                await patchNewsletterRecord(row.id, {
-                    title: title.trim() || row.title,
-                    date: lookupDate,
-                    videoEmbedUrl: hasVideo ? videoEmbedUrl : undefined,
-                    audioFile: hasAudio ? audioFile : null,
-                });
-                if (hasVideo) setVideoEmbedUrl("");
-                if (hasAudio) setAudioFile(null);
-                setTrackDate(lookupDate);
-                showToast(
-                    hasVideo && hasAudio
-                        ? "Video and audio added to your newsletter."
-                        : hasVideo
-                          ? "Video link saved to your newsletter."
-                          : "Audio file saved to your newsletter.",
-                    "success",
-                );
-                await load();
-            } catch (err: unknown) {
-                showToast(apiErrorMessage(err, "Could not add video or audio."), "error");
-            } finally {
-                setUploading(false);
-            }
+            showToast("Choose a PDF or Word document.", "error");
             return;
         }
-
-        const sizeErr = validateNewsletterUpload(file);
-        if (sizeErr) {
-            showToast(sizeErr, "error");
-            return;
-        }
-        const videoErr = validateNewsletterVideoEmbedUrl(videoEmbedUrl);
-        if (videoErr) {
-            showToast(videoErr, "error");
-            return;
-        }
-        setUploading(true);
+        setUploadingKind("pdf");
         try {
-            const fd = new FormData();
-            fd.append("title", title.trim() || file.name.replace(/\.[^.]+$/i, ""));
-            fd.append("period_start", assignedDate);
-            fd.append("period_end", assignedDate);
-            fd.append("file", file);
-            if (hasVideo) fd.append("video_embed_url", videoEmbedUrl.trim());
-            if (audioFile) {
-                const audioErr = validateNewsletterAudioUpload(audioFile);
-                if (audioErr) {
-                    showToast(audioErr, "error");
-                    setUploading(false);
-                    return;
-                }
-                fd.append("audio_file", audioFile);
-            }
-            await authFetch("/documents/franchise/parent-documents/", { method: "POST", body: fd });
-            const uploadedDate = assignedDate;
-            setTitle("");
+            const lookupDate = await upsertNewsletter({
+                date: assignedDate,
+                title: title.trim(),
+                pdfFile: file,
+            });
             setFile(null);
-            setVideoEmbedUrl("");
-            setAudioFile(null);
-            setTrackDate(uploadedDate);
-            setAssignedDate(uploadedDate);
-            showToast(
-                hasVideo || hasAudio
-                    ? "Newsletter uploaded with PDF and media for parents."
-                    : "Newsletter PDF uploaded. You can add video or audio separately next.",
-                "success",
-            );
+            setTrackDate(lookupDate);
+            setAssignedDate(lookupDate);
+            showToast("Newsletter PDF saved. Add video or audio separately when ready.", "success");
             await load();
         } catch (err: unknown) {
-            showToast(apiErrorMessage(err, "Upload failed. Use a PDF or Word file."), "error");
+            showToast(apiErrorMessage(err, "PDF upload failed."), "error");
         } finally {
-            setUploading(false);
+            setUploadingKind(null);
+        }
+    };
+
+    const submitVideoOnly = async () => {
+        if (!assignedDate) {
+            showToast("Select a date.", "error");
+            return;
+        }
+        if (!videoEmbedUrl.trim()) {
+            showToast("Paste a video embed link.", "error");
+            return;
+        }
+        setUploadingKind("video");
+        try {
+            const lookupDate = await upsertNewsletter({
+                date: assignedDate,
+                title: title.trim(),
+                videoEmbedUrl: videoEmbedUrl,
+            });
+            setVideoEmbedUrl("");
+            setTrackDate(lookupDate);
+            setAssignedDate(lookupDate);
+            showToast("Video link saved for this newsletter date.", "success");
+            await load();
+        } catch (err: unknown) {
+            showToast(apiErrorMessage(err, "Could not save video link."), "error");
+        } finally {
+            setUploadingKind(null);
+        }
+    };
+
+    const submitAudioOnly = async () => {
+        if (!assignedDate) {
+            showToast("Select a date.", "error");
+            return;
+        }
+        const hasFile = Boolean(audioFile);
+        const hasLink = Boolean(audioEmbedUrl.trim());
+        if (!hasFile && !hasLink) {
+            showToast("Choose an audio file or paste an audio link.", "error");
+            return;
+        }
+        if (hasFile && hasLink) {
+            showToast("Use either an audio file or an audio link — not both at once.", "error");
+            return;
+        }
+        setUploadingKind("audio");
+        try {
+            const lookupDate = await upsertNewsletter({
+                date: assignedDate,
+                title: title.trim(),
+                audioFile: hasFile ? audioFile! : undefined,
+                audioEmbedUrl: hasLink ? audioEmbedUrl : undefined,
+            });
+            setAudioFile(null);
+            setAudioEmbedUrl("");
+            setTrackDate(lookupDate);
+            setAssignedDate(lookupDate);
+            showToast(hasFile ? "Audio file saved for this newsletter date." : "Audio link saved for this newsletter date.", "success");
+            await load();
+        } catch (err: unknown) {
+            showToast(apiErrorMessage(err, "Could not save audio."), "error");
+        } finally {
+            setUploadingKind(null);
         }
     };
 
@@ -472,6 +483,8 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                 video_embed_url: detail.video_embed_url || "",
                 audio_file: null,
                 existingAudioName: detail.audio_file ? detail.audio_file.split("/").pop() || "Current audio" : "",
+                audio_embed_url: detail.audio_embed_url || "",
+                existingAudioEmbed: detail.audio_embed_url || "",
             });
             setEditModal({ isOpen: true, id: row.id });
         } catch {
@@ -481,7 +494,17 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
 
     const closeEdit = () => {
         setEditModal({ isOpen: false, id: null });
-        setEditForm({ title: "", assigned_date: "", file: null, existingFileName: "", video_embed_url: "", audio_file: null, existingAudioName: "" });
+        setEditForm({
+            title: "",
+            assigned_date: "",
+            file: null,
+            existingFileName: "",
+            video_embed_url: "",
+            audio_file: null,
+            existingAudioName: "",
+            audio_embed_url: "",
+            existingAudioEmbed: "",
+        });
     };
 
     const saveEdit = async (e: FormEvent) => {
@@ -510,15 +533,26 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
             showToast(videoErr, "error");
             return;
         }
+        const audioLinkErr = validateNewsletterAudioEmbedUrl(editForm.audio_embed_url);
+        if (audioLinkErr) {
+            showToast(audioLinkErr, "error");
+            return;
+        }
+        if (editForm.audio_file && editForm.audio_embed_url.trim()) {
+            showToast("Use either an audio file or an audio link — not both at once.", "error");
+            return;
+        }
         setEditSaving(true);
         try {
-            await patchNewsletterRecord(editModal.id, {
-                title: editForm.title,
-                date: editForm.assigned_date,
-                videoEmbedUrl: editForm.video_embed_url,
-                audioFile: editForm.audio_file,
-                pdfFile: editForm.file,
-            });
+            const fd = new FormData();
+            fd.append("title", editForm.title.trim() || "Newsletter");
+            fd.append("period_start", editForm.assigned_date);
+            fd.append("period_end", editForm.assigned_date);
+            if (editForm.file) fd.append("file", editForm.file);
+            if (editForm.video_embed_url.trim()) fd.append("video_embed_url", editForm.video_embed_url.trim());
+            if (editForm.audio_file) fd.append("audio_file", editForm.audio_file);
+            if (editForm.audio_embed_url.trim()) fd.append("audio_embed_url", editForm.audio_embed_url.trim());
+            await authFetch(`/documents/franchise/parent-documents/${editModal.id}/`, { method: "PATCH", body: fd });
             closeEdit();
             setTrackDate(editForm.assigned_date);
             setAssignedDate(editForm.assigned_date);
@@ -543,13 +577,13 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
 
     return (
         <div className="grid gap-4 lg:grid-cols-2 lg:items-start max-w-5xl">
-            <form onSubmit={submit} className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-3">
+            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
                 <div>
                     <h3 className="text-sm font-semibold text-[#111827]">Upload {PARENT_NEWSLETTER_LABEL}</h3>
                     <p className="text-xs text-[#6B7280] mt-1">{PARENT_NEWSLETTER_DESCRIPTION}</p>
                     <p className="text-[11px] text-[#6B7280] mt-2 leading-relaxed">
-                        Step 1: Upload PDF. Step 2: Add <strong>video only</strong> or <strong>audio only</strong> (same date, leave PDF
-                        empty) — you can do them in separate saves. Or use <strong>Edit</strong> on the list.
+                        PDF, video, and audio are saved <strong>separately</strong> for the same date. Use each section&apos;s own button —
+                        order does not matter. Or use <strong>Edit</strong> on an existing row.
                     </p>
                 </div>
                 <label className="block text-xs font-semibold text-[#4B5563]">
@@ -571,50 +605,85 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                         className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
                     />
                 </label>
-                <label className="block text-xs font-semibold text-[#4B5563]">
-                    {PARENT_NEWSLETTER_UPLOAD_LABEL}
-                    <input
-                        type="file"
-                        accept={acceptForParentDocumentCategory(PARENT_NEWSLETTER_CATEGORY)}
-                        onChange={(e) => setFile(e.target.files?.[0] || null)}
-                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                    />
-                    <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
-                        {uploadHintForParentDocumentCategory(PARENT_NEWSLETTER_CATEGORY)}
-                    </span>
-                </label>
-                <label className="block text-xs font-semibold text-[#4B5563]">
-                    {PARENT_NEWSLETTER_VIDEO_EMBED_LABEL}
-                    <input
-                        value={videoEmbedUrl}
-                        onChange={(e) => setVideoEmbedUrl(e.target.value)}
-                        placeholder="https://www.youtube.com/watch?v=… or Bunny iframe embed"
-                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                    />
-                    <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_VIDEO_EMBED_HINT}</span>
-                </label>
-                <label className="block text-xs font-semibold text-[#4B5563]">
-                    {PARENT_NEWSLETTER_AUDIO_UPLOAD_LABEL}
-                    <input
-                        type="file"
-                        accept={PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT}
-                        onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
-                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                    />
-                    <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_AUDIO_FILE_HINT}</span>
-                </label>
-                <Button type="submit" disabled={uploading} className="bg-[#FF922B] text-white">
-                    {uploading
-                        ? "Saving…"
-                        : !file && videoEmbedUrl.trim() && audioFile
-                          ? "Add video & audio"
-                          : !file && videoEmbedUrl.trim()
-                            ? "Add video link only"
-                            : !file && audioFile
-                              ? "Add audio file only"
-                              : `Upload ${PARENT_NEWSLETTER_LABEL}`}
-                </Button>
-            </form>
+
+                <section className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-3 space-y-2">
+                    <h4 className="text-xs font-semibold text-[#111827]">1. PDF document</h4>
+                    <label className="block text-xs font-semibold text-[#4B5563]">
+                        {PARENT_NEWSLETTER_UPLOAD_LABEL}
+                        <input
+                            type="file"
+                            accept={acceptForParentDocumentCategory(PARENT_NEWSLETTER_CATEGORY)}
+                            onChange={(e) => setFile(e.target.files?.[0] || null)}
+                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
+                        />
+                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
+                            {uploadHintForParentDocumentCategory(PARENT_NEWSLETTER_CATEGORY)}
+                        </span>
+                    </label>
+                    <Button
+                        type="button"
+                        disabled={uploadingKind !== null}
+                        onClick={() => void submitPdfOnly()}
+                        className="bg-[#FF922B] text-white"
+                    >
+                        {uploadingKind === "pdf" ? "Uploading PDF…" : "Upload PDF only"}
+                    </Button>
+                </section>
+
+                <section className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-3 space-y-2">
+                    <h4 className="text-xs font-semibold text-[#111827]">2. Video</h4>
+                    <label className="block text-xs font-semibold text-[#4B5563]">
+                        {PARENT_NEWSLETTER_VIDEO_EMBED_LABEL}
+                        <input
+                            value={videoEmbedUrl}
+                            onChange={(e) => setVideoEmbedUrl(e.target.value)}
+                            placeholder="https://www.youtube.com/watch?v=… or Bunny iframe embed"
+                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
+                        />
+                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_VIDEO_EMBED_HINT}</span>
+                    </label>
+                    <Button
+                        type="button"
+                        disabled={uploadingKind !== null}
+                        onClick={() => void submitVideoOnly()}
+                        className="bg-[#FF922B] text-white"
+                    >
+                        {uploadingKind === "video" ? "Saving video…" : "Save video link only"}
+                    </Button>
+                </section>
+
+                <section className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-3 space-y-2">
+                    <h4 className="text-xs font-semibold text-[#111827]">3. Audio</h4>
+                    <label className="block text-xs font-semibold text-[#4B5563]">
+                        {PARENT_NEWSLETTER_AUDIO_UPLOAD_LABEL}
+                        <input
+                            type="file"
+                            accept={PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT}
+                            onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
+                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
+                        />
+                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_AUDIO_FILE_HINT}</span>
+                    </label>
+                    <label className="block text-xs font-semibold text-[#4B5563]">
+                        {PARENT_NEWSLETTER_AUDIO_EMBED_LABEL}
+                        <input
+                            value={audioEmbedUrl}
+                            onChange={(e) => setAudioEmbedUrl(e.target.value)}
+                            placeholder="https://…/recording.mp3"
+                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
+                        />
+                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_AUDIO_EMBED_HINT}</span>
+                    </label>
+                    <Button
+                        type="button"
+                        disabled={uploadingKind !== null}
+                        onClick={() => void submitAudioOnly()}
+                        className="bg-[#FF922B] text-white"
+                    >
+                        {uploadingKind === "audio" ? "Saving audio…" : "Save audio only"}
+                    </Button>
+                </section>
+            </div>
 
             <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4 lg:sticky lg:top-4 flex flex-col">
                 <div className="space-y-1">
@@ -655,12 +724,10 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                                     <p className="text-[11px] text-[#6B7280] mt-0.5">{newsletterRowDate(row)}</p>
                                     <p className="text-[10px] text-[#9CA3AF] mt-0.5">
                                         {[
-                                            row.file ? "PDF" : null,
+                                            row.file ? "PDF" : "No PDF yet",
                                             row.video_embed_url ? "Video" : "No video yet",
-                                            row.audio_file ? "Audio" : "No audio yet",
-                                        ]
-                                            .filter(Boolean)
-                                            .join(" · ")}
+                                            row.audio_file || row.audio_embed_url ? "Audio" : "No audio yet",
+                                        ].join(" · ")}
                                     </p>
                                 </div>
                                 <div className="flex shrink-0 items-center gap-2">
@@ -737,7 +804,21 @@ function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showT
                             className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
                         />
                         <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
-                            {editForm.existingAudioName ? `Current: ${editForm.existingAudioName}` : PARENT_NEWSLETTER_AUDIO_FILE_HINT}
+                            {editForm.existingAudioName ? `Current file: ${editForm.existingAudioName}` : PARENT_NEWSLETTER_AUDIO_FILE_HINT}
+                        </span>
+                    </label>
+                    <label className="block text-xs font-semibold text-[#4B5563]">
+                        {PARENT_NEWSLETTER_AUDIO_EMBED_LABEL}
+                        <input
+                            value={editForm.audio_embed_url}
+                            onChange={(e) => setEditForm((p) => ({ ...p, audio_embed_url: e.target.value }))}
+                            placeholder="https://…/recording.mp3"
+                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
+                        />
+                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
+                            {editForm.existingAudioEmbed && !editForm.audio_embed_url
+                                ? `Current link: ${editForm.existingAudioEmbed}`
+                                : PARENT_NEWSLETTER_AUDIO_EMBED_HINT}
                         </span>
                     </label>
                     <div className="flex gap-2 pt-1">

@@ -4,7 +4,12 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Download, FileText, Play } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { PARENT_NEWSLETTER_CATEGORY } from "@/config/parent-newsletter";
-import { openNewsletterVideoEmbedLink, openParentDocumentAudioFile, openParentDocumentFile } from "@/lib/parent-document-file-open";
+import {
+    openNewsletterVideoEmbedLink,
+    openParentDocumentAudioFile,
+    openParentDocumentFile,
+} from "@/lib/parent-document-file-open";
+import { openDirectAudioUrlInNewTab } from "@/lib/inline-document-open";
 import { fileMatchesParentDocumentCategory, parentDocumentFileKind } from "@/lib/parent-document-file-kind";
 
 type DocRow = {
@@ -15,6 +20,7 @@ type DocRow = {
     file_view_path?: string | null;
     video_embed_url?: string;
     audio_file?: string;
+    audio_embed_url?: string;
 };
 type ParentDocRow = DocRow & { category?: string };
 
@@ -113,6 +119,7 @@ export function ParentDocList({
                     const hasPdfFile = Boolean((d.file || "").trim());
                     const hasVideoEmbed = Boolean((d.video_embed_url || "").trim());
                     const hasAudioFile = Boolean((d.audio_file || "").trim());
+                    const hasAudioEmbed = Boolean((d.audio_embed_url || "").trim());
 
                     return (
                     <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-100 bg-white p-4 shadow-sm">
@@ -143,6 +150,18 @@ export function ParentDocList({
                                     <button
                                         type="button"
                                         onClick={() => openParentDocumentAudioFile(getAccessTokenForDocumentView, authFetchBlobResponse, d)}
+                                        className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
+                                    >
+                                        <Play className="w-4 h-4" />
+                                        Play audio
+                                    </button>
+                                ) : null}
+                                {!hasAudioFile && hasAudioEmbed ? (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            openDirectAudioUrlInNewTab(d.audio_embed_url || "", d.display_title || d.title || "Audio")
+                                        }
                                         className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
                                     >
                                         <Play className="w-4 h-4" />

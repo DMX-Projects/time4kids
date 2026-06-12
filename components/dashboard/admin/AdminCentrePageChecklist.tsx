@@ -18,11 +18,17 @@ import {
     linkResolutionKey,
     type ResolvedLinkMeta,
 } from "@/lib/franchise-center-page-links";
+
+export type CentrePageLinkLookupBuilder = (
+    item: CenterPageTopItem,
+    hubDocsByCategory: Map<string, FranchiseHubDoc[]>,
+    hubDocsBySourcePath: Map<string, FranchiseHubDoc>,
+) => Map<string, ResolvedLinkMeta>;
 import {
     buildAdminUploadContext,
     type AdminCenterPageUploadContext,
 } from "@/lib/admin-center-page-upload";
-import { isCustomLinkRow, linkIdFromCustomRowKey, rowKeyForChecklistLink, type CentrePageLinkAnchor } from "@/lib/centre-page-nav-custom";
+import { linkIdFromCustomRowKey, rowKeyForChecklistLink, type CentrePageLinkAnchor } from "@/lib/centre-page-nav-custom";
 
 export type CentrePageAddKind = "subsection" | "nested" | "link" | "topSection";
 
@@ -43,22 +49,34 @@ export type CentrePageRemoveRequest = {
 
 export type CentrePageRenameRequest = import("@/lib/centre-page-nav-custom").CentrePageRenameTarget;
 
+function DeleteIconButton({ onClick, title = "Delete" }: { onClick: () => void; title?: string }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white p-2 text-red-800 hover:bg-red-50"
+            title={title}
+            aria-label={title}
+        >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+        </button>
+    );
+}
+
 function HeadingBar({
     title,
     level,
     addOptions,
     onAdd,
-    onRemove,
+    onDelete,
     onRename,
-    removeLabel = "Remove",
 }: {
     title: string;
     level: "top" | "group" | "nested";
     addOptions: { kind: CentrePageAddKind; label: string }[];
     onAdd: (kind: CentrePageAddKind) => void;
-    onRemove?: () => void;
+    onDelete?: () => void;
     onRename?: () => void;
-    removeLabel?: string;
 }) {
     const styles = {
         top: "bg-slate-50 text-base font-semibold text-slate-900 border-b border-slate-100",
@@ -83,16 +101,7 @@ function HeadingBar({
                         Rename
                     </button>
                 ) : null}
-                {onRemove ? (
-                    <button
-                        type="button"
-                        onClick={onRemove}
-                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-semibold text-red-800 hover:bg-red-50"
-                    >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                        {removeLabel}
-                    </button>
-                ) : null}
+                {onDelete ? <DeleteIconButton onClick={onDelete} title="Delete section" /> : null}
                 {addOptions.length > 0 ? (
                     <ChecklistAddMenu options={addOptions} onPick={onAdd} sectionTitle={title} />
                 ) : null}
@@ -149,25 +158,14 @@ function AdminUploadRow({
                         Rename
                     </button>
                 ) : null}
-                {uploaded && onDeleteUpload ? (
-                    <button
-                        type="button"
-                        onClick={() => onDeleteUpload(ctx)}
-                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-50"
-                    >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                        Delete
-                    </button>
-                ) : null}
-                {onRemoveLink ? (
-                    <button
-                        type="button"
-                        onClick={onRemoveLink}
-                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-50"
-                    >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                        Remove
-                    </button>
+                {(uploaded && onDeleteUpload) || (!uploaded && onRemoveLink) ? (
+                    <DeleteIconButton
+                        title={uploaded ? "Delete uploaded file" : "Delete row"}
+                        onClick={() => {
+                            if (uploaded && onDeleteUpload) onDeleteUpload(ctx);
+                            else if (onRemoveLink) onRemoveLink();
+                        }}
+                    />
                 ) : null}
                 <button
                     type="button"
@@ -234,7 +232,11 @@ function LinkRowsBlock({
         <>
             {rows.map((ctx, i) => {
                 const link = links[i];
-                const removable = canRemoveLink?.(ctx.rowKey ?? link?.rowKey) ?? false;
+                const removable = onRemoveRequest
+                    ? canRemoveLink
+                        ? canRemoveLink(ctx.rowKey ?? link?.rowKey)
+                        : true
+                    : false;
                 const rowKey = ctx.rowKey ?? link?.rowKey ?? rowKeyForChecklistLink(link);
                 return (
                     <AdminUploadRow
@@ -293,7 +295,6 @@ function NestedBlock({
     onAddRequest,
     onRemoveRequest,
     onRenameRequest,
-    canRemoveNested,
 }: {
     block: CenterPageNestedBlock;
     item: CenterPageTopItem;
@@ -304,7 +305,6 @@ function NestedBlock({
     onAddRequest?: (req: CentrePageAddRequest) => void;
     onRemoveRequest?: (req: CentrePageRemoveRequest) => void;
     onRenameRequest?: (req: CentrePageRenameRequest) => void;
-    canRemoveNested?: (anchor: CentrePageLinkAnchor & { groupTitle: string; nestedTitle: string }) => boolean;
 }) {
     const anchor: CentrePageLinkAnchor = {
         topId: item.id,
@@ -332,12 +332,7 @@ function NestedBlock({
                               })
                         : undefined
                 }
-                onRemove={
-                    canRemoveNested?.(anchor as CentrePageLinkAnchor & { groupTitle: string; nestedTitle: string })
-                        ? () => onRemoveRequest?.({ kind: "nested", anchor })
-                        : undefined
-                }
-                removeLabel="Remove nested"
+                onDelete={onRemoveRequest ? () => onRemoveRequest({ kind: "nested", anchor }) : undefined}
             />
             <LinkRowsBlock
                 links={block.links}
@@ -350,7 +345,6 @@ function NestedBlock({
                 onDeleteUpload={onDeleteUpload}
                 onRemoveRequest={onRemoveRequest}
                 onRenameRequest={onRenameRequest}
-                canRemoveLink={isCustomLinkRow}
             />
         </div>
     );
@@ -365,8 +359,6 @@ function GroupBlock({
     onAddRequest,
     onRemoveRequest,
     onRenameRequest,
-    canRemoveGroup,
-    canRemoveNested,
 }: {
     group: CenterPageSubsection;
     item: CenterPageTopItem;
@@ -376,8 +368,6 @@ function GroupBlock({
     onAddRequest?: (req: CentrePageAddRequest) => void;
     onRemoveRequest?: (req: CentrePageRemoveRequest) => void;
     onRenameRequest?: (req: CentrePageRenameRequest) => void;
-    canRemoveGroup?: (anchor: CentrePageLinkAnchor & { groupTitle: string }) => boolean;
-    canRemoveNested?: (anchor: CentrePageLinkAnchor & { groupTitle: string; nestedTitle: string }) => boolean;
 }) {
     const anchor: CentrePageLinkAnchor = {
         topId: item.id,
@@ -407,12 +397,7 @@ function GroupBlock({
                               })
                         : undefined
                 }
-                onRemove={
-                    canRemoveGroup?.(anchor as CentrePageLinkAnchor & { groupTitle: string })
-                        ? () => onRemoveRequest?.({ kind: "subsection", anchor })
-                        : undefined
-                }
-                removeLabel="Remove subsection"
+                onDelete={onRemoveRequest ? () => onRemoveRequest({ kind: "subsection", anchor }) : undefined}
             />
             {group.nested?.map((block) => (
                 <NestedBlock
@@ -426,7 +411,6 @@ function GroupBlock({
                     onAddRequest={onAddRequest}
                     onRemoveRequest={onRemoveRequest}
                     onRenameRequest={onRenameRequest}
-                    canRemoveNested={canRemoveNested}
                 />
             ))}
             {group.links && group.links.length > 0 ? (
@@ -440,7 +424,6 @@ function GroupBlock({
                     onDeleteUpload={onDeleteUpload}
                     onRemoveRequest={onRemoveRequest}
                     onRenameRequest={onRenameRequest}
-                    canRemoveLink={isCustomLinkRow}
                 />
             ) : !hasNested ? (
                 <p className="px-8 py-2 text-xs text-slate-400">
@@ -461,8 +444,7 @@ function SectionBlock({
     onRemoveRequest,
     onRenameRequest,
     isCustomTop,
-    canRemoveGroup,
-    canRemoveNested,
+    linkLookupBuilder,
 }: {
     item: CenterPageTopItem;
     hubDocsByCategory: Map<string, FranchiseHubDoc[]>;
@@ -473,12 +455,14 @@ function SectionBlock({
     onRemoveRequest?: (req: CentrePageRemoveRequest) => void;
     onRenameRequest?: (req: CentrePageRenameRequest) => void;
     isCustomTop?: boolean;
-    canRemoveGroup?: (anchor: CentrePageLinkAnchor & { groupTitle: string }) => boolean;
-    canRemoveNested?: (anchor: CentrePageLinkAnchor & { groupTitle: string; nestedTitle: string }) => boolean;
+    linkLookupBuilder?: CentrePageLinkLookupBuilder;
 }) {
     const linkLookup = useMemo(
-        () => buildResolvedLinkLookup(item, hubDocsByCategory, hubDocsBySourcePath),
-        [item, hubDocsByCategory, hubDocsBySourcePath],
+        () =>
+            linkLookupBuilder
+                ? linkLookupBuilder(item, hubDocsByCategory, hubDocsBySourcePath)
+                : buildResolvedLinkLookup(item, hubDocsByCategory, hubDocsBySourcePath),
+        [item, hubDocsByCategory, hubDocsBySourcePath, linkLookupBuilder],
     );
     const anchor: CentrePageLinkAnchor = { topId: item.id, topTitle: item.title };
     const hasGroups = item.groups.length > 0;
@@ -509,10 +493,9 @@ function SectionBlock({
                               })
                         : undefined
                 }
-                onRemove={
-                    isCustomTop ? () => onRemoveRequest?.({ kind: "topSection", anchor }) : undefined
+                onDelete={
+                    onRemoveRequest ? () => onRemoveRequest?.({ kind: "topSection", anchor }) : undefined
                 }
-                removeLabel="Remove section"
             />
 
             {item.directLinks && item.directLinks.length > 0 ? (
@@ -525,7 +508,6 @@ function SectionBlock({
                     onDeleteUpload={onDeleteUpload}
                     onRemoveRequest={onRemoveRequest}
                     onRenameRequest={onRenameRequest}
-                    canRemoveLink={isCustomLinkRow}
                 />
             ) : null}
 
@@ -540,8 +522,6 @@ function SectionBlock({
                     onAddRequest={onAddRequest}
                     onRemoveRequest={onRemoveRequest}
                     onRenameRequest={onRenameRequest}
-                    canRemoveGroup={canRemoveGroup}
-                    canRemoveNested={canRemoveNested}
                 />
             ))}
 
@@ -564,8 +544,7 @@ export function AdminCentrePageChecklist({
     onRemoveRequest,
     onRenameRequest,
     isCustomTop,
-    canRemoveGroup,
-    canRemoveNested,
+    linkLookupBuilder,
 }: {
     sections: CenterPageTopItem[][];
     hubDocs: FranchiseHubDoc[];
@@ -575,8 +554,7 @@ export function AdminCentrePageChecklist({
     onRemoveRequest?: (req: CentrePageRemoveRequest) => void;
     onRenameRequest?: (req: CentrePageRenameRequest) => void;
     isCustomTop?: (topId: string) => boolean;
-    canRemoveGroup?: (anchor: CentrePageLinkAnchor & { groupTitle: string }) => boolean;
-    canRemoveNested?: (anchor: CentrePageLinkAnchor & { groupTitle: string; nestedTitle: string }) => boolean;
+    linkLookupBuilder?: CentrePageLinkLookupBuilder;
 }) {
     const hubDocsByCategory = useMemo(() => groupFranchiseHubDocsByCategory(hubDocs), [hubDocs]);
     const hubDocsBySourcePath = useMemo(() => groupFranchiseHubDocsBySourcePath(hubDocs), [hubDocs]);
@@ -597,8 +575,7 @@ export function AdminCentrePageChecklist({
                     onRemoveRequest={onRemoveRequest}
                     onRenameRequest={onRenameRequest}
                     isCustomTop={isCustomTop?.(item.id)}
-                    canRemoveGroup={canRemoveGroup}
-                    canRemoveNested={canRemoveNested}
+                    linkLookupBuilder={linkLookupBuilder}
                 />
             ))}
         </div>

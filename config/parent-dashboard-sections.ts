@@ -75,8 +75,11 @@ export function mergeParentDashboardSections(
     custom: ParentAppNavCustomData | null | undefined,
 ): ParentDashboardSection[] {
     const sectionTitles = custom?.sectionTitles ?? {};
-    return PARENT_DASHBOARD_DISPLAY_SECTIONS.map((section) => {
-        const override = sectionTitles[section.id]?.trim();
-        return override ? { ...section, title: override } : section;
-    });
+    const hidden = new Set(custom?.hiddenSectionIds ?? []);
+    return PARENT_DASHBOARD_DISPLAY_SECTIONS.filter((section) => !hidden.has(section.id)).map(
+        (section) => {
+            const override = sectionTitles[section.id]?.trim();
+            return override ? { ...section, title: override } : section;
+        },
+    );
 }

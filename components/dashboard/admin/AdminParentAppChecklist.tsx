@@ -27,15 +27,31 @@ const PARENT_APP_ADD_OPTIONS: { kind: ParentAppAddKind; label: string }[] = [
 
 export type ParentAppRenameRequest = import("@/lib/parent-app-nav-custom").ParentAppRenameTarget;
 
+function DeleteIconButton({ onClick, title = "Delete" }: { onClick: () => void; title?: string }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white p-2 text-red-800 hover:bg-red-50"
+            title={title}
+            aria-label={title}
+        >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+        </button>
+    );
+}
+
 function UploadRow({
     ctx,
     onManage,
     onDeleteUpload,
+    onRemoveSlot,
     onRename,
 }: {
     ctx: AdminParentAppUploadContext;
     onManage: (ctx: AdminParentAppUploadContext) => void;
     onDeleteUpload?: (ctx: AdminParentAppUploadContext) => void;
+    onRemoveSlot?: () => void;
     onRename?: () => void;
 }) {
     const uploaded = ctx.matchedDocId != null;
@@ -46,7 +62,11 @@ function UploadRow({
                 <p className="text-sm font-medium leading-snug text-slate-900">{ctx.breadcrumbLabel}</p>
                 <p className="mt-0.5 text-xs text-slate-500">
                     {uploaded ? (
-                        <span className="text-emerald-700">Uploaded — visible in parent app</span>
+                        ctx.matchedEmbedOnly ? (
+                            <span className="text-emerald-700">Link saved — visible in parent app</span>
+                        ) : (
+                            <span className="text-emerald-700">Uploaded — visible in parent app</span>
+                        )
                     ) : (
                         <span className="text-amber-800">Not uploaded yet — click Upload</span>
                     )}
@@ -63,15 +83,14 @@ function UploadRow({
                         Rename
                     </button>
                 ) : null}
-                {uploaded && onDeleteUpload ? (
-                    <button
-                        type="button"
-                        onClick={() => onDeleteUpload(ctx)}
-                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-50"
-                    >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                        Delete
-                    </button>
+                {(uploaded && onDeleteUpload) || (!uploaded && onRemoveSlot) ? (
+                    <DeleteIconButton
+                        title={uploaded ? "Delete uploaded file" : "Delete row"}
+                        onClick={() => {
+                            if (uploaded && onDeleteUpload) onDeleteUpload(ctx);
+                            else if (onRemoveSlot) onRemoveSlot();
+                        }}
+                    />
                 ) : null}
                 <button
                     type="button"
@@ -102,6 +121,8 @@ function SectionBlock({
     onDeleteUpload,
     onAddRequest,
     onRenameRequest,
+    onRemoveSection,
+    onRemoveSlot,
 }: {
     section: ParentAppDocumentSection;
     contexts: AdminParentAppUploadContext[];
@@ -109,6 +130,8 @@ function SectionBlock({
     onDeleteUpload?: (ctx: AdminParentAppUploadContext) => void;
     onAddRequest?: (req: ParentAppAddRequest) => void;
     onRenameRequest?: (req: ParentAppRenameRequest) => void;
+    onRemoveSection?: (section: ParentAppDocumentSection) => void;
+    onRemoveSlot?: (slotId: string, label: string) => void;
 }) {
     const rows = contexts.filter((c) => c.category === section.category && !c.id.startsWith("extra-"));
     const extras = contexts.filter((c) => c.category === section.category && c.id.startsWith("extra-"));
@@ -136,6 +159,9 @@ function SectionBlock({
                             Rename
                         </button>
                     ) : null}
+                    {onRemoveSection ? (
+                        <DeleteIconButton onClick={() => onRemoveSection(section)} title="Delete section" />
+                    ) : null}
                     {onAddRequest ? (
                         <ChecklistAddMenu
                             options={PARENT_APP_ADD_OPTIONS}
@@ -162,6 +188,11 @@ function SectionBlock({
                                       })
                                 : undefined
                         }
+                        onRemoveSlot={
+                            onRemoveSlot && !ctx.id.startsWith("extra-")
+                                ? () => onRemoveSlot(ctx.id, ctx.breadcrumbLabel)
+                                : undefined
+                        }
                     />
                 ))}
                 {extras.length > 0 ? (
@@ -186,6 +217,8 @@ export function AdminParentAppChecklist({
     onDeleteUpload,
     onAddRequest,
     onRenameRequest,
+    onRemoveSection,
+    onRemoveSlot,
 }: {
     docs: ParentDocumentForMatch[];
     sections?: ParentAppDocumentSection[];
@@ -193,6 +226,8 @@ export function AdminParentAppChecklist({
     onDeleteUpload?: (ctx: AdminParentAppUploadContext) => void;
     onAddRequest?: (req: ParentAppAddRequest) => void;
     onRenameRequest?: (req: ParentAppRenameRequest) => void;
+    onRemoveSection?: (section: ParentAppDocumentSection) => void;
+    onRemoveSlot?: (slotId: string, label: string) => void;
 }) {
     const contexts = useMemo(
         () => buildParentAppUploadContexts(sections, docs),
@@ -228,6 +263,8 @@ export function AdminParentAppChecklist({
                     onDeleteUpload={onDeleteUpload}
                     onAddRequest={onAddRequest}
                     onRenameRequest={onRenameRequest}
+                    onRemoveSection={onRemoveSection}
+                    onRemoveSlot={onRemoveSlot}
                 />
             ))}
         </div>
