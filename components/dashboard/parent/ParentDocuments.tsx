@@ -17,7 +17,11 @@ import {
     type ParentDocumentForMatch,
 } from "@/lib/admin-parent-app-upload";
 
-import { openParentDocumentFile, type AuthFetchBlobResponse } from "@/lib/parent-document-file-open";
+import {
+    openNewsletterVideoEmbedLink,
+    openParentDocumentFile,
+    type AuthFetchBlobResponse,
+} from "@/lib/parent-document-file-open";
 
 import { parentDocumentFileKind } from "@/lib/parent-document-file-kind";
 
@@ -109,13 +113,26 @@ function ParentDocumentActions({
             file: item.file || "",
         });
 
+    const openEmbed = () =>
+        openNewsletterVideoEmbedLink(item.video_embed_url || "", item.display_title || item.title);
 
-
+    const hasEmbed = Boolean((item.video_embed_url || "").trim());
+    const hasFile = Boolean((item.file || "").trim());
     const kind = parentDocumentFileKind(item.file || "");
 
-
-
     if (category === "VIDEOS") {
+        if (hasEmbed && !hasFile) {
+            return (
+                <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
+                    onClick={openEmbed}
+                >
+                    <Play className="w-3.5 h-3.5" />
+                    Play video
+                </button>
+            );
+        }
 
         if (kind === "video") {
 
@@ -169,8 +186,20 @@ function ParentDocumentActions({
 
 
 
-    if (category === "AUDIO_RHYMES" && (kind === "video" || kind === "audio")) {
+    if (category === "AUDIO_RHYMES" && hasEmbed && !hasFile) {
+        return (
+            <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-full bg-[#3B82F6] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-105 hover:-translate-y-[1px] transition-all"
+                onClick={openEmbed}
+            >
+                <Play className="w-3.5 h-3.5" />
+                Play video
+            </button>
+        );
+    }
 
+    if (category === "AUDIO_RHYMES" && (kind === "video" || kind === "audio")) {
         const isVideo = kind === "video";
 
         return (
@@ -290,39 +319,23 @@ export function ParentDocuments() {
 
 
     const categories = useMemo(() => {
-
         return sections
-
             .filter((section) => section.kind === "documents")
-
             .map((section, idx) => {
-
                 const accent = accentForIndex(idx);
-
                 const icon = sectionIcons[section.id] ?? <FileText className="w-4 h-4" />;
-
                 const items = buildParentDashboardSectionItems(section.category, docs);
-
                 return {
-
                     key: section.id,
-
                     category: section.category,
-
                     title: section.title,
-
                     subtitle: section.subtitle,
-
                     icon,
-
                     accent,
-
                     items,
-
                 };
-
-            });
-
+            })
+            .filter((cat) => cat.items.length > 0);
     }, [sections, docs]);
 
 
@@ -382,6 +395,9 @@ export function ParentDocuments() {
                 <div className="flex flex-col gap-4">
 
                     {loading && <p className="text-sm text-[#4B5563]">Loading documents...</p>}
+                    {!loading && categories.length === 0 ? (
+                        <p className="text-sm text-[#6B7280]">No documents are available yet.</p>
+                    ) : null}
 
                     {categories.map((cat, idx) => {
 
@@ -466,17 +482,6 @@ export function ParentDocuments() {
                                 {isOpen && (
 
                                     <ul className="divide-y divide-[#E5E7EB] px-4 pb-3">
-
-                                        {cat.items.length === 0 && (
-
-                                            <li className="py-3 text-sm text-[#6B7280]">
-
-                                                No files uploaded yet for this section.
-
-                                            </li>
-
-                                        )}
-
                                         {cat.items.map((item) => (
 
                                             <li key={item.id} className="flex flex-col gap-2 py-3 text-sm">

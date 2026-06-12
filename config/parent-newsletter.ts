@@ -48,6 +48,11 @@ export const PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT =
 export const PARENT_NEWSLETTER_AUDIO_FILE_HINT =
     "MP3, M4A, MP4 (audio recording), WAV, AMR, and other common phone/media audio formats";
 
+export const PARENT_NEWSLETTER_AUDIO_EMBED_LABEL = "Audio link";
+
+export const PARENT_NEWSLETTER_AUDIO_EMBED_HINT =
+    "Direct link to an audio file (MP3, M4A, WAV, etc.) — use this or Audio upload, not both at once.";
+
 export const PARENT_NEWSLETTER_EMPTY_MESSAGE =
     "No newsletter uploaded for your centre yet. Your school publishes one per academic block (20 school days).";
 
@@ -111,7 +116,16 @@ export function validateNewsletterVideoEmbedUrl(raw: string): string | null {
     const trimmed = raw.trim();
     if (!trimmed) return null;
     if (isNewsletterAudioMediaUrl(trimmed)) {
-        return "That link looks like audio. Use Audio upload — not Video link.";
+        return "That link looks like audio. Use Audio link — not Video link.";
+    }
+    return null;
+}
+
+export function validateNewsletterAudioEmbedUrl(raw: string): string | null {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    if (!isNewsletterAudioMediaUrl(trimmed)) {
+        return "Paste a direct audio file link (MP3, M4A, WAV, etc.) — not a video embed.";
     }
     return null;
 }

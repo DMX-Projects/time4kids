@@ -29,11 +29,16 @@ import {
     isCustomTopSection,
     isCustomGroup,
     isCustomNested,
+    linkIdFromCustomRowKey,
     mergeCentrePageBlocks,
     parseCentrePageNavCustom,
     removeCustomGroup,
     removeCustomLink,
     removeCustomNested,
+    hideCentrePageLinkRow,
+    hideCentrePageStaticGroup,
+    hideCentrePageStaticNested,
+    hideCentrePageStaticTop,
     removeCustomTopSection,
     renameNavLabel,
     type CentrePageNavCustomData,
@@ -219,28 +224,41 @@ export default function AdminFranchiseDocumentsPage() {
                   : req.kind === "nested"
                     ? `${req.anchor.topTitle} › ${req.anchor.groupTitle} › ${req.anchor.nestedTitle}`
                     : req.linkLabel || "this link";
-        if (!window.confirm(`Remove "${label}" from the centre page checklist?`)) return;
+        if (!window.confirm(`Delete "${label}"?`)) return;
         try {
             let next = customNav;
             if (req.kind === "topSection") {
-                next = removeCustomTopSection(customNav, req.anchor.topId);
+                next = isCustomTopSection(customNav, req.anchor.topId)
+                    ? removeCustomTopSection(customNav, req.anchor.topId)
+                    : hideCentrePageStaticTop(customNav, req.anchor.topId);
             } else if (req.kind === "subsection" && req.anchor.groupTitle) {
-                next = removeCustomGroup(
-                    customNav,
-                    req.anchor as typeof req.anchor & { groupTitle: string },
-                );
+                const anchor = req.anchor as typeof req.anchor & { groupTitle: string };
+                next = isCustomGroup(customNav, anchor)
+                    ? removeCustomGroup(customNav, anchor)
+                    : hideCentrePageStaticGroup(customNav, anchor.topId, anchor.groupTitle);
             } else if (req.kind === "nested" && req.anchor.groupTitle && req.anchor.nestedTitle) {
-                next = removeCustomNested(
-                    customNav,
-                    req.anchor as typeof req.anchor & { groupTitle: string; nestedTitle: string },
-                );
+                const anchor = req.anchor as typeof req.anchor & {
+                    groupTitle: string;
+                    nestedTitle: string;
+                };
+                next = isCustomNested(customNav, anchor)
+                    ? removeCustomNested(customNav, anchor)
+                    : hideCentrePageStaticNested(
+                          customNav,
+                          anchor.topId,
+                          anchor.groupTitle,
+                          anchor.nestedTitle,
+                      );
             } else if (req.kind === "link" && req.rowKey) {
-                next = removeCustomLink(customNav, req.anchor, req.rowKey);
+                const linkId = linkIdFromCustomRowKey(req.rowKey);
+                next = linkId
+                    ? removeCustomLink(customNav, req.anchor, req.rowKey)
+                    : hideCentrePageLinkRow(customNav, req.rowKey);
             }
             await saveCustomNav(next);
-            showToast("Removed from checklist.", "success");
+            showToast("Deleted.", "success");
         } catch {
-            showToast("Could not remove.", "error");
+            showToast("Delete failed.", "error");
         }
     };
 
@@ -580,9 +598,13 @@ export default function AdminFranchiseDocumentsPage() {
             <div className="max-w-2xl">
                 <h1 className="text-2xl font-semibold text-orange-900">Centre page documents</h1>
                 <p className="mt-2 text-sm text-slate-600">
-                    Each row matches a centre page link. Use <strong>Rename</strong> on section or file names.
-                    Click <strong>Add</strong> on an existing section → choose <strong>Add file / link to this section</strong>{" "}
-                    (you do not need a new subsection). Upload replaces legacy files for that row.
+                    Full nesting is supported: <strong>main section</strong> → <strong>subsection</strong> →{" "}
+                    <strong>nested subsection</strong> → <strong>file / link</strong>. Use{" "}
+                    <strong>Add top-level section</strong> below for a new main section. On any section click{" "}
+                    <strong>Add</strong> → <strong>Add subsection</strong>; on a subsection <strong>Add</strong> →{" "}
+                    <strong>Add nested section</strong>; then <strong>Add file / link</strong> for the upload row.
+                    Use the trash icon to delete a section, row, or uploaded file. Upload modal accepts a file or a
+                    video/embed link (not both).
                 </p>
             </div>
 
@@ -598,8 +620,6 @@ export default function AdminFranchiseDocumentsPage() {
                     onRenameRequest={handleRenameRequest}
                     onDeleteUpload={handleDeleteUpload}
                     isCustomTop={(id) => isCustomTopSection(customNav, id)}
-                    canRemoveGroup={(anchor) => isCustomGroup(customNav, anchor)}
-                    canRemoveNested={(anchor) => isCustomNested(customNav, anchor)}
                 />
             )}
 
@@ -704,7 +724,7 @@ export default function AdminFranchiseDocumentsPage() {
                                 onChange={setAddFile}
                             />
                             <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                                Video / iframe embed link (optional)
+                                Video / iframe embed link
                                 <textarea
                                     className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono min-h-[72px]"
                                     placeholder="https://www.youtube.com/watch?v=… or iframe embed URL"
@@ -801,7 +821,7 @@ export default function AdminFranchiseDocumentsPage() {
                         </div>
                     ) : null}
                     <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                        Video / embed link (optional — YouTube, etc.)
+                        Video / embed link
                         <textarea
                             className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono min-h-[72px]"
                             placeholder="https://www.youtube.com/watch?v=…"

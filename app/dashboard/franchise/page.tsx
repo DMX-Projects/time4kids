@@ -50,10 +50,6 @@ export default function FranchiseDashboardPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
-                    <p className="mt-1 text-sm text-slate-600">
-                        Your centre name and city are shown in the sidebar. Use the menu for day-to-day tasks.
-                        Head-office documents (SOP, academic files, formats, and more) are below.
-                    </p>
                 </div>
                 <div className="flex flex-wrap gap-2 sm:justify-end shrink-0">
                     <SideActionButton href={indentsPlacing} label="Indents Placing" />

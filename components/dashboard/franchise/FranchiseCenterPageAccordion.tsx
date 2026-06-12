@@ -35,6 +35,10 @@ import {
 } from "@/lib/admin-center-page-upload";
 import type { CentrePageLinkAnchor } from "@/lib/centre-page-nav-custom";
 import {
+  filterCentrePageBlocksToUploadedOnly,
+  filterCentrePageLinksForDashboard,
+} from "@/lib/centre-page-dashboard-filter";
+import {
   rowKeyForChecklistLink,
   rowKeyForUploadedDoc,
 } from "@/lib/centre-page-nav-custom";
@@ -573,10 +577,14 @@ function LinkRows({
   adminTools?: CentrePageAdminTools;
 }) {
   const { authFetchBlobResponse, authFetchBlobFromHref, getAccessTokenForDocumentView } = useAuth();
-  const displayLinks =
+  const resolvedLinks =
     (mode === "franchise" || mode === "admin") && linkLookup
       ? links.map((link) => applyResolvedLinkLookup(link, linkLookup))
       : links;
+  const displayLinks =
+    mode === "franchise"
+      ? filterCentrePageLinksForDashboard(resolvedLinks, linkLookup)
+      : resolvedLinks;
   const franchiseRowClass =
     "group/link flex min-w-0 items-start gap-2.5 font-serif text-sm leading-snug text-slate-600 hover:text-slate-900";
 
@@ -878,7 +886,19 @@ function BlockItems({
                     : "ml-0 space-y-2 border-l-2 border-orange-200/90 pl-3 sm:ml-1 sm:pl-4"
                 }
               >
-                {item.directLinks && item.directLinks.length > 0 ? (
+                {(() => {
+                  const directLinks =
+                    mode === "franchise"
+                      ? filterCentrePageLinksForDashboard(item.directLinks ?? [], linkLookup)
+                      : item.directLinks ?? [];
+                  const showDirect = directLinks.length > 0;
+                  const showGroups = useDocumentTree
+                    ? item.groups.length > 0
+                    : item.groups.length > 0;
+
+                  return (
+                    <>
+                {showDirect ? (
                   <div className="border-l border-dashed border-slate-300/80 py-1 pl-3 sm:pl-4">
                     {mode === "admin" && adminTools ? (
                       <div className="mb-2 flex flex-wrap gap-2">
@@ -893,7 +913,7 @@ function BlockItems({
                       </div>
                     ) : null}
                     <LinkRows
-                      links={item.directLinks}
+                      links={directLinks}
                       mode={mode}
                       topTitle={item.title}
                       topId={item.id}
@@ -905,7 +925,8 @@ function BlockItems({
                       adminTools={adminTools}
                     />
                   </div>
-                ) : useDocumentTree ? (
+                ) : null}
+                {showGroups && useDocumentTree ? (
                   <TopItemGroupsDocumentTree
                     item={item}
                     mode={mode}
@@ -916,7 +937,7 @@ function BlockItems({
                     onAdminManageLink={onAdminManageLink}
                     adminTools={adminTools}
                   />
-                ) : (
+                ) : showGroups ? (
                   item.groups.map((group) => {
                     const subKey = `${item.id}::${group.title}`;
 
@@ -1093,7 +1114,10 @@ function BlockItems({
                       </div>
                     );
                   })
-                )}
+                ) : null}
+                    </>
+                  );
+                })()}
               </div>
             </AccordionCollapse>
           </div>
@@ -1206,9 +1230,7 @@ export function FranchiseCenterPageAccordion({
     return lookups;
   }, [flatItems, hubDocsByCategory, hubDocsBySourcePath]);
 
-  const documentTreeLayout =
-    mode === "admin" ||
-    (mode === "franchise" && Boolean(hub?.flattenTopLevel || hub?.expandAllSections));
+  const documentTreeLayout = mode === "admin" || mode === "franchise";
 
   const [{ openTop, openSub, openNested }, dispatch] = useReducer(
     accordionSetsReducer,
@@ -1236,6 +1258,14 @@ export function FranchiseCenterPageAccordion({
   }, []);
 
   const isHub = Boolean(hub);
+
+  const displaySections = useMemo(() => {
+    if (mode !== "franchise") return sections;
+    if (!effectiveHubDocs.length) return sections;
+    return sections.map((chunk) =>
+      filterCentrePageBlocksToUploadedOnly(chunk, linkLookupsByTopId),
+    );
+  }, [sections, mode, linkLookupsByTopId, effectiveHubDocs.length]);
 
   return (
     <div className="rounded-xl border border-slate-200/90 bg-white shadow-md">
@@ -1272,16 +1302,11 @@ export function FranchiseCenterPageAccordion({
           <h2 className="text-lg font-bold tracking-wide text-white sm:text-xl">
             Center Page
           </h2>
-
-          <p className="mt-0.5 text-xs text-blue-100/90 sm:text-sm">
-            Tap an orange section to open it. Grey headings group topics; some have a second
-            heading (e.g. Block-1), others show download links directly below.
-          </p>
         </div>
       )}
 
       <div className="space-y-2 p-3 sm:p-4">
-        {sections.map((chunk, idx) => (
+        {displaySections.map((chunk, idx) => (
           <div key={idx} className="space-y-2">
             <BlockItems
               blocks={chunk}

@@ -12,21 +12,28 @@ export type ParentDocumentForMatch = {
     title: string;
     display_title?: string;
     file?: string;
+    video_embed_url?: string;
     franchise?: number | null;
     state?: string | null;
     order?: number;
 };
 
 function docMatchesCategory(doc: ParentDocumentForMatch): boolean {
+    if ((doc.video_embed_url || "").trim()) {
+        const cat = (doc.category || "").trim().toUpperCase();
+        if (cat === "VIDEOS" || cat === "AUDIO_RHYMES") return true;
+    }
     return fileMatchesParentDocumentCategory(doc.file || "", doc.category);
 }
 
 function parentDashboardDocVisible(doc: ParentDocumentForMatch): boolean {
-    return Boolean((doc.file || "").trim());
+    return Boolean((doc.file || "").trim() || (doc.video_embed_url || "").trim());
 }
 
 export type AdminParentAppUploadContext = ParentAppDocumentSlot & {
     matchedDocId?: number;
+    /** True when the matched row is embed-only (no uploaded file). */
+    matchedEmbedOnly?: boolean;
 };
 
 function normState(s: string | null | undefined): string {
@@ -144,6 +151,9 @@ export function buildParentAppUploadContexts(
             fromSlots.push({
                 ...slot,
                 matchedDocId: matched?.id,
+                matchedEmbedOnly: matched
+                    ? Boolean((matched.video_embed_url || "").trim()) && !(matched.file || "").trim()
+                    : false,
             });
         }
     }
@@ -165,6 +175,8 @@ export function buildParentAppUploadContexts(
             breadcrumbLabel: `${sectionTitle}${statePart} › ${doc.display_title || doc.title} (${centre})`,
             state: doc.state ?? undefined,
             matchedDocId: doc.id,
+            matchedEmbedOnly:
+                Boolean((doc.video_embed_url || "").trim()) && !(doc.file || "").trim(),
         });
     }
 

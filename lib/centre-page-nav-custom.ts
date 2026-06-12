@@ -66,6 +66,14 @@ export type CentrePageNavCustomData = {
     staticGroupLinkAppends?: CentrePageStaticGroupLinkAppend[];
     /** Display-name overrides for static nav items (keys from labelKey helpers). */
     labelOverrides?: Record<string, string>;
+    /** Built-in centre-page top sections removed in admin CMS. */
+    hiddenStaticTopIds?: string[];
+    /** Built-in subsections removed in admin CMS (`topId::groupTitle`). */
+    hiddenStaticGroupKeys?: string[];
+    /** Built-in nested blocks removed in admin CMS (`topId::groupTitle::nestedTitle`). */
+    hiddenStaticNestedKeys?: string[];
+    /** Checklist link rowKeys removed in admin CMS (static or custom). */
+    hiddenLinkRowKeys?: string[];
 };
 
 export type CentrePageRenameTarget =
@@ -97,7 +105,24 @@ export function linkLabelKey(rowKey: string): string {
 }
 
 export function emptyCentrePageNavCustom(): CentrePageNavCustomData {
-    return { customTopSections: [], staticExtensions: [], staticGroupLinkAppends: [], labelOverrides: {} };
+    return {
+        customTopSections: [],
+        staticExtensions: [],
+        staticGroupLinkAppends: [],
+        labelOverrides: {},
+        hiddenStaticTopIds: [],
+        hiddenStaticGroupKeys: [],
+        hiddenStaticNestedKeys: [],
+        hiddenLinkRowKeys: [],
+    };
+}
+
+export function staticGroupHideKey(topId: string, groupTitle: string): string {
+    return `${topId}::${groupTitle}`;
+}
+
+export function staticNestedHideKey(topId: string, groupTitle: string, nestedTitle: string): string {
+    return `${topId}::${groupTitle}::${nestedTitle}`;
 }
 
 /** Parse page-content JSON from the CMS API (admin + franchise dashboard). */
@@ -118,7 +143,109 @@ export function parseCentrePageNavCustom(raw: unknown): CentrePageNavCustomData 
         staticGroupLinkAppends: Array.isArray(o.staticGroupLinkAppends)
             ? (o.staticGroupLinkAppends as CentrePageNavCustomData["staticGroupLinkAppends"])
             : [],
+        hiddenStaticTopIds: Array.isArray(o.hiddenStaticTopIds)
+            ? (o.hiddenStaticTopIds as string[]).filter((id) => typeof id === "string")
+            : [],
+        hiddenStaticGroupKeys: Array.isArray(o.hiddenStaticGroupKeys)
+            ? (o.hiddenStaticGroupKeys as string[]).filter((id) => typeof id === "string")
+            : [],
+        hiddenStaticNestedKeys: Array.isArray(o.hiddenStaticNestedKeys)
+            ? (o.hiddenStaticNestedKeys as string[]).filter((id) => typeof id === "string")
+            : [],
+        hiddenLinkRowKeys: Array.isArray(o.hiddenLinkRowKeys)
+            ? (o.hiddenLinkRowKeys as string[]).filter((id) => typeof id === "string")
+            : [],
     };
+}
+
+function hiddenStaticTopSet(data: CentrePageNavCustomData): Set<string> {
+    return new Set(data.hiddenStaticTopIds ?? []);
+}
+
+function hiddenLinkRowSet(data: CentrePageNavCustomData): Set<string> {
+    return new Set(data.hiddenLinkRowKeys ?? []);
+}
+
+function hiddenStaticGroupSet(data: CentrePageNavCustomData): Set<string> {
+    return new Set(data.hiddenStaticGroupKeys ?? []);
+}
+
+function hiddenStaticNestedSet(data: CentrePageNavCustomData): Set<string> {
+    return new Set(data.hiddenStaticNestedKeys ?? []);
+}
+
+function filterLinksByHidden(
+    links: CenterPageLink[] | undefined,
+    hidden: Set<string>,
+): CenterPageLink[] | undefined {
+    if (!links?.length) return links;
+    const next = links.filter((link) => !hidden.has((link.rowKey ?? rowKeyForChecklistLink(link)).trim()));
+    return next.length ? next : undefined;
+}
+
+/** Drop admin-removed link rows from a centre-page top item. */
+export function applyCentrePageHiddenLinks(
+    item: CenterPageTopItem,
+    hidden: Set<string>,
+): CenterPageTopItem | null {
+    if (!hidden.size) return item;
+
+    const directLinks = filterLinksByHidden(item.directLinks, hidden);
+    const groups: CenterPageSubsection[] = [];
+    for (const group of item.groups) {
+        const links = filterLinksByHidden(group.links, hidden);
+        const nestedBlocks: CenterPageNestedBlock[] = [];
+        for (const block of group.nested ?? []) {
+            const blockLinks = filterLinksByHidden(block.links, hidden);
+            if (blockLinks?.length) nestedBlocks.push({ ...block, links: blockLinks });
+        }
+        const hasNested = nestedBlocks.length > 0;
+        const hasLinks = links && links.length > 0;
+        if (!hasNested && !hasLinks) continue;
+        groups.push({
+            ...group,
+            links,
+            nested: hasNested ? nestedBlocks : undefined,
+        });
+    }
+
+    const hasDirect = directLinks && directLinks.length > 0;
+    const hasGroups = groups.length > 0;
+    if (!hasDirect && !hasGroups) return null;
+
+    return { ...item, directLinks, groups };
+}
+
+/** Drop admin-removed subsections and nested blocks from a centre-page top item. */
+export function applyCentrePageHiddenGroupsAndNested(
+    item: CenterPageTopItem,
+    hiddenGroups: Set<string>,
+    hiddenNested: Set<string>,
+): CenterPageTopItem | null {
+    if (!hiddenGroups.size && !hiddenNested.size) return item;
+
+    const groups: CenterPageSubsection[] = [];
+    for (const group of item.groups) {
+        if (hiddenGroups.has(staticGroupHideKey(item.id, group.title))) continue;
+
+        const nestedBlocks: CenterPageNestedBlock[] = [];
+        for (const block of group.nested ?? []) {
+            if (hiddenNested.has(staticNestedHideKey(item.id, group.title, block.title))) continue;
+            nestedBlocks.push(block);
+        }
+
+        const nested = nestedBlocks.length ? nestedBlocks : undefined;
+        const hasNested = nested && nested.length > 0;
+        const hasLinks = group.links && group.links.length > 0;
+        if (!hasNested && !hasLinks) continue;
+        groups.push({ ...group, nested });
+    }
+
+    const hasDirect = item.directLinks && item.directLinks.length > 0;
+    const hasGroups = groups.length > 0;
+    if (!hasDirect && !hasGroups) return null;
+
+    return { ...item, groups };
 }
 
 export function newCustomId(prefix: string): string {
@@ -243,7 +370,7 @@ function coalesceGroupsByTitle(groups: CenterPageSubsection[]): CenterPageSubsec
     return out;
 }
 
-function mergeTopWithExtension(
+export function mergeTopWithExtension(
     item: CenterPageTopItem,
     custom: CentrePageNavCustomData,
 ): CenterPageTopItem {
@@ -352,12 +479,72 @@ export function mergeCentrePageBlocks(
     const finalizeTop = (item: CenterPageTopItem) =>
         applyLabelOverridesToTop(assignStableRowKeysToTopItem(mergeTopWithExtension(item, data)), overrides);
 
-    const mergedA = blockA.map(finalizeTop);
-    const mergedB = blockB.map(finalizeTop);
+    const hiddenTops = hiddenStaticTopSet(data);
+    const hiddenLinks = hiddenLinkRowSet(data);
+    const hiddenGroups = hiddenStaticGroupSet(data);
+    const hiddenNested = hiddenStaticNestedSet(data);
+
+    const visibleTop = (item: CenterPageTopItem) => {
+        if (hiddenTops.has(item.id)) return null;
+        const withoutLinks = applyCentrePageHiddenLinks(item, hiddenLinks);
+        if (!withoutLinks) return null;
+        return applyCentrePageHiddenGroupsAndNested(withoutLinks, hiddenGroups, hiddenNested);
+    };
+
+    const mergedA = blockA.map(finalizeTop).map(visibleTop).filter((item): item is CenterPageTopItem => item != null);
+    const mergedB = blockB
+        .map(finalizeTop)
+        .map(visibleTop)
+        .filter((item): item is CenterPageTopItem => item != null);
     const customTops = data.customTopSections
         .map(customTopToItem)
-        .map(finalizeTop);
+        .map(finalizeTop)
+        .map(visibleTop)
+        .filter((item): item is CenterPageTopItem => item != null);
     return [mergedA, [...mergedB, ...customTops]];
+}
+
+export function hideCentrePageStaticTop(
+    data: CentrePageNavCustomData,
+    topId: string,
+): CentrePageNavCustomData {
+    const ids = new Set(data.hiddenStaticTopIds ?? []);
+    ids.add(topId);
+    return { ...data, hiddenStaticTopIds: Array.from(ids) };
+}
+
+export function hideCentrePageLinkRow(
+    data: CentrePageNavCustomData,
+    rowKey: string,
+): CentrePageNavCustomData {
+    const key = rowKey.trim();
+    if (!key) return data;
+    const ids = new Set(data.hiddenLinkRowKeys ?? []);
+    ids.add(key);
+    return { ...data, hiddenLinkRowKeys: Array.from(ids) };
+}
+
+export function hideCentrePageStaticGroup(
+    data: CentrePageNavCustomData,
+    topId: string,
+    groupTitle: string,
+): CentrePageNavCustomData {
+    const key = staticGroupHideKey(topId, groupTitle);
+    const ids = new Set(data.hiddenStaticGroupKeys ?? []);
+    ids.add(key);
+    return { ...data, hiddenStaticGroupKeys: Array.from(ids) };
+}
+
+export function hideCentrePageStaticNested(
+    data: CentrePageNavCustomData,
+    topId: string,
+    groupTitle: string,
+    nestedTitle: string,
+): CentrePageNavCustomData {
+    const key = staticNestedHideKey(topId, groupTitle, nestedTitle);
+    const ids = new Set(data.hiddenStaticNestedKeys ?? []);
+    ids.add(key);
+    return { ...data, hiddenStaticNestedKeys: Array.from(ids) };
 }
 
 export function isCustomTopSection(
