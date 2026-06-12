@@ -96,9 +96,9 @@ export const PARENT_APP_DOCUMENT_CHECKLIST: ParentAppDocumentSection[] = [
     },
     {
         id: "newsletters",
-        title: catLabel("NEWSLETTERS"),
-        category: "NEWSLETTERS",
-        slots: [globalSlot("NEWSLETTERS")],
+        title: catLabel("CLASS_TIMETABLE"),
+        category: "CLASS_TIMETABLE",
+        slots: [globalSlot("CLASS_TIMETABLE", "Franchise centres only")],
     },
     {
         id: "students-kit",

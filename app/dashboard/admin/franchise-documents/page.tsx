@@ -385,23 +385,31 @@ export default function AdminFranchiseDocumentsPage() {
                 const addCategory = inferCategoryForAnchor(anchor, mergedSections);
                 const { data, link } = addCustomLink(customNav, anchor, title, addCategory);
                 await saveCustomNav(data);
+                const wantsUpload = Boolean(addFile || addEmbedUrl.trim());
 
-                try {
-                    await uploadNewDocument({
-                        category: addCategory,
-                        title,
-                        sourcePath: link.sourcePath ?? "",
-                        file: addFile,
-                        embedUrl: addEmbedUrl,
-                    });
-                } catch (err) {
-                    showToast(err instanceof Error ? err.message : "Upload failed.", "error");
-                    setAddSaving(false);
-                    return;
+                if (wantsUpload) {
+                    try {
+                        await uploadNewDocument({
+                            category: addCategory,
+                            title,
+                            sourcePath: link.sourcePath ?? "",
+                            file: addFile,
+                            embedUrl: addEmbedUrl,
+                        });
+                    } catch (err) {
+                        showToast(err instanceof Error ? err.message : "Upload failed.", "error");
+                        setAddSaving(false);
+                        return;
+                    }
                 }
 
                 closeAddModal();
-                showToast(`"${title}" added and uploaded.`, "success");
+                showToast(
+                    wantsUpload
+                        ? `"${title}" added and uploaded.`
+                        : `"${title}" added — click Upload on that row when ready.`,
+                    "success",
+                );
                 await load();
                 setAddSaving(false);
                 return;
@@ -412,6 +420,7 @@ export default function AdminFranchiseDocumentsPage() {
             await saveCustomNav(next);
             closeAddModal();
             showToast("Saved.", "success");
+            await load();
         } catch {
             showToast("Could not save.", "error");
         } finally {
@@ -584,7 +593,7 @@ export default function AdminFranchiseDocumentsPage() {
                 showToast("Document saved to database.", "success");
             }
             closeModal();
-            void load();
+            await load();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Save failed.";
             showToast(msg, "error");

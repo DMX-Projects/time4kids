@@ -9,7 +9,8 @@ import {
     type ResolvedLinkMeta,
 } from "@/lib/franchise-center-page-links";
 import { matchParentDocToSlot, type ParentDocumentForMatch } from "@/lib/admin-parent-app-upload";
-import { checklistSourcePathForLink } from "@/lib/centre-page-nav-custom";
+import { uploadSourcePathForLink } from "@/lib/centre-page-nav-custom";
+import { parentDocumentRowVisible } from "@/lib/parent-document-file-kind";
 
 export type ParentDocHubRow = ParentDocumentForMatch & {
     source_path?: string | null;
@@ -23,9 +24,7 @@ function normalizeSourcePathKey(path: string): string {
 
 function parentDocReady(doc: ParentDocHubRow | undefined, used?: Set<number>): ParentDocHubRow | undefined {
     if (!doc?.id) return undefined;
-    const hasFile = Boolean((doc.file || "").trim());
-    const hasEmbed = Boolean((doc.video_embed_url || "").trim());
-    if (!hasFile && !hasEmbed) return undefined;
+    if (!parentDocumentRowVisible(doc, doc.category)) return undefined;
     if (used?.has(doc.id)) return undefined;
     return doc;
 }
@@ -69,7 +68,7 @@ function resolveParentLinkMeta(
     docsBySourcePath: Map<string, ParentDocHubRow>,
     usedDocIds?: Set<number>,
 ): ResolvedLinkMeta {
-    const checklistPath = normalizeSourcePathKey(checklistSourcePathForLink(link));
+    const checklistPath = normalizeSourcePathKey(uploadSourcePathForLink(link));
     const byChecklist = parentDocReady(docsBySourcePath.get(checklistPath), usedDocIds);
     if (byChecklist) {
         return { href: `#parent-doc-${byChecklist.id}`, franchiseHubDocId: byChecklist.id };

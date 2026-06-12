@@ -8,14 +8,16 @@ import { ChevronDown, Download, Eye, FileText, LifeBuoy, Music, Play, Sparkles }
 
 import { useAuth } from "@/components/auth/AuthProvider";
 
-import { mergeParentDashboardSections } from "@/config/parent-dashboard-sections";
-
 import { useParentAppNavCustom } from "@/hooks/useParentAppNavCustom";
 
+import type { ParentDocumentForMatch } from "@/lib/admin-parent-app-upload";
+
 import {
-    buildParentDashboardSectionItems,
-    type ParentDocumentForMatch,
-} from "@/lib/admin-parent-app-upload";
+    buildParentDashboardSectionsFromNav,
+    collectParentSectionDocs,
+} from "@/lib/parent-dashboard-doc-sections";
+
+import { mergeParentAppNavBlocks } from "@/lib/merge-parent-app-nav-blocks";
 
 import {
     openNewsletterVideoEmbedLink,
@@ -56,6 +58,10 @@ const normalizeDocs = (data: unknown): ParentDoc[] => {
 
 
 const sectionIcons: Record<string, JSX.Element> = {
+
+    "preschool-policies": <FileText className="w-4 h-4" />,
+
+    "holiday-lists": <FileText className="w-4 h-4" />,
 
     "audio-rhymes": <Music className="w-4 h-4" />,
 
@@ -284,7 +290,17 @@ export function ParentDocuments() {
 
 
 
-    const sections = useMemo(() => mergeParentDashboardSections(navCustom), [navCustom]);
+    const navBlocks = useMemo(() => mergeParentAppNavBlocks(navCustom), [navCustom]);
+
+    const sections = useMemo(() => buildParentDashboardSectionsFromNav(navCustom), [navCustom]);
+
+    const topItemsById = useMemo(() => {
+        const map = new Map<string, import("@/config/franchise-center-page-nav").CenterPageTopItem>();
+        for (const block of navBlocks) {
+            for (const item of block) map.set(item.id, item);
+        }
+        return map;
+    }, [navBlocks]);
 
 
 
@@ -324,7 +340,8 @@ export function ParentDocuments() {
             .map((section, idx) => {
                 const accent = accentForIndex(idx);
                 const icon = sectionIcons[section.id] ?? <FileText className="w-4 h-4" />;
-                const items = buildParentDashboardSectionItems(section.category, docs);
+                const topItem = topItemsById.get(section.id);
+                const items = topItem ? collectParentSectionDocs(topItem, docs) : [];
                 return {
                     key: section.id,
                     category: section.category,
@@ -336,7 +353,7 @@ export function ParentDocuments() {
                 };
             })
             .filter((cat) => cat.items.length > 0);
-    }, [sections, docs]);
+    }, [sections, docs, topItemsById]);
 
 
 

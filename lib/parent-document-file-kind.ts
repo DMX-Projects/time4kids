@@ -46,6 +46,45 @@ export function parentDocumentFileKind(filePath: string): ParentDocumentFileKind
     return "unknown";
 }
 
+export type ParentDocumentMediaRow = {
+    file?: string;
+    video_embed_url?: string;
+    audio_file?: string;
+    audio_embed_url?: string;
+    category?: string;
+};
+
+function rowHasPlayableMedia(row: ParentDocumentMediaRow): boolean {
+    return Boolean(
+        (row.file || "").trim() ||
+            (row.video_embed_url || "").trim() ||
+            (row.audio_file || "").trim() ||
+            (row.audio_embed_url || "").trim(),
+    );
+}
+
+/** True when a parent-app row should appear in lists (file, embed, or audio link). */
+export function parentDocumentRowVisible(row: ParentDocumentMediaRow, category: string): boolean {
+    if (!rowHasPlayableMedia(row)) return false;
+    const cat = (category || row.category || "").trim().toUpperCase();
+    if ((row.video_embed_url || "").trim()) {
+        if (
+            cat === "VIDEOS" ||
+            cat === "AUDIO_RHYMES" ||
+            cat === "CLASS_TIMETABLE" ||
+            cat === "NEWSLETTERS"
+        ) {
+            return true;
+        }
+    }
+    if ((row.audio_embed_url || "").trim() || (row.audio_file || "").trim()) {
+        if (cat === "AUDIO_RHYMES" || cat === "CLASS_TIMETABLE" || cat === "NEWSLETTERS") {
+            return true;
+        }
+    }
+    return fileMatchesParentDocumentCategory(row.file || "", cat);
+}
+
 /** True when a stored file belongs in this parent-app category (display + upload rules). */
 export function fileMatchesParentDocumentCategory(filePath: string, category: string): boolean {
     const cat = (category || "").trim().toUpperCase();

@@ -2,6 +2,7 @@ import type { CenterPageLink, CenterPageTopItem } from "@/config/franchise-cente
 import { isStudentsKitPublicPath } from "@/config/students-kit-public-pages";
 import { mediaUrl } from "@/lib/api-client";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
+import { rowKeyForChecklistLink, uploadSourcePathForLink } from "@/lib/centre-page-nav-custom";
 
 /** Dashboard list pages keyed by `FranchiseDocumentCategory`. */
 export const FRANCHISE_CATEGORY_HUB_PATH: Record<string, string> = {
@@ -90,19 +91,6 @@ export function isLegacyFranchiseUploadUrl(href: string): boolean {
     }
 }
 
-function stableRowKeyForLink(link: CenterPageLink): string {
-    if (link.rowKey) return link.rowKey;
-    const href = link.href?.trim();
-    return href ? `href:${href}` : `link:${link.label}`;
-}
-
-function checklistRowSourcePath(link: CenterPageLink): string {
-    if (link.rowKey?.trim()) {
-        return `checklist-row/${link.rowKey.trim().replace(/:/g, "/")}`;
-    }
-    return `checklist-row/${stableRowKeyForLink(link).replace(/:/g, "/")}`;
-}
-
 function normalizeSourcePathKey(path: string): string {
     return path.replace(/\\/g, "/").trim().replace(/^\/+/, "").toLowerCase();
 }
@@ -158,7 +146,7 @@ function withFranchiseHubDownload(docId: number): ResolvedHubLink {
 export type ResolvedLinkMeta = { href: string; franchiseHubDocId?: number };
 
 export function linkResolutionKey(link: CenterPageLink): string {
-    return link.rowKey?.trim() || stableRowKeyForLink(link);
+    return link.rowKey?.trim() || rowKeyForChecklistLink(link);
 }
 
 /** Resolve all links under one top section once — each DB document maps to at most one row. */
@@ -203,7 +191,7 @@ export function resolveCenterPageLinkMeta(
 
     if (docsBySourcePath) {
         const byChecklist = hubDocReady(
-            docsBySourcePath.get(normalizeSourcePathKey(checklistRowSourcePath(link))),
+            docsBySourcePath.get(normalizeSourcePathKey(uploadSourcePathForLink(link))),
             usedDocIds,
         );
         if (byChecklist) return withFranchiseHubDownload(byChecklist.id);

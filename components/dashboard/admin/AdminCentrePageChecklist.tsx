@@ -399,9 +399,9 @@ function GroupBlock({
                 }
                 onDelete={onRemoveRequest ? () => onRemoveRequest({ kind: "subsection", anchor }) : undefined}
             />
-            {group.nested?.map((block) => (
+            {group.nested?.map((block, blockIndex) => (
                 <NestedBlock
-                    key={`${group.title}::${block.title}`}
+                    key={`${group.title}::n${blockIndex}::${block.title}`}
                     block={block}
                     item={item}
                     group={group}
@@ -511,9 +511,9 @@ function SectionBlock({
                 />
             ) : null}
 
-            {item.groups.map((group) => (
+            {item.groups.map((group, groupIndex) => (
                 <GroupBlock
-                    key={`${item.id}::${group.title}`}
+                    key={`${item.id}::g${groupIndex}::${group.title}`}
                     group={group}
                     item={item}
                     linkLookup={linkLookup}

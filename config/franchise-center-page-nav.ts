@@ -16,6 +16,8 @@ export type CenterPageLink = {
     emphasize?: boolean;
     /** Stable list key when the same label+href appears twice */
     rowKey?: string;
+    /** Admin upload key (custom links use centre-nav/…; checklist rows use checklist-row/…). */
+    sourcePath?: string;
     /**
      * When set (franchise dashboard), open file via authenticated API instead of public `/media/…`
      * (avoids 404 when marketing domain does not proxy uploads).
@@ -37,12 +39,16 @@ export type CenterPageSubsection = {
     title: string;
     links?: CenterPageLink[];
     nested?: CenterPageNestedBlock[];
+    /** Admin-added subsection (show even when empty). */
+    adminCustom?: boolean;
 };
 
 export type CenterPageTopItem = {
     id: string;
     title: string;
     emphasize?: boolean;
+    /** Head-office added top section (show structure before uploads). */
+    adminCustom?: boolean;
     /**
      * Grey pill sections under the yellow bar. Use an empty array when `directLinks` carries
      * the whole list (no intermediate pill).

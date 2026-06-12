@@ -1,5 +1,5 @@
 import type { CenterPageLink } from "@/config/franchise-center-page-nav";
-import { checklistSourcePathForLink } from "@/lib/centre-page-nav-custom";
+import { uploadSourcePathForLink } from "@/lib/centre-page-nav-custom";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
 
 export type AdminCenterPageUploadContext = {
@@ -18,7 +18,7 @@ export type AdminCenterPageUploadContext = {
 };
 
 export function sourcePathFromChecklistLink(link: CenterPageLink): string {
-    return checklistSourcePathForLink(link);
+    return uploadSourcePathForLink(link);
 }
 
 export function buildAdminUploadContext(args: {
@@ -38,7 +38,7 @@ export function buildAdminUploadContext(args: {
         args.link.label,
     ].filter((part): part is string => Boolean(part?.trim()));
 
-    const sourcePath = checklistSourcePathForLink(args.link);
+    const sourcePath = uploadSourcePathForLink(args.link);
 
     return {
         breadcrumb,
