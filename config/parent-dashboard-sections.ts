@@ -25,7 +25,7 @@ export const PARENT_DASHBOARD_DISPLAY_SECTIONS: ParentDashboardSection[] = [
         kind: "documents",
         category: "AUDIO_RHYMES",
         title: "Audio Rhymes (AY 2026-27)",
-        subtitle: "Audio files only",
+        subtitle: "MP3, WAV, MP4, and other audio/video files",
     },
     {
         id: "videos",

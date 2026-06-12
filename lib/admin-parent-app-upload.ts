@@ -1,4 +1,8 @@
-import type { ParentAppDocumentSlot, ParentAppDocumentSection } from "@/config/parent-app-document-checklist";
+import {
+    PARENT_APP_DOCUMENT_CHECKLIST,
+    type ParentAppDocumentSlot,
+    type ParentAppDocumentSection,
+} from "@/config/parent-app-document-checklist";
 
 import { fileMatchesParentDocumentCategory } from "@/lib/parent-document-file-kind";
 
@@ -8,12 +12,17 @@ export type ParentDocumentForMatch = {
     title: string;
     display_title?: string;
     file?: string;
-    franchise: number | null;
+    franchise?: number | null;
     state?: string | null;
+    order?: number;
 };
 
 function docMatchesCategory(doc: ParentDocumentForMatch): boolean {
     return fileMatchesParentDocumentCategory(doc.file || "", doc.category);
+}
+
+function parentDashboardDocVisible(doc: ParentDocumentForMatch): boolean {
+    return Boolean((doc.file || "").trim());
 }
 
 export type AdminParentAppUploadContext = ParentAppDocumentSlot & {
@@ -28,8 +37,26 @@ function normTitle(s: string | null | undefined): string {
     return (s || "")
         .trim()
         .toLowerCase()
-        .replace(/\.pdf$/i, "")
-        .replace(/\s*-\s*(video|audio)$/i, "");
+        .replace(/\.(pdf|mp3|mp4|wav|m4a|ogg|aac|flac|wma)$/i, "")
+        .replace(/\s*-\s*(video|audio)$/i, "")
+        .replace(/\s*-\s*\d+$/i, "");
+}
+
+/** Loose title key so filename uploads match checklist slots. */
+function slotTitleKey(category: string, title: string): string {
+    let t = normTitle(title);
+    if (category === "AUDIO_RHYMES") {
+        t = t
+            .replace(/^audio rhymes for\s+/i, "")
+            .replace(/\s+audio rhymes$/i, "")
+            .replace(/&/g, "and")
+            .replace(/block[\s-]+(\d+)/gi, "block$1")
+            .replace(/\bpp\s*1\b/g, "pp1")
+            .replace(/\bpp\s*2\b/g, "pp2")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+    return t;
 }
 
 function docTitle(doc: ParentDocumentForMatch): string {
@@ -53,14 +80,15 @@ export function matchParentDocToSlot(
     }
 
     if (slot.suggestedTitle) {
-        const want = normTitle(slot.suggestedTitle);
-        const byTitle = inCategory.filter((d) => normTitle(docTitle(d)) === want);
+        const want = slotTitleKey(slot.category, slot.suggestedTitle);
+        const byTitle = inCategory.filter((d) => slotTitleKey(slot.category, docTitle(d)) === want);
         if (byTitle.length) {
             if (slot.franchiseId === null) {
                 return byTitle.find((d) => d.franchise == null) ?? byTitle[0];
             }
             return byTitle.find((d) => d.franchise === slot.franchiseId) ?? byTitle[0];
         }
+        return undefined;
     }
 
     if (slot.franchiseId === null) {
@@ -68,6 +96,38 @@ export function matchParentDocToSlot(
     }
 
     return inCategory.find((d) => d.franchise === slot.franchiseId);
+}
+
+/** Parent dashboard: every uploaded file for a section (no frontend type filtering). */
+export function buildParentDashboardSectionItems(
+    category: string,
+    docs: ParentDocumentForMatch[],
+): ParentDocumentForMatch[] {
+    const inCategory = docs.filter(
+        (d) => d.category === category && parentDashboardDocVisible(d),
+    );
+    const section = PARENT_APP_DOCUMENT_CHECKLIST.find((s) => s.category === category);
+    const fixedSlots = (section?.slots ?? []).filter((s) => s.suggestedTitle);
+
+    if (fixedSlots.length <= 1) {
+        return [...inCategory].sort(
+            (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.id - b.id,
+        );
+    }
+
+    const ordered: ParentDocumentForMatch[] = [];
+    const used = new Set<number>();
+    for (const slot of fixedSlots) {
+        const matched = matchParentDocToSlot(slot, inCategory);
+        if (matched && !used.has(matched.id)) {
+            ordered.push(matched);
+            used.add(matched.id);
+        }
+    }
+    const extras = inCategory
+        .filter((d) => !used.has(d.id))
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.id - b.id);
+    return [...ordered, ...extras];
 }
 
 export function buildParentAppUploadContexts(
