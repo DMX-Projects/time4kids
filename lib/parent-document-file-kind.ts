@@ -52,7 +52,10 @@ export function fileMatchesParentDocumentCategory(filePath: string, category: st
     if (MIXED_MEDIA_CATEGORIES.has(cat)) return true;
     const kind = parentDocumentFileKind(filePath);
     if (PDF_ONLY_CATEGORIES.has(cat)) return kind === "pdf";
-    if (AUDIO_ONLY_CATEGORIES.has(cat)) return kind === "audio" || kind === "video";
+    if (AUDIO_ONLY_CATEGORIES.has(cat)) {
+        if (!filePath.trim()) return false;
+        return kind === "audio" || kind === "video" || kind === "document" || kind === "unknown";
+    }
     if (!filePath.trim()) return true;
     return kind !== "video" && kind !== "audio";
 }

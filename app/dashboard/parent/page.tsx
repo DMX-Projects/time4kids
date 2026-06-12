@@ -1,14 +1,13 @@
 "use client";
 
-import { CalendarDays, ClipboardList, Sparkles, User } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { ParentDashboardQuickLinks } from "@/components/dashboard/parent/ParentDashboardQuickLinks";
 import { ParentDocuments } from "@/components/dashboard/parent/ParentDocuments";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
-import { countUpcomingEvents, formatStudentClassCaption } from "@/lib/parent-dashboard-utils";
+import { countUpcomingEvents } from "@/lib/parent-dashboard-utils";
 
 export default function ParentDashboardPage() {
     const { user } = useAuth();
@@ -16,7 +15,6 @@ export default function ParentDashboardPage() {
     const { grades, events, parentSchoolLoading } = useSchoolData();
 
     const myStudents = linkedStudents;
-    const myGrades = grades;
     const upcomingEventsCount = countUpcomingEvents(events);
 
     const focusStudent = myStudents.find((s) => s.id === selectedStudentId) ?? myStudents[0];
@@ -102,60 +100,6 @@ export default function ParentDashboardPage() {
                 </div>
             </section>
 
-            <div className="grid md:grid-cols-3 gap-4">
-                <ParentCard
-                    href="/dashboard/parent/student-profile"
-                    ariaLabel="Open student profile"
-                    icon={<User className="w-5 h-5" />}
-                    title={myStudents.length > 1 ? "Children" : "Student"}
-                    value={parentSchoolLoading ? "…" : myStudents.length === 0 ? "—" : myStudents.length === 1 ? focusStudent?.name || "—" : String(myStudents.length)}
-                    caption={
-                        parentSchoolLoading
-                            ? "Loading from your centre…"
-                            : myStudents.length === 0
-                              ? "No student linked yet — contact your centre"
-                              : myStudents.length === 1
-                                ? formatStudentClassCaption(focusStudent!)
-                                : `${myStudents.length} linked — pick a child above for highlights`
-                    }
-                    color="#FFE066"
-                    badge="All set"
-                    delay={0}
-                />
-                <ParentCard
-                    href="/dashboard/parent/marks-grades"
-                    ariaLabel="Open marks and grades"
-                    icon={<ClipboardList className="w-5 h-5" />}
-                    title="Marks / Grades"
-                    value={parentSchoolLoading ? "…" : String(myGrades.length)}
-                    caption={
-                        parentSchoolLoading
-                            ? "Loading…"
-                            : myGrades.length === 0
-                              ? "No marks posted yet"
-                              : `${myGrades.length} record${myGrades.length === 1 ? "" : "s"} from your centre`
-                    }
-                    color="#A5D8FF"
-                    badge="Keep tracking"
-                    delay={80}
-                />
-                <ParentCard
-                    href="/dashboard/parent/events"
-                    ariaLabel="Open events"
-                    icon={<CalendarDays className="w-5 h-5" />}
-                    title="Upcoming Events"
-                    value={String(upcomingEventsCount)}
-                    caption={
-                        upcomingEventsCount === 0
-                            ? "No upcoming events from your centre"
-                            : `${upcomingEventsCount} from today onward`
-                    }
-                    color="#FF922B"
-                    badge="Don't miss"
-                    delay={160}
-                />
-            </div>
-
             <div id="parent-documents" className="scroll-mt-24">
                 <ParentDocuments />
             </div>
@@ -168,55 +112,12 @@ export default function ParentDashboardPage() {
             </div>
 
             <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:z-[5] lg:w-[280px] xl:w-[300px]">
-                <ParentDashboardQuickLinks />
+                <ParentDashboardQuickLinks
+                    upcomingEventsCount={upcomingEventsCount}
+                    gradesCount={grades.length}
+                    gradesLoading={parentSchoolLoading}
+                />
             </aside>
         </div>
-    );
-}
-
-function ParentCard({
-    href,
-    ariaLabel,
-    icon,
-    title,
-    value,
-    caption,
-    color,
-    badge,
-    delay = 0,
-}: {
-    href: string;
-    ariaLabel: string;
-    icon: React.ReactNode;
-    title: string;
-    value: string;
-    caption: string;
-    color: string;
-    badge: string;
-    delay?: number;
-}) {
-    return (
-        <Link
-            href={href}
-            aria-label={ariaLabel}
-            className="relative overflow-hidden rounded-2xl shadow-sm p-5 flex items-center gap-4 bg-white transition-all duration-200 hover:-translate-y-1 hover:shadow-md animate-fade-up cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
-            style={{ animationDelay: `${delay}ms` }}
-        >
-            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: color }} aria-hidden />
-            <div className="w-12 h-12 rounded-2xl text-[#1F2937] flex items-center justify-center shadow-sm shrink-0" style={{ backgroundColor: color }}>
-                {icon}
-            </div>
-            <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#1F2937] font-semibold flex items-center gap-2 flex-wrap">
-                    {title}
-                    <span className="text-[11px] uppercase tracking-wide rounded-full bg-[#FFF4CC] px-2 py-1 text-[#1F2937]">{badge}</span>
-                </p>
-                <p className="text-2xl font-bold text-[#1F2937]">{value}</p>
-                <p className="text-xs text-[#4B5563]">{caption}</p>
-            </div>
-            <div className="absolute -right-6 -top-4 text-4xl opacity-40 pointer-events-none" aria-hidden>
-                🎈
-            </div>
-        </Link>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ScrollText, Sparkles, ThumbsUp } from "lucide-react";
+import { CalendarDays, ClipboardList, ScrollText, Sparkles, ThumbsUp } from "lucide-react";
 import { PARENT_DASHBOARD_QUICK_LINKS } from "@/config/parent-dashboard-quick-links";
 
 const handwritten = "font-[family-name:var(--font-schoolbell)] tracking-wide";
@@ -50,7 +50,15 @@ function QuickLinkShell({
     );
 }
 
-export function ParentDashboardQuickLinks() {
+export function ParentDashboardQuickLinks({
+    upcomingEventsCount = 0,
+    gradesCount = 0,
+    gradesLoading = false,
+}: {
+    upcomingEventsCount?: number;
+    gradesCount?: number;
+    gradesLoading?: boolean;
+}) {
     return (
         <div className="space-y-3">
             <p className="text-center text-xs font-semibold uppercase tracking-wider text-slate-500 lg:text-left">
@@ -108,6 +116,62 @@ export function ParentDashboardQuickLinks() {
                     </div>
                 </div>
             </QuickLinkShell>
+
+            <Link
+                href="/dashboard/parent/marks-grades"
+                aria-label="Open marks and grades"
+                className="relative block overflow-hidden rounded-2xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+            >
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[#A5D8FF]" aria-hidden />
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#A5D8FF] text-[#1F2937] shadow-sm">
+                        <ClipboardList className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-[#1F2937]">
+                            Marks / Grades
+                            <span className="rounded-full bg-[#FFF4CC] px-2 py-1 text-[11px] uppercase tracking-wide text-[#1F2937]">
+                                Keep tracking
+                            </span>
+                        </p>
+                        <p className="text-2xl font-bold text-[#1F2937]">{gradesLoading ? "…" : gradesCount}</p>
+                        <p className="text-xs text-[#4B5563]">
+                            {gradesLoading
+                                ? "Loading…"
+                                : gradesCount === 0
+                                  ? "No marks posted yet"
+                                  : `${gradesCount} record${gradesCount === 1 ? "" : "s"} from your centre`}
+                        </p>
+                    </div>
+                </div>
+            </Link>
+
+            <Link
+                href="/dashboard/parent/events"
+                aria-label="Open upcoming events"
+                className="relative block overflow-hidden rounded-2xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+            >
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[#FF922B]" aria-hidden />
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#FF922B] text-[#1F2937] shadow-sm">
+                        <CalendarDays className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-[#1F2937]">
+                            Upcoming Events
+                            <span className="rounded-full bg-[#FFF4CC] px-2 py-1 text-[11px] uppercase tracking-wide text-[#1F2937]">
+                                Don&apos;t miss
+                            </span>
+                        </p>
+                        <p className="text-2xl font-bold text-[#1F2937]">{upcomingEventsCount}</p>
+                        <p className="text-xs text-[#4B5563]">
+                            {upcomingEventsCount === 0
+                                ? "No upcoming events from your centre"
+                                : `${upcomingEventsCount} from today onward`}
+                        </p>
+                    </div>
+                </div>
+            </Link>
         </div>
     );
 }
