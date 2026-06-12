@@ -62,9 +62,8 @@ export function mergeParentAppNavBlocks(
     const finalize = (item: CenterPageTopItem): CenterPageTopItem | null => {
         if (hiddenTops.has(item.id)) return null;
         const withOverrides = applyParentLabelOverrides(item, overrides, sectionTitles);
-        const withoutLinks = applyCentrePageHiddenLinks(withOverrides, hiddenLinks);
-        if (!withoutLinks) return null;
-        return applyCentrePageHiddenGroupsAndNested(withoutLinks, hiddenGroups, hiddenNested);
+        const withoutDeletedLinks = applyCentrePageHiddenLinks(withOverrides, hiddenLinks);
+        return applyCentrePageHiddenGroupsAndNested(withoutDeletedLinks, hiddenGroups, hiddenNested);
     };
 
     const slotLabels = tree.slotLabels ?? {};
@@ -86,8 +85,10 @@ export function mergeParentAppNavBlocks(
             const item: CenterPageTopItem = {
                 id: top.id,
                 title: top.title,
+                adminCustom: true,
                 groups: top.groups.map((g) => ({
                     title: g.title,
+                    adminCustom: true,
                     links: g.links?.map((l) => ({
                         label: l.label,
                         href: l.href || "#",

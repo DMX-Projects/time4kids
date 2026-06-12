@@ -10,7 +10,7 @@ import {
     openParentDocumentFile,
 } from "@/lib/parent-document-file-open";
 import { openDirectAudioUrlInNewTab } from "@/lib/inline-document-open";
-import { fileMatchesParentDocumentCategory, parentDocumentFileKind } from "@/lib/parent-document-file-kind";
+import { parentDocumentFileKind, parentDocumentRowVisible } from "@/lib/parent-document-file-kind";
 
 type DocRow = {
     id: number;
@@ -67,9 +67,7 @@ export function ParentDocList({
                 const data = await authFetch<unknown>(`/documents/parent/documents/category/${category}/`);
                 if (!cancelled) {
                     setDocs(
-                        normalizeDocs(data).filter((d) =>
-                            fileMatchesParentDocumentCategory(d.file || "", category),
-                        ),
+                        normalizeDocs(data).filter((d) => parentDocumentRowVisible(d, category)),
                     );
                 }
             } catch {
@@ -79,11 +77,7 @@ export function ParentDocList({
                     const list = normalizeDocs(all) as ParentDocRow[];
                     const filtered = list.filter((d) => String(d.category || "").toUpperCase() === category.toUpperCase());
                     if (!cancelled) {
-                        setDocs(
-                            filtered.filter((d) =>
-                                fileMatchesParentDocumentCategory(d.file || "", category),
-                            ),
-                        );
+                        setDocs(filtered.filter((d) => parentDocumentRowVisible(d, category)));
                     }
                 } catch {
                     if (!cancelled) setDocs([]);
@@ -171,6 +165,24 @@ export function ParentDocList({
                             </div>
                         ) : mixedMedia ? (
                             (() => {
+                                const hasVideoEmbed = Boolean((d.video_embed_url || "").trim());
+                                if (hasVideoEmbed && !(d.file || "").trim()) {
+                                    return (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                openNewsletterVideoEmbedLink(
+                                                    d.video_embed_url || "",
+                                                    d.display_title || d.title,
+                                                )
+                                            }
+                                            className="inline-flex items-center gap-2 rounded-full bg-orange-600 px-4 py-2 text-xs font-semibold text-white border border-orange-700 hover:bg-orange-700"
+                                        >
+                                            <Play className="w-4 h-4" />
+                                            Play video
+                                        </button>
+                                    );
+                                }
                                 const kind = parentDocumentFileKind(d.file || "");
                                 if (kind === "video") {
                                     return (

@@ -27,7 +27,12 @@ function filterUploadedLinks(
     return next.length ? next : undefined;
 }
 
-/** Franchise dashboard: only sections and links with uploaded files. */
+function topHasAdminCustomStructure(item: CenterPageTopItem): boolean {
+    if (item.adminCustom) return true;
+    return item.groups.some((group) => group.adminCustom);
+}
+
+/** Franchise dashboard: uploaded files + head-office custom sections/subsections (even before upload). */
 export function filterCentrePageTopToUploadedOnly(
     item: CenterPageTopItem,
     lookup?: Map<string, ResolvedLinkMeta>,
@@ -39,7 +44,7 @@ export function filterCentrePageTopToUploadedOnly(
 
     const hasDirect = directLinks && directLinks.length > 0;
     const hasGroups = groups.length > 0;
-    if (!hasDirect && !hasGroups) return null;
+    if (!hasDirect && !hasGroups && !topHasAdminCustomStructure(item)) return null;
 
     return { ...item, directLinks, groups };
 }
@@ -55,6 +60,11 @@ function filterCentrePageGroupToUploadedOnly(
 
     const hasNested = nested && nested.length > 0;
     const hasLinks = links && links.length > 0;
+
+    if (group.adminCustom && !hasNested && !hasLinks) {
+        return { ...group, links: undefined, nested: undefined };
+    }
+
     if (!hasNested && !hasLinks) return null;
 
     return { ...group, links, nested: hasNested ? nested : undefined };

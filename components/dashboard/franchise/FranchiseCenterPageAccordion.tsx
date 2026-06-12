@@ -94,6 +94,15 @@ const emptyAccordionSets: AccordionSetsState = {
   openNested: new Set(),
 };
 
+/** Stable accordion keys — index avoids collisions when two subsections share a title. */
+function subsectionAccordionKey(topId: string, groupIndex: number, groupTitle: string): string {
+  return `${topId}::g${groupIndex}::${groupTitle}`;
+}
+
+function nestedAccordionKey(subKey: string, blockIndex: number, blockTitle: string): string {
+  return `${subKey}::n${blockIndex}::${blockTitle}`;
+}
+
 function collectAccordionKeysForItems(items: CenterPageTopItem[]): AccordionSetsState {
   const openTop = new Set<string>();
   const openSub = new Set<string>();
@@ -101,15 +110,13 @@ function collectAccordionKeysForItems(items: CenterPageTopItem[]): AccordionSets
 
   for (const item of items) {
     openTop.add(item.id);
-    for (const group of item.groups) {
-      const subKey = `${item.id}::${group.title}`;
+    item.groups.forEach((group, groupIndex) => {
+      const subKey = subsectionAccordionKey(item.id, groupIndex, group.title);
       openSub.add(subKey);
-      if (group.nested) {
-        for (const block of group.nested) {
-          openNested.add(`${subKey}::${block.title}`);
-        }
-      }
-    }
+      group.nested?.forEach((block, blockIndex) => {
+        openNested.add(nestedAccordionKey(subKey, blockIndex, block.title));
+      });
+    });
   }
 
   return { openTop, openSub, openNested };
@@ -156,7 +163,11 @@ function accordionSetsReducer(
           ),
         };
       }
-      return collectAccordionKeysForItems([item]);
+      return {
+        openTop: new Set([id]),
+        openSub: new Set(),
+        openNested: new Set(),
+      };
     }
     case "toggleTop": {
       const { id } = action;
@@ -181,8 +192,8 @@ function accordionSetsReducer(
     }
     case "toggleSub": {
       const { key } = action;
-      if (state.openSub.has(key)) {
-        const nextSub = new Set(Array.from(state.openSub));
+      const nextSub = new Set(Array.from(state.openSub));
+      if (nextSub.has(key)) {
         nextSub.delete(key);
         return {
           ...state,
@@ -192,20 +203,15 @@ function accordionSetsReducer(
           ),
         };
       }
-      return {
-        ...state,
-        openSub: new Set([key]),
-        openNested: new Set(),
-      };
+      nextSub.add(key);
+      return { ...state, openSub: nextSub };
     }
     case "toggleNested": {
       const { key } = action;
-      if (state.openNested.has(key)) {
-        const next = new Set(Array.from(state.openNested));
-        next.delete(key);
-        return { ...state, openNested: next };
-      }
-      return { ...state, openNested: new Set([key]) };
+      const next = new Set(Array.from(state.openNested));
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return { ...state, openNested: next };
     }
     default:
       return state;
@@ -400,6 +406,11 @@ function SectionHeading({ title, nested }: { title: string; nested?: boolean }) 
 function TopItemGroupsDocumentTree({
   item,
   mode,
+  baseId,
+  openSub,
+  openNested,
+  toggleSub,
+  toggleNested,
   linkLookup,
   hubDocsByCategory,
   hubDocsBySourcePath,
@@ -409,6 +420,11 @@ function TopItemGroupsDocumentTree({
 }: {
   item: CenterPageTopItem;
   mode: Mode;
+  baseId: string;
+  openSub: Set<string>;
+  openNested: Set<string>;
+  toggleSub: (key: string) => void;
+  toggleNested: (key: string) => void;
   linkLookup?: Map<string, ResolvedLinkMeta>;
   hubDocsByCategory?: Map<string, FranchiseHubDoc[]>;
   hubDocsBySourcePath?: Map<string, FranchiseHubDoc>;
@@ -429,6 +445,40 @@ function TopItemGroupsDocumentTree({
   };
 
   const anchorBase: CentrePageLinkAnchor = { topId: item.id, topTitle: item.title };
+  const useSubAccordion = mode === "franchise";
+
+  const renderSubHeading = (
+    title: string,
+    subKey: string,
+    nested?: boolean,
+    controlsId?: string,
+    buttonId?: string,
+    expanded?: boolean,
+    onToggle?: () => void,
+  ) => {
+    if (useSubAccordion && onToggle != null && controlsId && buttonId) {
+      return (
+        <button
+          id={buttonId}
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={controlsId}
+          onClick={onToggle}
+          className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-full"
+        >
+          <GrayPillRow>
+            {expanded ? (
+              <ChevronDown className="h-4 w-4 shrink-0 text-[#1e3a5f]" strokeWidth={2.25} aria-hidden />
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0 text-[#1e3a5f]" strokeWidth={2.25} aria-hidden />
+            )}
+            <span>{title}</span>
+          </GrayPillRow>
+        </button>
+      );
+    }
+    return <SectionHeading title={title} nested={nested} />;
+  };
 
   return (
     <div className="space-y-5">
@@ -444,69 +494,90 @@ function TopItemGroupsDocumentTree({
           </AdminToolbarButton>
         </div>
       ) : null}
-      {item.groups.map((group) => {
-        const subKey = `${item.id}::${group.title}`;
+      {item.groups.map((group, groupIndex) => {
+        const subKey = subsectionAccordionKey(item.id, groupIndex, group.title);
+        const subOpen = !useSubAccordion || openSub.has(subKey);
+        const subBtnId = `${baseId}-subbtn-${subKey}`;
+        const subPanelId = `${baseId}-subpanel-${subKey}`;
         const groupAnchor = { ...anchorBase, groupTitle: group.title };
 
-        if (isNestedGroup(group)) {
-          return (
-            <section key={subKey} className="space-y-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <SectionHeading title={group.title} />
-                {mode === "admin" && adminTools ? (
-                  <div className="flex flex-wrap gap-2">
-                    <AdminToolbarButton onClick={() => adminTools.onAddNested(groupAnchor)}>
-                      <Plus className="h-3 w-3" aria-hidden />
-                      Add nested section
-                    </AdminToolbarButton>
-                    <AdminToolbarButton onClick={() => adminTools.onAddLink(groupAnchor)}>
-                      <Plus className="h-3 w-3" aria-hidden />
-                      Add file / link
-                    </AdminToolbarButton>
+        const groupBody = isNestedGroup(group) ? (
+          <div className="ml-0.5 space-y-4 border-l-2 border-dashed border-slate-300/85 pl-3 sm:ml-1 sm:pl-4">
+            {group.nested.map((block, blockIndex) => {
+              const nestKey = nestedAccordionKey(subKey, blockIndex, block.title);
+              const nestOpen = !useSubAccordion || openNested.has(nestKey);
+              const nestBtnId = `${baseId}-nestbtn-${nestKey}`;
+              const nestPanelId = `${baseId}-nestpanel-${nestKey}`;
+
+              return (
+                <div key={nestKey} className="space-y-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    {renderSubHeading(
+                      block.title,
+                      nestKey,
+                      true,
+                      nestPanelId,
+                      nestBtnId,
+                      nestOpen,
+                      () => toggleNested(nestKey),
+                    )}
+                    {mode === "admin" && adminTools ? (
+                      <AdminToolbarButton
+                        onClick={() =>
+                          adminTools.onAddLink({
+                            ...groupAnchor,
+                            nestedTitle: block.title,
+                          })
+                        }
+                      >
+                        <Plus className="h-3 w-3" aria-hidden />
+                        Add file / link
+                      </AdminToolbarButton>
+                    ) : null}
                   </div>
-                ) : null}
-              </div>
-              <div className="ml-0.5 space-y-4 border-l-2 border-dashed border-slate-300/85 pl-3 sm:ml-1 sm:pl-4">
-                {group.nested.map((block) => (
-                  <div key={`${subKey}::${block.title}`} className="space-y-2">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <SectionHeading title={block.title} nested />
-                      {mode === "admin" && adminTools ? (
-                        <AdminToolbarButton
-                          onClick={() =>
-                            adminTools.onAddLink({
-                              ...groupAnchor,
-                              nestedTitle: block.title,
-                            })
-                          }
-                        >
-                          <Plus className="h-3 w-3" aria-hidden />
-                          Add file / link
-                        </AdminToolbarButton>
-                      ) : null}
+                  <AccordionCollapse open={nestOpen}>
+                    <div
+                      id={nestPanelId}
+                      role="region"
+                      aria-labelledby={nestBtnId}
+                      aria-hidden={!nestOpen}
+                      className="border-l border-dashed border-slate-300/80 py-1 pl-3 sm:pl-4"
+                    >
+                      <LinkRows
+                        links={block.links}
+                        {...linkProps}
+                        groupTitle={group.title}
+                        nestedTitle={block.title}
+                      />
                     </div>
-                    <LinkRows
-                      links={block.links}
-                      {...linkProps}
-                      groupTitle={group.title}
-                      nestedTitle={block.title}
-                    />
-                  </div>
-                ))}
-                {group.links && group.links.length > 0 ? (
-                  <div className="space-y-2 border-t border-dashed border-slate-300/80 pt-3">
-                    <LinkRows links={group.links} {...linkProps} groupTitle={group.title} />
-                  </div>
-                ) : null}
+                  </AccordionCollapse>
+                </div>
+              );
+            })}
+            {group.links && group.links.length > 0 ? (
+              <div className="space-y-2 border-t border-dashed border-slate-300/80 pt-3">
+                <LinkRows links={group.links} {...linkProps} groupTitle={group.title} />
               </div>
-            </section>
-          );
-        }
+            ) : null}
+          </div>
+        ) : (
+          <div className="border-l-2 border-dashed border-slate-300/80 py-0.5 pl-3 sm:pl-4">
+            <LinkRows links={group.links ?? []} {...linkProps} groupTitle={group.title} />
+          </div>
+        );
 
         return (
           <section key={subKey} className="space-y-2">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <SectionHeading title={group.title} />
+              {renderSubHeading(
+                group.title,
+                subKey,
+                false,
+                subPanelId,
+                subBtnId,
+                subOpen,
+                () => toggleSub(subKey),
+              )}
               {mode === "admin" && adminTools ? (
                 <div className="flex flex-wrap gap-2">
                   <AdminToolbarButton onClick={() => adminTools.onAddNested(groupAnchor)}>
@@ -520,9 +591,16 @@ function TopItemGroupsDocumentTree({
                 </div>
               ) : null}
             </div>
-            <div className="border-l-2 border-dashed border-slate-300/80 py-0.5 pl-3 sm:pl-4">
-              <LinkRows links={group.links ?? []} {...linkProps} groupTitle={group.title} />
-            </div>
+            <AccordionCollapse open={subOpen}>
+              <div
+                id={subPanelId}
+                role="region"
+                aria-labelledby={subBtnId}
+                aria-hidden={!subOpen}
+              >
+                {groupBody}
+              </div>
+            </AccordionCollapse>
           </section>
         );
       })}
@@ -930,6 +1008,11 @@ function BlockItems({
                   <TopItemGroupsDocumentTree
                     item={item}
                     mode={mode}
+                    baseId={baseId}
+                    openSub={openSub}
+                    openNested={openNested}
+                    toggleSub={toggleSub}
+                    toggleNested={toggleNested}
                     linkLookup={linkLookup}
                     hubDocsByCategory={hubDocsByCategory}
                     hubDocsBySourcePath={hubDocsBySourcePath}
@@ -938,8 +1021,8 @@ function BlockItems({
                     adminTools={adminTools}
                   />
                 ) : showGroups ? (
-                  item.groups.map((group) => {
-                    const subKey = `${item.id}::${group.title}`;
+                  item.groups.map((group, groupIndex) => {
+                    const subKey = subsectionAccordionKey(item.id, groupIndex, group.title);
 
                     const subOpen = openSub.has(subKey);
 
@@ -985,8 +1068,8 @@ function BlockItems({
                               aria-hidden={!subOpen}
                               className="ml-3 space-y-2 border-l border-dashed border-slate-300/90 pl-3 sm:ml-5 sm:pl-4"
                             >
-                              {group.nested.map((block) => {
-                                const nestKey = `${subKey}::${block.title}`;
+                              {group.nested.map((block, blockIndex) => {
+                                const nestKey = nestedAccordionKey(subKey, blockIndex, block.title);
 
                                 const nestOpen = openNested.has(nestKey);
 

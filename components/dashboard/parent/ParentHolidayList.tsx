@@ -70,10 +70,19 @@ function toPreparedHoliday(display: HolidayDoc, pdfSource: HolidayDoc | null, en
     };
 }
 
-/** One card per state/year — PDF from HO or centre; entries merged on centre rows. */
+function mergeHolidayEntryRows(rows: HolidayEntry[]): HolidayEntry[] {
+    const byDate = new Map<string, HolidayEntry>();
+    for (const row of rows) {
+        const date = (row.date || "").slice(0, 10);
+        if (!date) continue;
+        byDate.set(date, { city: row.city || "", name: row.name, date });
+    }
+    return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** One card per state/year — merges HO + centre PDFs and manual holiday tables. */
 function prepareHolidayDocs(docs: HolidayDoc[]): PreparedHoliday[] {
-    const globalByKey = new Map<string, HolidayDoc>();
-    const centreByKey = new Map<string, HolidayDoc>();
+    const byKey = new Map<string, HolidayDoc[]>();
     const standalone: HolidayDoc[] = [];
 
     for (const doc of docs) {
@@ -85,26 +94,28 @@ function prepareHolidayDocs(docs: HolidayDoc[]): PreparedHoliday[] {
             }
             continue;
         }
-        if (doc.franchise != null) centreByKey.set(key, doc);
-        else globalByKey.set(key, doc);
+        const bucket = byKey.get(key) ?? [];
+        bucket.push(doc);
+        byKey.set(key, bucket);
     }
 
-    const keys = new Set([...Array.from(globalByKey.keys()), ...Array.from(centreByKey.keys())]);
     const out: PreparedHoliday[] = [];
     const usedIds = new Set<number>();
 
-    for (const key of Array.from(keys)) {
-        const global = globalByKey.get(key);
-        const centre = centreByKey.get(key);
-        const display = centre || global;
+    for (const group of Array.from(byKey.values())) {
+        const centre = group.find((d) => d.franchise != null);
+        const globals = group.filter((d) => d.franchise == null);
+        const display = centre ?? globals[0];
         if (!display) continue;
 
-        // Centre PDF wins when present; otherwise show head-office PDF for the same state/year.
         const pdfSource: HolidayDoc | null =
-            centre && docHasFile(centre) ? centre : global && docHasFile(global) ? global : null;
+            centre && docHasFile(centre)
+                ? centre
+                : globals.find((d) => docHasFile(d)) ?? null;
+
         const entries = centre
             ? parseHolidayEntries(centre.holiday_entries)
-            : parseHolidayEntries(global?.holiday_entries);
+            : mergeHolidayEntryRows(globals.flatMap((d) => parseHolidayEntries(d.holiday_entries)));
 
         if (!pdfSource && entries.length === 0) continue;
 

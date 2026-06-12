@@ -402,6 +402,7 @@ export default function AdminParentDocumentsPage() {
             await saveNavCustom(next);
             closeAddModal();
             showToast("Saved.", "success");
+            await load();
         } catch {
             showToast("Could not save.", "error");
         } finally {

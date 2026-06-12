@@ -35,7 +35,8 @@ export function ChecklistAddMenu<K extends string>({
 
     const handlePick = (kind: K) => {
         setOpen(false);
-        onPick(kind);
+        // Defer so the picker modal unmounts before the parent name/upload modal opens.
+        window.setTimeout(() => onPick(kind), 0);
     };
 
     return (

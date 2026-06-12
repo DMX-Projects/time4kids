@@ -4,30 +4,24 @@ import {
     type ParentAppDocumentSection,
 } from "@/config/parent-app-document-checklist";
 
-import { fileMatchesParentDocumentCategory } from "@/lib/parent-document-file-kind";
+import {
+    fileMatchesParentDocumentCategory,
+    parentDocumentRowVisible,
+    type ParentDocumentMediaRow,
+} from "@/lib/parent-document-file-kind";
 
-export type ParentDocumentForMatch = {
+export type ParentDocumentForMatch = ParentDocumentMediaRow & {
     id: number;
     category: string;
     title: string;
     display_title?: string;
-    file?: string;
-    video_embed_url?: string;
     franchise?: number | null;
     state?: string | null;
     order?: number;
 };
 
 function docMatchesCategory(doc: ParentDocumentForMatch): boolean {
-    if ((doc.video_embed_url || "").trim()) {
-        const cat = (doc.category || "").trim().toUpperCase();
-        if (cat === "VIDEOS" || cat === "AUDIO_RHYMES") return true;
-    }
-    return fileMatchesParentDocumentCategory(doc.file || "", doc.category);
-}
-
-function parentDashboardDocVisible(doc: ParentDocumentForMatch): boolean {
-    return Boolean((doc.file || "").trim() || (doc.video_embed_url || "").trim());
+    return parentDocumentRowVisible(doc, doc.category);
 }
 
 export type AdminParentAppUploadContext = ParentAppDocumentSlot & {
@@ -111,7 +105,7 @@ export function buildParentDashboardSectionItems(
     docs: ParentDocumentForMatch[],
 ): ParentDocumentForMatch[] {
     const inCategory = docs.filter(
-        (d) => d.category === category && parentDashboardDocVisible(d),
+        (d) => d.category === category && parentDocumentRowVisible(d, category),
     );
     const section = PARENT_APP_DOCUMENT_CHECKLIST.find((s) => s.category === category);
     const fixedSlots = (section?.slots ?? []).filter((s) => s.suggestedTitle);
