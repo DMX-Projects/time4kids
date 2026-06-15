@@ -9,7 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSchoolData } from '@/components/dashboard/shared/SchoolDataProvider';
 import { useToast } from '@/components/ui/Toast';
 import { trackLeadSubmission } from '@/lib/tracking';
-import { apiUrl, jsonHeaders } from '@/lib/api-client';
+import { apiUrl, jsonHeaders, nextImageSrc } from '@/lib/api-client';
+import { DEFAULT_ADMISSION_PAGE_DATA, mergeAdmissionPageData } from '@/config/admission-page-defaults';
 import { fetchCentersByCity, fetchCities, type CentreOption } from '@/lib/api/franchise-lookup';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -51,6 +52,8 @@ interface AdmissionFormProps {
     franchiseSlug?: string;
     defaultCity?: string;
     contactPhone?: string;
+    /** Rainbow welcome illustration — from admission CMS (`form_welcome_image`). */
+    welcomeImage?: string;
     /** `register` — parent sign-up from login; submits enquiry + creates account. */
     variant?: 'enquiry' | 'register';
     /** When the page supplies the main heading (e.g. register page). */
@@ -82,6 +85,7 @@ const AdmissionForm = ({
     defaultCity,
     variant = 'enquiry',
     hideHeading = false,
+    welcomeImage: welcomeImageProp,
 }: AdmissionFormProps) => {
     const isRegister = variant === 'register';
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -94,6 +98,9 @@ const AdmissionForm = ({
     const [centers, setCenters] = useState<CentreOption[]>([]);
     const [loadingCenters, setLoadingCenters] = useState(false);
     const [centersError, setCentersError] = useState<string | null>(null);
+    const [welcomeImage, setWelcomeImage] = useState(
+        welcomeImageProp?.trim() || DEFAULT_ADMISSION_PAGE_DATA.form_welcome_image || '/student-welcome.png',
+    );
     
     const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<AdmissionFormData>({
         defaultValues: {
@@ -104,6 +111,30 @@ const AdmissionForm = ({
     const selectedCity = watch('city');
     const { addEnquiry } = useSchoolData();
     const { showToast } = useToast();
+
+    useEffect(() => {
+        if (welcomeImageProp?.trim()) {
+            setWelcomeImage(welcomeImageProp.trim());
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(apiUrl('/common/page-content/admission/'));
+                if (!res.ok) return;
+                const json = await res.json();
+                if (cancelled) return;
+                const merged = mergeAdmissionPageData(json);
+                const img = (merged.form_welcome_image || '').trim();
+                if (img) setWelcomeImage(img);
+            } catch {
+                /* keep default */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [welcomeImageProp]);
 
     useEffect(() => {
         let cancelled = false;
@@ -441,11 +472,12 @@ const AdmissionForm = ({
                                 }`}
                             >
                                 <Image
-                                    src="/student-welcome.png"
+                                    src={nextImageSrc(welcomeImage) || welcomeImage}
                                     alt="Welcome to T.I.M.E. Kids"
                                     fill
                                     sizes="(max-width: 768px) 90vw, 400px"
                                     className="object-contain object-center"
+                                    unoptimized
                                 />
                             </div>
                         </div>

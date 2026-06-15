@@ -7,6 +7,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { formatAgeGroupLabel } from '@/lib/format-age-group';
 import { programsSectionHref } from '@/lib/program-section-slugs';
+import { nextImageSrc } from '@/lib/api-client';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -71,7 +72,7 @@ const SchoolProgramsPreview = () => {
                                     />
                                     <div className="relative mx-auto h-36 w-36 shrink-0 overflow-hidden rounded-full border-[6px] border-white shadow-xl transition-transform duration-500 group-hover:scale-105 sm:h-44 sm:w-44 sm:border-[8px] lg:h-[10.5rem] lg:w-[10.5rem] lg:border-[10px]">
                                         <Image
-                                            src={program.image}
+                                            src={nextImageSrc(program.image) || program.image}
                                             alt=""
                                             fill
                                             sizes="(max-width: 640px) 160px, (max-width: 1024px) 180px, 168px"

@@ -182,7 +182,7 @@ export default function AdminAdmissionContentPage() {
                     Edit CMS content on <strong>/admission</strong>. Use <strong>Save</strong> when finished.
                 </p>
                 <p className="text-xs text-slate-500 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    Not editable here (fixed in the page layout): top hero headline, enquiry form, infrastructure cards, and NEP block. Upload the admission brochure PDF below, or use{" "}
+                    Not editable here (fixed in the page layout): top hero headline, infrastructure cards, and NEP block. Upload the admission brochure PDF below, or use{" "}
                     <strong>Brochures &amp; Downloads</strong> in the sidebar.
                 </p>
             </div>
@@ -199,6 +199,84 @@ export default function AdminAdmissionContentPage() {
                             description="Shown on /admission and the home page Admission Brochure download."
                             compact
                         />
+                    </Section>
+
+                    <Section title="Enquiry form welcome photo (rainbow illustration)">
+                        <div className="rounded-xl border border-amber-100 bg-amber-50/80 px-3 py-2 text-xs text-slate-700">
+                            <strong>Where it shows:</strong> beside the admission enquiry form on{" "}
+                            <code className="rounded bg-white px-1">/admission</code>, the home page hero form, and parent registration.
+                            Default: <code className="rounded bg-white px-1">/student-welcome.png</code>
+                        </div>
+                        <div className="rounded-xl border border-slate-100 p-3 bg-slate-50/80 space-y-3">
+                            <label className={labelClass}>Image path</label>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <input
+                                    className={`${inputClass} min-w-[200px] flex-1`}
+                                    value={data.form_welcome_image ?? ""}
+                                    onChange={(e) => setData({ ...data, form_welcome_image: e.target.value })}
+                                    placeholder="/student-welcome.png or /media/gallery/…"
+                                />
+                                <label
+                                    className={`shrink-0 inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold ${
+                                        uploadingKey === "form-welcome"
+                                            ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
+                                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
+                                    }`}
+                                    title="Upload image and auto-fill path"
+                                >
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        disabled={uploadingKey === "form-welcome"}
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            e.target.value = "";
+                                            if (!file) return;
+                                            try {
+                                                const url = await uploadMedia("form-welcome", {
+                                                    title: "Admission enquiry form welcome",
+                                                    media_type: "image",
+                                                    file,
+                                                });
+                                                setData({
+                                                    ...data,
+                                                    form_welcome_image: normalizeUploadedMediaPath(url),
+                                                });
+                                                setMessage("Welcome photo uploaded. Don’t forget to Save changes.");
+                                            } catch (err: unknown) {
+                                                setError(err instanceof Error ? err.message : "Image upload failed");
+                                            }
+                                        }}
+                                    />
+                                    <Upload className="w-4 h-4 mr-2" />
+                                    {uploadingKey === "form-welcome" ? "Uploading…" : "Upload photo"}
+                                </label>
+                                {(data.form_welcome_image ?? "").trim() ? (
+                                    <button
+                                        type="button"
+                                        className="shrink-0 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
+                                        onClick={() => setData({ ...data, form_welcome_image: "/student-welcome.png" })}
+                                    >
+                                        Reset to default
+                                    </button>
+                                ) : null}
+                            </div>
+                            <div className="text-[11px] text-slate-500">Max <strong>5MB</strong> (JPG, PNG, WebP).</div>
+                            {uploadInfo["form-welcome"] ? (
+                                <div className="text-[11px] text-slate-600">Selected: {uploadInfo["form-welcome"]}</div>
+                            ) : null}
+                            {(data.form_welcome_image ?? "").trim() ? (
+                                <div className="mt-2 relative h-56 w-full max-w-xs overflow-hidden rounded-xl border border-slate-200 bg-white">
+                                    <AdminMediaThumb
+                                        src={data.form_welcome_image}
+                                        alt="Enquiry form welcome preview"
+                                        size="fill"
+                                        className="object-contain"
+                                    />
+                                </div>
+                            ) : null}
+                        </div>
                     </Section>
 
                     <Section title="1. Why Preschool? (list)">
