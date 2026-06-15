@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { jsonHeaders } from "@/lib/api-client";
+import { jsonHeaders, normalizeUploadedMediaPath } from "@/lib/api-client";
+import { AdminMediaThumb } from "@/components/admin/AdminMediaThumb";
 import { LayoutList, Plus, Trash2, Upload } from "lucide-react";
 import { DEFAULT_PROGRAMS_PAGE_DATA, mergeProgramsPageData, type ProgramsPageData, type ProgramsPageProgram } from "@/config/programs-page-defaults";
 
@@ -38,24 +39,13 @@ async function getImageDimensions(file: File): Promise<{ width: number; height: 
     }
 }
 
-function ImgThumb({ src, alt }: { src: string; alt: string }) {
-    const [ok, setOk] = useState(true);
-    const trimmed = (src || "").trim();
-    if (!trimmed || !ok) return null;
-    return (
-        <div className="h-12 w-12 rounded-xl border border-slate-200 bg-white overflow-hidden flex items-center justify-center">
-            <img src={trimmed} alt={alt} className="h-full w-full object-cover" onError={() => setOk(false)} />
-        </div>
-    );
-}
-
 function MiniPreviewProgram({ p }: { p: ProgramsPageProgram }) {
     return (
         <div className="rounded-2xl border border-slate-200 bg-white p-3">
             <div className="text-xs font-semibold text-slate-700 mb-2">Preview</div>
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 flex gap-3 items-start">
-                <div className="w-16 h-16 rounded-2xl border border-slate-200 bg-white overflow-hidden shrink-0">
-                    <img src={(p.image || "").trim()} alt={p.name || "Program"} className="w-full h-full object-cover" />
+                <div className="relative w-16 h-16 rounded-2xl border border-slate-200 bg-white overflow-hidden shrink-0">
+                    <AdminMediaThumb src={p.image} alt={p.name || "Program"} size="fill" />
                 </div>
                 <div className="min-w-0">
                     <div className="text-sm font-semibold text-slate-900 truncate">{p.name || "—"}</div>
@@ -170,7 +160,7 @@ export default function AdminProgramsContentPage() {
                 throw new Error("Upload succeeded but server did not return a file path.");
             }
 
-            updateProgram(i, { image: filePath });
+            updateProgram(i, { image: normalizeUploadedMediaPath(filePath) });
             setMessage("Image uploaded. Don’t forget to Save changes.");
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : "Upload failed");
@@ -273,7 +263,7 @@ export default function AdminProgramsContentPage() {
                                                 <Upload className="w-4 h-4 mr-2" />
                                                 {uploadingIndex === i ? "Uploading…" : "Upload"}
                                             </label>
-                                            <ImgThumb src={p.image} alt={p.name || `Program ${i + 1}`} />
+                                            <AdminMediaThumb src={p.image} alt={p.name || `Program ${i + 1}`} size="md" />
                                         </div>
                                         <div className="mt-1 text-[11px] text-slate-500 space-y-1">
                                             <div className="space-y-0.5">

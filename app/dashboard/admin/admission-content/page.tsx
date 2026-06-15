@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { jsonHeaders, resolveCmsMediaUrl } from "@/lib/api-client";
+import { jsonHeaders, normalizeUploadedMediaPath } from "@/lib/api-client";
+import { AdminMediaThumb } from "@/components/admin/AdminMediaThumb";
 import { parseEmbedInput } from "@/lib/franchise-embed-url";
 import { GraduationCap, Plus, Trash2, Upload } from "lucide-react";
 import { DEFAULT_ADMISSION_PAGE_DATA, mergeAdmissionPageData, type AdmissionFaq, type AdmissionPageData, type AdmissionSkill, type AdmissionVideoCard } from "@/config/admission-page-defaults";
@@ -357,12 +358,7 @@ export default function AdminAdmissionContentPage() {
                                     </div>
                                     {(faqSection?.image ?? "").trim() ? (
                                         <div className="mt-3 relative h-40 w-full max-w-xs overflow-hidden rounded-xl border border-slate-200 bg-white">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={resolveCmsMediaUrl(faqSection.image) || faqSection.image}
-                                                alt="FAQ section preview"
-                                                className="h-full w-full object-contain"
-                                            />
+                                            <AdminMediaThumb src={faqSection.image} alt="FAQ section preview" size="fill" className="object-contain" />
                                         </div>
                                     ) : null}
                                 </div>
@@ -542,13 +538,8 @@ export default function AdminAdmissionContentPage() {
                                             {uploadInfo[`hp${i}-thumb`] ? <div className="text-slate-600">Selected: {uploadInfo[`hp${i}-thumb`]}</div> : null}
                                         </div>
                                         {(v.thumbnail_url ?? "").trim() ? (
-                                            <div className="mt-2 h-20 w-28 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img
-                                                    src={resolveCmsMediaUrl(v.thumbnail_url) || v.thumbnail_url}
-                                                    alt="Thumbnail preview"
-                                                    className="h-full w-full object-cover"
-                                                />
+                                            <div className="mt-2 relative h-20 w-28 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                                                <AdminMediaThumb src={v.thumbnail_url} alt="Thumbnail preview" size="fill" />
                                             </div>
                                         ) : null}
                                     </div>

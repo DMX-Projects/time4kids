@@ -29,11 +29,12 @@ export function galleryMediaCandidates(path?: string | null): string[] {
         return out;
     }
 
-    push(schoolGalleryMediaUrl(raw));
-    push(mediaUrl(raw));
     const pathname = normalizeUploadedMediaPath(raw);
-    push(toPublicCmsMediaPath(pathname));
+    // Prefer URLs that work on live: cms-files API and nginx `/media/` before `/cms-media/` proxy.
+    push(mediaUrl(raw));
     if (pathname.startsWith("/media/")) push(pathname);
+    push(schoolGalleryMediaUrl(raw));
+    push(toPublicCmsMediaPath(pathname));
     if (raw.startsWith("/") && !raw.startsWith("/media/") && !raw.startsWith("/cms-media/")) {
         push(raw);
     }

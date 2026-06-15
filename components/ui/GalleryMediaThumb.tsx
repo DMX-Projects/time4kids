@@ -25,7 +25,7 @@ function ThumbPlaceholder({ className = "" }: { className?: string }) {
 
 /**
  * Gallery grid / album cover thumbnail.
- * Tries `/cms-media/`, `/api/cms-files/`, then `/media/` — eager load (no lazy + opacity trap).
+ * Tries `/api/cms-files/`, `/media/`, then `/cms-media/` — eager load (no lazy + opacity trap).
  */
 export function GalleryMediaThumb({
     item,

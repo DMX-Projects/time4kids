@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Film, Link2, Plus, Trash2, Upload } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/components/ui/Toast";
@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import { EmbedVideoDraftPanel } from "@/components/admin/EmbedVideoDraftPanel";
 import { FranchiseLocalFolderPicker } from "@/components/franchise/FranchiseLocalFolderPicker";
 import { apiUrl, mediaUrl } from "@/lib/api-client";
+import { AdminMediaThumb } from "@/components/admin/AdminMediaThumb";
 import { resolveFranchiseEmbedSrc, parseEmbedInput } from "@/lib/franchise-embed-url";
 import { extensionOf, titleFromFileName } from "@/lib/franchise-centre-upload";
 
@@ -86,8 +87,9 @@ export function GalleryMediaManager() {
     }, [authFetch, selectedId]);
 
     const loadItems = useCallback(async () => {
-        const q = selectedId ? `?section=${selectedId}&page_size=500` : "?page_size=500";
-        const data = await authFetch<{ results?: MediaRow[] } | MediaRow[]>(`/media/${q}`);
+        const params = new URLSearchParams({ page_size: "500" });
+        if (selectedId != null) params.set("section", String(selectedId));
+        const data = await authFetch<{ results?: MediaRow[] } | MediaRow[]>(`/media/?${params.toString()}`);
         const list = Array.isArray(data) ? data : data.results ?? [];
         setItems(list);
     }, [authFetch, selectedId]);
@@ -185,12 +187,14 @@ export function GalleryMediaManager() {
                         fail++;
                         let detail = res.statusText;
                         try {
-                            const err = (await res.json()) as { detail?: string };
-                            if (err?.detail) detail = String(err.detail);
+                            const err = (await res.json()) as { detail?: string | Record<string, unknown> };
+                            if (typeof err?.detail === "string") detail = err.detail;
+                            else if (err?.detail) detail = JSON.stringify(err.detail);
                         } catch {
                             /* ignore */
                         }
                         console.error(`Upload failed for ${file.name}:`, detail);
+                        showToast(`${file.name}: ${detail}`, "error");
                     }
                 } catch (err) {
                     fail++;
@@ -308,6 +312,27 @@ export function GalleryMediaManager() {
         ? sortByOrder(items.filter((i) => i.section === selectedId))
         : sortByOrder(items);
 
+    const selectedFilePreviews = useMemo(() => {
+        return files.map((file) => {
+            const isImage =
+                uploadAs === "image" ||
+                (uploadAs === "auto" && detectMediaType(file) === "image");
+            return {
+                file,
+                label: (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name,
+                previewUrl: isImage ? URL.createObjectURL(file) : null,
+            };
+        });
+    }, [files, uploadAs]);
+
+    useEffect(() => {
+        return () => {
+            for (const row of selectedFilePreviews) {
+                if (row.previewUrl) URL.revokeObjectURL(row.previewUrl);
+            }
+        };
+    }, [selectedFilePreviews]);
+
     return (
         <div className="space-y-6">
             <div>
@@ -414,9 +439,38 @@ export function GalleryMediaManager() {
                                     />
 
                                     {files.length > 0 && !uploading && (
-                                        <p className="text-sm font-semibold text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                                            {files.length} file(s) selected — click <strong>Upload file(s)</strong> to send to the server.
-                                        </p>
+                                        <div className="space-y-3">
+                                            <p className="text-sm font-semibold text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                                                {files.length} file(s) selected — click <strong>Upload file(s)</strong> to send to the server.
+                                            </p>
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                                {selectedFilePreviews.slice(0, 24).map((row, i) => (
+                                                    <div
+                                                        key={`${row.label}-${i}`}
+                                                        className="relative aspect-square rounded-lg border border-slate-200 bg-slate-50 overflow-hidden"
+                                                    >
+                                                        {row.previewUrl ? (
+                                                            // eslint-disable-next-line @next/next/no-img-element
+                                                            <img
+                                                                src={row.previewUrl}
+                                                                alt={row.label}
+                                                                className="absolute inset-0 h-full w-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-slate-500 p-1 text-center">
+                                                                Video
+                                                            </div>
+                                                        )}
+                                                        <p className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] px-1 py-0.5 truncate">
+                                                            {row.label}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {files.length > 24 ? (
+                                                <p className="text-xs text-slate-500">Showing first 24 previews of {files.length} files.</p>
+                                            ) : null}
+                                        </div>
                                     )}
 
                                     {progress && <p className="text-xs text-gray-500">Uploading {progress}…</p>}
@@ -493,11 +547,10 @@ export function GalleryMediaManager() {
                                                 ) : item.media_type === "video" ? (
                                                     <video src={mediaUrl(item.file)} className="w-full h-full object-cover" muted />
                                                 ) : (
-                                                    // eslint-disable-next-line @next/next/no-img-element
-                                                    <img
-                                                        src={mediaUrl(item.file)}
+                                                    <AdminMediaThumb
+                                                        src={item.file}
                                                         alt={item.caption || item.title || ""}
-                                                        className="w-full h-full object-cover"
+                                                        size="fill"
                                                     />
                                                 )}
                                                 <button
