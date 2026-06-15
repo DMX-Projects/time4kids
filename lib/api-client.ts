@@ -448,6 +448,9 @@ export function schoolGalleryMediaUrl(path?: string | null): string {
         return raw;
     }
     const pathname = normalizeUploadedMediaPath(raw);
+    const viaApi = cmsFileUrl(pathname);
+    if (viaApi) return viaApi;
+    if (pathname.startsWith("/media/")) return pathname;
     const cms = toPublicCmsMediaPath(pathname);
     if (cms.startsWith(PUBLIC_CMS_MEDIA_PREFIX)) return cms;
     return mediaUrl(raw);

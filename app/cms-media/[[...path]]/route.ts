@@ -28,18 +28,28 @@ export async function GET(
         return NextResponse.json({ detail: "Missing file path" }, { status: 400 });
     }
 
-    const upstream = `${djangoMediaOrigin()}/media/${relPath}${request.nextUrl.search}`;
-    let upstreamRes: Response;
+    const origin = djangoMediaOrigin();
+    const search = request.nextUrl.search;
+    /** Gunicorn often does not serve `/media/` in production; `/api/cms-files/` reads MEDIA_ROOT directly. */
+    const upstreamCandidates = [
+        `${origin}/api/cms-files/${relPath}${search}`,
+        `${origin}/media/${relPath}${search}`,
+    ];
+    let upstreamRes: Response | null = null;
     try {
-        upstreamRes = await fetch(upstream, {
-            method: "GET",
-            cache: "no-store",
-        });
+        for (const upstream of upstreamCandidates) {
+            const res = await fetch(upstream, { method: "GET", cache: "no-store" });
+            if (res.ok) {
+                upstreamRes = res;
+                break;
+            }
+            upstreamRes = res;
+        }
     } catch {
         return NextResponse.json({ detail: "Media backend unreachable" }, { status: 502 });
     }
 
-    if (!upstreamRes.ok) {
+    if (!upstreamRes?.ok) {
         const staticPath =
             publicStaticFallbackForMediaPath(`/media/${relPath}`) ||
             publicStaticFallbackForMediaPath(`/${path.basename(relPath)}`);
@@ -98,6 +108,9 @@ export async function GET(
             } catch {
                 /* try next */
             }
+        }
+        if (!upstreamRes) {
+            return NextResponse.json({ detail: "File not found" }, { status: 404 });
         }
         return new NextResponse(upstreamRes.body, {
             status: upstreamRes.status,

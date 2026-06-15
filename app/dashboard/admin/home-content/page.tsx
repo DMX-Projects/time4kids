@@ -16,6 +16,7 @@ import {
     type NewsTickerItem,
 } from "@/config/home-page-defaults";
 import { franchiseVideoPosterUploadTitle, programsPreviewUploadTitle } from "@/lib/gallery-event-names";
+import { AdminMediaThumb } from "@/components/admin/AdminMediaThumb";
 
 function Section({
     title,
@@ -43,23 +44,6 @@ function Section({
 const inputClass =
     "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100";
 const labelClass = "block text-xs font-medium text-slate-600 mb-1";
-
-function ImgThumb({ src, alt }: { src: string; alt: string }) {
-    const [ok, setOk] = useState(true);
-    const trimmed = (src || "").trim();
-    if (!trimmed || !ok) return null;
-    return (
-        <div className="h-10 w-10 rounded-lg border border-slate-200 bg-white overflow-hidden flex items-center justify-center">
-            {/* Use plain <img> so /media and /public paths both work without Next optimizer issues */}
-            <img
-                src={trimmed}
-                alt={alt}
-                className="h-full w-full object-cover"
-                onError={() => setOk(false)}
-            />
-        </div>
-    );
-}
 
 async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
     if (typeof createImageBitmap === "function") {
@@ -126,8 +110,8 @@ function MiniPreviewPrograms({ programs }: { programs: HomePageData["programs_pr
                 {programs.slice(0, 6).map((p, i) => (
                     <div key={i} className="rounded-xl border border-slate-100 bg-slate-50 p-2">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-white border border-slate-200 overflow-hidden">
-                                <img src={(p.image || "").trim()} alt={p.programName || `Program ${i + 1}`} className="w-full h-full object-cover" />
+                            <div className="w-8 h-8 rounded-full bg-white border border-slate-200 overflow-hidden relative">
+                                <AdminMediaThumb src={p.image} alt={p.programName || `Program ${i + 1}`} size="fill" />
                             </div>
                             <div className="min-w-0">
                                 <div className="text-[11px] font-semibold text-slate-900 truncate">{p.programName || "—"}</div>
@@ -703,7 +687,7 @@ export default function AdminHomeContentPage() {
                                             >
                                                 Remove
                                             </button>
-                                            <ImgThumb src={f.image} alt={f.title || `Why choose us ${i + 1}`} />
+                                            <AdminMediaThumb src={f.image} alt={f.title || `Why choose us ${i + 1}`} />
                                         </div>
                                         <div className="mt-1 text-[11px] text-slate-500 space-y-1">
                                             <div className="space-y-0.5">
@@ -855,7 +839,7 @@ export default function AdminHomeContentPage() {
                                                 />
                                                 {uploadingProgramIndex === i ? "Uploading…" : "Upload"}
                                             </label>
-                                            <ImgThumb src={prog.image} alt={prog.programName || `Program ${i + 1}`} />
+                                            <AdminMediaThumb src={prog.image} alt={prog.programName || `Program ${i + 1}`} />
                                         </div>
                                         <div className="mt-1 text-[11px] text-slate-500 space-y-1">
                                             <div className="space-y-0.5">
