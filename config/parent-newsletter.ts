@@ -129,3 +129,31 @@ export function validateNewsletterAudioEmbedUrl(raw: string): string | null {
     }
     return null;
 }
+
+export type NewsletterRowKind = "document" | "video" | "audio";
+
+/** One media type per newsletter row (legacy combined rows may list multiple). */
+export function newsletterRowKind(row: {
+    file?: string;
+    video_embed_url?: string;
+    audio_file?: string;
+    audio_embed_url?: string;
+}): NewsletterRowKind | "" {
+    const hasFile = Boolean((row.file || "").trim());
+    const hasVideo = Boolean((row.video_embed_url || "").trim());
+    const hasAudio = Boolean((row.audio_file || "").trim() || (row.audio_embed_url || "").trim());
+    if (hasFile && !hasVideo && !hasAudio) return "document";
+    if (hasVideo && !hasFile && !hasAudio) return "video";
+    if (hasAudio && !hasFile && !hasVideo) return "audio";
+    if (hasFile) return "document";
+    if (hasVideo) return "video";
+    if (hasAudio) return "audio";
+    return "";
+}
+
+export function newsletterKindLabel(kind: NewsletterRowKind | ""): string {
+    if (kind === "document") return "PDF / Word";
+    if (kind === "video") return "Video";
+    if (kind === "audio") return "Audio";
+    return "Newsletter";
+}

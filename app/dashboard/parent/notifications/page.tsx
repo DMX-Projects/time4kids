@@ -18,7 +18,7 @@ type NotificationRow = {
     title: string;
     body?: string;
     publishedAt?: string;
-    source: "announcement" | "homework" | "fees" | "transport" | "event" | "achievement" | "attendance";
+    source: "announcement" | "homework" | "fees" | "transport" | "event" | "achievement" | "attendance" | "support_ticket";
     read?: boolean;
 };
 
@@ -66,6 +66,7 @@ const sourceLabel: Record<NotificationRow["source"], string> = {
     event: "Event",
     achievement: "Achievement",
     attendance: "Attendance",
+    support_ticket: "Support",
 };
 
 export default function NotificationsPage() {

@@ -7,7 +7,9 @@ import { jsonHeaders } from "@/lib/api-client";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 
-type Ticket = { id: number; subject: string; body: string; status: string; franchise_reply?: string; created_at?: string };
+import { ticketStatusBadgeClass, ticketStatusLabel, TICKET_STATUSES } from "@/lib/support-ticket-status";
+
+type Ticket = { id: number; subject: string; body: string; status: string; status_label?: string; franchise_reply?: string; created_at?: string; updated_at?: string };
 
 export default function SupportPage() {
     const { authFetch } = useAuth();
@@ -102,9 +104,13 @@ export default function SupportPage() {
                 <ul className="space-y-3">
                     {tickets.map((t) => (
                         <li key={t.id} className="rounded-xl border border-orange-100 bg-white p-4 shadow-sm space-y-2">
-                            <div className="flex flex-wrap justify-between gap-2">
+                            <div className="flex flex-wrap justify-between gap-2 items-center">
                                 <span className="font-semibold text-orange-900">{t.subject}</span>
-                                <span className="text-xs text-orange-600">{t.status}</span>
+                                <span
+                                    className={`text-xs font-medium px-2 py-0.5 rounded-full border ${ticketStatusBadgeClass(t.status)}`}
+                                >
+                                    {t.status_label || ticketStatusLabel(t.status)}
+                                </span>
                             </div>
                             <p className="text-sm text-orange-800 whitespace-pre-wrap">{t.body}</p>
                             {t.franchise_reply && (
@@ -114,6 +120,9 @@ export default function SupportPage() {
                                 </div>
                             )}
                             {t.created_at && <p className="text-[11px] text-orange-500">{new Date(t.created_at).toLocaleString()}</p>}
+                            {t.updated_at && t.updated_at !== t.created_at && (
+                                <p className="text-[11px] text-orange-500">Last updated {new Date(t.updated_at).toLocaleString()}</p>
+                            )}
                         </li>
                     ))}
                 </ul>

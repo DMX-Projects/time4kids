@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Briefcase, Images, MessageSquareQuote, LayoutTemplate, LayoutList, GraduationCap, HelpCircle, FileText, Star, MapPin, Inbox } from "lucide-react";
+import { CalendarDays, Briefcase, Images, MessageSquareQuote, LayoutTemplate, LayoutList, GraduationCap, HelpCircle, FileText, Star, MapPin, Inbox, Bell, LifeBuoy } from "lucide-react";
 
 import { DashboardShell, DashboardNavItem } from "@/components/layout/DashboardShell";
 import { AdminDataProvider } from "@/components/dashboard/admin/AdminDataProvider";
@@ -23,6 +23,8 @@ const navItems: DashboardNavItem[] = [
     { label: "Franchise opportunity page", href: "/dashboard/admin/franchise-content", icon: <Briefcase className="w-5 h-5" /> },
     { label: "Centre page documents", href: "/dashboard/admin/franchise-documents", icon: <FileText className="w-5 h-5" /> },
     { label: "Parent documents", href: "/dashboard/admin/parent-documents", icon: <FileText className="w-5 h-5" /> },
+    { label: "Notifications CMS", href: "/dashboard/admin/notifications-cms", icon: <Bell className="w-5 h-5" /> },
+    { label: "Parent support tickets", href: "/dashboard/admin/parent-support-tickets", icon: <LifeBuoy className="w-5 h-5" /> },
     { label: "Student achievements", href: "/dashboard/admin/student-achievements", icon: <Star className="w-5 h-5" /> },
     { label: "Students kit pages", href: "/dashboard/admin/students-kit-pages", icon: <GraduationCap className="w-5 h-5" /> },
     { label: "Centre class photos", href: "/dashboard/admin/centre-program-cards", icon: <Images className="w-5 h-5" /> },

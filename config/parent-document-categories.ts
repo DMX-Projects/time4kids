@@ -13,10 +13,8 @@ export const PARENT_DOCUMENT_CATEGORIES = [
     { value: "PARENTING_TIPS", label: "Parenting Tips & Articles" },
 ] as const;
 
-/** Head-office CMS — Newsletter is uploaded by franchise centres only. */
-export const ADMIN_PARENT_DOCUMENT_CATEGORIES = PARENT_DOCUMENT_CATEGORIES.filter(
-    (c) => c.value !== "CLASS_TIMETABLE",
-);
+/** Head-office CMS — includes newsletter (global or per-centre). */
+export const ADMIN_PARENT_DOCUMENT_CATEGORIES = PARENT_DOCUMENT_CATEGORIES;
 
 export const DEFAULT_HOLIDAY_ACADEMIC_YEAR = "AY 2026-27";
 
