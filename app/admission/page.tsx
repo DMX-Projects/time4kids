@@ -185,7 +185,7 @@ export default function AdmissionPage() {
                             <p className="text-slate-500 font-bold text-lg">Let&apos;s get to know your little one!</p>
                         </div>
                         <div className="relative z-10">
-                            <AdmissionForm />
+                            <AdmissionForm welcomeImage={pageData?.form_welcome_image} />
                         </div>
                     </div>
                 </div>

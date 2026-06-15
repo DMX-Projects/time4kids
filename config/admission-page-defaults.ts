@@ -56,6 +56,8 @@ export type AdmissionVideoCard = {
 };
 
 export type AdmissionPageData = {
+    /** Rainbow / welcome illustration beside the enquiry form on /admission (and home hero form). */
+    form_welcome_image?: string;
     faq_section?: AdmissionFaqSection;
     why_preschool: string[];
     why_time_kids: string[];
@@ -65,6 +67,7 @@ export type AdmissionPageData = {
 };
 
 export const DEFAULT_ADMISSION_PAGE_DATA: AdmissionPageData = {
+    form_welcome_image: "/student-welcome.png",
     faq_section: {
         title_prefix: "Got",
         title_accent: "Questions?",
@@ -213,6 +216,11 @@ export function mergeAdmissionPageData(raw: Partial<AdmissionPageData> | null | 
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return DEFAULT_ADMISSION_PAGE_DATA;
     try {
         const merged = deepMerge(DEFAULT_ADMISSION_PAGE_DATA, raw as Partial<AdmissionPageData>);
+        merged.form_welcome_image = String(
+            (merged as AdmissionPageData).form_welcome_image ||
+                DEFAULT_ADMISSION_PAGE_DATA.form_welcome_image ||
+                "/student-welcome.png",
+        ).trim() || "/student-welcome.png";
         merged.faq_section = (merged as any).faq_section && typeof (merged as any).faq_section === "object" && !Array.isArray((merged as any).faq_section)
             ? {
                   title_prefix: String((merged as any).faq_section?.title_prefix || ""),

@@ -7,7 +7,7 @@ import { Clock, BookOpen, Star, Heart, Music, Palette, Users, Sparkles, Sun, Clo
 import TwinklingStars from '@/components/animations/TwinklingStars';
 import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
 import { gsap } from 'gsap';
-import { apiUrl } from '@/lib/api-client';
+import { apiUrl, nextImageSrc } from '@/lib/api-client';
 import { DEFAULT_PROGRAMS_PAGE_DATA, mergeProgramsPageData, type ProgramsPageProgram } from '@/config/programs-page-defaults';
 import { formatAgeGroupLabel } from '@/lib/format-age-group';
 import { getProgramSectionSlug } from '@/lib/program-section-slugs';
@@ -291,9 +291,10 @@ export default function ProgramsPage() {
                                             <div className={`relative w-full aspect-square md:aspect-[4/3] overflow-hidden shadow-2xl transition-all duration-500 transform group-hover:rotate-1 group-hover:-translate-y-2 border-4 border-white`} style={{ borderRadius: index % 2 === 0 ? '60% 40% 30% 70% / 60% 30% 70% 40%' : '30% 70% 70% 30% / 30% 30% 70% 70%' }}>
                                                 <div className="absolute inset-0 bg-black/5 z-10 group-hover:bg-transparent transition-colors duration-500"></div>
                                                 <Image
-                                                    src={program.image}
+                                                    src={nextImageSrc(program.image) || program.image}
                                                     alt={program.name}
                                                     fill
+                                                    sizes="(max-width: 768px) 100vw, 50vw"
                                                     className="object-cover transition-transform duration-700 group-hover:scale-110"
                                                 />
 
