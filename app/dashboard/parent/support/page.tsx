@@ -3,46 +3,80 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { LifeBuoy } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
 import { jsonHeaders } from "@/lib/api-client";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 
-type Ticket = { id: number; subject: string; body: string; status: string; franchise_reply?: string; created_at?: string };
+import { ticketStatusBadgeClass, ticketStatusLabel, TICKET_STATUSES } from "@/lib/support-ticket-status";
+
+type Ticket = {
+    id: number;
+    subject: string;
+    body: string;
+    status: string;
+    status_label?: string;
+    franchise_reply?: string;
+    student?: number | null;
+    student_name?: string | null;
+    student_class_name?: string | null;
+    created_at?: string;
+    updated_at?: string;
+};
+
+const TICKETS_PREVIEW_COUNT = 4;
 
 export default function SupportPage() {
     const { authFetch } = useAuth();
     const { showToast } = useToast();
+    const { selectedStudent, hasMultipleChildren, studentScopeReady, scopedApiPath } = useParentData();
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
     const [subject, setSubject] = useState("");
     const [body, setBody] = useState("");
     const [sending, setSending] = useState(false);
+    const [ticketsExpanded, setTicketsExpanded] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await authFetch<Ticket[]>("/students/parent/tickets/");
+            const data = await authFetch<Ticket[]>(scopedApiPath("/students/parent/tickets/"));
             setTickets(Array.isArray(data) ? data : []);
         } catch {
             setTickets([]);
         } finally {
             setLoading(false);
         }
-    }, [authFetch]);
+    }, [authFetch, scopedApiPath]);
 
     useEffect(() => {
+        if (!studentScopeReady) return;
+        setTickets([]);
+        setTicketsExpanded(false);
         void load();
-    }, [load]);
+    }, [load, studentScopeReady, selectedStudent?.id]);
+
+    const visibleTickets = ticketsExpanded ? tickets : tickets.slice(0, TICKETS_PREVIEW_COUNT);
+    const hiddenTicketsCount = Math.max(0, tickets.length - visibleTickets.length);
 
     const onSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        if (!subject.trim() || !body.trim()) return;
+        if (!subject.trim() || !body.trim() || !studentScopeReady || !selectedStudent?.id) return;
         setSending(true);
         try {
-            await authFetch("/students/parent/tickets/", {
+            if (!selectedStudent?.id) {
+                showToast("Select a child before submitting a ticket.", "error");
+                return;
+            }
+            const payload: Record<string, string | number> = {
+                subject: subject.trim(),
+                body: body.trim(),
+                student: Number(selectedStudent.id),
+            };
+            await authFetch(scopedApiPath("/students/parent/tickets/"), {
                 method: "POST",
                 headers: jsonHeaders(),
-                body: JSON.stringify({ subject: subject.trim(), body: body.trim() }),
+                body: JSON.stringify(payload),
             });
             setSubject("");
             setBody("");
@@ -64,13 +98,24 @@ export default function SupportPage() {
                     </div>
                     <div>
                         <h1 className="text-lg font-semibold text-orange-900">Support</h1>
-                        <p className="text-sm text-orange-700">Raise a ticket for your centre. They can reply here when updated.</p>
+                        <p className="text-sm text-orange-700">
+                            Raise a ticket for your centre. They can reply here when updated.
+                            {hasMultipleChildren && selectedStudent
+                                ? ` Tickets are linked to ${selectedStudent.name} — switch child from the header if needed.`
+                                : ""}
+                        </p>
                     </div>
                 </div>
             </section>
 
             <form onSubmit={onSubmit} className="rounded-2xl border border-orange-100 bg-white p-4 space-y-3 shadow-sm">
                 <h2 className="text-sm font-semibold text-orange-900">New ticket</h2>
+                {hasMultipleChildren && selectedStudent ? (
+                    <p className="text-xs text-orange-700 rounded-lg bg-orange-50 border border-orange-100 px-3 py-2">
+                        About: <span className="font-semibold">{selectedStudent.name}</span>
+                        {selectedStudent.grade ? ` · ${selectedStudent.grade}` : ""}
+                    </p>
+                ) : null}
                 <label className="block text-xs font-medium text-orange-700">
                     Subject
                     <input
@@ -90,7 +135,7 @@ export default function SupportPage() {
                         required
                     />
                 </label>
-                <Button type="submit" size="sm" disabled={sending} className="bg-[#FF922B] text-white">
+                <Button type="submit" size="sm" disabled={sending || !studentScopeReady || !selectedStudent?.id} className="bg-[#FF922B] text-white">
                     {sending ? "Sending…" : "Submit ticket"}
                 </Button>
             </form>
@@ -98,14 +143,29 @@ export default function SupportPage() {
             <div>
                 <h2 className="text-sm font-semibold text-orange-900 mb-2">Your tickets</h2>
                 {loading && <p className="text-sm text-orange-700">Loading…</p>}
-                {!loading && tickets.length === 0 && <p className="text-sm text-orange-700">No tickets yet.</p>}
+                {!loading && tickets.length === 0 && (
+                    <p className="text-sm text-orange-700">
+                        {hasMultipleChildren && selectedStudent
+                            ? `No tickets for ${selectedStudent.name} yet.`
+                            : "No tickets yet."}
+                    </p>
+                )}
                 <ul className="space-y-3">
-                    {tickets.map((t) => (
+                    {visibleTickets.map((t) => (
                         <li key={t.id} className="rounded-xl border border-orange-100 bg-white p-4 shadow-sm space-y-2">
-                            <div className="flex flex-wrap justify-between gap-2">
+                            <div className="flex flex-wrap justify-between gap-2 items-center">
                                 <span className="font-semibold text-orange-900">{t.subject}</span>
-                                <span className="text-xs text-orange-600">{t.status}</span>
+                                <span
+                                    className={`text-xs font-medium px-2 py-0.5 rounded-full border ${ticketStatusBadgeClass(t.status)}`}
+                                >
+                                    {t.status_label || ticketStatusLabel(t.status)}
+                                </span>
                             </div>
+                            {(t.student_name || t.student_class_name) ? (
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-600">
+                                    About: {[t.student_name, t.student_class_name].filter(Boolean).join(" · ")}
+                                </p>
+                            ) : null}
                             <p className="text-sm text-orange-800 whitespace-pre-wrap">{t.body}</p>
                             {t.franchise_reply && (
                                 <div className="rounded-lg bg-orange-50 border border-orange-100 p-3 text-sm text-orange-900">
@@ -114,9 +174,25 @@ export default function SupportPage() {
                                 </div>
                             )}
                             {t.created_at && <p className="text-[11px] text-orange-500">{new Date(t.created_at).toLocaleString()}</p>}
+                            {t.updated_at && t.updated_at !== t.created_at && (
+                                <p className="text-[11px] text-orange-500">Last updated {new Date(t.updated_at).toLocaleString()}</p>
+                            )}
                         </li>
                     ))}
                 </ul>
+                {tickets.length > TICKETS_PREVIEW_COUNT && (
+                    <div className="mt-3">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="text-orange-700"
+                            onClick={() => setTicketsExpanded((prev) => !prev)}
+                        >
+                            {ticketsExpanded ? "Show less" : `Show more (${hiddenTicketsCount})`}
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     );

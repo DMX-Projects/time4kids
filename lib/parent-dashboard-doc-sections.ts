@@ -3,6 +3,7 @@ import { PARENT_APP_DOCUMENT_CHECKLIST } from "@/config/parent-app-document-chec
 import type { ParentDashboardDocumentSection } from "@/config/parent-dashboard-sections";
 import {
     buildParentDashboardSectionItems,
+    isParentDashboardHolidayDoc,
     type ParentDocumentForMatch,
 } from "@/lib/admin-parent-app-upload";
 import { collectLinksFromTopItem, linkResolutionKey } from "@/lib/franchise-center-page-links";
@@ -13,7 +14,7 @@ import { parentDocumentRowVisible } from "@/lib/parent-document-file-kind";
 
 const SECTION_SUBTITLES: Record<string, string> = {
     "preschool-policies": "PDF files only",
-    "holiday-lists": "Holiday PDFs for your state",
+    "holiday-lists": "Head office holiday PDFs for your state",
     "audio-rhymes": "MP3, WAV, MP4, and other audio/video files",
     videos: "Videos, audio, PDFs, and learning files",
     "students-kit": "Tap to view or download",
@@ -87,7 +88,7 @@ export function collectParentSectionDocs(
         const docId = meta?.franchiseHubDocId;
         if (docId == null || used.has(docId)) continue;
         const doc = docs.find((d) => d.id === docId);
-        if (!doc || !parentDocumentRowVisible(doc, doc.category)) continue;
+        if (!doc || !parentDocumentRowVisible(doc, doc.category) || !isParentDashboardHolidayDoc(doc)) continue;
         ordered.push(doc);
         used.add(docId);
     }

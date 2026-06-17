@@ -59,14 +59,21 @@ export const PARENT_NEWSLETTER_EMPTY_MESSAGE =
 export function isNewsletterUploadFile(file: File): boolean {
     const name = file.name.toLowerCase();
     const type = (file.type || "").toLowerCase();
-    return (
+    if (
         name.endsWith(".pdf") ||
         name.endsWith(".doc") ||
         name.endsWith(".docx") ||
         type === "application/pdf" ||
         type === "application/msword" ||
         type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    );
+    ) {
+        return true;
+    }
+    // Allow extensionless / octet-stream picks — backend validates PDF/Word magic bytes.
+    if ((type === "application/octet-stream" || type === "") && !name.includes(".")) {
+        return true;
+    }
+    return false;
 }
 
 export function validateNewsletterUpload(file: File): string | null {
@@ -102,7 +109,7 @@ export function validateNewsletterAudioUpload(file: File): string | null {
     return null;
 }
 
-const AUDIO_URL_RE = /\.(mp3|wav|m4a|ogg|aac|flac|wma|amr|opus|caf|aiff|aif|mpeg|mpg|3gp|weba)(\?|#|$)/i;
+const AUDIO_URL_RE = /\.(mp3|wav|m4a|mp4|ogg|aac|flac|wma|amr|opus|caf|aiff|aif|mpeg|mpg|3gp|weba)(\?|#|$)/i;
 
 /** True when a pasted link is an audio file/URL, not a video embed. */
 export function isNewsletterAudioMediaUrl(raw: string): boolean {
@@ -128,4 +135,43 @@ export function validateNewsletterAudioEmbedUrl(raw: string): string | null {
         return "Paste a direct audio file link (MP3, M4A, WAV, etc.) — not a video embed.";
     }
     return null;
+}
+
+export type NewsletterRowKind = "document" | "video" | "audio";
+
+/** Reset link fields when the admin switches newsletter media type. */
+export function newsletterKindChangePatch(kind: NewsletterRowKind) {
+    if (kind === "document") {
+        return { newsletter_kind: kind, video_embed_url: "", audio_embed_url: "" };
+    }
+    if (kind === "video") {
+        return { newsletter_kind: kind, audio_embed_url: "" };
+    }
+    return { newsletter_kind: kind, video_embed_url: "" };
+}
+
+/** One media type per newsletter row (legacy combined rows may list multiple). */
+export function newsletterRowKind(row: {
+    file?: string;
+    video_embed_url?: string;
+    audio_file?: string;
+    audio_embed_url?: string;
+}): NewsletterRowKind | "" {
+    const hasFile = Boolean((row.file || "").trim());
+    const hasVideo = Boolean((row.video_embed_url || "").trim());
+    const hasAudio = Boolean((row.audio_file || "").trim() || (row.audio_embed_url || "").trim());
+    if (hasFile && !hasVideo && !hasAudio) return "document";
+    if (hasVideo && !hasFile && !hasAudio) return "video";
+    if (hasAudio && !hasFile && !hasVideo) return "audio";
+    if (hasFile) return "document";
+    if (hasVideo) return "video";
+    if (hasAudio) return "audio";
+    return "";
+}
+
+export function newsletterKindLabel(kind: NewsletterRowKind | ""): string {
+    if (kind === "document") return "PDF / Word";
+    if (kind === "video") return "Video";
+    if (kind === "audio") return "Audio";
+    return "Newsletter";
 }

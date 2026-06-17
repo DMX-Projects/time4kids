@@ -37,3 +37,6 @@ next-env.d.ts
 
 # local CRM clone (separate app, not part of main site)
 /timekids_crm_clone/
+
+# Dev/maintenance scripts — local only, not for production deploy
+/scripts/

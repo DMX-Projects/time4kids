@@ -6,10 +6,19 @@ import {
     type AttendanceRecord,
     type SchoolStudent,
 } from "@/components/dashboard/shared/SchoolDataProvider";
-import { mergeClassOptions, studentGradeMatchesClassFilter } from "@/lib/student-class-match";
-import { CalendarDays, Save, CheckCircle, AlertCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+    CMS_CLASS_SELECT_OPTIONS,
+    classLabelFromSelectValue,
+} from "@/lib/student-class-match";
+import {
+    ATTENDANCE_ACADEMIC_YEAR_OPTIONS,
+    DEFAULT_ATTENDANCE_ACADEMIC_YEAR,
+    studentInAttendanceRoster,
+} from "@/lib/student-academic-year";
+import { CalendarDays, ChevronDown, ChevronRight, History, Save, CheckCircle, AlertCircle, Search } from "lucide-react";
 
-const ATTENDANCE_PAGE_SIZE = 100;
+const STUDENT_LIST_PREVIEW = 12;
+const HISTORY_PREVIEW_ROWS = 20;
 
 type AttendanceStatus = AttendanceRecord["status"];
 
@@ -40,35 +49,40 @@ const STATUS_LABELS: Record<AttendanceStatus, string> = {
     HOLIDAY: "Holiday",
 };
 
-const csvCell = (value: string) => `"${String(value).replace(/"/g, '""')}"`;
+function statusRowClass(status: AttendanceStatus | ""): string {
+    if (!status) return "border-gray-200 bg-gray-50/60";
+    if (status === "PRESENT") return "border-green-100 bg-green-50/40";
+    if (status === "ABSENT") return "border-red-100 bg-red-50/50";
+    if (status === "LATE") return "border-amber-100 bg-amber-50/50";
+    return "border-orange-100 bg-orange-50/40";
+}
 
-function downloadAttendanceCsv(
-    records: Omit<AttendanceRecord, "id">[],
-    students: SchoolStudent[],
-    date: string,
-) {
-    const byId = new Map(students.map((s) => [s.id, s]));
-    const header = ["Date", "Roll No", "Student Name", "Class", "Status", "Note"];
-    const rows = records.map((r) => {
-        const student = byId.get(r.studentId);
-        const status = isAttendanceStatus(r.status) ? STATUS_LABELS[r.status] : r.status;
-        return [
-            r.date || date,
-            student?.rollNumber ?? "",
-            student?.name ?? "",
-            student?.grade ?? "",
-            status,
-            r.note ?? "",
-        ];
-    });
-    const csv = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
-    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `attendance-${date}-${records.length}-students.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+function isPresentChecked(status: AttendanceStatus | ""): boolean {
+    return status === "PRESENT";
+}
+
+function formatMonthLabel(monthKey: string): string {
+    const [year, month] = monthKey.split("-");
+    const d = new Date(Number(year), Number(month) - 1, 1);
+    if (Number.isNaN(d.getTime())) return monthKey;
+    return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+function buildEditsForClass(
+    classStudents: SchoolStudent[],
+    attendance: AttendanceRecord[],
+    selectedDate: string,
+): Record<string, AttendanceEdit> {
+    const next: Record<string, AttendanceEdit> = {};
+    for (const s of classStudents) {
+        const saved = attendance.find((r) => r.studentId === s.id && r.date === selectedDate);
+        if (saved && isAttendanceStatus(saved.status)) {
+            next[s.id] = { status: saved.status, note: saved.note || "" };
+        } else {
+            next[s.id] = { status: "", note: "" };
+        }
+    }
+    return next;
 }
 
 export type FranchiseAttendancePanelProps = {
@@ -80,21 +94,27 @@ export function FranchiseAttendancePanel({
     controlledDate,
     onControlledDateChange,
 }: FranchiseAttendancePanelProps = {}) {
-    const { students, attendance, loadAttendance, markAttendance, refreshAll } = useSchoolData();
+    const { students, fetchFranchiseAttendance, markAttendance, refreshAll } = useSchoolData();
     const [internalDate, setInternalDate] = useState(toLocalYYYYMMDD(new Date()));
     const selectedDate = controlledDate ?? internalDate;
     const setSelectedDate = onControlledDateChange ?? setInternalDate;
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    
-    // local state to hold attendance edits before saving
-    // key is studentId
+
     const [edits, setEdits] = useState<Record<string, AttendanceEdit>>({});
-    const [message, setMessage] = useState<{ type: "success" | "error", text: string } | null>(null);
+    const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [classFilter, setClassFilter] = useState("");
-    const [dirtyIds, setDirtyIds] = useState<Set<string>>(() => new Set());
-    const [currentPage, setCurrentPage] = useState(1);
+    const [classSelectValue, setClassSelectValue] = useState("");
+    const [academicYearFilter, setAcademicYearFilter] = useState(DEFAULT_ATTENDANCE_ACADEMIC_YEAR);
+    const [showAllStudents, setShowAllStudents] = useState(false);
+
+    const [historyMonth, setHistoryMonth] = useState(() => selectedDate.slice(0, 7));
+    const [historyRows, setHistoryRows] = useState<AttendanceRecord[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyOpen, setHistoryOpen] = useState(true);
+    const [historyExpanded, setHistoryExpanded] = useState(false);
+    const [dayAttendance, setDayAttendance] = useState<AttendanceRecord[]>([]);
 
     useEffect(() => {
         void refreshAll();
@@ -102,40 +122,87 @@ export function FranchiseAttendancePanel({
     }, []);
 
     useEffect(() => {
-        const fetchAtt = async () => {
-            setLoading(true);
-            await loadAttendance(selectedDate);
-            setLoading(false);
-        };
-        fetchAtt();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        setHistoryMonth(selectedDate.slice(0, 7));
     }, [selectedDate]);
 
     useEffect(() => {
-        const byStudent = new Map(attendance.map((r) => [r.studentId, r]));
-        const initialEdits: Record<string, AttendanceEdit> = {};
-        for (const s of students) {
-            const existing = byStudent.get(s.id);
-            initialEdits[s.id] = {
-                status: existing?.status ?? "",
-                note: existing?.note ?? "",
-            };
+        if (!classFilter) {
+            setDayAttendance([]);
+            setEdits({});
+            return;
         }
-        setEdits(initialEdits);
-        setDirtyIds(new Set());
-        setMessage(null);
-    }, [attendance, selectedDate, students]);
+        let cancelled = false;
+        setLoading(true);
+        (async () => {
+            const rows = await fetchFranchiseAttendance({
+                date: selectedDate,
+                className: classFilter,
+                academicYear: academicYearFilter,
+            });
+            if (!cancelled) {
+                setDayAttendance(rows);
+                setLoading(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedDate, classFilter, academicYearFilter, fetchFranchiseAttendance]);
 
-    const markDirty = (studentId: string) => {
-        setDirtyIds((prev) => {
-            const next = new Set(prev);
-            next.add(studentId);
-            return next;
-        });
+    const classStudents = useMemo(() => {
+        if (!classFilter) return [];
+        const q = searchQuery.trim().toLowerCase();
+        return students
+            .filter((s) => studentInAttendanceRoster(s, classFilter, academicYearFilter))
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .filter((s) => {
+                if (!q) return true;
+                return (
+                    s.name.toLowerCase().includes(q) ||
+                    s.rollNumber.toLowerCase().includes(q)
+                );
+            });
+    }, [students, classFilter, academicYearFilter, searchQuery]);
+
+    useEffect(() => {
+        if (!classFilter) return;
+        setEdits(buildEditsForClass(classStudents, dayAttendance, selectedDate));
+    }, [dayAttendance, classStudents, classFilter, selectedDate]);
+
+    useEffect(() => {
+        setShowAllStudents(false);
+        setSearchQuery("");
+    }, [classFilter, academicYearFilter, selectedDate]);
+
+    useEffect(() => {
+        if (!classFilter) {
+            setHistoryRows([]);
+            return;
+        }
+        let cancelled = false;
+        setHistoryLoading(true);
+        (async () => {
+            const rows = await fetchFranchiseAttendance({
+                month: historyMonth,
+                className: classFilter,
+                academicYear: academicYearFilter,
+            });
+            if (!cancelled) {
+                setHistoryRows(rows);
+                setHistoryLoading(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [classFilter, historyMonth, academicYearFilter, fetchFranchiseAttendance]);
+
+    const handleClassSelect = (value: string) => {
+        setClassSelectValue(value);
+        setClassFilter(classLabelFromSelectValue(value));
     };
 
     const handleStatusChange = (studentId: string, status: AttendanceStatus | "") => {
-        markDirty(studentId);
         setEdits((prev) => ({
             ...prev,
             [studentId]: {
@@ -146,7 +213,6 @@ export function FranchiseAttendancePanel({
     };
 
     const handleNoteChange = (studentId: string, note: string) => {
-        markDirty(studentId);
         setEdits((prev) => ({
             ...prev,
             [studentId]: {
@@ -156,67 +222,76 @@ export function FranchiseAttendancePanel({
         }));
     };
 
-    const sortedStudents = useMemo(
-        () => [...students].sort((a, b) => a.name.localeCompare(b.name)),
-        [students],
+    const saveTargets = classStudents;
+
+    const visibleStudents = useMemo(() => {
+        if (showAllStudents || classStudents.length <= STUDENT_LIST_PREVIEW) {
+            return classStudents;
+        }
+        return classStudents.slice(0, STUDENT_LIST_PREVIEW);
+    }, [classStudents, showAllStudents]);
+
+    const hiddenStudentCount = classStudents.length - visibleStudents.length;
+
+    const markedCount = useMemo(
+        () => saveTargets.filter((s) => (edits[s.id]?.status || "") !== "").length,
+        [saveTargets, edits],
     );
 
-    const classOptions = useMemo(
-        () => mergeClassOptions(sortedStudents.map((s) => s.grade)),
-        [sortedStudents],
+    const savedOnDateCount = useMemo(
+        () =>
+            classStudents.filter((s) =>
+                dayAttendance.some((r) => r.studentId === s.id && r.date === selectedDate),
+            ).length,
+        [classStudents, dayAttendance, selectedDate],
     );
 
-    const isFiltered = searchQuery.trim() !== "" || classFilter !== "";
+    const allPresentChecked = useMemo(
+        () =>
+            saveTargets.length > 0 &&
+            saveTargets.every((s) => edits[s.id]?.status === "PRESENT"),
+        [saveTargets, edits],
+    );
 
-    const displayStudents = useMemo(() => {
-        const q = searchQuery.trim().toLowerCase();
-        return sortedStudents.filter((s) => {
-            if (classFilter && !studentGradeMatchesClassFilter(s.grade, classFilter)) return false;
-            if (!q) return true;
-            return (
-                s.name.toLowerCase().includes(q) ||
-                s.rollNumber.toLowerCase().includes(q) ||
-                s.grade.toLowerCase().includes(q)
-            );
+    const historyByDate = useMemo(() => {
+        const map = new Map<string, AttendanceRecord[]>();
+        for (const row of historyRows) {
+            const key = row.date || "—";
+            map.set(key, [...(map.get(key) || []), row]);
+        }
+        return Array.from(map.entries())
+            .sort(([a], [b]) => (a > b ? -1 : 1))
+            .map(([date, items]) => [
+                date,
+                items.sort((a, b) => (a.studentName || "").localeCompare(b.studentName || "")),
+            ] as const);
+    }, [historyRows]);
+
+    const visibleHistoryDates = historyExpanded
+        ? historyByDate
+        : historyByDate.slice(0, 5);
+
+    const setStatusForStudents = (targets: SchoolStudent[], status: AttendanceStatus | "") => {
+        const next: Record<string, AttendanceEdit> = { ...edits };
+        targets.forEach((s) => {
+            next[s.id] = {
+                status,
+                note: next[s.id]?.note ?? "",
+            };
         });
-    }, [sortedStudents, searchQuery, classFilter]);
-
-    const totalPages = Math.max(1, Math.ceil(displayStudents.length / ATTENDANCE_PAGE_SIZE));
-
-    const paginatedStudents = useMemo(() => {
-        const start = (currentPage - 1) * ATTENDANCE_PAGE_SIZE;
-        return displayStudents.slice(start, start + ATTENDANCE_PAGE_SIZE);
-    }, [displayStudents, currentPage]);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery, classFilter, selectedDate]);
-
-    useEffect(() => {
-        if (currentPage > totalPages) setCurrentPage(totalPages);
-    }, [currentPage, totalPages]);
-
-    const pageRangeLabel = useMemo(() => {
-        if (displayStudents.length === 0) return "0 students";
-        const start = (currentPage - 1) * ATTENDANCE_PAGE_SIZE + 1;
-        const end = Math.min(currentPage * ATTENDANCE_PAGE_SIZE, displayStudents.length);
-        return `${start}–${end} of ${displayStudents.length}`;
-    }, [currentPage, displayStudents.length]);
-
-    const saveTargets = isFiltered ? displayStudents : sortedStudents;
-
-    const markedOnDateCount = useMemo(
-        () => sortedStudents.filter((s) => (edits[s.id]?.status || "") !== "").length,
-        [sortedStudents, edits],
-    );
+        setEdits(next);
+    };
 
     const handleSave = async () => {
+        if (!classFilter) {
+            setMessage({ type: "error", text: "Select a class first." });
+            return;
+        }
         setSaving(true);
         setMessage(null);
         try {
             const toSave: Omit<AttendanceRecord, "id">[] = saveTargets.flatMap((s) => {
-                if (!dirtyIds.has(s.id)) return [];
-                const status = edits[s.id]?.status;
+                const status = edits[s.id]?.status ?? "";
                 if (!status || !isAttendanceStatus(status)) return [];
                 return [
                     {
@@ -231,23 +306,28 @@ export function FranchiseAttendancePanel({
             if (toSave.length === 0) {
                 setMessage({
                     type: "error",
-                    text: isFiltered
-                        ? "No changes to save. Search a student, pick a status, then click Save Attendance."
-                        : "No changes to save. Update at least one student status (or use Mark All Present first).",
+                    text: "Select a status for at least one student before saving.",
                 });
                 return;
             }
 
             await markAttendance(toSave, selectedDate);
-            downloadAttendanceCsv(toSave, students, selectedDate);
-            setDirtyIds((prev) => {
-                const next = new Set(prev);
-                toSave.forEach((row) => next.delete(row.studentId));
-                return next;
+            const dayRows = await fetchFranchiseAttendance({
+                date: selectedDate,
+                className: classFilter,
+                academicYear: academicYearFilter,
             });
+            setDayAttendance(dayRows);
+            setEdits(buildEditsForClass(classStudents, dayRows, selectedDate));
+            const historyRowsNext = await fetchFranchiseAttendance({
+                month: historyMonth,
+                className: classFilter,
+                academicYear: academicYearFilter,
+            });
+            setHistoryRows(historyRowsNext);
             setMessage({
                 type: "success",
-                text: `Saved ${toSave.length} student(s) for ${selectedDate}. A CSV file was downloaded. Parents can see this in the Parent App under Attendance.`,
+                text: `Saved ${toSave.length} student(s) in ${classFilter} for ${selectedDate}. Parents see this in the real parent app → Attendance.`,
             });
         } catch {
             setMessage({ type: "error", text: "Failed to save attendance. Please try again." });
@@ -256,64 +336,153 @@ export function FranchiseAttendancePanel({
         }
     };
 
-    const markAllPresent = () => {
-        const next: Record<string, AttendanceEdit> = { ...edits };
-        const nextDirty = new Set(dirtyIds);
-        const targets = isFiltered ? displayStudents : students;
-        targets.forEach((s) => {
-            next[s.id] = { status: "PRESENT", note: next[s.id]?.note ?? "" };
-            nextDirty.add(s.id);
-        });
-        setEdits(next);
-        setDirtyIds(nextDirty);
+    const handlePresentToggle = (studentId: string, present: boolean) => {
+        handleStatusChange(studentId, present ? "PRESENT" : "");
     };
+
+    const openHistoryDate = (date: string) => {
+        setSelectedDate(date);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const renderStudentRow = (s: SchoolStudent) => {
+        const edit = edits[s.id] || { status: "", note: "" };
+        const status = edit.status || "";
+        const present = isPresentChecked(status);
+
+        return (
+            <div
+                key={s.id}
+                className={`flex flex-col gap-2 rounded-xl border px-3 py-3 sm:flex-row sm:items-center sm:gap-4 ${statusRowClass(status)}`}
+            >
+                <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 sm:items-center">
+                    <input
+                        type="checkbox"
+                        checked={present}
+                        onChange={(e) => handlePresentToggle(s.id, e.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                        aria-label={`Mark ${s.name} present`}
+                    />
+                    <span className="min-w-0">
+                        <span className="block truncate font-medium text-gray-900">{s.name}</span>
+                        <span className="text-xs text-gray-500">
+                            Roll {s.rollNumber || "—"}
+                            {s.grade ? ` · ${s.grade}` : ""}
+                        </span>
+                    </span>
+                </label>
+
+                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                    <select
+                        value={status}
+                        onChange={(e) =>
+                            handleStatusChange(s.id, e.target.value as AttendanceStatus | "")
+                        }
+                        className={`rounded-lg border px-2 py-1.5 text-xs font-semibold outline-none focus:border-orange-500 sm:min-w-[140px] ${
+                            !status
+                                ? "border-gray-300 bg-white text-gray-500"
+                                : status === "PRESENT"
+                                  ? "border-green-200 bg-green-50 text-green-700"
+                                  : status === "ABSENT"
+                                    ? "border-red-200 bg-red-50 text-red-700"
+                                    : status === "LATE"
+                                      ? "border-amber-200 bg-amber-50 text-amber-700"
+                                      : "border-orange-200 bg-orange-50 text-orange-800"
+                        }`}
+                        aria-label={`Attendance status for ${s.name}`}
+                    >
+                        <option value="">Select status</option>
+                        {ATTENDANCE_STATUSES.map((value) => (
+                            <option key={value} value={value}>
+                                {STATUS_LABELS[value]}
+                            </option>
+                        ))}
+                    </select>
+                    <input
+                        type="text"
+                        value={edit.note || ""}
+                        onChange={(e) => handleNoteChange(s.id, e.target.value)}
+                        placeholder="Note (optional)"
+                        className="min-w-[120px] flex-1 rounded-lg border border-gray-200 px-2 py-1.5 text-sm text-black outline-none focus:border-orange-500 sm:max-w-[180px]"
+                    />
+                </div>
+            </div>
+        );
+    };
+
+    const classSelected = Boolean(classFilter);
 
     return (
         <div className="space-y-6">
-            <section className="bg-white border text-black border-orange-100 rounded-2xl shadow-sm p-6 space-y-4">
-                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center">
-                        <CalendarDays className="w-5 h-5" />
+            <section className="space-y-4 rounded-2xl border border-orange-100 bg-white p-6 text-black shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-50 text-orange-600">
+                        <CalendarDays className="h-5 w-5" />
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">Mark Attendance</h1>
                         <p className="text-sm text-gray-500">
-                            Saved records go to your centre database for the selected date. Parents see them in the Parent App → Attendance and Notifications.
+                            Pick academic year, class, and date. Only students in that class and year appear.
+                            Saved records show in the real parent login app → Attendance.
                         </p>
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-end gap-4 bg-orange-50 p-4 rounded-xl border border-orange-100">
+                <div className="flex flex-col gap-4 rounded-xl border border-orange-100 bg-orange-50 p-4 sm:flex-row sm:flex-wrap sm:items-end">
                     <div className="space-y-1">
                         <label className="text-sm font-medium text-gray-700">Select Date</label>
                         <input
                             type="date"
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
-                            className="block w-full sm:w-48 px-3 py-2 border text-black border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 outline-none"
+                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-black outline-none focus:border-orange-500 focus:ring-orange-500 sm:w-48"
                         />
                     </div>
+                    <label className="space-y-1 sm:min-w-[180px]">
+                        <span className="text-sm font-medium text-gray-700">Academic year</span>
+                        <select
+                            value={academicYearFilter}
+                            onChange={(e) => setAcademicYearFilter(e.target.value)}
+                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-black outline-none focus:border-orange-500 focus:ring-orange-500"
+                        >
+                            {ATTENDANCE_ACADEMIC_YEAR_OPTIONS.map((year) => (
+                                <option key={year} value={year}>
+                                    {year === "all" ? "All years (legacy roster)" : year}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="space-y-1 sm:min-w-[240px]">
+                        <span className="text-sm font-medium text-gray-700">Class</span>
+                        <select
+                            value={classSelectValue}
+                            onChange={(e) => handleClassSelect(e.target.value)}
+                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-black outline-none focus:border-orange-500 focus:ring-orange-500"
+                        >
+                            <option value="">Select class</option>
+                            {CMS_CLASS_SELECT_OPTIONS.map((opt) => (
+                                <option key={opt.id} value={opt.id}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
                     <div className="flex flex-wrap gap-2">
-                         <button 
-                             onClick={markAllPresent} 
-                             className="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                         >
-                             {isFiltered ? "Mark shown Present" : "Mark All Present"}
-                         </button>
-                         <button 
-                             onClick={handleSave} 
-                             disabled={saving || sortedStudents.length === 0}
-                             className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors"
-                         >
-                             <Save className="w-4 h-4" />
-                             {saving ? "Saving..." : "Save Attendance"}
-                         </button>
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={saving || !classSelected || saveTargets.length === 0}
+                            className="flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 font-medium text-white transition-colors hover:bg-orange-700 disabled:opacity-50"
+                        >
+                            <Save className="h-4 w-4" />
+                            {saving ? "Saving…" : "Save attendance"}
+                        </button>
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                    <label className="flex-1 space-y-1">
-                        <span className="text-sm font-medium text-gray-700">Search student</span>
+                {classSelected ? (
+                    <label className="block space-y-1">
+                        <span className="text-sm font-medium text-gray-700">Search in {classFilter}</span>
                         <div className="relative">
                             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <input
@@ -324,188 +493,202 @@ export function FranchiseAttendancePanel({
                                 className="block w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-black outline-none focus:border-orange-500 focus:ring-orange-500"
                             />
                         </div>
+                        <p className="text-xs text-gray-500">
+                            {classStudents.length} student(s) in {classFilter}
+                            {academicYearFilter !== "all" ? ` · ${academicYearFilter}` : ""}.
+                        </p>
                     </label>
-                    <label className="space-y-1 sm:w-56">
-                        <span className="text-sm font-medium text-gray-700">Class</span>
-                        <select
-                            value={classFilter}
-                            onChange={(e) => setClassFilter(e.target.value)}
-                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-black outline-none focus:border-orange-500 focus:ring-orange-500"
-                        >
-                            <option value="">All classes</option>
-                            {classOptions.map((grade) => (
-                                <option key={grade} value={grade}>
-                                    {grade}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    {isFiltered ? (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setSearchQuery("");
-                                setClassFilter("");
-                            }}
-                            className="px-3 py-2 text-sm font-semibold text-orange-700 hover:underline"
-                        >
-                            Clear filters
-                        </button>
-                    ) : null}
-                </div>
-                <p className="text-xs text-gray-500">
-                    {isFiltered
-                        ? `Showing ${displayStudents.length} of ${sortedStudents.length} students. Save only writes students you changed in this list.`
-                        : `${sortedStudents.length} students total · ${ATTENDANCE_PAGE_SIZE} per page · ${markedOnDateCount} already saved on ${selectedDate}. Use search or Next/Previous to move through pages.`}
-                    {" "}
-                    <span className="text-gray-600">Select status</span> means not marked yet for this date.{" "}
-                    <span className="text-green-700">Present</span> (or other status) means it was saved earlier or you just picked it.
-                </p>
+                ) : null}
             </section>
 
-            {message && (
-                <div className={`p-4 rounded-lg flex items-center gap-2 ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-                    {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+            {message ? (
+                <div
+                    className={`flex items-center gap-2 rounded-lg p-4 ${
+                        message.type === "success"
+                            ? "border border-green-200 bg-green-50 text-green-800"
+                            : "border border-red-200 bg-red-50 text-red-800"
+                    }`}
+                >
+                    {message.type === "success" ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
                     <span>{message.text}</span>
                 </div>
-            )}
+            ) : null}
 
-            <div className="bg-white border border-orange-100 rounded-2xl shadow-sm overflow-hidden">
-                {!loading && displayStudents.length > 0 ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-orange-100 bg-orange-50/60 px-4 py-3">
-                        <p className="text-sm text-gray-700">
-                            Page <strong>{currentPage}</strong> of <strong>{totalPages}</strong>
-                            <span className="text-gray-500"> · showing {pageRangeLabel}</span>
-                            {!isFiltered && sortedStudents.length > displayStudents.length ? null : (
-                                <span className="text-gray-500"> · {sortedStudents.length} at centre</span>
-                            )}
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                disabled={currentPage <= 1}
-                                className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                                Previous
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                disabled={currentPage >= totalPages}
-                                className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                            >
-                                Next
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                        </div>
+            <div className="space-y-3">
+                {loading ? (
+                    <div className="rounded-2xl border border-orange-100 bg-white p-8 text-center text-gray-500 shadow-sm">
+                        Loading students and attendance…
                     </div>
-                ) : null}
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-orange-50 text-orange-900 border-b border-orange-100">
-                            <tr>
-                                <th className="p-4 font-semibold shrink-0">Roll No</th>
-                                <th className="p-4 font-semibold min-w-[200px]">Student Name</th>
-                                <th className="p-4 font-semibold shrink-0">Grade</th>
-                                <th className="p-4 font-semibold min-w-[170px]">Status</th>
-                                <th className="p-4 font-semibold w-full">Note</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-orange-100">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={5} className="p-4 text-center text-gray-500 py-8">Loading students and attendance...</td>
-                                </tr>
-                            ) : sortedStudents.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="p-4 text-center text-gray-500 py-8">No students found. Add students first.</td>
-                                </tr>
-                            ) : displayStudents.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="p-4 text-center text-gray-500 py-8">
-                                        No students match your search. Try another name, roll number, or class.
-                                    </td>
-                                </tr>
-                            ) : (
-                                paginatedStudents.map((s) => {
-                                    const edit = edits[s.id] || { status: "", note: "" };
-                                    const status = edit.status || "";
-                                    return (
-                                        <tr key={s.id} className="hover:bg-orange-50/50 transition-colors">
-                                            <td className="p-4 text-gray-900 font-medium">{s.rollNumber}</td>
-                                            <td className="p-4 text-gray-900">{s.name}</td>
-                                            <td className="p-4 text-gray-600">{s.grade}</td>
-                                            <td className="p-4">
-                                                <select
-                                                    value={status}
-                                                    onChange={(e) =>
-                                                        handleStatusChange(
-                                                            s.id,
-                                                            e.target.value as AttendanceStatus | "",
-                                                        )
-                                                    }
-                                                    className={`px-3 border py-2 rounded-lg text-sm font-semibold w-full max-w-[150px] outline-none transition-colors
-                                                        ${!status ? 'bg-white text-gray-500 border-gray-300' :
-                                                          status === 'PRESENT' ? 'bg-green-50 text-green-700 border-green-200' : 
-                                                          status === 'ABSENT' ? 'bg-red-50 text-red-700 border-red-200' : 
-                                                          status === 'LATE' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
-                                                          'bg-gray-50 text-gray-700 border-gray-200'}`}
-                                                >
-                                                    <option value="">Select status</option>
-                                                    <option value="PRESENT">Present</option>
-                                                    <option value="ABSENT">Absent</option>
-                                                    <option value="LATE">Late</option>
-                                                    <option value="EXCUSED">Excused</option>
-                                                    <option value="HOLIDAY">Holiday</option>
-                                                </select>
-                                            </td>
-                                            <td className="p-4">
-                                                <input
-                                                    type="text"
-                                                    value={edit.note || ""}
-                                                    onChange={(e) => handleNoteChange(s.id, e.target.value)}
-                                                    placeholder="Optional note..."
-                                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-orange-500 focus:border-orange-500 text-black text-sm outline-none transition-colors"
-                                                />
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-                {!loading && displayStudents.length > ATTENDANCE_PAGE_SIZE ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-orange-100 px-4 py-3">
-                        <p className="text-xs text-gray-500">{pageRangeLabel} students on this list</p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                disabled={currentPage <= 1}
-                                className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                                Previous
-                            </button>
-                            <span className="text-sm font-medium text-gray-700">
-                                {currentPage} / {totalPages}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                disabled={currentPage >= totalPages}
-                                className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                            >
-                                Next
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                        </div>
+                ) : students.length === 0 ? (
+                    <div className="rounded-2xl border border-orange-100 bg-white p-8 text-center text-gray-500 shadow-sm">
+                        No students found for {academicYearFilter}. Try another academic year or add students first.
                     </div>
-                ) : null}
+                ) : !classSelected ? (
+                    <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50/40 p-8 text-center text-gray-600 shadow-sm">
+                        Select a class above to see students and mark attendance.
+                    </div>
+                ) : classStudents.length === 0 ? (
+                    <div className="rounded-2xl border border-orange-100 bg-white p-8 text-center text-gray-500 shadow-sm">
+                        No students in {classFilter}
+                        {academicYearFilter !== "all" ? ` for ${academicYearFilter}` : ""}
+                        {searchQuery.trim() ? " match your search." : "."}
+                    </div>
+                ) : (
+                    <section className="rounded-2xl border border-orange-100 bg-white p-3 shadow-sm">
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-orange-100 pb-2">
+                            <label className="flex cursor-pointer items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={allPresentChecked}
+                                    onChange={(e) =>
+                                        setStatusForStudents(saveTargets, e.target.checked ? "PRESENT" : "")
+                                    }
+                                    className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                    aria-label={`Select all in ${classFilter}`}
+                                />
+                                <h2 className="text-sm font-semibold text-orange-900">{classFilter}</h2>
+                            </label>
+                            <p className="text-xs text-gray-500">
+                                {markedCount} of {saveTargets.length} marked · {savedOnDateCount} saved on{" "}
+                                {selectedDate}
+                            </p>
+                        </div>
+                        <div className="space-y-2">
+                            {visibleStudents.map((s) => renderStudentRow(s))}
+                        </div>
+                        {hiddenStudentCount > 0 ? (
+                            <button
+                                type="button"
+                                onClick={() => setShowAllStudents(true)}
+                                className="mt-2 w-full rounded-lg border border-dashed border-orange-200 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50"
+                            >
+                                Show {hiddenStudentCount} more
+                            </button>
+                        ) : null}
+                        {showAllStudents && classStudents.length > STUDENT_LIST_PREVIEW ? (
+                            <button
+                                type="button"
+                                onClick={() => setShowAllStudents(false)}
+                                className="mt-2 w-full rounded-lg border border-dashed border-orange-200 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50"
+                            >
+                                Show less
+                            </button>
+                        ) : null}
+                    </section>
+                )}
             </div>
+
+            {classSelected ? (
+                <section className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm">
+                    <button
+                        type="button"
+                        onClick={() => setHistoryOpen((open) => !open)}
+                        className="flex w-full items-center justify-between gap-3 bg-orange-50/80 px-4 py-3 text-left"
+                    >
+                        <span className="flex items-center gap-2 text-sm font-bold text-orange-900">
+                            {historyOpen ? (
+                                <ChevronDown className="h-4 w-4 shrink-0" />
+                            ) : (
+                                <ChevronRight className="h-4 w-4 shrink-0" />
+                            )}
+                            <History className="h-4 w-4" />
+                            Attendance history — {classFilter}
+                        </span>
+                        <span className="text-xs font-normal text-orange-700">
+                            {historyRows.length} record(s)
+                        </span>
+                    </button>
+
+                    {historyOpen ? (
+                        <div className="space-y-4 p-4">
+                            <label className="block space-y-1 sm:max-w-xs">
+                                <span className="text-sm font-medium text-gray-700">Month</span>
+                                <input
+                                    type="month"
+                                    value={historyMonth}
+                                    onChange={(e) => setHistoryMonth(e.target.value)}
+                                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-black outline-none focus:border-orange-500"
+                                />
+                            </label>
+
+                            {historyLoading ? (
+                                <p className="text-sm text-gray-500">Loading {formatMonthLabel(historyMonth)}…</p>
+                            ) : historyByDate.length === 0 ? (
+                                <p className="rounded-lg border border-dashed border-orange-200 bg-orange-50/40 p-4 text-sm text-gray-600">
+                                    No saved attendance for {classFilter} in {formatMonthLabel(historyMonth)}.
+                                </p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {visibleHistoryDates.map(([date, items]) => (
+                                        <div
+                                            key={date}
+                                            className="overflow-hidden rounded-xl border border-orange-100"
+                                        >
+                                            <div className="flex flex-wrap items-center justify-between gap-2 bg-orange-50/60 px-3 py-2">
+                                                <span className="text-sm font-semibold text-orange-900">{date}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openHistoryDate(date)}
+                                                    className="text-xs font-semibold text-orange-700 hover:underline"
+                                                >
+                                                    Open in editor
+                                                </button>
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-sm">
+                                                    <thead className="bg-white text-gray-600">
+                                                        <tr>
+                                                            <th className="p-2">Student</th>
+                                                            <th className="p-2">Status</th>
+                                                            <th className="p-2">Note</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {items.slice(0, HISTORY_PREVIEW_ROWS).map((row) => (
+                                                            <tr key={row.id} className="border-t border-orange-50">
+                                                                <td className="p-2 text-gray-900">
+                                                                    {row.studentName || "—"}
+                                                                </td>
+                                                                <td className="p-2 font-medium text-gray-800">
+                                                                    {row.status}
+                                                                </td>
+                                                                <td className="p-2 text-gray-600">{row.note || "—"}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                                {items.length > HISTORY_PREVIEW_ROWS ? (
+                                                    <p className="border-t border-orange-50 px-3 py-2 text-xs text-gray-500">
+                                                        + {items.length - HISTORY_PREVIEW_ROWS} more on this day
+                                                    </p>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {historyByDate.length > 5 && !historyExpanded ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setHistoryExpanded(true)}
+                                            className="w-full rounded-lg border border-dashed border-orange-200 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50"
+                                        >
+                                            Show all {historyByDate.length} days in {formatMonthLabel(historyMonth)}
+                                        </button>
+                                    ) : null}
+                                    {historyExpanded && historyByDate.length > 5 ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setHistoryExpanded(false)}
+                                            className="w-full rounded-lg border border-dashed border-orange-200 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50"
+                                        >
+                                            Show fewer days
+                                        </button>
+                                    ) : null}
+                                </div>
+                            )}
+                        </div>
+                    ) : null}
+                </section>
+            ) : null}
         </div>
     );
 }

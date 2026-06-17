@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, LayoutGrid, Search } from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { LayoutGrid } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { fetchAllApiList } from "@/lib/parent-school-api";
@@ -10,44 +10,13 @@ import Button from "@/components/ui/Button";
 import { jsonHeaders } from "@/lib/api-client";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import Modal from "@/components/ui/Modal";
-import { openParentDocumentFile } from "@/lib/parent-document-file-open";
-import { acceptForParentDocumentCategory, uploadHintForParentDocumentCategory } from "@/lib/parent-document-upload-accept";
-import {
-    PARENT_NEWSLETTER_AUDIO_EMBED_HINT,
-    PARENT_NEWSLETTER_AUDIO_EMBED_LABEL,
-    PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT,
-    PARENT_NEWSLETTER_AUDIO_FILE_HINT,
-    PARENT_NEWSLETTER_AUDIO_UPLOAD_LABEL,
-    PARENT_NEWSLETTER_CATEGORY,
-    PARENT_NEWSLETTER_DESCRIPTION,
-    PARENT_NEWSLETTER_LABEL,
-    PARENT_NEWSLETTER_UPLOAD_LABEL,
-    PARENT_NEWSLETTER_VIDEO_EMBED_HINT,
-    PARENT_NEWSLETTER_VIDEO_EMBED_LABEL,
-    validateNewsletterAudioEmbedUrl,
-    validateNewsletterAudioUpload,
-    validateNewsletterUpload,
-    validateNewsletterVideoEmbedUrl,
-} from "@/config/parent-newsletter";
-import { DEFAULT_HOLIDAY_ACADEMIC_YEAR } from "@/config/parent-document-categories";
-import {
-    emptyHolidayEntry,
-    filterHolidayEntries,
-    formatHolidayDate,
-    formatHolidayDateFilter,
-    holidayEntryYears,
-    monthSelectOptions,
-    parseHolidayEntries,
-    mergeHolidayEntries,
-    serializeHolidayEntries,
-    validateHolidayEntries,
-    type HolidayEntry,
-} from "@/config/holiday-entries";
-import HolidayEntriesEditor from "@/components/dashboard/HolidayEntriesEditor";
-import HolidayEntriesReadOnly from "@/components/dashboard/HolidayEntriesReadOnly";
-import { validateAdminParentDocumentUpload } from "@/lib/franchise-centre-upload";
 import { CENTRE_PROGRAM_LABELS } from "@/config/centre-program-cards-defaults";
 import dynamic from "next/dynamic";
+import {
+    FranchiseAnnouncementsPanel,
+    FranchiseHolidayPanel,
+    FranchiseNewsletterPanel,
+} from "@/components/dashboard/franchise/FranchiseParentCmsPanels";
 
 const HOMEWORK_CLASS_OPTIONS = [
     { value: "", label: "All classes" },
@@ -67,6 +36,10 @@ const ParentPortalCalendarPanel = dynamic(
     { ssr: false },
 );
 const FranchiseEventsPanel = dynamic(() => import("../events/page"), { ssr: false });
+const FranchiseFeesPanel = dynamic(
+    () => import("@/components/dashboard/franchise/FranchiseFeesPanel").then((m) => m.FranchiseFeesPanel),
+    { ssr: false },
+);
 type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 type ShowToastFn = (message: string, variant?: "success" | "error") => void;
 
@@ -137,7 +110,7 @@ function parseTabParam(value: string | null): Tab | null {
 export default function ParentPortalAdminPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
     const { showToast } = useToast();
     const [tab, setTab] = useState<Tab>("homework");
     const [students, setStudents] = useState<MiniStudent[]>([]);
@@ -161,13 +134,38 @@ export default function ParentPortalAdminPage() {
     };
 
     const loadStudents = useCallback(async () => {
+        if (!user || user.role !== "franchise") {
+            setStudents([]);
+            return;
+        }
         try {
             const rows = await fetchAllApiList(authFetch, "/students/franchise/students/mini/");
-            setStudents(rows as MiniStudent[]);
+            setStudents(
+                rows
+                    .map((row) => {
+                        const r = row as Record<string, unknown>;
+                        const id = Number(r.id ?? r.pk);
+                        if (!Number.isFinite(id)) return null;
+                        const fromParts =
+                            r.first_name != null || r.last_name != null
+                                ? `${String(r.first_name ?? "").trim()} ${String(r.last_name ?? "").trim()}`.trim()
+                                : "";
+                        return {
+                            id,
+                            full_name:
+                                String(r.full_name ?? "").trim() ||
+                                String(r.name ?? "").trim() ||
+                                fromParts ||
+                                "Student",
+                            class_name: String(r.class_name ?? r.grade ?? "").trim(),
+                        } satisfies MiniStudent;
+                    })
+                    .filter((s): s is MiniStudent => s !== null),
+            );
         } catch {
             setStudents([]);
         }
-    }, [authFetch]);
+    }, [authFetch, user]);
 
     useEffect(() => {
         void loadStudents();
@@ -181,8 +179,10 @@ export default function ParentPortalAdminPage() {
                     Parent App
                 </h1>
                 <p className="text-sm text-[#374151] mt-1">
-                    Everything parents see in the parent app is managed here (same order as the parent login menu). Upload Newsletter from this portal; Holiday lists are added by head office and can be updated for your centre.
-                    Parents change <strong className="text-[#111827]">Settings</strong> and use <strong className="text-[#111827]">Support</strong> on their own after parent login.
+                    Centre CMS — manage what goes to the <strong>real parent login app</strong> (web and mobile). Uploads
+                    here appear for parents after class/centre rules apply. This screen is not the parent login; lists
+                    below show everything sent to your centre (all classes). Head office can also publish to your centre
+                    from admin CMS.
                 </p>
             </div>
 
@@ -200,43 +200,18 @@ export default function ParentPortalAdminPage() {
             </div>
 
             {tab === "homework" && <HomeworkTab authFetch={authFetch} showToast={showToast} onRefresh={loadStudents} />}
-            {tab === "notifications" && <AnnouncementsTab authFetch={authFetch} showToast={showToast} students={students} />}
-            {tab === "timetable" && <NewsLetterTab authFetch={authFetch} showToast={showToast} />}
+            {tab === "notifications" && (
+                <FranchiseAnnouncementsPanel authFetch={authFetch} showToast={showToast} students={students} />
+            )}
+            {tab === "timetable" && <FranchiseNewsletterPanel authFetch={authFetch} showToast={showToast} />}
             {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} />}
             {tab === "calendar" && <CalendarAttendanceTab />}
             {tab === "showcase" && <FranchiseEventsPanel />}
-            {tab === "fees" && <FeesTab authFetch={authFetch} showToast={showToast} students={students} />}
-            {tab === "holidays" && <HolidayListTab authFetch={authFetch} showToast={showToast} />}
+            {tab === "fees" && <FranchiseFeesPanel authFetch={authFetch} showToast={showToast} />}
+            {tab === "holidays" && <FranchiseHolidayPanel authFetch={authFetch} showToast={showToast} />}
         </div>
     );
 }
-
-type NewsLetterRow = {
-    id: number;
-    title: string;
-    display_title?: string;
-    file: string;
-    video_embed_url?: string;
-    audio_file?: string;
-    audio_embed_url?: string;
-    period_start?: string | null;
-    period_end?: string | null;
-    created_at?: string;
-};
-
-const newsletterRowDate = (row: NewsLetterRow) =>
-    homeworkDate(row.period_start) || homeworkDate(row.period_end) || homeworkDate(row.created_at) || "—";
-
-const newsletterCoversDate = (row: NewsLetterRow, date: string) => {
-    const start = homeworkDate(row.period_start);
-    const end = homeworkDate(row.period_end);
-    const created = homeworkDate(row.created_at);
-    if (start && end && date >= start && date <= end) return true;
-    return start === date || end === date || created === date;
-};
-
-const apiErrorMessage = (err: unknown, fallback: string) =>
-    err instanceof Error && err.message.trim() ? err.message : fallback;
 
 function CalendarAttendanceTab() {
     const [attendanceDate, setAttendanceDate] = useState(todayLocal);
@@ -253,1183 +228,6 @@ function CalendarAttendanceTab() {
     );
 }
 
-function NewsLetterTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
-    const { authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
-    const [rows, setRows] = useState<NewsLetterRow[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [uploadingKind, setUploadingKind] = useState<"pdf" | "video" | "audio" | null>(null);
-    const [title, setTitle] = useState("");
-    const [assignedDate, setAssignedDate] = useState(todayLocal);
-    const [file, setFile] = useState<File | null>(null);
-    const [videoEmbedUrl, setVideoEmbedUrl] = useState("");
-    const [audioFile, setAudioFile] = useState<File | null>(null);
-    const [audioEmbedUrl, setAudioEmbedUrl] = useState("");
-    const [trackDate, setTrackDate] = useState(todayLocal);
-    const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
-    const [editModal, setEditModal] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
-    const [editSaving, setEditSaving] = useState(false);
-    const [editForm, setEditForm] = useState({
-        title: "",
-        assigned_date: "",
-        file: null as File | null,
-        existingFileName: "",
-        video_embed_url: "",
-        audio_file: null as File | null,
-        existingAudioName: "",
-        audio_embed_url: "",
-        existingAudioEmbed: "",
-    });
-
-    const load = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams({ manage: "newsletter", date: trackDate });
-            const data = await authFetch<unknown>(`/documents/franchise/parent-documents/?${params.toString()}`);
-            setRows(normalizeList<NewsLetterRow>(data));
-        } catch {
-            setRows([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [authFetch, trackDate]);
-
-    useEffect(() => {
-        void load();
-    }, [load]);
-
-    const fetchNewslettersForDate = useCallback(
-        async (date: string) => {
-            const params = new URLSearchParams({ manage: "newsletter", date });
-            const data = await authFetch<unknown>(`/documents/franchise/parent-documents/?${params.toString()}`);
-            return normalizeList<NewsLetterRow>(data);
-        },
-        [authFetch],
-    );
-
-    const resolveExistingNewsletter = useCallback(
-        async (date: string): Promise<NewsLetterRow | "none" | "many"> => {
-            const inRows = rows.filter((r) => newsletterCoversDate(r, date));
-            if (inRows.length === 1) return inRows[0];
-            if (inRows.length > 1) return "many";
-            const fetched = await fetchNewslettersForDate(date);
-            if (fetched.length === 1) return fetched[0];
-            if (fetched.length > 1) return "many";
-            return "none";
-        },
-        [fetchNewslettersForDate, rows],
-    );
-
-    const upsertNewsletter = async (opts: {
-        date: string;
-        title: string;
-        pdfFile?: File;
-        videoEmbedUrl?: string;
-        audioFile?: File;
-        audioEmbedUrl?: string;
-    }) => {
-        const video = (opts.videoEmbedUrl || "").trim();
-        const audioLink = (opts.audioEmbedUrl || "").trim();
-        const videoErr = validateNewsletterVideoEmbedUrl(video);
-        if (videoErr) throw new Error(videoErr);
-        const audioLinkErr = validateNewsletterAudioEmbedUrl(audioLink);
-        if (audioLinkErr) throw new Error(audioLinkErr);
-        if (opts.audioFile) {
-            const audioErr = validateNewsletterAudioUpload(opts.audioFile);
-            if (audioErr) throw new Error(audioErr);
-        }
-        if (opts.pdfFile) {
-            const pdfErr = validateNewsletterUpload(opts.pdfFile);
-            if (pdfErr) throw new Error(pdfErr);
-        }
-
-        let lookupDate = opts.date;
-        let resolved = await resolveExistingNewsletter(lookupDate);
-        if (resolved === "none" && trackDate !== lookupDate) {
-            const alt = await resolveExistingNewsletter(trackDate);
-            if (typeof alt === "object") {
-                resolved = alt;
-                lookupDate = trackDate;
-            }
-        }
-        if (resolved === "many") {
-            throw new Error("Multiple newsletters on this date — click Edit on the one you want.");
-        }
-
-        const fd = new FormData();
-        const rowTitle =
-            opts.title.trim() ||
-            (typeof resolved === "object" ? resolved.title : "") ||
-            (opts.pdfFile ? opts.pdfFile.name.replace(/\.[^.]+$/i, "") : "Newsletter");
-        fd.append("title", rowTitle);
-        fd.append("period_start", lookupDate);
-        fd.append("period_end", lookupDate);
-        if (opts.pdfFile) fd.append("file", opts.pdfFile);
-        if (video) fd.append("video_embed_url", video);
-        if (opts.audioFile) fd.append("audio_file", opts.audioFile);
-        if (audioLink) fd.append("audio_embed_url", audioLink);
-
-        if (typeof resolved === "object") {
-            await authFetch(`/documents/franchise/parent-documents/${resolved.id}/`, { method: "PATCH", body: fd });
-        } else {
-            await authFetch("/documents/franchise/parent-documents/", { method: "POST", body: fd });
-        }
-        return lookupDate;
-    };
-
-    const submitPdfOnly = async () => {
-        if (!assignedDate) {
-            showToast("Select a date.", "error");
-            return;
-        }
-        if (!file) {
-            showToast("Choose a PDF or Word document.", "error");
-            return;
-        }
-        setUploadingKind("pdf");
-        try {
-            const lookupDate = await upsertNewsletter({
-                date: assignedDate,
-                title: title.trim(),
-                pdfFile: file,
-            });
-            setFile(null);
-            setTrackDate(lookupDate);
-            setAssignedDate(lookupDate);
-            showToast("Newsletter PDF saved. Add video or audio separately when ready.", "success");
-            await load();
-        } catch (err: unknown) {
-            showToast(apiErrorMessage(err, "PDF upload failed."), "error");
-        } finally {
-            setUploadingKind(null);
-        }
-    };
-
-    const submitVideoOnly = async () => {
-        if (!assignedDate) {
-            showToast("Select a date.", "error");
-            return;
-        }
-        if (!videoEmbedUrl.trim()) {
-            showToast("Paste a video embed link.", "error");
-            return;
-        }
-        setUploadingKind("video");
-        try {
-            const lookupDate = await upsertNewsletter({
-                date: assignedDate,
-                title: title.trim(),
-                videoEmbedUrl: videoEmbedUrl,
-            });
-            setVideoEmbedUrl("");
-            setTrackDate(lookupDate);
-            setAssignedDate(lookupDate);
-            showToast("Video link saved for this newsletter date.", "success");
-            await load();
-        } catch (err: unknown) {
-            showToast(apiErrorMessage(err, "Could not save video link."), "error");
-        } finally {
-            setUploadingKind(null);
-        }
-    };
-
-    const submitAudioOnly = async () => {
-        if (!assignedDate) {
-            showToast("Select a date.", "error");
-            return;
-        }
-        const hasFile = Boolean(audioFile);
-        const hasLink = Boolean(audioEmbedUrl.trim());
-        if (!hasFile && !hasLink) {
-            showToast("Choose an audio file or paste an audio link.", "error");
-            return;
-        }
-        if (hasFile && hasLink) {
-            showToast("Use either an audio file or an audio link — not both at once.", "error");
-            return;
-        }
-        setUploadingKind("audio");
-        try {
-            const lookupDate = await upsertNewsletter({
-                date: assignedDate,
-                title: title.trim(),
-                audioFile: hasFile ? audioFile! : undefined,
-                audioEmbedUrl: hasLink ? audioEmbedUrl : undefined,
-            });
-            setAudioFile(null);
-            setAudioEmbedUrl("");
-            setTrackDate(lookupDate);
-            setAssignedDate(lookupDate);
-            showToast(hasFile ? "Audio file saved for this newsletter date." : "Audio link saved for this newsletter date.", "success");
-            await load();
-        } catch (err: unknown) {
-            showToast(apiErrorMessage(err, "Could not save audio."), "error");
-        } finally {
-            setUploadingKind(null);
-        }
-    };
-
-    const openEdit = async (row: NewsLetterRow) => {
-        try {
-            const detail = await authFetch<NewsLetterRow>(`/documents/franchise/parent-documents/${row.id}/`);
-            setEditForm({
-                title: detail.title || "",
-                assigned_date:
-                    homeworkDate(detail.period_start) ||
-                    homeworkDate(detail.period_end) ||
-                    homeworkDate(detail.created_at) ||
-                    "",
-                file: null,
-                existingFileName: detail.display_title || detail.title || "Current file",
-                video_embed_url: detail.video_embed_url || "",
-                audio_file: null,
-                existingAudioName: detail.audio_file ? detail.audio_file.split("/").pop() || "Current audio" : "",
-                audio_embed_url: detail.audio_embed_url || "",
-                existingAudioEmbed: detail.audio_embed_url || "",
-            });
-            setEditModal({ isOpen: true, id: row.id });
-        } catch {
-            showToast("Could not load newsletter.", "error");
-        }
-    };
-
-    const closeEdit = () => {
-        setEditModal({ isOpen: false, id: null });
-        setEditForm({
-            title: "",
-            assigned_date: "",
-            file: null,
-            existingFileName: "",
-            video_embed_url: "",
-            audio_file: null,
-            existingAudioName: "",
-            audio_embed_url: "",
-            existingAudioEmbed: "",
-        });
-    };
-
-    const saveEdit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!editModal.id) return;
-        if (!editForm.assigned_date) {
-            showToast("Select a date.", "error");
-            return;
-        }
-        if (editForm.file) {
-            const sizeErr = validateNewsletterUpload(editForm.file);
-            if (sizeErr) {
-                showToast(sizeErr, "error");
-                return;
-            }
-        }
-        if (editForm.audio_file) {
-            const audioErr = validateNewsletterAudioUpload(editForm.audio_file);
-            if (audioErr) {
-                showToast(audioErr, "error");
-                return;
-            }
-        }
-        const videoErr = validateNewsletterVideoEmbedUrl(editForm.video_embed_url);
-        if (videoErr) {
-            showToast(videoErr, "error");
-            return;
-        }
-        const audioLinkErr = validateNewsletterAudioEmbedUrl(editForm.audio_embed_url);
-        if (audioLinkErr) {
-            showToast(audioLinkErr, "error");
-            return;
-        }
-        if (editForm.audio_file && editForm.audio_embed_url.trim()) {
-            showToast("Use either an audio file or an audio link — not both at once.", "error");
-            return;
-        }
-        setEditSaving(true);
-        try {
-            const fd = new FormData();
-            fd.append("title", editForm.title.trim() || "Newsletter");
-            fd.append("period_start", editForm.assigned_date);
-            fd.append("period_end", editForm.assigned_date);
-            if (editForm.file) fd.append("file", editForm.file);
-            if (editForm.video_embed_url.trim()) fd.append("video_embed_url", editForm.video_embed_url.trim());
-            if (editForm.audio_file) fd.append("audio_file", editForm.audio_file);
-            if (editForm.audio_embed_url.trim()) fd.append("audio_embed_url", editForm.audio_embed_url.trim());
-            await authFetch(`/documents/franchise/parent-documents/${editModal.id}/`, { method: "PATCH", body: fd });
-            closeEdit();
-            setTrackDate(editForm.assigned_date);
-            setAssignedDate(editForm.assigned_date);
-            showToast("Newsletter updated.", "success");
-            await load();
-        } catch (err: unknown) {
-            showToast(apiErrorMessage(err, "Update failed."), "error");
-        } finally {
-            setEditSaving(false);
-        }
-    };
-
-    const remove = async (id: number) => {
-        try {
-            await authFetch(`/documents/franchise/parent-documents/${id}/`, { method: "DELETE" });
-            await load();
-            showToast("Newsletter removed.", "success");
-        } catch {
-            showToast("Delete failed.", "error");
-        }
-    };
-
-    return (
-        <div className="grid gap-4 lg:grid-cols-2 lg:items-start max-w-5xl">
-            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
-                <div>
-                    <h3 className="text-sm font-semibold text-[#111827]">Upload {PARENT_NEWSLETTER_LABEL}</h3>
-                    <p className="text-xs text-[#6B7280] mt-1">{PARENT_NEWSLETTER_DESCRIPTION}</p>
-                    <p className="text-[11px] text-[#6B7280] mt-2 leading-relaxed">
-                        PDF, video, and audio are saved <strong>separately</strong> for the same date. Use each section&apos;s own button —
-                        order does not matter. Or use <strong>Edit</strong> on an existing row.
-                    </p>
-                </div>
-                <label className="block text-xs font-semibold text-[#4B5563]">
-                    Title
-                    <input
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="e.g. Block 3 — AY 2026-27"
-                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                    />
-                </label>
-                <label className="block text-xs font-semibold text-[#4B5563]">
-                    Date
-                    <input
-                        type="date"
-                        required
-                        value={assignedDate}
-                        onChange={(e) => setAssignedDate(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                    />
-                </label>
-
-                <section className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-3 space-y-2">
-                    <h4 className="text-xs font-semibold text-[#111827]">1. PDF document</h4>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        {PARENT_NEWSLETTER_UPLOAD_LABEL}
-                        <input
-                            type="file"
-                            accept={acceptForParentDocumentCategory(PARENT_NEWSLETTER_CATEGORY)}
-                            onChange={(e) => setFile(e.target.files?.[0] || null)}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                        />
-                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
-                            {uploadHintForParentDocumentCategory(PARENT_NEWSLETTER_CATEGORY)}
-                        </span>
-                    </label>
-                    <Button
-                        type="button"
-                        disabled={uploadingKind !== null}
-                        onClick={() => void submitPdfOnly()}
-                        className="bg-[#FF922B] text-white"
-                    >
-                        {uploadingKind === "pdf" ? "Uploading PDF…" : "Upload PDF only"}
-                    </Button>
-                </section>
-
-                <section className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-3 space-y-2">
-                    <h4 className="text-xs font-semibold text-[#111827]">2. Video</h4>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        {PARENT_NEWSLETTER_VIDEO_EMBED_LABEL}
-                        <input
-                            value={videoEmbedUrl}
-                            onChange={(e) => setVideoEmbedUrl(e.target.value)}
-                            placeholder="https://www.youtube.com/watch?v=… or Bunny iframe embed"
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                        />
-                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_VIDEO_EMBED_HINT}</span>
-                    </label>
-                    <Button
-                        type="button"
-                        disabled={uploadingKind !== null}
-                        onClick={() => void submitVideoOnly()}
-                        className="bg-[#FF922B] text-white"
-                    >
-                        {uploadingKind === "video" ? "Saving video…" : "Save video link only"}
-                    </Button>
-                </section>
-
-                <section className="rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] p-3 space-y-2">
-                    <h4 className="text-xs font-semibold text-[#111827]">3. Audio</h4>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        {PARENT_NEWSLETTER_AUDIO_UPLOAD_LABEL}
-                        <input
-                            type="file"
-                            accept={PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT}
-                            onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                        />
-                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_AUDIO_FILE_HINT}</span>
-                    </label>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        {PARENT_NEWSLETTER_AUDIO_EMBED_LABEL}
-                        <input
-                            value={audioEmbedUrl}
-                            onChange={(e) => setAudioEmbedUrl(e.target.value)}
-                            placeholder="https://…/recording.mp3"
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                        />
-                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_AUDIO_EMBED_HINT}</span>
-                    </label>
-                    <Button
-                        type="button"
-                        disabled={uploadingKind !== null}
-                        onClick={() => void submitAudioOnly()}
-                        className="bg-[#FF922B] text-white"
-                    >
-                        {uploadingKind === "audio" ? "Saving audio…" : "Save audio only"}
-                    </Button>
-                </section>
-            </div>
-
-            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4 lg:sticky lg:top-4 flex flex-col">
-                <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-[#111827]">Your centre newsletters</h3>
-                    <p className="text-xs text-[#6B7280]">See which newsletters cover the selected date.</p>
-                </div>
-                <label className="block text-xs font-semibold text-[#4B5563]">
-                    Track date
-                    <input
-                        type="date"
-                        value={trackDate}
-                        onChange={(e) => {
-                            const next = e.target.value;
-                            setTrackDate(next);
-                            setAssignedDate(next);
-                        }}
-                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                    />
-                </label>
-                {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
-                {!loading && rows.length === 0 ? (
-                    <p className="text-sm text-center text-[#6B7280] rounded-xl border border-dashed border-[#E5E7EB] px-4 py-8">
-                        No newsletter for {trackDate}. Change the track date or upload one.
-                    </p>
-                ) : null}
-                {!loading && rows.length > 0 ? (
-                    <ul className="divide-y border rounded-xl max-h-[420px] overflow-y-auto">
-                        {rows.map((row) => (
-                            <li key={row.id} className="flex flex-nowrap items-center justify-between gap-3 px-4 py-3 text-sm">
-                                <div className="min-w-0 flex-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, row)}
-                                        className="block w-full truncate text-left font-medium text-[#1F2937] hover:text-[#FF922B] hover:underline"
-                                    >
-                                        {row.display_title || row.title}
-                                    </button>
-                                    <p className="text-[11px] text-[#6B7280] mt-0.5">{newsletterRowDate(row)}</p>
-                                    <p className="text-[10px] text-[#9CA3AF] mt-0.5">
-                                        {[
-                                            row.file ? "PDF" : "No PDF yet",
-                                            row.video_embed_url ? "Video" : "No video yet",
-                                            row.audio_file || row.audio_embed_url ? "Audio" : "No audio yet",
-                                        ].join(" · ")}
-                                    </p>
-                                </div>
-                                <div className="flex shrink-0 items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => openEdit(row)}
-                                        className="whitespace-nowrap text-xs font-semibold text-[#2563EB] hover:underline"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setConfirmDelete({ isOpen: true, id: row.id })}
-                                        className="whitespace-nowrap text-xs font-semibold text-red-600 hover:underline"
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                ) : null}
-            </div>
-
-            <Modal isOpen={editModal.isOpen} onClose={closeEdit} title="Edit newsletter">
-                <form onSubmit={saveEdit} className="space-y-3">
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        Title
-                        <input
-                            required
-                            value={editForm.title}
-                            onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                        />
-                    </label>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        Date
-                        <input
-                            type="date"
-                            required
-                            value={editForm.assigned_date}
-                            onChange={(e) => setEditForm((p) => ({ ...p, assigned_date: e.target.value }))}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                        />
-                    </label>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        Replace file (optional)
-                        <input
-                            type="file"
-                            accept={acceptForParentDocumentCategory(PARENT_NEWSLETTER_CATEGORY)}
-                            onChange={(e) => setEditForm((p) => ({ ...p, file: e.target.files?.[0] || null }))}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                        />
-                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
-                            Current: {editForm.existingFileName}
-                        </span>
-                    </label>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        {PARENT_NEWSLETTER_VIDEO_EMBED_LABEL}
-                        <input
-                            value={editForm.video_embed_url}
-                            onChange={(e) => setEditForm((p) => ({ ...p, video_embed_url: e.target.value }))}
-                            placeholder="YouTube or Bunny iframe embed"
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                        />
-                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">{PARENT_NEWSLETTER_VIDEO_EMBED_HINT}</span>
-                    </label>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        {PARENT_NEWSLETTER_AUDIO_UPLOAD_LABEL}
-                        <input
-                            type="file"
-                            accept={PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT}
-                            onChange={(e) => setEditForm((p) => ({ ...p, audio_file: e.target.files?.[0] || null }))}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                        />
-                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
-                            {editForm.existingAudioName ? `Current file: ${editForm.existingAudioName}` : PARENT_NEWSLETTER_AUDIO_FILE_HINT}
-                        </span>
-                    </label>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        {PARENT_NEWSLETTER_AUDIO_EMBED_LABEL}
-                        <input
-                            value={editForm.audio_embed_url}
-                            onChange={(e) => setEditForm((p) => ({ ...p, audio_embed_url: e.target.value }))}
-                            placeholder="https://…/recording.mp3"
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                        />
-                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
-                            {editForm.existingAudioEmbed && !editForm.audio_embed_url
-                                ? `Current link: ${editForm.existingAudioEmbed}`
-                                : PARENT_NEWSLETTER_AUDIO_EMBED_HINT}
-                        </span>
-                    </label>
-                    <div className="flex gap-2 pt-1">
-                        <Button type="submit" disabled={editSaving} className="bg-[#FF922B] text-white">
-                            {editSaving ? "Saving…" : "Save changes"}
-                        </Button>
-                        <Button type="button" variant="secondary" onClick={closeEdit}>
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
-            </Modal>
-
-            <ConfirmModal
-                isOpen={confirmDelete.isOpen}
-                onClose={() => setConfirmDelete({ isOpen: false, id: null })}
-                onConfirm={() => confirmDelete.id && remove(confirmDelete.id)}
-                title="Delete Newsletter"
-                description="Remove this newsletter from the parent app? Parents will no longer see it."
-                confirmText="Yes, Delete"
-                variant="danger"
-            />
-        </div>
-    );
-}
-
-type HolidayRow = {
-    id: number;
-    title: string;
-    display_title?: string;
-    file: string;
-    file_view_path?: string | null;
-    state?: string | null;
-    state_display?: string | null;
-    academic_year?: string;
-    franchise?: number | null;
-    holiday_entries?: HolidayEntry[] | unknown;
-    created_at?: string;
-    updated_at?: string;
-};
-
-function holidayRowHasFile(row: HolidayRow | null | undefined): boolean {
-    if (!row) return false;
-    return Boolean((row.file || "").trim() || (row.file_view_path || "").trim());
-}
-
-function holidayRowOpenDoc(row: HolidayRow) {
-    return {
-        id: row.id,
-        title: row.title,
-        display_title: row.display_title,
-        file: row.file || row.file_view_path || "",
-    };
-}
-
-type HolidayStateGroup = {
-    state: string;
-    stateDisplay: string;
-    academicYear: string;
-    global: HolidayRow | null;
-    centre: HolidayRow | null;
-};
-
-function HolidayListTab({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
-    const { authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
-    const [rows, setRows] = useState<HolidayRow[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [editModal, setEditModal] = useState<{
-        isOpen: boolean;
-        centreId: number | null;
-        state: string;
-        stateDisplay: string;
-        academicYear: string;
-    }>({ isOpen: false, centreId: null, state: "", stateDisplay: "", academicYear: DEFAULT_HOLIDAY_ACADEMIC_YEAR });
-    const [editHolidayEntries, setEditHolidayEntries] = useState<HolidayEntry[]>([emptyHolidayEntry()]);
-    const [editGlobalEntries, setEditGlobalEntries] = useState<HolidayEntry[]>([]);
-    const [editSaving, setEditSaving] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
-    const [selectedState, setSelectedState] = useState<string | null>(null);
-    const [trackMonth, setTrackMonth] = useState("");
-    const [trackYear, setTrackYear] = useState("");
-    const [trackDate, setTrackDate] = useState("");
-
-    const load = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams({ manage: "holidays" });
-            const data = await authFetch<unknown>(`/documents/franchise/parent-documents/?${params.toString()}`);
-            setRows(normalizeList<HolidayRow>(data));
-        } catch {
-            setRows([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [authFetch]);
-
-    useEffect(() => {
-        void load();
-    }, [load]);
-
-    const stateGroups = useMemo((): HolidayStateGroup[] => {
-        const globalRows = rows.filter((r) => !r.franchise);
-        const centreRows = rows.filter((r) => r.franchise);
-        const centreByState = new Map<string, HolidayRow>();
-        for (const row of centreRows) {
-            if (row.state) centreByState.set(row.state, row);
-        }
-        const states = new Set<string>();
-        for (const row of globalRows) {
-            if (row.state) states.add(row.state);
-        }
-        for (const row of centreRows) {
-            if (row.state) states.add(row.state);
-        }
-        return Array.from(states)
-            .sort((a, b) => {
-                const labelA = globalRows.find((g) => g.state === a)?.state_display || centreByState.get(a)?.state_display || a;
-                const labelB = globalRows.find((g) => g.state === b)?.state_display || centreByState.get(b)?.state_display || b;
-                return labelA.localeCompare(labelB);
-            })
-            .map((state) => {
-                const global = globalRows.find((g) => g.state === state) ?? null;
-                const centre = centreByState.get(state) ?? null;
-                return {
-                    state,
-                    stateDisplay: global?.state_display || centre?.state_display || state,
-                    academicYear: centre?.academic_year || global?.academic_year || DEFAULT_HOLIDAY_ACADEMIC_YEAR,
-                    global,
-                    centre,
-                };
-            });
-    }, [rows]);
-
-    const selectedGroup = useMemo(() => {
-        if (!stateGroups.length) return null;
-        return stateGroups.find((g) => g.state === selectedState) ?? stateGroups[0];
-    }, [stateGroups, selectedState]);
-
-    const holidayFilterYears = useMemo(() => {
-        if (!selectedGroup) return [];
-        const globalEntries = parseHolidayEntries(selectedGroup.global?.holiday_entries);
-        const centreEntries = parseHolidayEntries(selectedGroup.centre?.holiday_entries);
-        return holidayEntryYears(mergeHolidayEntries(globalEntries, centreEntries));
-    }, [selectedGroup]);
-
-    const holidayFilterLabel = formatHolidayDateFilter(trackMonth, trackYear, trackDate);
-
-    useEffect(() => {
-        if (!stateGroups.length) {
-            setSelectedState(null);
-            return;
-        }
-        if (!selectedState || !stateGroups.some((g) => g.state === selectedState)) {
-            setSelectedState(stateGroups[0].state);
-        }
-    }, [stateGroups, selectedState]);
-
-    const openCentreEdit = async (group: HolidayStateGroup) => {
-        setEditModal({
-            isOpen: true,
-            centreId: group.centre?.id ?? null,
-            state: group.state,
-            stateDisplay: group.stateDisplay,
-            academicYear: group.academicYear,
-        });
-        setEditGlobalEntries(parseHolidayEntries(group.global?.holiday_entries));
-        if (group.centre?.id) {
-            try {
-                const detail = await authFetch<HolidayRow>(`/documents/franchise/parent-documents/${group.centre.id}/`);
-                const parsed = parseHolidayEntries(detail.holiday_entries);
-                setEditHolidayEntries(parsed.length > 0 ? parsed : [emptyHolidayEntry()]);
-            } catch {
-                const parsed = parseHolidayEntries(group.centre.holiday_entries);
-                setEditHolidayEntries(parsed.length > 0 ? parsed : [emptyHolidayEntry()]);
-            }
-        } else {
-            setEditHolidayEntries([emptyHolidayEntry()]);
-        }
-    };
-
-    const closeCentreEdit = () => {
-        setEditModal({ isOpen: false, centreId: null, state: "", stateDisplay: "", academicYear: DEFAULT_HOLIDAY_ACADEMIC_YEAR });
-        setEditHolidayEntries([emptyHolidayEntry()]);
-        setEditGlobalEntries([]);
-    };
-
-    const renderHolidayDateFilters = (years: string[]) => (
-        <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-3 space-y-2">
-            <p className="text-[11px] font-semibold text-[#374151]">Filter by date</p>
-            <div className="flex flex-wrap items-end gap-3">
-                <label className="block text-[11px] font-semibold text-[#4B5563]">
-                    Date
-                    <input
-                        type="date"
-                        value={trackDate}
-                        onChange={(e) => {
-                            const next = e.target.value.slice(0, 10);
-                            setTrackDate(next);
-                            if (next.length >= 10) {
-                                setTrackYear(next.slice(0, 4));
-                                setTrackMonth(next.slice(5, 7));
-                            }
-                        }}
-                        className="mt-1 block w-full min-w-[9.5rem] rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs"
-                    />
-                </label>
-                <label className="block text-[11px] font-semibold text-[#4B5563]">
-                    Month
-                    <select
-                        value={trackMonth}
-                        onChange={(e) => {
-                            setTrackMonth(e.target.value);
-                            setTrackDate("");
-                        }}
-                        className="mt-1 block w-full min-w-[7.5rem] rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs"
-                    >
-                        {monthSelectOptions().map((opt) => (
-                            <option key={opt.value || "all"} value={opt.value}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="block text-[11px] font-semibold text-[#4B5563]">
-                    Year
-                    <select
-                        value={trackYear}
-                        onChange={(e) => {
-                            setTrackYear(e.target.value);
-                            setTrackDate("");
-                        }}
-                        className="mt-1 block w-full min-w-[5.5rem] rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs"
-                    >
-                        <option value="">All years</option>
-                        {years.map((y) => (
-                            <option key={y} value={y}>
-                                {y}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                {trackDate || trackMonth || trackYear ? (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setTrackDate("");
-                            setTrackMonth("");
-                            setTrackYear("");
-                        }}
-                        className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs font-semibold text-[#6B7280] hover:bg-[#F3F4F6]"
-                    >
-                        Clear
-                    </button>
-                ) : null}
-            </div>
-            <p className="text-[10px] text-[#6B7280]">Showing: {holidayFilterLabel}</p>
-        </div>
-    );
-
-    const overrideHeadOfficeHoliday = (row: HolidayEntry) => {
-        setEditHolidayEntries((prev) => {
-            const idx = prev.findIndex((r) => r.date === row.date);
-            const next = { city: row.city, name: row.name, date: row.date };
-            if (idx >= 0) {
-                return prev.map((r, i) => (i === idx ? { ...r, ...next } : r));
-            }
-            const cleaned = prev.filter((r) => r.city || r.name || r.date);
-            return [...cleaned, next];
-        });
-    };
-
-    const saveCentreHoliday = async (e: FormEvent) => {
-        e.preventDefault();
-        const holidayErr = validateHolidayEntries(editHolidayEntries);
-        if (holidayErr) {
-            showToast(holidayErr, "error");
-            return;
-        }
-        const serialized = serializeHolidayEntries(editHolidayEntries);
-        setEditSaving(true);
-        try {
-            if (serialized.length === 0 && editModal.centreId) {
-                await authFetch(`/documents/franchise/parent-documents/${editModal.centreId}/`, { method: "DELETE" });
-                closeCentreEdit();
-                showToast("Centre changes removed. Parents will see the head office list.", "success");
-                await load();
-                return;
-            }
-            if (serialized.length === 0) {
-                showToast("Add at least one holiday for your centre, or change a date from head office.", "error");
-                return;
-            }
-            const body = {
-                category: "HOLIDAY_LISTS",
-                state: editModal.state,
-                academic_year: editModal.academicYear,
-                title: `${editModal.stateDisplay} Holiday List`,
-                holiday_entries: serialized,
-            };
-            if (editModal.centreId) {
-                await authFetch(`/documents/franchise/parent-documents/${editModal.centreId}/`, {
-                    method: "PATCH",
-                    headers: jsonHeaders(),
-                    body: JSON.stringify(body),
-                });
-            } else {
-                await authFetch("/documents/franchise/parent-documents/", {
-                    method: "POST",
-                    headers: jsonHeaders(),
-                    body: JSON.stringify(body),
-                });
-            }
-            closeCentreEdit();
-            showToast("Holiday list saved for your centre.", "success");
-            await load();
-        } catch {
-            showToast("Save failed. Check holiday rows.", "error");
-        } finally {
-            setEditSaving(false);
-        }
-    };
-
-    const removeCentreHoliday = async (id: number) => {
-        try {
-            await authFetch(`/documents/franchise/parent-documents/${id}/`, { method: "DELETE" });
-            await load();
-            showToast("Centre holiday list removed. Parents will see the head office version.", "success");
-        } catch {
-            showToast("Delete failed.", "error");
-        }
-    };
-
-    const renderHolidayListCard = (group: HolidayStateGroup) => {
-        const globalEntries = parseHolidayEntries(group.global?.holiday_entries);
-        const centreEntries = parseHolidayEntries(group.centre?.holiday_entries);
-        const merged = mergeHolidayEntries(globalEntries, centreEntries);
-        const filteredMerged = filterHolidayEntries(merged, {
-            month: trackMonth,
-            year: trackYear,
-            date: trackDate,
-        });
-        const adminHasPdf = holidayRowHasFile(group.global);
-        const parentsPdfSource = adminHasPdf && group.global ? group.global : null;
-        const centreDateKeys = new Set(centreEntries.map((r) => r.date).filter(Boolean));
-
-        return (
-            <div className="rounded-xl border border-[#BFDBFE] bg-[#F8FAFC] p-4 space-y-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <p className="font-semibold text-[#111827]">{group.stateDisplay}</p>
-                        <p className="text-[11px] text-[#6B7280]">{group.academicYear}</p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => openCentreEdit(group)}
-                            className="text-xs font-semibold text-[#2563EB] hover:underline"
-                        >
-                            Edit
-                        </button>
-                        {group.centre ? (
-                            <button
-                                type="button"
-                                onClick={() => setConfirmDelete({ isOpen: true, id: group.centre!.id })}
-                                className="text-xs font-semibold text-red-600 hover:underline"
-                            >
-                                Remove
-                            </button>
-                        ) : null}
-                    </div>
-                </div>
-
-                {parentsPdfSource ? (
-                    <button
-                        type="button"
-                        onClick={() =>
-                            openParentDocumentFile(
-                                getAccessTokenForDocumentView,
-                                authFetchBlobResponse,
-                                holidayRowOpenDoc(parentsPdfSource),
-                            )
-                        }
-                        className="inline-flex items-center gap-2 rounded-full border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] hover:bg-[#EFF6FF]"
-                    >
-                        View holiday PDF (head office)
-                    </button>
-                ) : null}
-
-                {merged.length > 0 ? (
-                    filteredMerged.length > 0 ? (
-                        <div className="overflow-x-auto rounded-lg border border-[#E2E8F0] bg-white px-2 py-2">
-                            <table className="min-w-full text-xs">
-                                <thead>
-                                    <tr className="text-left text-slate-500">
-                                        <th className="px-2 py-1 font-semibold">Date</th>
-                                        <th className="px-2 py-1 font-semibold">Holiday</th>
-                                        <th className="px-2 py-1 font-semibold">City</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredMerged.map((row, index) => (
-                                        <tr
-                                            key={`${row.date}-${index}`}
-                                            className={centreDateKeys.has(row.date) ? "text-[#9A3412]" : "text-slate-800"}
-                                        >
-                                            <td className="px-2 py-1 whitespace-nowrap">{formatHolidayDate(row.date)}</td>
-                                            <td className="px-2 py-1 font-medium">{row.name}</td>
-                                            <td className="px-2 py-1">{row.city || "—"}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <p className="text-sm text-[#6B7280] text-center rounded-lg border border-dashed border-[#E5E7EB] bg-white px-4 py-6">
-                            No holidays in {holidayFilterLabel}. Change date, month, or year above.
-                        </p>
-                    )
-                ) : (
-                    <p className="text-sm text-[#6B7280] text-center rounded-lg border border-dashed border-[#E5E7EB] bg-white px-4 py-6">
-                        No holidays yet. Click Edit to add dates or override head office holidays.
-                    </p>
-                )}
-            </div>
-        );
-    };
-
-    const renderHolidayTracking = (group: HolidayStateGroup) => {
-        const globalEntries = parseHolidayEntries(group.global?.holiday_entries);
-        const centreEntries = parseHolidayEntries(group.centre?.holiday_entries);
-        const allAdminRows = globalEntries;
-        const filteredAdmin = filterHolidayEntries(allAdminRows, {
-            month: trackMonth,
-            year: trackYear,
-            date: trackDate,
-        });
-        const adminHasPdf = holidayRowHasFile(group.global);
-        const adminUpdated = formatUploadDate(group.global?.updated_at || group.global?.created_at);
-
-        return (
-            <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-3 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <span
-                        className={`inline-flex rounded-full px-2 py-0.5 font-semibold ${
-                            adminHasPdf ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#FEE2E2] text-[#991B1B]"
-                        }`}
-                    >
-                        PDF {adminHasPdf ? "uploaded" : "missing"}
-                    </span>
-                    <span className="text-[#64748B]">Updated {adminUpdated}</span>
-                </div>
-
-                {group.global && adminHasPdf ? (
-                    <button
-                        type="button"
-                        onClick={() =>
-                            openParentDocumentFile(
-                                getAccessTokenForDocumentView,
-                                authFetchBlobResponse,
-                                holidayRowOpenDoc(group.global!),
-                            )
-                        }
-                        className="inline-flex items-center gap-2 rounded-full border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] hover:bg-[#DBEAFE]"
-                    >
-                        View admin PDF
-                    </button>
-                ) : (
-                    <p className="text-[11px] text-[#64748B]">No admin PDF for this state.</p>
-                )}
-
-                {allAdminRows.length > 0 ? (
-                    filteredAdmin.length > 0 ? (
-                        <HolidayEntriesReadOnly
-                            rows={filteredAdmin}
-                            title={`Admin holidays — ${holidayFilterLabel} (${filteredAdmin.length})`}
-                            emptyMessage=""
-                        />
-                    ) : (
-                        <p className="text-[11px] text-[#6B7280]">No admin holidays in {holidayFilterLabel}.</p>
-                    )
-                ) : (
-                    <p className="text-[11px] text-[#6B7280]">Admin has not added holiday rows for this state.</p>
-                )}
-
-                {centreEntries.length > 0 ? (
-                    <p className="text-[11px] text-[#9A3412]">
-                        Your centre: {centreEntries.length} override{centreEntries.length === 1 ? "" : "s"} — use Edit on the
-                        left to change.
-                    </p>
-                ) : null}
-            </div>
-        );
-    };
-
-    return (
-        <>
-        <div className="grid gap-4 lg:grid-cols-2 lg:items-start max-w-5xl">
-            {!loading && selectedGroup ? (
-                <div className="lg:col-span-2">{renderHolidayDateFilters(holidayFilterYears)}</div>
-            ) : null}
-
-            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
-                <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-[#111827]">Holiday list</h3>
-                    <p className="text-xs text-[#6B7280]">
-                        One list for parents. Use Edit to add holidays or override head office dates (same date replaces the
-                        head office row).
-                    </p>
-                </div>
-
-                {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
-
-                {!loading && stateGroups.length > 1 ? (
-                    <div className="flex flex-wrap gap-2">
-                        {stateGroups.map((group) => (
-                            <button
-                                key={group.state}
-                                type="button"
-                                onClick={() => setSelectedState(group.state)}
-                                className={`rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors ${
-                                    selectedGroup?.state === group.state
-                                        ? "bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]"
-                                        : "bg-white border-[#E5E7EB] text-[#374151] hover:bg-[#F9FAFB]"
-                                }`}
-                            >
-                                {group.stateDisplay}
-                            </button>
-                        ))}
-                    </div>
-                ) : null}
-
-                {!loading && stateGroups.length === 0 ? (
-                    <p className="text-sm text-[#6B7280]">
-                        No holiday list for your state yet. Head office adds it in Admin CMS → Parent documents → Holiday Lists.
-                    </p>
-                ) : null}
-
-                {!loading && selectedGroup ? renderHolidayListCard(selectedGroup) : null}
-            </div>
-
-            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-3 lg:sticky lg:top-4 flex flex-col max-h-[calc(100vh-6rem)] overflow-y-auto">
-                <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-[#111827]">Tracking</h3>
-                    {selectedGroup ? (
-                        <p className="text-xs text-[#6B7280]">
-                            {selectedGroup.stateDisplay} · {selectedGroup.academicYear}
-                        </p>
-                    ) : (
-                        <p className="text-xs text-[#6B7280]">Admin upload for selected state.</p>
-                    )}
-                </div>
-                {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
-                {!loading && selectedGroup ? renderHolidayTracking(selectedGroup) : null}
-            </div>
-        </div>
-
-            <Modal isOpen={editModal.isOpen} onClose={closeCentreEdit} title={`Edit holidays — ${editModal.stateDisplay}`}>
-                <form onSubmit={saveCentreHoliday} className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-                    <p className="text-xs text-[#6B7280]">
-                        Add new holidays or override head office: use the <strong>same date</strong> as a head office row and
-                        enter your updated name/city. Parents see head office PDF plus this combined list.
-                    </p>
-                    {editGlobalEntries.length > 0 ? (
-                        <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                            <p className="text-xs font-semibold text-slate-700">Head office holidays (reference)</p>
-                            <ul className="space-y-1">
-                                {editGlobalEntries.map((row, index) => (
-                                    <li
-                                        key={`ho-${row.date}-${index}`}
-                                        className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700"
-                                    >
-                                        <span>
-                                            {formatHolidayDate(row.date)} — {row.name}
-                                            {row.city ? ` (${row.city})` : ""}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => overrideHeadOfficeHoliday(row)}
-                                            className="shrink-0 font-semibold text-[#2563EB] hover:underline"
-                                        >
-                                            Override
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ) : null}
-                    <HolidayEntriesEditor rows={editHolidayEntries} onChange={setEditHolidayEntries} compact />
-                    <div className="flex gap-2 pt-1">
-                        <Button type="submit" disabled={editSaving} className="bg-[#FF922B] text-white">
-                            {editSaving ? "Saving…" : editModal.centreId ? "Save changes" : "Save for centre"}
-                        </Button>
-                        <Button type="button" variant="secondary" onClick={closeCentreEdit}>
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
-            </Modal>
-
-            <ConfirmModal
-                isOpen={confirmDelete.isOpen}
-                onClose={() => setConfirmDelete({ isOpen: false, id: null })}
-                onConfirm={() => confirmDelete.id && removeCentreHoliday(confirmDelete.id)}
-                title="Remove centre holiday list"
-                description="Parents at your centre will see the head office holiday list again for this state."
-                confirmText="Yes, remove"
-                variant="danger"
-            />
-        </>
-    );
-}
 
 type HomeworkRow = {
     id: number;
@@ -2002,8 +800,6 @@ function HomeworkTab({
     );
 }
 
-type NotificationAudience = "all" | "class" | "student";
-
 type AnnouncementRow = {
     id: number;
     title: string;
@@ -2013,799 +809,104 @@ type AnnouncementRow = {
     student_name?: string;
     class_name?: string;
     audience_label?: string;
+    notification_origin?: "centre" | "head_office";
     is_scheduled?: boolean;
 };
 
-const NOTIFICATION_CLASS_OPTIONS = HOMEWORK_CLASS_OPTIONS.filter((o) => o.value);
-
-const NOTIFICATION_AUDIENCE_OPTIONS: { value: NotificationAudience; label: string }[] = [
-    { value: "all", label: "All parents" },
-    { value: "class", label: "Classes" },
-    { value: "student", label: "Students" },
-];
-
-const audienceFromRow = (row: Pick<AnnouncementRow, "student" | "class_name">): NotificationAudience => {
-    if (row.student) return "student";
-    if ((row.class_name || "").trim()) return "class";
-    return "all";
-};
-
-const announcementPayload = (input: {
-    title: string;
-    body: string;
-    audience: NotificationAudience;
-    class_name: string;
-    student: string;
-    schedule_date: string;
-}) => {
-    const base = {
-        title: input.title.trim(),
-        body: input.body.trim(),
-        is_active: true,
-        schedule_date: input.schedule_date.trim() || todayLocal(),
-    };
-    if (input.audience === "student") {
-        return { ...base, student: Number(input.student), class_name: "" };
-    }
-    if (input.audience === "class") {
-        return { ...base, student: null, class_name: input.class_name.trim() };
-    }
-    return { ...base, student: null, class_name: "" };
-};
-
-const STUDENT_PICKER_LIMIT = 40;
-
-function StudentSearchPicker({
-    students,
-    value,
-    onChange,
-}: {
-    students: MiniStudent[];
-    value: string;
-    onChange: (studentId: string) => void;
-}) {
-    const rootRef = useRef<HTMLDivElement>(null);
-    const searchRef = useRef<HTMLInputElement>(null);
-    const [query, setQuery] = useState("");
-    const [open, setOpen] = useState(false);
-
-    const sortedStudents = useMemo(
-        () => [...students].sort((a, b) => a.full_name.localeCompare(b.full_name)),
-        [students],
-    );
-
-    const selected = useMemo(
-        () => sortedStudents.find((s) => String(s.id) === value) ?? null,
-        [sortedStudents, value],
-    );
-
-    const dropdownStudents = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        const pool = q
-            ? sortedStudents.filter((s) => {
-                  const name = (s.full_name || "").toLowerCase();
-                  const cls = (s.class_name || "").toLowerCase();
-                  return name.includes(q) || cls.includes(q);
-              })
-            : sortedStudents;
-        return pool.slice(0, STUDENT_PICKER_LIMIT);
-    }, [sortedStudents, query]);
-
-    const hasMoreResults = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        const pool = q
-            ? sortedStudents.filter((s) => {
-                  const name = (s.full_name || "").toLowerCase();
-                  const cls = (s.class_name || "").toLowerCase();
-                  return name.includes(q) || cls.includes(q);
-              })
-            : sortedStudents;
-        return pool.length > STUDENT_PICKER_LIMIT;
-    }, [sortedStudents, query]);
-
-    useEffect(() => {
-        const onPointerDown = (event: MouseEvent) => {
-            if (!rootRef.current?.contains(event.target as Node)) {
-                setOpen(false);
-                setQuery("");
-            }
-        };
-        document.addEventListener("mousedown", onPointerDown);
-        return () => document.removeEventListener("mousedown", onPointerDown);
-    }, []);
-
-    useEffect(() => {
-        if (open) {
-            searchRef.current?.focus();
-        } else {
-            setQuery("");
-        }
-    }, [open]);
-
-    const toggleOpen = () => setOpen((prev) => !prev);
-
-    const pickStudent = (studentId: string) => {
-        onChange(studentId);
-        setQuery("");
-        setOpen(false);
-    };
-
-    const triggerLabel = selected
-        ? `${selected.full_name}${selected.class_name ? ` (${selected.class_name})` : ""}`
-        : "Select student";
-
-    return (
-        <div ref={rootRef} className="relative mt-1">
-            <button
-                type="button"
-                onClick={toggleOpen}
-                className="flex w-full items-center justify-between gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-left text-sm focus:border-[#FF922B] focus:outline-none"
-            >
-                <span className={`min-w-0 truncate ${selected ? "text-[#1F2937]" : "text-[#6B7280]"}`}>
-                    {triggerLabel}
-                </span>
-                <ChevronDown className={`h-4 w-4 shrink-0 text-[#6B7280] transition-transform ${open ? "rotate-180" : ""}`} />
-            </button>
-
-            {open ? (
-                <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-lg">
-                    <div className="border-b border-[#E5E7EB] p-2">
-                        <div className="relative">
-                            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
-                            <input
-                                ref={searchRef}
-                                type="search"
-                                value={query}
-                                placeholder="Search student name or class"
-                                onChange={(e) => setQuery(e.target.value)}
-                                className="w-full rounded-lg border border-[#E5E7EB] py-1.5 pl-8 pr-2 text-sm bg-white focus:border-[#FF922B] focus:outline-none"
-                            />
-                        </div>
-                    </div>
-                    <ul className="max-h-52 overflow-y-auto">
-                        <li>
-                            <button
-                                type="button"
-                                onClick={() => pickStudent("")}
-                                className={`w-full px-3 py-2 text-left text-sm hover:bg-[#FFF4CC] ${!value ? "bg-[#FFF4CC] font-medium text-[#1F2937]" : "text-[#6B7280]"}`}
-                            >
-                                Select student
-                            </button>
-                        </li>
-                        {dropdownStudents.length === 0 ? (
-                            <li className="px-3 py-2.5 text-xs text-[#6B7280]">No students match your search.</li>
-                        ) : (
-                            dropdownStudents.map((s) => {
-                                const isSelected = String(s.id) === value;
-                                return (
-                                    <li key={s.id}>
-                                        <button
-                                            type="button"
-                                            onClick={() => pickStudent(String(s.id))}
-                                            className={`w-full px-3 py-2 text-left text-sm hover:bg-[#FFF4CC] ${isSelected ? "bg-[#FFF4CC] font-medium text-[#1F2937]" : "text-[#1F2937]"}`}
-                                        >
-                                            {s.full_name}
-                                            {s.class_name ? (
-                                                <span className="text-[#6B7280]"> ({s.class_name})</span>
-                                            ) : null}
-                                        </button>
-                                    </li>
-                                );
-                            })
-                        )}
-                        {hasMoreResults ? (
-                            <li className="border-t border-[#E5E7EB] px-3 py-2 text-xs text-[#6B7280]">
-                                Showing first {STUDENT_PICKER_LIMIT} — type to narrow search ({students.length} total).
-                            </li>
-                        ) : null}
-                    </ul>
-                </div>
-            ) : null}
-        </div>
-    );
-}
-
-const sendSuccessMessage = (
-    audience: NotificationAudience,
-    className: string,
-    studentId: string,
-    students: MiniStudent[],
-    scheduleDate: string,
-) => {
-    const when =
-        scheduleDate && scheduleDate > todayLocal()
-            ? `Scheduled for ${scheduleDate}. Parents will see it on that date.`
-            : "Parents will see it now.";
-    if (audience === "student") {
-        const name = students.find((s) => String(s.id) === studentId)?.full_name || "selected parent";
-        return `Notification for ${name}. ${when}`;
-    }
-    if (audience === "class") {
-        return `Notification for ${className || "selected class"}. ${when}`;
-    }
-    return `Notification for all parents. ${when}`;
+const originLabel: Record<NonNullable<AnnouncementRow["notification_origin"]>, string> = {
+    centre: "Your centre",
+    head_office: "Head office",
 };
 
 const announcementRowDate = (row: AnnouncementRow) => homeworkDate(row.published_at) || "—";
 
-function AnnouncementsTab({
-    authFetch,
-    showToast,
-    students,
-}: {
-    authFetch: AuthFetchFn;
-    showToast: ShowToastFn;
-    students: MiniStudent[];
-}) {
+function AnnouncementsTab({ authFetch }: { authFetch: AuthFetchFn }) {
     const [rows, setRows] = useState<AnnouncementRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [trackDate, setTrackDate] = useState(todayLocal);
-    const [form, setForm] = useState({
-        title: "",
-        body: "",
-        audience: "all" as NotificationAudience,
-        class_name: NOTIFICATION_CLASS_OPTIONS[0]?.value || "",
-        student: "",
-        schedule_date: todayLocal(),
-    });
-    const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
-    const [editModal, setEditModal] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
-    const [editSaving, setEditSaving] = useState(false);
-    const [editForm, setEditForm] = useState({
-        title: "",
-        body: "",
-        audience: "all" as NotificationAudience,
-        class_name: NOTIFICATION_CLASS_OPTIONS[0]?.value || "",
-        student: "",
-        schedule_date: todayLocal(),
-    });
-
-    const load = useCallback(
-        async (dateOverride?: string) => {
-            const date = dateOverride ?? trackDate;
-            setLoading(true);
-            try {
-                const params = new URLSearchParams({ published_date: date });
-                const data = await authFetch<unknown>(`/students/franchise/announcements/?${params.toString()}`);
-                setRows(normalizeList<AnnouncementRow>(data));
-            } catch {
-                setRows([]);
-            } finally {
-                setLoading(false);
-            }
-        },
-        [authFetch, trackDate],
-    );
-
-    useEffect(() => {
-        void load();
-    }, [load]);
-
-    const submit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!form.title.trim()) {
-            showToast("Title is required.", "error");
-            return;
-        }
-        if (form.audience === "class" && !form.class_name.trim()) {
-            showToast("Choose a class.", "error");
-            return;
-        }
-        if (form.audience === "student" && !form.student) {
-            showToast("Choose a student.", "error");
-            return;
-        }
-        try {
-            await authFetch("/students/franchise/announcements/", {
-                method: "POST",
-                headers: jsonHeaders(),
-                body: JSON.stringify(announcementPayload(form)),
-            });
-            const sentDate = form.schedule_date.trim() || todayLocal();
-            setForm({
-                title: "",
-                body: "",
-                audience: "all",
-                class_name: NOTIFICATION_CLASS_OPTIONS[0]?.value || "",
-                student: "",
-                schedule_date: todayLocal(),
-            });
-            setTrackDate(sentDate);
-            showToast(sendSuccessMessage(form.audience, form.class_name, form.student, students, sentDate), "success");
-            await load(sentDate);
-        } catch {
-            showToast("Save failed", "error");
-        }
-    };
-
-    const openEdit = async (row: AnnouncementRow) => {
-        try {
-            const detail = await authFetch<AnnouncementRow>(`/students/franchise/announcements/${row.id}/`);
-            const audience = audienceFromRow(detail);
-            setEditForm({
-                title: detail.title || "",
-                body: detail.body || "",
-                audience,
-                class_name: (detail.class_name || "").trim() || NOTIFICATION_CLASS_OPTIONS[0]?.value || "",
-                student: detail.student ? String(detail.student) : "",
-                schedule_date: homeworkDate(detail.published_at) || todayLocal(),
-            });
-            setEditModal({ isOpen: true, id: row.id });
-        } catch {
-            showToast("Could not load notification.", "error");
-        }
-    };
-
-    const closeEdit = () => {
-        setEditModal({ isOpen: false, id: null });
-        setEditForm({
-            title: "",
-            body: "",
-            audience: "all",
-            class_name: NOTIFICATION_CLASS_OPTIONS[0]?.value || "",
-            student: "",
-            schedule_date: todayLocal(),
-        });
-    };
-
-    const saveEdit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!editModal.id || !editForm.title.trim()) {
-            showToast("Title is required.", "error");
-            return;
-        }
-        if (editForm.audience === "class" && !editForm.class_name.trim()) {
-            showToast("Choose a class.", "error");
-            return;
-        }
-        if (editForm.audience === "student" && !editForm.student) {
-            showToast("Choose a student.", "error");
-            return;
-        }
-        setEditSaving(true);
-        try {
-            await authFetch(`/students/franchise/announcements/${editModal.id}/`, {
-                method: "PATCH",
-                headers: jsonHeaders(),
-                body: JSON.stringify(announcementPayload(editForm)),
-            });
-            closeEdit();
-            showToast("Notification updated.", "success");
-            await load();
-        } catch {
-            showToast("Update failed.", "error");
-        } finally {
-            setEditSaving(false);
-        }
-    };
-
-    const remove = async (id: number) => {
-        try {
-            await authFetch(`/students/franchise/announcements/${id}/`, { method: "DELETE" });
-            await load();
-            showToast("Deleted successfully", "success");
-        } catch {
-            showToast("Delete failed", "error");
-        }
-    };
-
-    return (
-        <div className="grid gap-4 lg:grid-cols-2 lg:items-start max-w-5xl">
-            <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3">
-                <div>
-                    <h3 className="text-sm font-semibold text-[#111827]">Send manual notification</h3>
-                    <p className="text-xs text-[#6B7280] mt-1">
-                        Send a message to all parents, a class (e.g. Nursery), or one student&apos;s family. Choose a publish date — parents only see it on that day (from midnight IST). Email is sent when it goes live.
-                    </p>
-                </div>
-                <label className="block text-xs font-semibold text-[#4B5563]">
-                    Send to
-                    <select
-                        value={form.audience}
-                        onChange={(e) =>
-                            setForm((p) => ({ ...p, audience: e.target.value as NotificationAudience }))
-                        }
-                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                    >
-                        {NOTIFICATION_AUDIENCE_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                {form.audience === "class" ? (
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        Select class
-                        <select
-                            value={form.class_name}
-                            onChange={(e) => setForm((p) => ({ ...p, class_name: e.target.value }))}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                        >
-                            {NOTIFICATION_CLASS_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                ) : null}
-                {form.audience === "student" ? (
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        Select student
-                        <StudentSearchPicker
-                            students={students}
-                            value={form.student}
-                            onChange={(studentId) => setForm((p) => ({ ...p, student: studentId }))}
-                        />
-                    </label>
-                ) : null}
-                <label className="block text-xs font-semibold text-[#4B5563]">
-                    Publish date
-                    <input
-                        type="date"
-                        required
-                        value={form.schedule_date}
-                        onChange={(e) => setForm((p) => ({ ...p, schedule_date: e.target.value }))}
-                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                    />
-                </label>
-                <input
-                    required
-                    placeholder="Title — e.g. PTM reminder"
-                    value={form.title}
-                    onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                    className="w-full rounded-xl border px-3 py-2 text-sm"
-                />
-                <textarea
-                    placeholder="Message — your update for parents"
-                    value={form.body}
-                    onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
-                    rows={4}
-                    className="w-full rounded-xl border px-3 py-2 text-sm"
-                />
-                <Button type="submit" className="bg-[#FF922B] text-white">
-                    Send to parents
-                </Button>
-            </form>
-            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4 lg:sticky lg:top-4 flex flex-col">
-                <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-[#111827]">Sent notifications</h3>
-                    <p className="text-xs text-[#6B7280]">See which manual notifications were sent on the selected date.</p>
-                </div>
-                <label className="block text-xs font-semibold text-[#4B5563]">
-                    Track date
-                    <input
-                        type="date"
-                        value={trackDate}
-                        onChange={(e) => setTrackDate(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                    />
-                </label>
-                {!loading ? (
-                    <span className="w-fit rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 border border-orange-100">
-                        Sent: {rows.length}
-                    </span>
-                ) : null}
-                {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
-                {!loading && rows.length === 0 ? (
-                    <p className="text-sm text-center text-[#6B7280] rounded-xl border border-dashed border-[#E5E7EB] px-4 py-8">
-                        No notifications sent on {trackDate}. Change the track date or send one.
-                    </p>
-                ) : null}
-                {!loading && rows.length > 0 ? (
-                    <ul className="divide-y border rounded-xl max-h-[420px] overflow-y-auto">
-                        {rows.map((r) => (
-                            <li key={r.id} className="flex flex-nowrap items-center justify-between gap-3 px-4 py-3 text-sm">
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <p className="font-medium text-[#1F2937] truncate">{r.title}</p>
-                                        <span className="shrink-0 rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-semibold text-[#4B5563]">
-                                            {r.audience_label || "All parents"}
-                                        </span>
-                                        {r.is_scheduled ? (
-                                            <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-100">
-                                                Scheduled
-                                            </span>
-                                        ) : null}
-                                    </div>
-                                    <p className="text-[11px] text-[#6B7280] mt-0.5">
-                                        {r.published_at ? new Date(r.published_at).toLocaleString() : announcementRowDate(r)}
-                                    </p>
-                                </div>
-                                <div className="flex shrink-0 items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => openEdit(r)}
-                                        className="whitespace-nowrap text-xs font-semibold text-[#2563EB] hover:underline"
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setConfirmDelete({ isOpen: true, id: r.id })}
-                                        className="whitespace-nowrap text-xs font-semibold text-red-600 hover:underline"
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                ) : null}
-            </div>
-
-            <Modal isOpen={editModal.isOpen} onClose={closeEdit} title="Edit notification">
-                <form onSubmit={saveEdit} className="space-y-3">
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        Send to
-                        <select
-                            value={editForm.audience}
-                            onChange={(e) =>
-                                setEditForm((p) => ({ ...p, audience: e.target.value as NotificationAudience }))
-                            }
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                        >
-                            {NOTIFICATION_AUDIENCE_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    {editForm.audience === "class" ? (
-                        <label className="block text-xs font-semibold text-[#4B5563]">
-                            Select class
-                            <select
-                                value={editForm.class_name}
-                                onChange={(e) => setEditForm((p) => ({ ...p, class_name: e.target.value }))}
-                                className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                            >
-                                {NOTIFICATION_CLASS_OPTIONS.map((opt) => (
-                                    <option key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                    ) : null}
-                    {editForm.audience === "student" ? (
-                        <label className="block text-xs font-semibold text-[#4B5563]">
-                            Select student
-                            <StudentSearchPicker
-                                students={students}
-                                value={editForm.student}
-                                onChange={(studentId) => setEditForm((p) => ({ ...p, student: studentId }))}
-                            />
-                        </label>
-                    ) : null}
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        Publish date
-                        <input
-                            type="date"
-                            required
-                            value={editForm.schedule_date}
-                            onChange={(e) => setEditForm((p) => ({ ...p, schedule_date: e.target.value }))}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm bg-white"
-                        />
-                        <span className="mt-1 block text-[11px] font-normal text-[#6B7280]">
-                            Parents only see this on that date (from midnight IST). Email is sent when it goes live.
-                        </span>
-                    </label>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        Title
-                        <input
-                            required
-                            value={editForm.title}
-                            onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                        />
-                    </label>
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        Message
-                        <textarea
-                            value={editForm.body}
-                            onChange={(e) => setEditForm((p) => ({ ...p, body: e.target.value }))}
-                            rows={4}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                        />
-                    </label>
-                    <div className="flex gap-2 pt-1">
-                        <Button type="submit" disabled={editSaving} className="bg-[#FF922B] text-white">
-                            {editSaving ? "Saving…" : "Save changes"}
-                        </Button>
-                        <Button type="button" variant="secondary" onClick={closeEdit}>
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
-            </Modal>
-
-            <ConfirmModal
-                isOpen={confirmDelete.isOpen}
-                onClose={() => setConfirmDelete({ isOpen: false, id: null })}
-                onConfirm={() => confirmDelete.id && remove(confirmDelete.id)}
-                title="Delete notification"
-                description="Remove this message from all parent apps?"
-                confirmText="Yes, Delete"
-                variant="danger"
-            />
-        </div>
-    );
-}
-
-function FeesTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; showToast: ShowToastFn; students: MiniStudent[] }) {
-    const [form, setForm] = useState({
-        student: "",
-        fee_structure_name: "",
-        id_card_no: "",
-        course: "",
-        title: "",
-        amount: "",
-        discount: "0",
-        amount_paid: "0",
-        due_date: "",
-        status: "PENDING",
-        paid_on: "",
-        notes: "",
-    });
-    const [rows, setRows] = useState<
-        { id: number; student_name?: string; title: string; amount: string | number; due_date: string; status: string; paid_on?: string | null }[]
-    >([]);
-    const [loading, setLoading] = useState(true);
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const raw = await authFetch<unknown>("/students/franchise/fees/");
-            const list = normalizeList<{
-                id: number;
-                student_name?: string;
-                title: string;
-                amount: string | number;
-                due_date: string;
-                status: string;
-                paid_on?: string | null;
-            }>(raw);
-            setRows(list);
+            const params = new URLSearchParams({ published_date: trackDate });
+            const data = await authFetch<unknown>(`/students/franchise/announcements/?${params.toString()}`);
+            setRows(normalizeList<AnnouncementRow>(data));
         } catch {
             setRows([]);
         } finally {
             setLoading(false);
         }
-    }, [authFetch]);
+    }, [authFetch, trackDate]);
 
     useEffect(() => {
         void load();
     }, [load]);
 
-    const submit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!form.student) return;
-        try {
-            await authFetch("/students/franchise/fees/", {
-                method: "POST",
-                headers: jsonHeaders(),
-                body: JSON.stringify({
-                    student: Number(form.student),
-                    fee_structure_name: form.fee_structure_name.trim(),
-                    id_card_no: form.id_card_no.trim(),
-                    course: form.course.trim(),
-                    title: form.title.trim(),
-                    amount: form.amount,
-                    discount: form.discount || "0",
-                    amount_paid: form.amount_paid || "0",
-                    due_date: form.due_date,
-                    status: form.status,
-                    paid_on: form.paid_on || null,
-                    notes: form.notes,
-                }),
-            });
-            showToast("Fee entry saved", "success");
-            setForm({
-                student: "",
-                fee_structure_name: "",
-                id_card_no: "",
-                course: "",
-                title: "",
-                amount: "",
-                discount: "0",
-                amount_paid: "0",
-                due_date: "",
-                status: "PENDING",
-                paid_on: "",
-                notes: "",
-            });
-            await load();
-        } catch {
-            showToast("Save failed", "error");
-        }
-    };
-
     return (
-        <div className="space-y-4 max-w-3xl">
-            <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 grid md:grid-cols-2 gap-3">
-                <label className="text-xs font-semibold md:col-span-2">
-                    Student
-                    <select required value={form.student} onChange={(e) => setForm((p) => ({ ...p, student: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
-                        <option value="">—</option>
-                        {students.map((s) => (
-                            <option key={s.id} value={s.id}>
-                                {s.full_name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="text-xs font-semibold">
-                    Fee structure name
-                    <input value={form.fee_structure_name} onChange={(e) => setForm((p) => ({ ...p, fee_structure_name: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    ID card no
-                    <input value={form.id_card_no} onChange={(e) => setForm((p) => ({ ...p, id_card_no: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold md:col-span-2">
-                    Course
-                    <input value={form.course} onChange={(e) => setForm((p) => ({ ...p, course: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Title
-                    <input required value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Amount
-                    <input required type="number" step="0.01" value={form.amount} onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Discount
-                    <input type="number" step="0.01" value={form.discount} onChange={(e) => setForm((p) => ({ ...p, discount: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Amount paid till date
-                    <input type="number" step="0.01" value={form.amount_paid} onChange={(e) => setForm((p) => ({ ...p, amount_paid: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Due date
-                    <input type="date" required value={form.due_date} onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Status
-                    <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
-                        {["PENDING", "PAID", "OVERDUE"].map((s) => (
-                            <option key={s} value={s}>
-                                {s}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="text-xs font-semibold">
-                    Paid on (optional)
-                    <input type="date" value={form.paid_on} onChange={(e) => setForm((p) => ({ ...p, paid_on: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold md:col-span-2">
-                    Notes
-                    <input value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <Button type="submit" className="bg-[#FF922B] text-white w-fit">
-                    Save fee
-                </Button>
-            </form>
-
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4">
-                <p className="text-sm font-semibold text-[#111827] mb-3">Saved fee entries</p>
-                {loading && <p className="text-sm text-[#6B7280]">Loading…</p>}
-                {!loading && rows.length === 0 && <p className="text-sm text-[#6B7280]">No fee entries yet.</p>}
-                <ul className="space-y-2">
+        <div className="max-w-2xl rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
+            <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-[#111827]">Parent notifications</h3>
+                <p className="text-xs text-[#6B7280]">
+                    Messages that went to parents on the selected date — from your centre or head office. Head-office
+                    centre alerts (not sent to parents) appear under Franchise → Centre inbox.
+                </p>
+            </div>
+            <label className="block text-xs font-semibold text-[#4B5563]">
+                Track date
+                <input
+                    type="date"
+                    value={trackDate}
+                    onChange={(e) => setTrackDate(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
+                />
+            </label>
+            {!loading ? (
+                <span className="w-fit rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 border border-orange-100">
+                    Sent: {rows.length}
+                </span>
+            ) : null}
+            {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
+            {!loading && rows.length === 0 ? (
+                <p className="text-sm text-center text-[#6B7280] rounded-xl border border-dashed border-[#E5E7EB] px-4 py-8">
+                    No parent notifications for {trackDate}. Send one from Parent Portal CMS or check another date.
+                </p>
+            ) : null}
+            {!loading && rows.length > 0 ? (
+                <ul className="divide-y border rounded-xl max-h-[420px] overflow-y-auto">
                     {rows.map((r) => (
-                        <li key={r.id} className="rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm">
-                            <p className="font-medium text-[#111827]">{r.title}</p>
-                            <p className="text-[#4B5563] text-xs">
-                                {r.student_name || "Student"} • ₹{r.amount} • Due {r.due_date} • {r.status}
+                        <li key={r.id} className="px-4 py-3 text-sm">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-medium text-[#1F2937]">{r.title}</p>
+                                {r.notification_origin ? (
+                                    <span
+                                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
+                                            r.notification_origin === "head_office"
+                                                ? "bg-blue-50 text-blue-700 border-blue-100"
+                                                : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                        }`}
+                                    >
+                                        {originLabel[r.notification_origin]}
+                                    </span>
+                                ) : null}
+                                <span className="shrink-0 rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-semibold text-[#4B5563]">
+                                    {r.audience_label || "All parents"}
+                                </span>
+                                {r.is_scheduled ? (
+                                    <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-100">
+                                        Scheduled
+                                    </span>
+                                ) : null}
+                            </div>
+                            {r.body ? (
+                                <p className="mt-1 text-xs text-[#4B5563] whitespace-pre-wrap">{r.body}</p>
+                            ) : null}
+                            <p className="text-[11px] text-[#6B7280] mt-0.5">
+                                {r.published_at ? new Date(r.published_at).toLocaleString() : announcementRowDate(r)}
                             </p>
                         </li>
                     ))}
                 </ul>
-            </div>
+            ) : null}
         </div>
     );
 }

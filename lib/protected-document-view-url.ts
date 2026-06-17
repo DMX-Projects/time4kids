@@ -38,7 +38,12 @@ export function normalizeProtectedDocumentApiPath(path: string): string | null {
     return isProtectedDocumentApiPath(trimmed) ? trimmed : null;
 }
 
-function splitDocumentApiPath(apiPath: string): { pathname: string; name?: string } {
+function splitDocumentApiPath(apiPath: string): {
+    pathname: string;
+    name?: string;
+    student?: string;
+    student_id?: string;
+} {
     const qIdx = apiPath.indexOf("?");
     if (qIdx === -1) {
         return { pathname: apiPath };
@@ -46,7 +51,14 @@ function splitDocumentApiPath(apiPath: string): { pathname: string; name?: strin
     const pathname = apiPath.slice(0, qIdx);
     const params = new URLSearchParams(apiPath.slice(qIdx + 1));
     const name = params.get("name")?.trim();
-    return name ? { pathname, name } : { pathname };
+    const student = params.get("student")?.trim();
+    const student_id = params.get("student_id")?.trim();
+    return {
+        pathname,
+        ...(name ? { name } : {}),
+        ...(student ? { student } : {}),
+        ...(student_id ? { student_id } : {}),
+    };
 }
 
 function submitDocumentOpenForm(fields: Record<string, string>): void {
@@ -81,7 +93,7 @@ export function openProtectedDocumentView(
         const token = (await getAccessToken())?.trim();
         if (!token) return;
 
-        const { pathname, name } = splitDocumentApiPath(normalized);
+        const { pathname, name, student, student_id } = splitDocumentApiPath(normalized);
         const pathForForm = pathname.startsWith("/") ? pathname.slice(1) : pathname;
 
         const fields: Record<string, string> = {
@@ -89,6 +101,8 @@ export function openProtectedDocumentView(
             token,
         };
         if (name) fields.name = name;
+        if (student) fields.student = student;
+        if (student_id) fields.student_id = student_id;
 
         submitDocumentOpenForm(fields);
     })();

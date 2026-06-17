@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders } from "@/lib/api-client";
 
@@ -99,6 +99,7 @@ export type AdminDataContextValue = {
 
     /** Set when GET /franchises/admin/franchises/ fails (list empty + stats mismatch). */
     franchisesLoadError: string | null;
+    franchisesLoading: boolean;
     reloadFranchises: () => Promise<void>;
 };
 
@@ -228,9 +229,16 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
     const [stats, setStats] = useState<AdminStats>({ activeUsers: 0, franchises: 0, enquiries: 0, parents: 0 });
     const [franchisesLoadError, setFranchisesLoadError] = useState<string | null>(null);
+    const [franchisesLoading, setFranchisesLoading] = useState(false);
+    const franchisesLoadGenRef = useRef(0);
 
-    const loadFranchises = async () => {
+    const loadFranchises = useCallback(async () => {
+        const role = user?.role?.toLowerCase();
+        if (role !== "admin") return;
+
+        const gen = ++franchisesLoadGenRef.current;
         setFranchisesLoadError(null);
+        setFranchisesLoading(true);
         try {
             const all: ApiFranchise[] = [];
             let page = 1;
@@ -240,6 +248,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
                 const data = await authFetch<
                     ApiFranchise[] | { results: ApiFranchise[]; next?: string | null }
                 >(path);
+                if (gen !== franchisesLoadGenRef.current) return;
                 if (Array.isArray(data)) {
                     all.push(...data);
                     break;
@@ -251,17 +260,21 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             }
             setFranchises(all.map(mapFranchise));
         } catch (e: unknown) {
-            setFranchises([]);
-            const msg = e instanceof Error ? e.message : "Failed to load franchises.";
+            if (gen !== franchisesLoadGenRef.current) return;
+            const msg = e instanceof Error ? e.message : "Failed to load centres.";
             setFranchisesLoadError(msg);
             console.error("loadFranchises", e);
+        } finally {
+            if (gen === franchisesLoadGenRef.current) {
+                setFranchisesLoading(false);
+            }
         }
-    };
+    }, [authFetch, user?.role]);
 
     useEffect(() => {
         const role = user?.role?.toLowerCase();
         if (role !== "admin") return;
-        loadFranchises();
+        void loadFranchises();
         loadCareers();
         loadEvents();
         loadStats();
@@ -273,7 +286,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             }));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id, user?.role]);
+    }, [user?.id, user?.role, loadFranchises]);
 
     const loadCareers = async () => {
         try {
@@ -510,6 +523,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         savedLocations,
         refreshLocations: loadSavedLocations,
         franchisesLoadError,
+        franchisesLoading,
         reloadFranchises: loadFranchises,
     };
 

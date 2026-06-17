@@ -5,7 +5,12 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import type { SchoolStudent } from "@/components/dashboard/shared/SchoolDataProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 import { jsonHeaders } from "@/lib/api-client";
+import {
+    readStoredSelectedStudentId,
+    writeStoredSelectedStudentId,
+} from "@/lib/parent-selected-student-storage";
 import { safeRandomId } from "@/lib/utils";
+import { withParentStudentQuery } from "@/lib/parent-student-query";
 
 export type StudentProfile = { name: string; grade: string; section: string; blood: string; emergency: string };
 export type GradeRow = { id: string; subject: string; grade: string; term: string };
@@ -57,7 +62,13 @@ export type ParentDataContextValue = {
     refreshStudents: () => Promise<void>;
 
     linkedStudents: SchoolStudent[];
+    hasMultipleChildren: boolean;
+    studentsLoading: boolean;
+    /** False while children list / selected child is still resolving — wait before scoped API calls. */
+    studentScopeReady: boolean;
+    scopedApiPath: (path: string) => string;
     selectedStudentId: string | null;
+    selectedStudent: SchoolStudent | null;
     setSelectedStudentId: (id: string | null) => void;
 
     grades: GradeRow[];
@@ -87,7 +98,7 @@ const ParentDataContext = createContext<ParentDataContextValue | undefined>(unde
 
 export function ParentDataProvider({ children }: { children: React.ReactNode }) {
     const { user, authFetch, refreshUser } = useAuth();
-    const { parentSchoolLoading, students, refreshAll } = useSchoolData();
+    const { parentSchoolLoading, parentStudentsHydrated, students, refreshAll, refreshParentEvents } = useSchoolData();
 
     const [studentProfile, setStudentProfile] = useState<StudentProfile>({
         name: "",
@@ -97,7 +108,10 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
         emergency: "",
     });
 
-    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(() => {
+        if (typeof window === "undefined" || user?.role !== "parent" || !user?.id) return null;
+        return readStoredSelectedStudentId(user.id);
+    });
 
     const [grades, setGrades] = useState<GradeRow[]>([]);
     const [events, setEvents] = useState<EventRow[]>([]);
@@ -117,9 +131,43 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
     const [parentProfileLoading, setParentProfileLoading] = useState(true);
 
     const parentId = user?.id ?? "";
-    const linkedStudents = useMemo(
-        () => (user?.role === "parent" ? students : []),
-        [user?.role, students],
+    const linkedStudents = useMemo(() => {
+        if (user?.role !== "parent") return [];
+        return [...students].sort((a, b) => {
+            const na = Number(a.id);
+            const nb = Number(b.id);
+            if (!Number.isNaN(na) && !Number.isNaN(nb) && na !== nb) return na - nb;
+            return a.name.localeCompare(b.name);
+        });
+    }, [user?.role, students]);
+
+    const hasMultipleChildren = linkedStudents.length > 1;
+
+    const selectedStudent = useMemo(() => {
+        if (linkedStudents.length === 0) return null;
+        if (selectedStudentId && linkedStudents.some((s) => s.id === selectedStudentId)) {
+            return linkedStudents.find((s) => s.id === selectedStudentId) ?? linkedStudents[0];
+        }
+        return linkedStudents[0];
+    }, [linkedStudents, selectedStudentId]);
+
+    const studentsLoading = parentSchoolLoading || !parentStudentsHydrated;
+    const studentScopeReady =
+        parentStudentsHydrated && !parentSchoolLoading && linkedStudents.length > 0 && Boolean(selectedStudent?.id);
+
+    const scopedApiPath = useCallback(
+        (path: string) => withParentStudentQuery(path, selectedStudent?.id, true),
+        [selectedStudent?.id],
+    );
+
+    const setSelectedStudent = useCallback(
+        (id: string | null) => {
+            setSelectedStudentId(id);
+            if (user?.role === "parent" && user.id) {
+                writeStoredSelectedStudentId(user.id, id);
+            }
+        },
+        [user?.id, user?.role],
     );
 
     useEffect(() => {
@@ -130,9 +178,11 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
         }
         setSelectedStudentId((prev) => {
             if (prev && linkedStudents.some((s) => s.id === prev)) return prev;
+            const stored = user?.id ? readStoredSelectedStudentId(user.id) : null;
+            if (stored && linkedStudents.some((s) => s.id === stored)) return stored;
             return linkedStudents[0].id;
         });
-    }, [user?.role, parentSchoolLoading, linkedStudents]);
+    }, [user?.role, user?.id, parentSchoolLoading, linkedStudents]);
 
     useEffect(() => {
         if (user?.role !== "parent" || parentSchoolLoading || !user.id) {
@@ -141,20 +191,18 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
             }
             return;
         }
-        if (linkedStudents.length === 0) {
+        if (!selectedStudent) {
             setStudentProfile({ name: "", grade: "", section: "", blood: "", emergency: "" });
             return;
         }
-        const sid = selectedStudentId && linkedStudents.some((s) => s.id === selectedStudentId) ? selectedStudentId : linkedStudents[0].id;
-        const s = linkedStudents.find((x) => x.id === sid) ?? linkedStudents[0];
         setStudentProfile({
-            name: s.name,
-            grade: s.grade,
-            section: s.section,
-            blood: s.blood || "",
-            emergency: s.emergency || "",
+            name: selectedStudent.name,
+            grade: selectedStudent.grade,
+            section: selectedStudent.section,
+            blood: selectedStudent.blood || "",
+            emergency: selectedStudent.emergency || "",
         });
-    }, [user?.role, user?.id, parentSchoolLoading, linkedStudents, selectedStudentId]);
+    }, [user?.role, user?.id, parentSchoolLoading, selectedStudent]);
 
     useEffect(() => {
         if (user?.role !== "parent") {
@@ -208,10 +256,11 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
     }, []);
 
     const reloadAchievements = useCallback(async () => {
-        if (user?.role !== "parent") return;
+        if (user?.role !== "parent" || !studentScopeReady || !selectedStudent) return;
         setAchievementsLoading(true);
         try {
-            const raw = await authFetch<AchievementApi[] | { results?: AchievementApi[] }>("/students/parent/achievements/");
+            const path = scopedApiPath("/students/parent/achievements/");
+            const raw = await authFetch<AchievementApi[] | { results?: AchievementApi[] }>(path);
             const list = Array.isArray(raw) ? raw : raw?.results ?? [];
             setAchievements(mapAchievements(list));
         } catch {
@@ -219,12 +268,17 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
         } finally {
             setAchievementsLoading(false);
         }
-    }, [authFetch, mapAchievements, user?.role]);
+    }, [authFetch, mapAchievements, scopedApiPath, selectedStudent, studentScopeReady, user?.role]);
 
     useEffect(() => {
         if (user?.role !== "parent") return;
         void reloadAchievements();
-    }, [user?.role, user?.id, reloadAchievements]);
+    }, [user?.role, user?.id, selectedStudent?.id, studentScopeReady, reloadAchievements]);
+
+    useEffect(() => {
+        if (user?.role !== "parent" || !studentScopeReady) return;
+        void refreshParentEvents();
+    }, [user?.role, studentScopeReady, refreshParentEvents]);
 
     const updateStudentProfile = (payload: Partial<StudentProfile>) => setStudentProfile((prev) => ({ ...prev, ...payload }));
 
@@ -301,8 +355,13 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
         updateChildInfo,
         refreshStudents,
         linkedStudents,
+        hasMultipleChildren,
+        studentsLoading,
+        studentScopeReady,
+        scopedApiPath,
         selectedStudentId,
-        setSelectedStudentId,
+        selectedStudent,
+        setSelectedStudentId: setSelectedStudent,
         grades,
         addGrade,
         updateGrade,

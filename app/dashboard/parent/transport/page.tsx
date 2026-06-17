@@ -11,6 +11,8 @@ import {
     User,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
+import { transportStudentVisible } from "@/lib/parent-child-content-filter";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
@@ -104,6 +106,7 @@ function formatStatus(value: string) {
 
 export default function TransportPage() {
     const { authFetch } = useAuth();
+    const { selectedStudent, hasMultipleChildren } = useParentData();
     const [rows, setRows] = useState<RouteRow[]>([]);
     const [liveTrip, setLiveTrip] = useState<LiveTripPayload | null>(null);
     const [loading, setLoading] = useState(true);
@@ -178,17 +181,41 @@ export default function TransportPage() {
             cancelled = true;
             if (timer) clearInterval(timer);
         };
-    }, [authFetch, selectedRouteId, liveTrip?.live]);
+    }, [authFetch, selectedRouteId, liveTrip?.live, selectedStudent?.id, hasMultipleChildren]);
+
+    const visibleRows = useMemo(() => {
+        if (!selectedStudent || !hasMultipleChildren) return rows;
+        return rows
+            .map((route) => ({
+                ...route,
+                my_students: (route.my_students || []).filter((s) =>
+                    transportStudentVisible(s.student_id, selectedStudent),
+                ),
+            }))
+            .filter((route) => (route.my_students?.length ?? 0) > 0);
+    }, [rows, selectedStudent, hasMultipleChildren]);
+
+    useEffect(() => {
+        if (selectedRouteId == null) return;
+        if (!visibleRows.some((r) => r.id === selectedRouteId)) {
+            setSelectedRouteId(null);
+        }
+    }, [visibleRows, selectedRouteId]);
 
     const liveByRouteId = useMemo(() => {
         const map = new Map<number, LiveTripEntry>();
         for (const entry of liveTrip?.trips ?? []) {
+            if (selectedStudent && hasMultipleChildren && entry.student_status) {
+                if (!transportStudentVisible(entry.student_status.student_id, selectedStudent)) {
+                    continue;
+                }
+            }
             map.set(Number(entry.route.id), entry);
         }
         return map;
-    }, [liveTrip?.trips]);
+    }, [liveTrip?.trips, selectedStudent, hasMultipleChildren]);
 
-    const selectedRoute = rows.find((r) => r.id === selectedRouteId) ?? null;
+    const selectedRoute = visibleRows.find((r) => r.id === selectedRouteId) ?? null;
     const selectedLive =
         selectedRouteId != null ? liveByRouteId.get(Number(selectedRouteId)) : undefined;
     const tripIsLive = selectedLive?.trip?.status === "LIVE" || selectedLive?.live === true;
@@ -212,6 +239,7 @@ export default function TransportPage() {
                         <h1 className="text-lg font-semibold text-orange-900">Transport</h1>
                         <p className="text-sm text-orange-700">
                             All buses at your centre are listed below. Tap a route to track it when the driver has started the trip.
+                            {hasMultipleChildren && selectedStudent ? ` Showing routes for ${selectedStudent.name}.` : ""}
                         </p>
                     </div>
                 </div>
@@ -223,23 +251,27 @@ export default function TransportPage() {
                 </p>
             )}
 
-            {!loading && rows.length === 0 && (
+            {!loading && visibleRows.length === 0 && (
                 <p className="text-sm text-orange-700 rounded-xl border border-orange-100 bg-white p-4">
-                    No transport routes published by your centre yet.
+                    {rows.length > 0 && selectedStudent && hasMultipleChildren
+                        ? `${selectedStudent.name} is not assigned to a transport route yet.`
+                        : "No transport routes published by your centre yet."}
                 </p>
             )}
 
-            {!loading && rows.length > 0 && (
+            {!loading && visibleRows.length > 0 && (
                 <>
                     <section className="space-y-3">
                         <div className="flex items-center justify-between gap-2">
                             <h2 className="text-base font-semibold text-orange-950">Select route</h2>
-                            <span className="text-xs text-orange-600 font-medium">{rows.length} route{rows.length === 1 ? "" : "s"}</span>
+                            <span className="text-xs text-orange-600 font-medium">
+                                {visibleRows.length} route{visibleRows.length === 1 ? "" : "s"}
+                            </span>
                         </div>
 
                         <div className="-mx-1 px-1 overflow-x-auto pb-1 scrollbar-thin">
                             <div className="flex gap-3 min-w-min">
-                                {rows.map((r) => {
+                                {visibleRows.map((r) => {
                                     const isSelected = selectedRouteId === r.id;
                                     const isLive = liveByRouteId.has(Number(r.id));
                                     const driverShort =

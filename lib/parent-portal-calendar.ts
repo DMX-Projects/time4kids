@@ -28,6 +28,18 @@ export function sliceDate(value: unknown): string {
     return String(value || "").slice(0, 10);
 }
 
+/** Today in the user's local timezone (YYYY-MM-DD). Prefer over ``toISOString().slice(0,10)`` (UTC). */
+export function localDateString(d: Date = new Date()): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+export function dateMonthKey(dateStr: string): string {
+    return sliceDate(dateStr).slice(0, 7);
+}
+
 export function toLocalMonth(d: Date): string {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");

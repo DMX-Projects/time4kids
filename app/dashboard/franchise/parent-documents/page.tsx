@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Parent app documents are managed by head office (Admin CMS), not franchise centres. */
+/** Parent app CMS — holidays, newsletters, notifications (centre + head office). */
 export default function FranchiseParentDocumentsRedirectPage() {
-    redirect("/dashboard/franchise/parent-portal/");
+    redirect("/dashboard/franchise/parent-portal/?tab=holidays");
 }

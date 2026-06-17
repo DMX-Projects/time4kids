@@ -13,10 +13,8 @@ export const PARENT_DOCUMENT_CATEGORIES = [
     { value: "PARENTING_TIPS", label: "Parenting Tips & Articles" },
 ] as const;
 
-/** Head-office CMS — Newsletter is uploaded by franchise centres only. */
-export const ADMIN_PARENT_DOCUMENT_CATEGORIES = PARENT_DOCUMENT_CATEGORIES.filter(
-    (c) => c.value !== "CLASS_TIMETABLE",
-);
+/** Head-office CMS — includes newsletter (global or per-centre). */
+export const ADMIN_PARENT_DOCUMENT_CATEGORIES = PARENT_DOCUMENT_CATEGORIES;
 
 export const DEFAULT_HOLIDAY_ACADEMIC_YEAR = "AY 2026-27";
 
@@ -51,3 +49,27 @@ export const PARENT_DOCUMENT_STATES = [
     { value: "UK", label: "Uttarakhand" },
     { value: "WB", label: "West Bengal" },
 ] as const;
+
+export type ParentDocumentStateCode = (typeof PARENT_DOCUMENT_STATES)[number]["value"];
+
+/** Map franchise profile state text to ParentDocument state code (matches backend franchise_state_code). */
+export function resolveParentDocumentStateCode(raw: string | null | undefined): ParentDocumentStateCode | null {
+    const text = (raw || "").trim();
+    if (!text) return null;
+    if (text.length === 2) {
+        const code = text.toUpperCase();
+        const hit = PARENT_DOCUMENT_STATES.find((s) => s.value === code);
+        if (hit) return hit.value;
+    }
+    const normalized = text.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!normalized) return null;
+    const hit = PARENT_DOCUMENT_STATES.find(
+        (s) => s.label.toLowerCase().replace(/[^a-z0-9]/g, "") === normalized,
+    );
+    return hit?.value ?? null;
+}
+
+export function parentDocumentStateLabel(code: string | null | undefined): string {
+    if (!code) return "";
+    return PARENT_DOCUMENT_STATES.find((s) => s.value === code)?.label || code;
+}

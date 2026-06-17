@@ -7,31 +7,29 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Download, Eye, FileText, LifeBuoy, Music, Play, Sparkles } from "lucide-react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
-
+import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
 import { useParentAppNavCustom } from "@/hooks/useParentAppNavCustom";
-
 import type { ParentDocumentForMatch } from "@/lib/admin-parent-app-upload";
-
 import {
     buildParentDashboardSectionsFromNav,
     collectParentSectionDocs,
 } from "@/lib/parent-dashboard-doc-sections";
-
 import { mergeParentAppNavBlocks } from "@/lib/merge-parent-app-nav-blocks";
-
 import {
     openNewsletterVideoEmbedLink,
     openParentDocumentFile,
     type AuthFetchBlobResponse,
 } from "@/lib/parent-document-file-open";
-
 import { parentDocumentFileKind } from "@/lib/parent-document-file-kind";
-
 import type { GetAccessToken } from "@/lib/protected-document-view-url";
 
 
 
-type ParentDoc = ParentDocumentForMatch & { file?: string };
+type ParentDoc = ParentDocumentForMatch & {
+    file?: string;
+    target_class_names?: string[];
+    class_name?: string;
+};
 
 
 
@@ -93,6 +91,8 @@ type DocActionsProps = {
 
     category: string;
 
+    studentId?: string | null;
+
     getAccessTokenForDocumentView: GetAccessToken;
 
     authFetchBlobResponse: AuthFetchBlobResponse;
@@ -107,6 +107,8 @@ function ParentDocumentActions({
 
     category,
 
+    studentId,
+
     getAccessTokenForDocumentView,
 
     authFetchBlobResponse,
@@ -117,7 +119,7 @@ function ParentDocumentActions({
         openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, {
             ...item,
             file: item.file || "",
-        });
+        }, studentId);
 
     const openEmbed = () =>
         openNewsletterVideoEmbedLink(item.video_embed_url || "", item.display_title || item.title);
@@ -285,7 +287,7 @@ export function ParentDocuments() {
     const [docs, setDocs] = useState<ParentDoc[]>([]);
 
     const { authFetch, authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
-
+    const { scopedApiPath, studentScopeReady, selectedStudent, hasMultipleChildren } = useParentData();
     const { navCustom } = useParentAppNavCustom();
 
 
@@ -305,32 +307,21 @@ export function ParentDocuments() {
 
 
     const load = useCallback(async () => {
-
+        if (!studentScopeReady) return;
+        setLoading(true);
         try {
-
-            const data = await authFetch<unknown>("/documents/parent/documents/");
-
+            const data = await authFetch<unknown>(scopedApiPath("/documents/parent/documents/?wrap=list"));
             setDocs(normalizeDocs(data));
-
         } catch {
-
             setDocs([]);
-
         } finally {
-
             setLoading(false);
-
         }
-
-    }, [authFetch]);
-
-
+    }, [authFetch, scopedApiPath, studentScopeReady]);
 
     useEffect(() => {
-
         void load();
-
-    }, [load]);
+    }, [load, selectedStudent?.id]);
 
 
 
@@ -353,7 +344,7 @@ export function ParentDocuments() {
                 };
             })
             .filter((cat) => cat.items.length > 0);
-    }, [sections, docs, topItemsById]);
+    }, [sections, docs, topItemsById, selectedStudent]);
 
 
 
@@ -522,6 +513,8 @@ export function ParentDocuments() {
                                                         item={item}
 
                                                         category={cat.category}
+
+                                                        studentId={selectedStudent?.id}
 
                                                         getAccessTokenForDocumentView={getAccessTokenForDocumentView}
 

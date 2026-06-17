@@ -98,7 +98,7 @@ export const PARENT_APP_DOCUMENT_CHECKLIST: ParentAppDocumentSection[] = [
         id: "newsletters",
         title: catLabel("CLASS_TIMETABLE"),
         category: "CLASS_TIMETABLE",
-        slots: [globalSlot("CLASS_TIMETABLE", "Franchise centres only")],
+        slots: [globalSlot("CLASS_TIMETABLE", "Head office — global or pick centre on upload")],
     },
     {
         id: "students-kit",

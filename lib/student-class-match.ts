@@ -4,6 +4,12 @@ const LEGACY_CLASS_YEAR_SUFFIX = /\s+\d{2}-\d{2}$/;
 
 export const CENTRE_CLASS_LABELS = CENTRE_PROGRAM_LABELS.map((p) => p.label);
 
+/** Stable `<select>` values (ids) — avoids long labels with `/` breaking option binding. */
+export const CMS_CLASS_SELECT_OPTIONS = CENTRE_PROGRAM_LABELS.map((p) => ({
+    id: String(p.id),
+    label: p.label,
+}));
+
 function stripLegacyClassYear(className: string): string {
     return className.replace(LEGACY_CLASS_YEAR_SUFFIX, "").trim();
 }
@@ -34,21 +40,42 @@ export function canonicalClassLabel(className: string): string | null {
     return null;
 }
 
+/** Normalize a stored / picked class filter to a centre program label. */
+export function normalizeStoredClassFilter(label: string): string {
+    const raw = (label || "").trim();
+    if (!raw) return "";
+    return canonicalClassLabel(raw) || raw;
+}
+
+export function classLabelFromSelectValue(value: string): string {
+    const trimmed = (value || "").trim();
+    if (!trimmed) return "";
+    const byId = CMS_CLASS_SELECT_OPTIONS.find((o) => o.id === trimmed);
+    if (byId) return byId.label;
+    return normalizeStoredClassFilter(trimmed);
+}
+
+export function classSelectValueFromLabel(label: string): string {
+    const normalized = normalizeStoredClassFilter(label);
+    if (!normalized) return "";
+    const exact = CMS_CLASS_SELECT_OPTIONS.find((o) => o.label === normalized);
+    if (exact) return exact.id;
+    const byCanon = CMS_CLASS_SELECT_OPTIONS.find((o) => canonicalClassLabel(o.label) === normalized);
+    return byCanon?.id ?? "";
+}
+
 /** True when a student's class should appear under the selected class filter. */
 export function studentGradeMatchesClassFilter(studentGrade: string, filter: string): boolean {
-    if (!filter) return true;
+    const filterTrimmed = (filter || "").trim();
+    if (!filterTrimmed) return true;
     const grade = (studentGrade || "").trim();
     if (!grade) return false;
-    if (grade === filter) return true;
 
     const gradeCanon = canonicalClassLabel(grade);
-    const filterCanon = canonicalClassLabel(filter);
+    const filterCanon = canonicalClassLabel(filterTrimmed);
     if (gradeCanon && filterCanon) return gradeCanon === filterCanon;
-    if (gradeCanon === filter || filterCanon === grade) return true;
-
-    const gl = grade.toLowerCase();
-    const fl = filter.toLowerCase();
-    return gl === fl || gl.includes(fl) || fl.includes(gl);
+    if (gradeCanon === filterTrimmed || filterCanon === grade) return true;
+    return grade.toLowerCase() === filterTrimmed.toLowerCase();
 }
 
 /** Centre program labels plus any distinct grades already on student rows. */

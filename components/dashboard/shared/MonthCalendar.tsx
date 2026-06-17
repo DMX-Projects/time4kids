@@ -1,16 +1,17 @@
 "use client";
 
+import { useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
     buildMonthGrid,
     formatMonthLabel,
     itemTypesOnDate,
+    localDateString,
     PORTAL_CALENDAR_TYPE_COLORS,
     PORTAL_CALENDAR_TYPE_LABELS,
     PortalCalendarItem,
     PortalCalendarItemType,
     shiftMonth,
-    sliceDate,
 } from "@/lib/parent-portal-calendar";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -33,8 +34,15 @@ export function MonthCalendar({
     loading = false,
 }: MonthCalendarProps) {
     const weeks = buildMonthGrid(month);
-    const today = sliceDate(new Date().toISOString());
+    const today = localDateString();
     const allTypes: PortalCalendarItemType[] = ["event", "homework", "announcement", "newsletter"];
+
+    const activateDate = useCallback(
+        (date: string) => {
+            onSelectDate(date);
+        },
+        [onSelectDate],
+    );
 
     return (
         <div className="space-y-4">
@@ -43,10 +51,10 @@ export function MonthCalendar({
                     <button
                         type="button"
                         onClick={() => onMonthChange(shiftMonth(month, -1))}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                        className="inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                         aria-label="Previous month"
                     >
-                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronLeft className="h-5 w-5 pointer-events-none" />
                     </button>
                     <h2 className="min-w-[10rem] text-center text-base font-semibold text-gray-900">
                         {formatMonthLabel(month)}
@@ -54,10 +62,10 @@ export function MonthCalendar({
                     <button
                         type="button"
                         onClick={() => onMonthChange(shiftMonth(month, 1))}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                        className="inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                         aria-label="Next month"
                     >
-                        <ChevronRight className="h-4 w-4" />
+                        <ChevronRight className="h-5 w-5 pointer-events-none" />
                     </button>
                 </div>
                 <div className="flex flex-wrap gap-3 text-xs text-gray-600">
@@ -70,7 +78,7 @@ export function MonthCalendar({
                 </div>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-orange-100 bg-white">
+            <div className="rounded-xl border border-orange-100 bg-white">
                 <div className="grid grid-cols-7 border-b border-orange-100 bg-orange-50 text-center text-xs font-semibold text-orange-900">
                     {WEEKDAYS.map((d) => (
                         <div key={d} className="px-1 py-2">
@@ -78,12 +86,12 @@ export function MonthCalendar({
                         </div>
                     ))}
                 </div>
-                <div className="divide-y divide-orange-50">
+                <div className="divide-y divide-orange-50" role="grid" aria-label="Calendar">
                     {weeks.map((week, wi) => (
                         <div key={wi} className="grid grid-cols-7">
                             {week.map((date, di) => {
                                 if (!date) {
-                                    return <div key={`${wi}-${di}`} className="min-h-[4.5rem] bg-gray-50/40" />;
+                                    return <div key={`${wi}-${di}`} className="min-h-[3.25rem] bg-gray-50/40 sm:min-h-[4.5rem]" />;
                                 }
                                 const types = itemTypesOnDate(items, date);
                                 const isSelected = selectedDate === date;
@@ -92,21 +100,34 @@ export function MonthCalendar({
                                     <button
                                         key={date}
                                         type="button"
-                                        onClick={() => onSelectDate(date)}
-                                        className={`min-h-[4.5rem] border-r border-orange-50 p-1.5 text-left transition-colors last:border-r-0 ${
+                                        role="gridcell"
+                                        aria-label={date}
+                                        aria-selected={isSelected}
+                                        onPointerUp={(e) => {
+                                            if (e.pointerType === "mouse" && e.button !== 0) return;
+                                            activateDate(date);
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                e.preventDefault();
+                                                activateDate(date);
+                                            }
+                                        }}
+                                        className={`relative z-[1] flex min-h-[3.25rem] w-full cursor-pointer touch-manipulation select-none flex-col border-r border-orange-50 p-2 text-left transition-colors last:border-r-0 active:bg-orange-100 sm:min-h-[4.5rem] ${
                                             isSelected
-                                                ? "bg-orange-100 ring-2 ring-inset ring-orange-400"
+                                                ? "bg-orange-100 outline outline-2 outline-orange-400 -outline-offset-2"
                                                 : "hover:bg-orange-50/60"
                                         }`}
+                                        style={{ WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
                                     >
                                         <span
-                                            className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                                            className={`pointer-events-none inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold sm:h-7 sm:w-7 ${
                                                 isToday ? "bg-orange-600 text-white" : "text-gray-800"
                                             }`}
                                         >
                                             {Number(date.slice(8, 10))}
                                         </span>
-                                        <div className="mt-1 flex flex-wrap gap-0.5">
+                                        <div className="pointer-events-none mt-1 flex min-h-[0.375rem] flex-wrap gap-0.5">
                                             {types.map((type) => (
                                                 <span
                                                     key={type}

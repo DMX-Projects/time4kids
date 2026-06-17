@@ -25,6 +25,8 @@ const VIEW_INLINE_EXTS = new Set([
     "m4a",
     "aac",
     "ogg",
+    "amr",
+    "opus",
 ]);
 
 export function extensionFromPath(file: string | null | undefined): string {
