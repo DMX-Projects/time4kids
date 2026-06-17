@@ -507,7 +507,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     useEffect(() => {
-        if (!user || user.role !== "parent" || !tokens?.access) return;
+        if (!user || !tokens?.access) return;
         void refreshAll();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.id, user?.role, tokens?.access]);
