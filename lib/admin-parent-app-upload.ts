@@ -99,13 +99,22 @@ export function matchParentDocToSlot(
     return inCategory.find((d) => d.franchise === slot.franchiseId);
 }
 
+/** Parent dashboard holiday section: head-office lists only (centre lists use /holidays). */
+export function isParentDashboardHolidayDoc(doc: ParentDocumentForMatch): boolean {
+    if (doc.category !== "HOLIDAY_LISTS") return true;
+    return doc.franchise == null;
+}
+
 /** Parent dashboard: every uploaded file for a section (no frontend type filtering). */
 export function buildParentDashboardSectionItems(
     category: string,
     docs: ParentDocumentForMatch[],
 ): ParentDocumentForMatch[] {
     const inCategory = docs.filter(
-        (d) => d.category === category && parentDocumentRowVisible(d, category),
+        (d) =>
+            d.category === category &&
+            parentDocumentRowVisible(d, category) &&
+            isParentDashboardHolidayDoc(d),
     );
     const section = PARENT_APP_DOCUMENT_CHECKLIST.find((s) => s.category === category);
     const fixedSlots = (section?.slots ?? []).filter((s) => s.suggestedTitle);

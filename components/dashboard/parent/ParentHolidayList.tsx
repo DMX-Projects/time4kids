@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, FileText } from "lucide-react";
+import { Building2, Download, FileText, School } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
 import { formatHolidayDate, parseHolidayEntries, type HolidayEntry } from "@/config/holiday-entries";
 import { openParentDocumentFile } from "@/lib/parent-document-file-open";
 
@@ -14,9 +15,20 @@ type HolidayDoc = {
     state_display?: string | null;
     academic_year?: string;
     franchise?: number | null;
+    franchise_name?: string | null;
+    source_label?: string;
     file?: string;
     file_view_path?: string | null;
     holiday_entries?: HolidayEntry[] | unknown;
+    created_at?: string;
+    updated_at?: string;
+};
+
+type HolidayPdfDownload = {
+    sourceType: "head_office" | "centre";
+    sourceName: string;
+    title: string;
+    openDoc: { id: number; title: string; file: string; display_title?: string };
 };
 
 type PreparedHoliday = {
@@ -25,7 +37,7 @@ type PreparedHoliday = {
     state_display?: string | null;
     academic_year?: string;
     entries: HolidayEntry[];
-    hasFile: boolean;
+    pdfDownloads: HolidayPdfDownload[];
     openDoc: { id: number; title: string; file: string; display_title?: string };
 };
 
@@ -49,6 +61,34 @@ function docHasFile(doc: HolidayDoc | undefined): boolean {
     return Boolean((doc.file || "").trim() || (doc.file_view_path || "").trim());
 }
 
+function docUpdatedTime(doc: HolidayDoc): number {
+    return new Date(doc.updated_at ?? doc.created_at ?? 0).getTime() || 0;
+}
+
+function centreSourceName(doc: HolidayDoc): string {
+    return (doc.franchise_name || doc.source_label || "Your centre").trim();
+}
+
+function collectPdfDownloads(group: HolidayDoc[]): HolidayPdfDownload[] {
+    return [...group]
+        .filter(docHasFile)
+        .sort((a, b) => {
+            const aHo = a.franchise == null ? 0 : 1;
+            const bHo = b.franchise == null ? 0 : 1;
+            if (aHo !== bHo) return aHo - bHo;
+            return docUpdatedTime(b) - docUpdatedTime(a);
+        })
+        .map((doc) => {
+            const isCentre = doc.franchise != null;
+            return {
+                sourceType: isCentre ? "centre" : "head_office",
+                sourceName: isCentre ? centreSourceName(doc) : "Head office",
+                title: doc.display_title || doc.title || (isCentre ? "Centre holiday list" : "Head office holiday list"),
+                openDoc: toOpenDoc(doc),
+            };
+        });
+}
+
 function toOpenDoc(doc: HolidayDoc): PreparedHoliday["openDoc"] {
     return {
         id: doc.id,
@@ -58,15 +98,20 @@ function toOpenDoc(doc: HolidayDoc): PreparedHoliday["openDoc"] {
     };
 }
 
-function toPreparedHoliday(display: HolidayDoc, pdfSource: HolidayDoc | null, entries: HolidayEntry[]): PreparedHoliday {
+function toPreparedHoliday(
+    display: HolidayDoc,
+    pdfDownloads: HolidayPdfDownload[],
+    entries: HolidayEntry[],
+): PreparedHoliday {
+    const primaryPdf = pdfDownloads[0]?.openDoc;
     return {
         id: display.id,
         label: display.display_title || display.title,
         state_display: display.state_display,
         academic_year: display.academic_year,
         entries,
-        hasFile: Boolean(pdfSource && docHasFile(pdfSource)),
-        openDoc: toOpenDoc(pdfSource && docHasFile(pdfSource) ? pdfSource : display),
+        pdfDownloads,
+        openDoc: primaryPdf ?? toOpenDoc(display),
     };
 }
 
@@ -80,7 +125,7 @@ function mergeHolidayEntryRows(rows: HolidayEntry[]): HolidayEntry[] {
     return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** One card per state/year — merges HO + centre PDFs and manual holiday tables. */
+/** One card per state/year — HO + centre PDFs and merged manual holiday tables. */
 function prepareHolidayDocs(docs: HolidayDoc[]): PreparedHoliday[] {
     const byKey = new Map<string, HolidayDoc[]>();
     const standalone: HolidayDoc[] = [];
@@ -105,30 +150,24 @@ function prepareHolidayDocs(docs: HolidayDoc[]): PreparedHoliday[] {
     for (const group of Array.from(byKey.values())) {
         const centre = group.find((d) => d.franchise != null);
         const globals = group.filter((d) => d.franchise == null);
-        const display = centre ?? globals[0];
+        const display = globals[0] ?? centre;
         if (!display) continue;
 
-        const pdfSource: HolidayDoc | null =
-            centre && docHasFile(centre)
-                ? centre
-                : globals.find((d) => docHasFile(d)) ?? null;
+        const pdfDownloads = collectPdfDownloads(group);
+        const entries = mergeHolidayEntryRows(group.flatMap((d) => parseHolidayEntries(d.holiday_entries)));
 
-        const entries = centre
-            ? parseHolidayEntries(centre.holiday_entries)
-            : mergeHolidayEntryRows(globals.flatMap((d) => parseHolidayEntries(d.holiday_entries)));
+        if (pdfDownloads.length === 0 && entries.length === 0) continue;
 
-        if (!pdfSource && entries.length === 0) continue;
-
-        usedIds.add(display.id);
-        if (pdfSource?.id) usedIds.add(pdfSource.id);
-        out.push(toPreparedHoliday(display, pdfSource, entries));
+        for (const doc of group) usedIds.add(doc.id);
+        out.push(toPreparedHoliday(display, pdfDownloads, entries));
     }
 
     for (const doc of standalone) {
         if (usedIds.has(doc.id)) continue;
         const entries = parseHolidayEntries(doc.holiday_entries);
-        if (!docHasFile(doc) && entries.length === 0) continue;
-        out.push(toPreparedHoliday(doc, docHasFile(doc) ? doc : null, entries));
+        const pdfDownloads = collectPdfDownloads([doc]);
+        if (pdfDownloads.length === 0 && entries.length === 0) continue;
+        out.push(toPreparedHoliday(doc, pdfDownloads, entries));
     }
 
     return out.sort((a, b) => a.label.localeCompare(b.label));
@@ -136,14 +175,19 @@ function prepareHolidayDocs(docs: HolidayDoc[]): PreparedHoliday[] {
 
 export function ParentHolidayList() {
     const { authFetch, authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
+    const { scopedApiPath, studentScopeReady, selectedStudent, hasMultipleChildren } = useParentData();
     const [docs, setDocs] = useState<HolidayDoc[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!studentScopeReady) return;
         let cancelled = false;
+        setLoading(true);
         (async () => {
             try {
-                const data = await authFetch<unknown>("/documents/parent/documents/category/HOLIDAY_LISTS/");
+                const data = await authFetch<unknown>(
+                    scopedApiPath("/documents/parent/documents/category/HOLIDAY_LISTS/?wrap=list"),
+                );
                 if (!cancelled) setDocs(normalizeDocs(data));
             } catch {
                 if (!cancelled) setDocs([]);
@@ -154,7 +198,7 @@ export function ParentHolidayList() {
         return () => {
             cancelled = true;
         };
-    }, [authFetch]);
+    }, [authFetch, scopedApiPath, studentScopeReady]);
 
     const prepared = useMemo(() => prepareHolidayDocs(docs), [docs]);
 
@@ -167,17 +211,30 @@ export function ParentHolidayList() {
                     </div>
                     <div>
                         <h1 className="text-lg font-semibold text-orange-900">Holiday list</h1>
-                        <p className="text-sm text-orange-700">Academic year holidays for your state / centre.</p>
+                        <p className="text-sm text-orange-700">
+                            Head office and your centre holiday lists are shown here. Centre-only lists are not repeated on
+                            the main dashboard.
+                        </p>
+                        {hasMultipleChildren && selectedStudent ? (
+                            <p className="text-xs text-orange-600 mt-1">
+                                Showing holidays for {selectedStudent.name}
+                                {selectedStudent.grade ? ` (${selectedStudent.grade})` : ""}.
+                            </p>
+                        ) : null}
                     </div>
                 </div>
             </section>
 
-            {loading ? <p className="text-sm text-orange-700">Loading…</p> : null}
+            {(!studentScopeReady || loading) ? (
+                <p className="text-sm text-orange-700">
+                    {!studentScopeReady ? "Loading your child's profile…" : "Loading…"}
+                </p>
+            ) : null}
 
-            {!loading && prepared.length > 0 ? (
+            {studentScopeReady && !loading && prepared.length > 0 ? (
                 <div className="space-y-4">
                     {prepared.map((doc) => (
-                        <section key={`${doc.id}-${doc.label}`} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm space-y-3">
+                        <section key={`${doc.id}-${doc.label}`} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm space-y-4">
                             <div>
                                 <h2 className="text-sm font-semibold text-orange-900">{doc.label}</h2>
                                 {doc.state_display || doc.academic_year ? (
@@ -187,17 +244,64 @@ export function ParentHolidayList() {
                                 ) : null}
                             </div>
 
-                            {doc.hasFile ? (
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, doc.openDoc)
-                                    }
-                                    className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-semibold text-orange-800 border border-orange-100 hover:bg-orange-100"
-                                >
-                                    <Download className="w-4 h-4" />
-                                    View / download PDF
-                                </button>
+                            {doc.pdfDownloads.length > 0 ? (
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    {doc.pdfDownloads.map((pdf) => {
+                                        const isHo = pdf.sourceType === "head_office";
+                                        return (
+                                            <div
+                                                key={`${doc.id}-${pdf.openDoc.id}-${pdf.sourceType}`}
+                                                className={`rounded-xl border p-3 space-y-2 ${
+                                                    isHo
+                                                        ? "border-sky-200 bg-sky-50/80"
+                                                        : "border-orange-200 bg-orange-50/80"
+                                                }`}
+                                            >
+                                                <div className="flex items-start gap-2">
+                                                    <span
+                                                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                                                            isHo
+                                                                ? "bg-sky-100 text-sky-800 border border-sky-200"
+                                                                : "bg-orange-100 text-orange-800 border border-orange-200"
+                                                        }`}
+                                                    >
+                                                        {isHo ? (
+                                                            <Building2 className="h-3 w-3" aria-hidden />
+                                                        ) : (
+                                                            <School className="h-3 w-3" aria-hidden />
+                                                        )}
+                                                        {isHo ? "Head office" : "Your centre"}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm font-semibold text-gray-900 leading-snug">{pdf.title}</p>
+                                                {!isHo ? (
+                                                    <p className="text-xs text-orange-800">{pdf.sourceName}</p>
+                                                ) : (
+                                                    <p className="text-xs text-sky-800">Published by Time4Kids head office</p>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        openParentDocumentFile(
+                                                            getAccessTokenForDocumentView,
+                                                            authFetchBlobResponse,
+                                                            pdf.openDoc,
+                                                            selectedStudent?.id,
+                                                        )
+                                                    }
+                                                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold border ${
+                                                        isHo
+                                                            ? "bg-white text-sky-900 border-sky-200 hover:bg-sky-100"
+                                                            : "bg-white text-orange-900 border-orange-200 hover:bg-orange-100"
+                                                    }`}
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                    View / download PDF
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             ) : null}
 
                             {doc.entries.length > 0 ? (
@@ -229,7 +333,7 @@ export function ParentHolidayList() {
                 </div>
             ) : null}
 
-            {!loading && prepared.length === 0 ? (
+            {studentScopeReady && !loading && prepared.length === 0 ? (
                 <section className="rounded-2xl border border-dashed border-orange-200 bg-orange-50/50 p-6">
                     <p className="text-sm text-orange-900 font-medium">
                         No holiday list added yet. Head office or your centre will add holidays here.

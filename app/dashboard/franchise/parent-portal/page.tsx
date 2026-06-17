@@ -10,25 +10,13 @@ import Button from "@/components/ui/Button";
 import { jsonHeaders } from "@/lib/api-client";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import Modal from "@/components/ui/Modal";
-import { openNewsletterVideoEmbedLink, openParentDocumentAudioFile, openParentDocumentFile } from "@/lib/parent-document-file-open";
-import {
-    PARENT_NEWSLETTER_LABEL,
-    newsletterRowKind,
-    newsletterKindLabel,
-} from "@/config/parent-newsletter";
-import { DEFAULT_HOLIDAY_ACADEMIC_YEAR } from "@/config/parent-document-categories";
-import {
-    filterHolidayEntries,
-    formatHolidayDate,
-    formatHolidayDateFilter,
-    holidayEntryYears,
-    monthSelectOptions,
-    parseHolidayEntries,
-    type HolidayEntry,
-} from "@/config/holiday-entries";
-import HolidayEntriesReadOnly from "@/components/dashboard/HolidayEntriesReadOnly";
 import { CENTRE_PROGRAM_LABELS } from "@/config/centre-program-cards-defaults";
 import dynamic from "next/dynamic";
+import {
+    FranchiseAnnouncementsPanel,
+    FranchiseHolidayPanel,
+    FranchiseNewsletterPanel,
+} from "@/components/dashboard/franchise/FranchiseParentCmsPanels";
 
 const HOMEWORK_CLASS_OPTIONS = [
     { value: "", label: "All classes" },
@@ -48,6 +36,10 @@ const ParentPortalCalendarPanel = dynamic(
     { ssr: false },
 );
 const FranchiseEventsPanel = dynamic(() => import("../events/page"), { ssr: false });
+const FranchiseFeesPanel = dynamic(
+    () => import("@/components/dashboard/franchise/FranchiseFeesPanel").then((m) => m.FranchiseFeesPanel),
+    { ssr: false },
+);
 type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 type ShowToastFn = (message: string, variant?: "success" | "error") => void;
 
@@ -118,7 +110,7 @@ function parseTabParam(value: string | null): Tab | null {
 export default function ParentPortalAdminPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { authFetch } = useAuth();
+    const { authFetch, user } = useAuth();
     const { showToast } = useToast();
     const [tab, setTab] = useState<Tab>("homework");
     const [students, setStudents] = useState<MiniStudent[]>([]);
@@ -142,13 +134,38 @@ export default function ParentPortalAdminPage() {
     };
 
     const loadStudents = useCallback(async () => {
+        if (!user || user.role !== "franchise") {
+            setStudents([]);
+            return;
+        }
         try {
             const rows = await fetchAllApiList(authFetch, "/students/franchise/students/mini/");
-            setStudents(rows as MiniStudent[]);
+            setStudents(
+                rows
+                    .map((row) => {
+                        const r = row as Record<string, unknown>;
+                        const id = Number(r.id ?? r.pk);
+                        if (!Number.isFinite(id)) return null;
+                        const fromParts =
+                            r.first_name != null || r.last_name != null
+                                ? `${String(r.first_name ?? "").trim()} ${String(r.last_name ?? "").trim()}`.trim()
+                                : "";
+                        return {
+                            id,
+                            full_name:
+                                String(r.full_name ?? "").trim() ||
+                                String(r.name ?? "").trim() ||
+                                fromParts ||
+                                "Student",
+                            class_name: String(r.class_name ?? r.grade ?? "").trim(),
+                        } satisfies MiniStudent;
+                    })
+                    .filter((s): s is MiniStudent => s !== null),
+            );
         } catch {
             setStudents([]);
         }
-    }, [authFetch]);
+    }, [authFetch, user]);
 
     useEffect(() => {
         void loadStudents();
@@ -162,9 +179,10 @@ export default function ParentPortalAdminPage() {
                     Parent App
                 </h1>
                 <p className="text-sm text-[#374151] mt-1">
-                    Manage what parents see in the app. Holiday lists, newsletters, and notifications are uploaded by
-                    head office only — centres can view them here. Homework, fees, transport, and other tabs are still
-                    managed at your centre.
+                    Centre CMS — manage what goes to the <strong>real parent login app</strong> (web and mobile). Uploads
+                    here appear for parents after class/centre rules apply. This screen is not the parent login; lists
+                    below show everything sent to your centre (all classes). Head office can also publish to your centre
+                    from admin CMS.
                 </p>
             </div>
 
@@ -182,43 +200,18 @@ export default function ParentPortalAdminPage() {
             </div>
 
             {tab === "homework" && <HomeworkTab authFetch={authFetch} showToast={showToast} onRefresh={loadStudents} />}
-            {tab === "notifications" && <AnnouncementsTab authFetch={authFetch} />}
-            {tab === "timetable" && <NewsLetterTab authFetch={authFetch} />}
+            {tab === "notifications" && (
+                <FranchiseAnnouncementsPanel authFetch={authFetch} showToast={showToast} students={students} />
+            )}
+            {tab === "timetable" && <FranchiseNewsletterPanel authFetch={authFetch} showToast={showToast} />}
             {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} />}
             {tab === "calendar" && <CalendarAttendanceTab />}
             {tab === "showcase" && <FranchiseEventsPanel />}
-            {tab === "fees" && <FeesTab authFetch={authFetch} showToast={showToast} students={students} />}
-            {tab === "holidays" && <HolidayListTab authFetch={authFetch} />}
+            {tab === "fees" && <FranchiseFeesPanel authFetch={authFetch} showToast={showToast} />}
+            {tab === "holidays" && <FranchiseHolidayPanel authFetch={authFetch} showToast={showToast} />}
         </div>
     );
 }
-
-type NewsLetterRow = {
-    id: number;
-    title: string;
-    display_title?: string;
-    file: string;
-    video_embed_url?: string;
-    audio_file?: string;
-    audio_embed_url?: string;
-    period_start?: string | null;
-    period_end?: string | null;
-    created_at?: string;
-};
-
-const newsletterRowDate = (row: NewsLetterRow) =>
-    homeworkDate(row.period_start) || homeworkDate(row.period_end) || homeworkDate(row.created_at) || "—";
-
-const newsletterCoversDate = (row: NewsLetterRow, date: string) => {
-    const start = homeworkDate(row.period_start);
-    const end = homeworkDate(row.period_end);
-    const created = homeworkDate(row.created_at);
-    if (start && end && date >= start && date <= end) return true;
-    return start === date || end === date || created === date;
-};
-
-const apiErrorMessage = (err: unknown, fallback: string) =>
-    err instanceof Error && err.message.trim() ? err.message : fallback;
 
 function CalendarAttendanceTab() {
     const [attendanceDate, setAttendanceDate] = useState(todayLocal);
@@ -235,469 +228,6 @@ function CalendarAttendanceTab() {
     );
 }
 
-function NewsLetterTab({ authFetch }: { authFetch: AuthFetchFn; showToast?: ShowToastFn }) {
-    const { authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
-    const [rows, setRows] = useState<NewsLetterRow[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [trackDate, setTrackDate] = useState(todayLocal);
-
-    const load = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams({ manage: "newsletter", date: trackDate });
-            const data = await authFetch<unknown>(`/documents/franchise/parent-documents/?${params.toString()}`);
-            setRows(normalizeList<NewsLetterRow>(data));
-        } catch {
-            setRows([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [authFetch, trackDate]);
-
-    useEffect(() => {
-        void load();
-    }, [load]);
-
-    return (
-        <div className="max-w-2xl rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
-            <div className="space-y-1">
-                <h3 className="text-sm font-semibold text-[#111827]">{PARENT_NEWSLETTER_LABEL}</h3>
-                <p className="text-xs text-[#6B7280]">
-                    Uploaded by head office. View what parents see for the selected date.
-                </p>
-            </div>
-            <label className="block text-xs font-semibold text-[#4B5563]">
-                Track date
-                <input
-                    type="date"
-                    value={trackDate}
-                    onChange={(e) => setTrackDate(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                />
-            </label>
-            {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
-            {!loading && rows.length === 0 ? (
-                <p className="text-sm text-center text-[#6B7280] rounded-xl border border-dashed border-[#E5E7EB] px-4 py-8">
-                    No newsletter for {trackDate}. Head office adds these in Admin → Parent documents.
-                </p>
-            ) : null}
-            {!loading && rows.length > 0 ? (
-                <ul className="divide-y border rounded-xl max-h-[420px] overflow-y-auto">
-                    {rows.map((row) => {
-                        const kind = newsletterRowKind(row);
-                        const openRow = () => {
-                            if (kind === "video") {
-                                openNewsletterVideoEmbedLink(row.video_embed_url || "", row.display_title || row.title);
-                                return;
-                            }
-                            if (kind === "audio") {
-                                if (row.audio_file) {
-                                    openParentDocumentAudioFile(getAccessTokenForDocumentView, authFetchBlobResponse, row);
-                                } else if (row.audio_embed_url) {
-                                    window.open(row.audio_embed_url, "_blank", "noopener,noreferrer");
-                                }
-                                return;
-                            }
-                            if (row.file) {
-                                openParentDocumentFile(getAccessTokenForDocumentView, authFetchBlobResponse, row);
-                            }
-                        };
-                        return (
-                            <li key={row.id} className="px-4 py-3 text-sm">
-                                <button
-                                    type="button"
-                                    onClick={openRow}
-                                    className="w-full text-left font-medium text-[#1F2937] hover:text-[#FF922B] hover:underline"
-                                >
-                                    <span className="block truncate">{row.display_title || row.title}</span>
-                                    <span className="block text-[11px] text-[#6B7280] mt-0.5 font-normal">
-                                        {newsletterRowDate(row)} · {newsletterKindLabel(kind)}
-                                    </span>
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
-            ) : null}
-        </div>
-    );
-}
-
-
-type HolidayRow = {
-    id: number;
-    title: string;
-    display_title?: string;
-    file: string;
-    file_view_path?: string | null;
-    state?: string | null;
-    state_display?: string | null;
-    academic_year?: string;
-    franchise?: number | null;
-    holiday_entries?: HolidayEntry[] | unknown;
-    created_at?: string;
-    updated_at?: string;
-};
-
-function holidayRowHasFile(row: HolidayRow | null | undefined): boolean {
-    if (!row) return false;
-    return Boolean((row.file || "").trim() || (row.file_view_path || "").trim());
-}
-
-function holidayRowOpenDoc(row: HolidayRow) {
-    return {
-        id: row.id,
-        title: row.title,
-        display_title: row.display_title,
-        file: row.file || row.file_view_path || "",
-    };
-}
-
-type HolidayStateGroup = {
-    state: string;
-    stateDisplay: string;
-    academicYear: string;
-    global: HolidayRow | null;
-    centre: HolidayRow | null;
-};
-
-function HolidayListTab({ authFetch }: { authFetch: AuthFetchFn }) {
-    const { authFetchBlobResponse, getAccessTokenForDocumentView } = useAuth();
-    const [rows, setRows] = useState<HolidayRow[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedState, setSelectedState] = useState<string | null>(null);
-    const [trackMonth, setTrackMonth] = useState("");
-    const [trackYear, setTrackYear] = useState("");
-    const [trackDate, setTrackDate] = useState("");
-
-    const load = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams({ manage: "holidays" });
-            const data = await authFetch<unknown>(`/documents/franchise/parent-documents/?${params.toString()}`);
-            setRows(normalizeList<HolidayRow>(data));
-        } catch {
-            setRows([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [authFetch]);
-
-    useEffect(() => {
-        void load();
-    }, [load]);
-
-    const stateGroups = useMemo((): HolidayStateGroup[] => {
-        const globalRows = rows.filter((r) => !r.franchise);
-        const states = new Set<string>();
-        for (const row of globalRows) {
-            if (row.state) states.add(row.state);
-        }
-        return Array.from(states)
-            .sort((a, b) => {
-                const labelA = globalRows.find((g) => g.state === a)?.state_display || a;
-                const labelB = globalRows.find((g) => g.state === b)?.state_display || b;
-                return labelA.localeCompare(labelB);
-            })
-            .map((state) => {
-                const global = globalRows.find((g) => g.state === state) ?? null;
-                return {
-                    state,
-                    stateDisplay: global?.state_display || state,
-                    academicYear: global?.academic_year || DEFAULT_HOLIDAY_ACADEMIC_YEAR,
-                    global,
-                    centre: null,
-                };
-            });
-    }, [rows]);
-
-    const selectedGroup = useMemo(() => {
-        if (!stateGroups.length) return null;
-        return stateGroups.find((g) => g.state === selectedState) ?? stateGroups[0];
-    }, [stateGroups, selectedState]);
-
-    const holidayFilterYears = useMemo(() => {
-        if (!selectedGroup) return [];
-        return holidayEntryYears(parseHolidayEntries(selectedGroup.global?.holiday_entries));
-    }, [selectedGroup]);
-
-    const holidayFilterLabel = formatHolidayDateFilter(trackMonth, trackYear, trackDate);
-
-    useEffect(() => {
-        if (!stateGroups.length) {
-            setSelectedState(null);
-            return;
-        }
-        if (!selectedState || !stateGroups.some((g) => g.state === selectedState)) {
-            setSelectedState(stateGroups[0].state);
-        }
-    }, [stateGroups, selectedState]);
-
-    const renderHolidayDateFilters = (years: string[]) => (
-        <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-3 space-y-2">
-            <p className="text-[11px] font-semibold text-[#374151]">Filter by date</p>
-            <div className="flex flex-wrap items-end gap-3">
-                <label className="block text-[11px] font-semibold text-[#4B5563]">
-                    Date
-                    <input
-                        type="date"
-                        value={trackDate}
-                        onChange={(e) => {
-                            const next = e.target.value.slice(0, 10);
-                            setTrackDate(next);
-                            if (next.length >= 10) {
-                                setTrackYear(next.slice(0, 4));
-                                setTrackMonth(next.slice(5, 7));
-                            }
-                        }}
-                        className="mt-1 block w-full min-w-[9.5rem] rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs"
-                    />
-                </label>
-                <label className="block text-[11px] font-semibold text-[#4B5563]">
-                    Month
-                    <select
-                        value={trackMonth}
-                        onChange={(e) => {
-                            setTrackMonth(e.target.value);
-                            setTrackDate("");
-                        }}
-                        className="mt-1 block w-full min-w-[7.5rem] rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs"
-                    >
-                        {monthSelectOptions().map((opt) => (
-                            <option key={opt.value || "all"} value={opt.value}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="block text-[11px] font-semibold text-[#4B5563]">
-                    Year
-                    <select
-                        value={trackYear}
-                        onChange={(e) => {
-                            setTrackYear(e.target.value);
-                            setTrackDate("");
-                        }}
-                        className="mt-1 block w-full min-w-[5.5rem] rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs"
-                    >
-                        <option value="">All years</option>
-                        {years.map((y) => (
-                            <option key={y} value={y}>
-                                {y}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                {trackDate || trackMonth || trackYear ? (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setTrackDate("");
-                            setTrackMonth("");
-                            setTrackYear("");
-                        }}
-                        className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-xs font-semibold text-[#6B7280] hover:bg-[#F3F4F6]"
-                    >
-                        Clear
-                    </button>
-                ) : null}
-            </div>
-            <p className="text-[10px] text-[#6B7280]">Showing: {holidayFilterLabel}</p>
-        </div>
-    );
-
-    const renderHolidayListCard = (group: HolidayStateGroup) => {
-        const globalEntries = parseHolidayEntries(group.global?.holiday_entries);
-        const merged = globalEntries;
-        const filteredMerged = filterHolidayEntries(merged, {
-            month: trackMonth,
-            year: trackYear,
-            date: trackDate,
-        });
-        const adminHasPdf = holidayRowHasFile(group.global);
-        const parentsPdfSource = adminHasPdf && group.global ? group.global : null;
-
-        return (
-            <div className="rounded-xl border border-[#BFDBFE] bg-[#F8FAFC] p-4 space-y-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <p className="font-semibold text-[#111827]">{group.stateDisplay}</p>
-                        <p className="text-[11px] text-[#6B7280]">{group.academicYear}</p>
-                    </div>
-                </div>
-
-                {parentsPdfSource ? (
-                    <button
-                        type="button"
-                        onClick={() =>
-                            openParentDocumentFile(
-                                getAccessTokenForDocumentView,
-                                authFetchBlobResponse,
-                                holidayRowOpenDoc(parentsPdfSource),
-                            )
-                        }
-                        className="inline-flex items-center gap-2 rounded-full border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] hover:bg-[#EFF6FF]"
-                    >
-                        View holiday PDF (head office)
-                    </button>
-                ) : null}
-
-                {merged.length > 0 ? (
-                    filteredMerged.length > 0 ? (
-                        <div className="overflow-x-auto rounded-lg border border-[#E2E8F0] bg-white px-2 py-2">
-                            <table className="min-w-full text-xs">
-                                <thead>
-                                    <tr className="text-left text-slate-500">
-                                        <th className="px-2 py-1 font-semibold">Date</th>
-                                        <th className="px-2 py-1 font-semibold">Holiday</th>
-                                        <th className="px-2 py-1 font-semibold">City</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredMerged.map((row, index) => (
-                                        <tr key={`${row.date}-${index}`} className="text-slate-800">
-                                            <td className="px-2 py-1 whitespace-nowrap">{formatHolidayDate(row.date)}</td>
-                                            <td className="px-2 py-1 font-medium">{row.name}</td>
-                                            <td className="px-2 py-1">{row.city || "—"}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <p className="text-sm text-[#6B7280] text-center rounded-lg border border-dashed border-[#E5E7EB] bg-white px-4 py-6">
-                            No holidays in {holidayFilterLabel}. Change date, month, or year above.
-                        </p>
-                    )
-                ) : (
-                    <p className="text-sm text-[#6B7280] text-center rounded-lg border border-dashed border-[#E5E7EB] bg-white px-4 py-6">
-                        No holidays from head office yet for this state.
-                    </p>
-                )}
-            </div>
-        );
-    };
-
-    const renderHolidayTracking = (group: HolidayStateGroup) => {
-        const globalEntries = parseHolidayEntries(group.global?.holiday_entries);
-        const allAdminRows = globalEntries;
-        const filteredAdmin = filterHolidayEntries(allAdminRows, {
-            month: trackMonth,
-            year: trackYear,
-            date: trackDate,
-        });
-        const adminHasPdf = holidayRowHasFile(group.global);
-        const adminUpdated = formatUploadDate(group.global?.updated_at || group.global?.created_at);
-
-        return (
-            <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-3 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <span
-                        className={`inline-flex rounded-full px-2 py-0.5 font-semibold ${
-                            adminHasPdf ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#FEE2E2] text-[#991B1B]"
-                        }`}
-                    >
-                        PDF {adminHasPdf ? "uploaded" : "missing"}
-                    </span>
-                    <span className="text-[#64748B]">Updated {adminUpdated}</span>
-                </div>
-
-                {group.global && adminHasPdf ? (
-                    <button
-                        type="button"
-                        onClick={() =>
-                            openParentDocumentFile(
-                                getAccessTokenForDocumentView,
-                                authFetchBlobResponse,
-                                holidayRowOpenDoc(group.global!),
-                            )
-                        }
-                        className="inline-flex items-center gap-2 rounded-full border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] hover:bg-[#DBEAFE]"
-                    >
-                        View admin PDF
-                    </button>
-                ) : (
-                    <p className="text-[11px] text-[#64748B]">No admin PDF for this state.</p>
-                )}
-
-                {allAdminRows.length > 0 ? (
-                    filteredAdmin.length > 0 ? (
-                        <HolidayEntriesReadOnly
-                            rows={filteredAdmin}
-                            title={`Admin holidays — ${holidayFilterLabel} (${filteredAdmin.length})`}
-                            emptyMessage=""
-                        />
-                    ) : (
-                        <p className="text-[11px] text-[#6B7280]">No admin holidays in {holidayFilterLabel}.</p>
-                    )
-                ) : (
-                    <p className="text-[11px] text-[#6B7280]">Admin has not added holiday rows for this state.</p>
-                )}
-            </div>
-        );
-    };
-
-    return (
-        <div className="grid gap-4 lg:grid-cols-2 lg:items-start max-w-5xl">
-            {!loading && selectedGroup ? (
-                <div className="lg:col-span-2">{renderHolidayDateFilters(holidayFilterYears)}</div>
-            ) : null}
-
-            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
-                <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-[#111827]">Holiday list</h3>
-                    <p className="text-xs text-[#6B7280]">
-                        Managed by head office for your state. View-only — parents see this list in the app.
-                    </p>
-                </div>
-
-                {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
-
-                {!loading && stateGroups.length > 1 ? (
-                    <div className="flex flex-wrap gap-2">
-                        {stateGroups.map((group) => (
-                            <button
-                                key={group.state}
-                                type="button"
-                                onClick={() => setSelectedState(group.state)}
-                                className={`rounded-full px-3 py-1.5 text-xs font-semibold border transition-colors ${
-                                    selectedGroup?.state === group.state
-                                        ? "bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]"
-                                        : "bg-white border-[#E5E7EB] text-[#374151] hover:bg-[#F9FAFB]"
-                                }`}
-                            >
-                                {group.stateDisplay}
-                            </button>
-                        ))}
-                    </div>
-                ) : null}
-
-                {!loading && stateGroups.length === 0 ? (
-                    <p className="text-sm text-[#6B7280]">
-                        No holiday list for your state yet. Head office adds it in Admin CMS → Parent documents → Holiday Lists.
-                    </p>
-                ) : null}
-
-                {!loading && selectedGroup ? renderHolidayListCard(selectedGroup) : null}
-            </div>
-
-            <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-3 lg:sticky lg:top-4 flex flex-col max-h-[calc(100vh-6rem)] overflow-y-auto">
-                <div className="space-y-1">
-                    <h3 className="text-sm font-semibold text-[#111827]">Tracking</h3>
-                    {selectedGroup ? (
-                        <p className="text-xs text-[#6B7280]">
-                            {selectedGroup.stateDisplay} · {selectedGroup.academicYear}
-                        </p>
-                    ) : (
-                        <p className="text-xs text-[#6B7280]">Admin upload for selected state.</p>
-                    )}
-                </div>
-                {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
-                {!loading && selectedGroup ? renderHolidayTracking(selectedGroup) : null}
-            </div>
-        </div>
-    );
-}
 
 type HomeworkRow = {
     id: number;
@@ -1279,7 +809,13 @@ type AnnouncementRow = {
     student_name?: string;
     class_name?: string;
     audience_label?: string;
+    notification_origin?: "centre" | "head_office";
     is_scheduled?: boolean;
+};
+
+const originLabel: Record<NonNullable<AnnouncementRow["notification_origin"]>, string> = {
+    centre: "Your centre",
+    head_office: "Head office",
 };
 
 const announcementRowDate = (row: AnnouncementRow) => homeworkDate(row.published_at) || "—";
@@ -1309,10 +845,10 @@ function AnnouncementsTab({ authFetch }: { authFetch: AuthFetchFn }) {
     return (
         <div className="max-w-2xl rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
             <div className="space-y-1">
-                <h3 className="text-sm font-semibold text-[#111827]">Notifications</h3>
+                <h3 className="text-sm font-semibold text-[#111827]">Parent notifications</h3>
                 <p className="text-xs text-[#6B7280]">
-                    Sent by head office. View what parents see for the selected date. Centres also receive these in
-                    Franchise → Notifications.
+                    Messages that went to parents on the selected date — from your centre or head office. Head-office
+                    centre alerts (not sent to parents) appear under Franchise → Centre inbox.
                 </p>
             </div>
             <label className="block text-xs font-semibold text-[#4B5563]">
@@ -1332,7 +868,7 @@ function AnnouncementsTab({ authFetch }: { authFetch: AuthFetchFn }) {
             {loading ? <p className="text-sm text-[#6B7280]">Loading…</p> : null}
             {!loading && rows.length === 0 ? (
                 <p className="text-sm text-center text-[#6B7280] rounded-xl border border-dashed border-[#E5E7EB] px-4 py-8">
-                    No notifications for {trackDate}. Head office adds these in Admin → Notifications CMS.
+                    No parent notifications for {trackDate}. Send one from Parent Portal CMS or check another date.
                 </p>
             ) : null}
             {!loading && rows.length > 0 ? (
@@ -1341,6 +877,17 @@ function AnnouncementsTab({ authFetch }: { authFetch: AuthFetchFn }) {
                         <li key={r.id} className="px-4 py-3 text-sm">
                             <div className="flex flex-wrap items-center gap-2">
                                 <p className="font-medium text-[#1F2937]">{r.title}</p>
+                                {r.notification_origin ? (
+                                    <span
+                                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
+                                            r.notification_origin === "head_office"
+                                                ? "bg-blue-50 text-blue-700 border-blue-100"
+                                                : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                        }`}
+                                    >
+                                        {originLabel[r.notification_origin]}
+                                    </span>
+                                ) : null}
                                 <span className="shrink-0 rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-semibold text-[#4B5563]">
                                     {r.audience_label || "All parents"}
                                 </span>
@@ -1360,182 +907,6 @@ function AnnouncementsTab({ authFetch }: { authFetch: AuthFetchFn }) {
                     ))}
                 </ul>
             ) : null}
-        </div>
-    );
-}
-
-function FeesTab({ authFetch, showToast, students }: { authFetch: AuthFetchFn; showToast: ShowToastFn; students: MiniStudent[] }) {
-    const [form, setForm] = useState({
-        student: "",
-        fee_structure_name: "",
-        id_card_no: "",
-        course: "",
-        title: "",
-        amount: "",
-        discount: "0",
-        amount_paid: "0",
-        due_date: "",
-        status: "PENDING",
-        paid_on: "",
-        notes: "",
-    });
-    const [rows, setRows] = useState<
-        { id: number; student_name?: string; title: string; amount: string | number; due_date: string; status: string; paid_on?: string | null }[]
-    >([]);
-    const [loading, setLoading] = useState(true);
-
-    const load = useCallback(async () => {
-        setLoading(true);
-        try {
-            const raw = await authFetch<unknown>("/students/franchise/fees/");
-            const list = normalizeList<{
-                id: number;
-                student_name?: string;
-                title: string;
-                amount: string | number;
-                due_date: string;
-                status: string;
-                paid_on?: string | null;
-            }>(raw);
-            setRows(list);
-        } catch {
-            setRows([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [authFetch]);
-
-    useEffect(() => {
-        void load();
-    }, [load]);
-
-    const submit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!form.student) return;
-        try {
-            await authFetch("/students/franchise/fees/", {
-                method: "POST",
-                headers: jsonHeaders(),
-                body: JSON.stringify({
-                    student: Number(form.student),
-                    fee_structure_name: form.fee_structure_name.trim(),
-                    id_card_no: form.id_card_no.trim(),
-                    course: form.course.trim(),
-                    title: form.title.trim(),
-                    amount: form.amount,
-                    discount: form.discount || "0",
-                    amount_paid: form.amount_paid || "0",
-                    due_date: form.due_date,
-                    status: form.status,
-                    paid_on: form.paid_on || null,
-                    notes: form.notes,
-                }),
-            });
-            showToast("Fee entry saved", "success");
-            setForm({
-                student: "",
-                fee_structure_name: "",
-                id_card_no: "",
-                course: "",
-                title: "",
-                amount: "",
-                discount: "0",
-                amount_paid: "0",
-                due_date: "",
-                status: "PENDING",
-                paid_on: "",
-                notes: "",
-            });
-            await load();
-        } catch {
-            showToast("Save failed", "error");
-        }
-    };
-
-    return (
-        <div className="space-y-4 max-w-3xl">
-            <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 grid md:grid-cols-2 gap-3">
-                <label className="text-xs font-semibold md:col-span-2">
-                    Student
-                    <select required value={form.student} onChange={(e) => setForm((p) => ({ ...p, student: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
-                        <option value="">—</option>
-                        {students.map((s) => (
-                            <option key={s.id} value={s.id}>
-                                {s.full_name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="text-xs font-semibold">
-                    Fee structure name
-                    <input value={form.fee_structure_name} onChange={(e) => setForm((p) => ({ ...p, fee_structure_name: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    ID card no
-                    <input value={form.id_card_no} onChange={(e) => setForm((p) => ({ ...p, id_card_no: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold md:col-span-2">
-                    Course
-                    <input value={form.course} onChange={(e) => setForm((p) => ({ ...p, course: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Title
-                    <input required value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Amount
-                    <input required type="number" step="0.01" value={form.amount} onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Discount
-                    <input type="number" step="0.01" value={form.discount} onChange={(e) => setForm((p) => ({ ...p, discount: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Amount paid till date
-                    <input type="number" step="0.01" value={form.amount_paid} onChange={(e) => setForm((p) => ({ ...p, amount_paid: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Due date
-                    <input type="date" required value={form.due_date} onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold">
-                    Status
-                    <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
-                        {["PENDING", "PAID", "OVERDUE"].map((s) => (
-                            <option key={s} value={s}>
-                                {s}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label className="text-xs font-semibold">
-                    Paid on (optional)
-                    <input type="date" value={form.paid_on} onChange={(e) => setForm((p) => ({ ...p, paid_on: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <label className="text-xs font-semibold md:col-span-2">
-                    Notes
-                    <input value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
-                </label>
-                <Button type="submit" className="bg-[#FF922B] text-white w-fit">
-                    Save fee
-                </Button>
-            </form>
-
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4">
-                <p className="text-sm font-semibold text-[#111827] mb-3">Saved fee entries</p>
-                {loading && <p className="text-sm text-[#6B7280]">Loading…</p>}
-                {!loading && rows.length === 0 && <p className="text-sm text-[#6B7280]">No fee entries yet.</p>}
-                <ul className="space-y-2">
-                    {rows.map((r) => (
-                        <li key={r.id} className="rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm">
-                            <p className="font-medium text-[#111827]">{r.title}</p>
-                            <p className="text-[#4B5563] text-xs">
-                                {r.student_name || "Student"} • ₹{r.amount} • Due {r.due_date} • {r.status}
-                            </p>
-                        </li>
-                    ))}
-                </ul>
-            </div>
         </div>
     );
 }

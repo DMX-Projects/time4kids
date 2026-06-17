@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
     let pathname = "";
     let token = "";
     let name = "";
+    let student = "";
+    let studentId = "";
 
     const contentType = request.headers.get("content-type") || "";
     if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data")) {
@@ -45,12 +47,22 @@ export async function POST(request: NextRequest) {
         pathname = String(form.get("p") || "").trim();
         token = String(form.get("token") || "").trim();
         name = String(form.get("name") || "").trim();
+        student = String(form.get("student") || "").trim();
+        studentId = String(form.get("student_id") || "").trim();
     } else {
         try {
-            const json = (await request.json()) as { p?: string; token?: string; name?: string };
+            const json = (await request.json()) as {
+                p?: string;
+                token?: string;
+                name?: string;
+                student?: string;
+                student_id?: string;
+            };
             pathname = (json.p || "").trim();
             token = (json.token || "").trim();
             name = (json.name || "").trim();
+            student = String(json.student || "").trim();
+            studentId = String(json.student_id || "").trim();
         } catch {
             return errorHtml("Invalid request.", 400);
         }
@@ -65,6 +77,8 @@ export async function POST(request: NextRequest) {
 
     const upstreamParams = new URLSearchParams();
     if (name) upstreamParams.set("name", name);
+    if (student) upstreamParams.set("student", student);
+    if (studentId) upstreamParams.set("student_id", studentId);
     const rel = pathname.replace(/^\/+/, "");
     const query = upstreamParams.toString();
     const upstream = `${djangoApiOrigin()}/api/${rel}${query ? `?${query}` : ""}`;

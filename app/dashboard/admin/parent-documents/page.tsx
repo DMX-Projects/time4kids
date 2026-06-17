@@ -18,6 +18,7 @@ import { CmsPublishTargetFields } from "@/components/dashboard/admin/CmsPublishT
 import {
     emptyCmsPublishTarget,
     parentDocumentTargetPayload,
+    publishTargetFromDoc,
     type CmsPublishTargetForm,
 } from "@/lib/cms-publish-target";
 import {
@@ -26,8 +27,20 @@ import {
     PARENT_DOCUMENT_STATES,
 } from "@/config/parent-document-categories";
 import { PARENT_APP_DOCUMENT_CHECKLIST } from "@/config/parent-app-document-checklist";
-import { PARENT_NEWSLETTER_CATEGORY, PARENT_NEWSLETTER_DESCRIPTION, validateNewsletterAudioEmbedUrl, validateNewsletterAudioUpload, validateNewsletterUpload, validateNewsletterVideoEmbedUrl } from "@/config/parent-newsletter";
+import { CENTRE_PROGRAM_LABELS } from "@/config/centre-program-cards-defaults";
+import {
+    PARENT_NEWSLETTER_CATEGORY,
+    PARENT_NEWSLETTER_DESCRIPTION,
+    PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT,
+    PARENT_NEWSLETTER_AUDIO_FILE_HINT,
+    validateNewsletterAudioEmbedUrl,
+    validateNewsletterAudioUpload,
+    validateNewsletterUpload,
+    validateNewsletterVideoEmbedUrl,
+    newsletterKindChangePatch,
+} from "@/config/parent-newsletter";
 import type { AdminCenterPageUploadContext } from "@/lib/admin-center-page-upload";
+import { classLabelFromStudentsKitKey } from "@/lib/students-kit-class-from-slot";
 import {
     acceptForParentDocumentCategory,
     uploadHintForParentDocumentCategory,
@@ -96,6 +109,7 @@ export type ParentDocumentRow = ParentDocHubRow & {
     target_cities?: string[];
     target_franchise_ids?: number[];
     target_class_names?: string[];
+    class_name?: string;
 };
 
 const emptyForm = {
@@ -144,20 +158,7 @@ function isBuiltInParentSlot(rowKey: string): boolean {
     return PARENT_APP_DOCUMENT_CHECKLIST.some((s) => s.slots.some((slot) => slot.id === rowKey));
 }
 
-function publishTargetFromDoc(doc: ParentDocumentRow | null | undefined): CmsPublishTargetForm {
-    if (!doc) return emptyCmsPublishTarget();
-    const scope =
-        (doc.publish_scope as CmsPublishTargetForm["scope"]) ||
-        (doc.franchise != null ? "one_centre" : "pan_india");
-    return {
-        scope,
-        franchiseId: doc.franchise != null ? String(doc.franchise) : "",
-        franchiseIds: (doc.target_franchise_ids || []).map(String),
-        targetStates: doc.target_states || [],
-        targetCities: doc.target_cities || [],
-        className: (doc.target_class_names || [])[0] || "",
-    };
-}
+const CMS_MANAGED_PARENT_SECTION_IDS = new Set(["holiday-lists", "newsletters"]);
 
 export default function AdminParentDocumentsPage() {
     const { authFetch } = useAuth();
@@ -183,8 +184,23 @@ export default function AdminParentDocumentsPage() {
     const [renameTitle, setRenameTitle] = useState("");
     const [renameSaving, setRenameSaving] = useState(false);
     const [holidayEntries, setHolidayEntries] = useState<HolidayEntry[]>([emptyHolidayEntry()]);
+    const [submitFeedback, setSubmitFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
+        null,
+    );
 
-    const mergedSections = useMemo(() => mergeParentAppNavBlocks(navCustom), [navCustom]);
+    const reportFormMessage = useCallback(
+        (message: string, type: "success" | "error") => {
+            setSubmitFeedback({ type, message });
+            showToast(message, type);
+        },
+        [showToast],
+    );
+
+    const mergedSections = useMemo(() => {
+        const [builtIn, customTops] = mergeParentAppNavBlocks(navCustom);
+        const filteredBuiltIn = builtIn.filter((item) => !CMS_MANAGED_PARENT_SECTION_IDS.has(item.id));
+        return [filteredBuiltIn, customTops];
+    }, [navCustom]);
 
     const hubDocs = useMemo(() => parentDocsAsHubDocs(items), [items]);
 
@@ -576,7 +592,18 @@ export default function AdminParentDocumentsPage() {
                     : [emptyHolidayEntry()]
                 : [emptyHolidayEntry()],
         );
-        setPublishTarget(publishTargetFromDoc(existing));
+        setPublishTarget(
+            existing
+                ? publishTargetFromDoc(existing)
+                : holidayState
+                  ? {
+                        ...emptyCmsPublishTarget(),
+                        scope: "state",
+                        targetStates: [holidayState],
+                    }
+                  : emptyCmsPublishTarget(),
+        );
+        setSubmitFeedback(null);
         setModalOpen(true);
     };
 
@@ -588,36 +615,37 @@ export default function AdminParentDocumentsPage() {
         setAudioFile(null);
         setHolidayEntries([emptyHolidayEntry()]);
         setPublishTarget(emptyCmsPublishTarget());
+        setSubmitFeedback(null);
     };
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isHoliday && !form.state) {
-            showToast("Select a state for holiday lists.", "error");
+        if (isHoliday && publishTarget.scope === "state" && publishTarget.targetStates.length === 0 && !form.state) {
+            reportFormMessage("Select a state for holiday lists.", "error");
             return;
         }
         if (isNewsletter) {
             const videoErr = validateNewsletterVideoEmbedUrl(form.video_embed_url);
             if (videoErr) {
-                showToast(videoErr, "error");
+                reportFormMessage(videoErr, "error");
                 return;
             }
             const audioLinkErr = validateNewsletterAudioEmbedUrl(form.audio_embed_url);
             if (audioLinkErr) {
-                showToast(audioLinkErr, "error");
+                reportFormMessage(audioLinkErr, "error");
                 return;
             }
-            if (audioFile) {
+            if (form.newsletter_kind === "audio" && audioFile) {
                 const audioErr = validateNewsletterAudioUpload(audioFile);
                 if (audioErr) {
-                    showToast(audioErr, "error");
+                    reportFormMessage(audioErr, "error");
                     return;
                 }
             }
-            if (file) {
+            if (form.newsletter_kind === "document" && file) {
                 const pdfErr = validateNewsletterUpload(file);
                 if (pdfErr) {
-                    showToast(pdfErr, "error");
+                    reportFormMessage(pdfErr, "error");
                     return;
                 }
             }
@@ -629,39 +657,57 @@ export default function AdminParentDocumentsPage() {
             );
             if (!editing) {
                 if (kind === "document" && !file) {
-                    showToast("Choose a PDF or Word file.", "error");
+                    reportFormMessage("Choose a PDF or Word file.", "error");
                     return;
                 }
                 if (kind === "video" && !form.video_embed_url.trim()) {
-                    showToast("Paste a video link.", "error");
+                    reportFormMessage("Paste a video link.", "error");
                     return;
                 }
                 if (kind === "audio" && !audioFile && !form.audio_embed_url.trim()) {
-                    showToast("Upload audio or paste an audio link.", "error");
+                    reportFormMessage("Upload audio or paste an audio link.", "error");
                     return;
                 }
             } else if (kind === "document" && !hasDoc && !file) {
-                showToast("Choose a PDF or Word file.", "error");
+                reportFormMessage("Choose a PDF or Word file.", "error");
                 return;
             }
             if (!form.period_start.trim()) {
-                showToast("Choose the newsletter block date.", "error");
+                reportFormMessage("Choose the newsletter block date.", "error");
                 return;
             }
             if (publishTarget.scope === "one_centre" && !publishTarget.franchiseId) {
-                showToast("Select a centre.", "error");
+                reportFormMessage("Select a centre.", "error");
                 return;
             }
             if (publishTarget.scope === "franchises" && publishTarget.franchiseIds.length === 0) {
-                showToast("Select at least one centre.", "error");
+                reportFormMessage("Select at least one centre.", "error");
                 return;
             }
             if (publishTarget.scope === "state" && publishTarget.targetStates.length === 0) {
-                showToast("Select at least one state.", "error");
+                reportFormMessage("Select at least one state.", "error");
                 return;
             }
             if (publishTarget.scope === "city" && publishTarget.targetCities.length === 0) {
-                showToast("Select at least one city.", "error");
+                reportFormMessage("Select at least one city.", "error");
+                return;
+            }
+        }
+        if (isHoliday) {
+            if (publishTarget.scope === "one_centre" && !publishTarget.franchiseId) {
+                reportFormMessage("Select a centre.", "error");
+                return;
+            }
+            if (publishTarget.scope === "franchises" && publishTarget.franchiseIds.length === 0) {
+                reportFormMessage("Select at least one centre.", "error");
+                return;
+            }
+            if (publishTarget.scope === "state" && publishTarget.targetStates.length === 0) {
+                reportFormMessage("Select at least one state.", "error");
+                return;
+            }
+            if (publishTarget.scope === "city" && publishTarget.targetCities.length === 0) {
+                reportFormMessage("Select at least one city.", "error");
                 return;
             }
         }
@@ -671,13 +717,13 @@ export default function AdminParentDocumentsPage() {
             if (!hasHolidayFile) {
                 const holidayErr = requireHolidayEntries(holidayEntries);
                 if (holidayErr) {
-                    showToast(holidayErr, "error");
+                    reportFormMessage(holidayErr, "error");
                     return;
                 }
             } else if (serializedHolidays.length > 0) {
                 const holidayErr = validateHolidayEntries(holidayEntries);
                 if (holidayErr) {
-                    showToast(holidayErr, "error");
+                    reportFormMessage(holidayErr, "error");
                     return;
                 }
             }
@@ -687,7 +733,7 @@ export default function AdminParentDocumentsPage() {
             !file &&
             !(parentCategorySupportsEmbed(form.category) && form.video_embed_url.trim())
         ) {
-            showToast(
+            reportFormMessage(
                 parentCategorySupportsEmbed(form.category)
                     ? "Choose a file to upload or paste a video/embed link."
                     : "Choose a file to upload.",
@@ -699,27 +745,28 @@ export default function AdminParentDocumentsPage() {
             isNewsletter || parentCategorySupportsEmbed(form.category) ? form.video_embed_url.trim() : "";
         const embedNormalized = embedRaw ? resolveFranchiseEmbedSrc(embedRaw) : null;
         if (embedRaw && !embedNormalized) {
-            showToast("Could not read that link. Paste a YouTube URL or iframe embed URL.", "error");
+            reportFormMessage("Could not read that link. Paste a YouTube URL or iframe embed URL.", "error");
             return;
         }
         if (file && embedNormalized) {
-            showToast("Use either a file upload or an embed link, not both.", "error");
+            reportFormMessage("Use either a file upload or an embed link, not both.", "error");
             return;
         }
         if (file) {
             const sizeErr = validateAdminParentDocumentUpload(file, form.category);
             if (sizeErr) {
-                showToast(sizeErr, "error");
+                reportFormMessage(sizeErr, "error");
                 return;
             }
         }
 
         const sourcePath = (form.source_path || uploadContext?.sourcePath || "").trim();
 
+        setSubmitFeedback(null);
         setSubmitting(true);
         try {
-            const targetPayload = isNewsletter ? parentDocumentTargetPayload(publishTarget) : null;
-            const franchise = isNewsletter
+            const targetPayload = isNewsletter || isHoliday ? parentDocumentTargetPayload(publishTarget) : null;
+            const franchise = isNewsletter || isHoliday
                 ? targetPayload?.franchise ?? null
                 : form.franchise_id === "" || form.franchise_id === "__global__"
                   ? null
@@ -734,11 +781,16 @@ export default function AdminParentDocumentsPage() {
                 title: resolvedTitle,
                 description: isHoliday ? "" : form.description,
                 academic_year: resolvedAcademicYear || "",
-                state: isHoliday ? form.state : null,
+                state: isHoliday
+                    ? publishTarget.scope === "state" && publishTarget.targetStates[0]
+                        ? publishTarget.targetStates[0]
+                        : form.state
+                    : null,
                 order: form.order,
                 is_active: form.is_active,
                 franchise,
                 source_path: sourcePath || "",
+                ...(targetPayload || {}),
             };
 
             const periodStart = form.period_start.trim();
@@ -749,22 +801,26 @@ export default function AdminParentDocumentsPage() {
                     form.newsletter_kind === "video"
                         ? resolveFranchiseEmbedSrc(form.video_embed_url.trim()) || ""
                         : "";
-                const newsletterMeta = {
+                const kind = form.newsletter_kind;
+                const newsletterMeta: Record<string, unknown> = {
                     ...baseMeta,
                     ...targetPayload,
                     period_start: periodStart,
                     period_end: periodEnd,
-                    video_embed_url: form.newsletter_kind === "video" ? videoUrl : "",
-                    audio_embed_url:
-                        form.newsletter_kind === "audio" ? form.audio_embed_url.trim() : "",
+                    video_embed_url: kind === "video" ? videoUrl : "",
+                    audio_embed_url: kind === "audio" ? form.audio_embed_url.trim() : "",
                 };
+                if (kind !== "document" && editing?.file) newsletterMeta.file = null;
+                if (kind !== "audio" && (editing?.audio_file || editing?.audio_embed_url)) {
+                    newsletterMeta.audio_file = null;
+                }
                 if (editing) {
                     await authFetch(`/documents/admin/parent-documents/${editing.id}/`, {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(newsletterMeta),
                     });
-                    if (file) {
+                    if (kind === "document" && file) {
                         const fd = new FormData();
                         fd.append("file", file);
                         await authFetch(`/documents/admin/parent-documents/${editing.id}/`, {
@@ -772,7 +828,7 @@ export default function AdminParentDocumentsPage() {
                             body: fd,
                         });
                     }
-                    if (audioFile) {
+                    if (kind === "audio" && audioFile) {
                         const fd = new FormData();
                         fd.append("audio_file", audioFile);
                         await authFetch(`/documents/admin/parent-documents/${editing.id}/`, {
@@ -797,6 +853,7 @@ export default function AdminParentDocumentsPage() {
                         fd.append("target_cities", JSON.stringify(targetPayload.target_cities));
                         fd.append("target_franchise_ids", JSON.stringify(targetPayload.target_franchise_ids));
                         fd.append("target_class_names", JSON.stringify(targetPayload.target_class_names));
+                        if (targetPayload.class_name) fd.append("class_name", targetPayload.class_name);
                     }
                     if (franchise != null) fd.append("franchise", String(franchise));
                     if (form.newsletter_kind === "document" && file) fd.append("file", file);
@@ -807,7 +864,8 @@ export default function AdminParentDocumentsPage() {
                     }
                     await authFetch("/documents/admin/parent-documents/", { method: "POST", body: fd });
                 }
-                showToast("Newsletter saved for parents.", "success");
+                closeModal();
+                reportFormMessage("Newsletter saved for parents.", "success");
             } else if (editing) {
                 if (isHoliday) {
                     await authFetch(`/documents/admin/parent-documents/${editing.id}/`, {
@@ -842,7 +900,8 @@ export default function AdminParentDocumentsPage() {
                         }),
                     });
                 }
-                showToast("Document updated.", "success");
+                closeModal();
+                reportFormMessage("Document updated.", "success");
             } else if (isHoliday) {
                 if (file) {
                     const fd = new FormData();
@@ -854,6 +913,13 @@ export default function AdminParentDocumentsPage() {
                     fd.append("is_active", form.is_active ? "true" : "false");
                     fd.append("state", form.state);
                     if (sourcePath) fd.append("source_path", sourcePath);
+                    if (targetPayload) {
+                        fd.append("publish_scope", targetPayload.publish_scope);
+                        fd.append("target_states", JSON.stringify(targetPayload.target_states));
+                        fd.append("target_cities", JSON.stringify(targetPayload.target_cities));
+                        fd.append("target_franchise_ids", JSON.stringify(targetPayload.target_franchise_ids));
+                        fd.append("target_class_names", JSON.stringify(targetPayload.target_class_names));
+                    }
                     if (franchise != null) fd.append("franchise", String(franchise));
                     fd.append("file", file);
                     if (serializedHolidays.length > 0) {
@@ -870,7 +936,8 @@ export default function AdminParentDocumentsPage() {
                         }),
                     });
                 }
-                showToast("Holiday list saved for parents.", "success");
+                closeModal();
+                reportFormMessage("Holiday list saved for parents.", "success");
             } else if (embedNormalized) {
                 await authFetch("/documents/admin/parent-documents/", {
                     method: "POST",
@@ -880,7 +947,8 @@ export default function AdminParentDocumentsPage() {
                         video_embed_url: embedNormalized,
                     }),
                 });
-                showToast("Video link saved for parents.", "success");
+                closeModal();
+                reportFormMessage("Video link saved for parents.", "success");
             } else {
                 const fd = new FormData();
                 fd.append("category", form.category);
@@ -891,15 +959,30 @@ export default function AdminParentDocumentsPage() {
                 fd.append("is_active", form.is_active ? "true" : "false");
                 if (sourcePath) fd.append("source_path", sourcePath);
                 if (franchise != null) fd.append("franchise", String(franchise));
+                if (form.category === "STUDENTS_KIT" && uploadContext) {
+                    const kitClass = classLabelFromStudentsKitKey(
+                        uploadContext.rowKey || uploadContext.linkLabel || "",
+                    );
+                    if (kitClass) {
+                        fd.append("publish_scope", "pan_india");
+                        fd.append("target_states", "[]");
+                        fd.append("target_cities", "[]");
+                        fd.append("target_franchise_ids", "[]");
+                        fd.append("target_class_names", JSON.stringify([kitClass]));
+                    }
+                }
                 fd.append("file", file!);
                 await authFetch("/documents/admin/parent-documents/", { method: "POST", body: fd });
-                showToast("Document uploaded for parents.", "success");
+                closeModal();
+                reportFormMessage("Document uploaded for parents.", "success");
             }
-            closeModal();
             await load();
         } catch (err) {
             console.error(err);
-            showToast("Save failed. Check file type and required fields.", "error");
+            reportFormMessage(
+                err instanceof Error ? err.message : "Save failed. Check file type and required fields.",
+                "error",
+            );
         } finally {
             setSubmitting(false);
         }
@@ -917,9 +1000,9 @@ export default function AdminParentDocumentsPage() {
                     add the file in the same step. (3) The row shows <strong>Upload</strong> — click it and the modal
                     opens with the full path (e.g. <em>My Section › Subsection › File name</em>), file field, and
                     video/embed link for Videos / Audio Rhymes. After upload the button becomes <strong>Edit</strong>.
-                    <strong className="text-slate-800"> Holiday Lists</strong> — state PDF and/or manual holiday table.
-                    <strong className="text-slate-800"> Newsletter</strong> — head office global or per-centre (PDF, video, audio).
-                    Centres can also upload their own newsletters in Parent Portal.
+                    <strong className="text-slate-800"> Holiday Lists</strong> and{" "}
+                    <strong className="text-slate-800">Newsletters</strong> — use the dedicated sidebar pages (same
+                    layout as centre Parent Portal).
                 </p>
             </div>
 
@@ -1084,6 +1167,18 @@ export default function AdminParentDocumentsPage() {
                 title={editing ? "Edit parent document" : "Upload for parent app"}
             >
                 <form onSubmit={submit} className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+                    {submitFeedback ? (
+                        <div
+                            role="alert"
+                            className={`rounded-lg border px-3 py-2.5 text-sm font-medium ${
+                                submitFeedback.type === "success"
+                                    ? "border-green-200 bg-green-50 text-green-800"
+                                    : "border-red-200 bg-red-50 text-red-800"
+                            }`}
+                        >
+                            {submitFeedback.message}
+                        </div>
+                    ) : null}
                     {uploadContext ? (
                         <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-900">
                             {uploadContext.breadcrumbLabel}
@@ -1091,12 +1186,18 @@ export default function AdminParentDocumentsPage() {
                     ) : null}
 
                     {isHoliday ? (
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
-                            <p>
-                                <span className="font-semibold text-slate-900">State:</span>{" "}
-                                {holidayStateLabel || "Select a state row from the checklist"}
+                        <>
+                            <CmsPublishTargetFields
+                                franchises={franchises}
+                                value={publishTarget}
+                                onChange={setPublishTarget}
+                                showClassTarget
+                                classOptions={CENTRE_PROGRAM_LABELS.map((p) => ({ value: p.label, label: p.label }))}
+                            />
+                            <p className="text-xs text-slate-600">
+                                Legacy state row: {holidayStateLabel || "pick state in Publish to → State-wise"}
                             </p>
-                        </div>
+                        </>
                     ) : isNewsletter ? (
                         <>
                             <p className="text-xs text-slate-600">{PARENT_NEWSLETTER_DESCRIPTION}</p>
@@ -1104,6 +1205,8 @@ export default function AdminParentDocumentsPage() {
                                 franchises={franchises}
                                 value={publishTarget}
                                 onChange={setPublishTarget}
+                                showClassTarget
+                                classOptions={CENTRE_PROGRAM_LABELS.map((p) => ({ value: p.label, label: p.label }))}
                             />
                             <label className="text-xs font-semibold text-slate-600 block">
                                 Title
@@ -1133,12 +1236,13 @@ export default function AdminParentDocumentsPage() {
                                 Media type
                                 <select
                                     value={form.newsletter_kind}
-                                    onChange={(e) =>
-                                        setForm((p) => ({
-                                            ...p,
-                                            newsletter_kind: e.target.value as "document" | "video" | "audio",
-                                        }))
-                                    }
+                                    onChange={(e) => {
+                                        const nextKind = e.target.value as "document" | "video" | "audio";
+                                        setForm((p) => ({ ...p, ...newsletterKindChangePatch(nextKind) }));
+                                        if (nextKind === "document") setAudioFile(null);
+                                        else setFile(null);
+                                        if (nextKind === "video") setAudioFile(null);
+                                    }}
                                     className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
                                 >
                                     <option value="document">PDF / Word document</option>
@@ -1173,8 +1277,8 @@ export default function AdminParentDocumentsPage() {
                                 <>
                                     <ChecklistFileUploadField
                                         id="parent-app-audio"
-                                        accept=".mp3,.m4a,.wav,.ogg,.aac,audio/*"
-                                        hint="MP3, M4A, WAV, or other audio"
+                                        accept={PARENT_NEWSLETTER_AUDIO_FILE_ACCEPT}
+                                        hint={PARENT_NEWSLETTER_AUDIO_FILE_HINT}
                                         required={!editing && !form.audio_embed_url.trim()}
                                         currentName={
                                             audioFile?.name ?? (editing?.audio_file ? "Current audio on server" : null)

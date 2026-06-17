@@ -22,6 +22,7 @@ import {
     mapApiStudent,
     normalizeApiList,
     normalizeStudentList,
+    parseParentGalleryResponse,
 } from "@/lib/parent-school-api";
 
 export type SchoolParent = {
@@ -171,6 +172,8 @@ export type SchoolDataContextValue = {
     refreshAll: () => Promise<void>;
     /** Reload events + gallery media from API (franchise or parent). */
     refreshEvents: () => Promise<void>;
+    /** Parent gallery: reload all centre events (`wrap=gallery`). */
+    refreshParentEvents: () => Promise<void>;
     addParent: (p: Omit<SchoolParent, "id">) => Promise<SchoolParent>;
     addStudent: (s: Omit<SchoolStudent, "id">) => Promise<SchoolStudent>;
     addGradesBulk: (rows: BulkGradeRow[]) => Promise<{ inserted: number; skipped: number }>;
@@ -205,6 +208,14 @@ export type SchoolDataContextValue = {
 
     // Attendance Methods
     loadAttendance: (dateOrStudentId?: string) => Promise<void>;
+    fetchFranchiseAttendance: (params: {
+        date?: string;
+        month?: string;
+        from?: string;
+        to?: string;
+        className?: string;
+        academicYear?: string;
+    }) => Promise<AttendanceRecord[]>;
     markAttendance: (records: Omit<AttendanceRecord, "id">[], date?: string) => Promise<void>;
     clearAttendanceDate: (date: string) => Promise<number>;
 
@@ -212,6 +223,10 @@ export type SchoolDataContextValue = {
     updateEnquiryStatus: (id: string, status: string) => Promise<void>;
 
     parentSchoolLoading: boolean;
+    /** True while parent event gallery API is in flight. */
+    parentEventsLoading: boolean;
+    /** True after the first parent children list fetch finishes (success or error). */
+    parentStudentsHydrated: boolean;
 };
 
 const SchoolDataContext = createContext<SchoolDataContextValue | undefined>(undefined);
@@ -395,6 +410,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     const [locations, setLocations] = useState<{ city_name: string; state: string }[]>([]);
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
     const [parentSchoolLoading, setParentSchoolLoading] = useState(false);
+    const [parentEventsLoading, setParentEventsLoading] = useState(false);
+    const [parentStudentsHydrated, setParentStudentsHydrated] = useState(false);
     const pathname = usePathname() ?? "";
 
     const loadLocations = useCallback(async () => {
@@ -417,10 +434,61 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         void loadLocations();
     }, [pathname, loadLocations]);
 
+    const ingestEvents = useCallback(
+        (items: ApiEvent[]) => {
+            const accessToken = tokens?.access ?? null;
+            const mappedEvents = items.map(mapEvent);
+            const apiMedia = items.flatMap((ev) =>
+                (ev.media || []).map((m) => mapMedia(m, String(ev.id), accessToken)),
+            );
+            const seenVideoUrls = new Set(
+                apiMedia
+                    .filter((m) => m.type === "video" || m.type === "url")
+                    .map((m) => (m.url || m.filePath || "").trim().toLowerCase()),
+            );
+            const linkMedia = mappedEvents.flatMap((ev) =>
+                (ev.videoLinks || [])
+                    .filter((link) => !seenVideoUrls.has(link.url.trim().toLowerCase()))
+                    .map((link) => mapEventVideoLinkMedia(link, ev.id)),
+            );
+            setEvents(mappedEvents);
+            setEventMedia([...apiMedia, ...linkMedia]);
+        },
+        [tokens?.access],
+    );
+
+    const loadParentEvents = useCallback(async () => {
+        setParentEventsLoading(true);
+        try {
+            let data: unknown;
+            try {
+                data = await authFetch<unknown>("/events/parent/?wrap=gallery");
+            } catch {
+                data = await authFetch<unknown>("/events/parent/");
+            }
+            if (data == null) {
+                throw new Error("Empty response from event gallery API.");
+            }
+            const payload = parseParentGalleryResponse(data);
+            ingestEvents(payload.events as ApiEvent[]);
+        } catch (error) {
+            console.error("Failed to load parent events:", error);
+            setEvents([]);
+            setEventMedia([]);
+        } finally {
+            setParentEventsLoading(false);
+        }
+    }, [authFetch, ingestEvents]);
+
+    const refreshParentEvents = useCallback(async () => {
+        await loadParentEvents();
+    }, [loadParentEvents]);
+
     const refreshAll = async () => {
         if (!user) return;
         if (user.role === "parent") {
             setParentSchoolLoading(true);
+            setParentStudentsHydrated(false);
             try {
                 await Promise.all([loadParentEvents(), loadParentStudentsAndGrades()]);
             } finally {
@@ -439,29 +507,10 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     useEffect(() => {
-        if (!user) return;
+        if (!user || user.role !== "parent" || !tokens?.access) return;
         void refreshAll();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id, user?.role]);
-
-    /** Refresh gallery when parent opens Event Gallery (picks up new franchise uploads). */
-    useEffect(() => {
-        if (!user || user.role !== "parent") return;
-        if (!/\/dashboard\/parent\/(showcase|event-gallery)\/?$/i.test(pathname)) return;
-        void loadParentEvents();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pathname, user?.id, user?.role]);
-
-    const loadParentEvents = async () => {
-        try {
-            const data = await authFetch<unknown>("/events/parent/");
-            const list = normalizeApiList(data) as ApiEvent[];
-            ingestEvents(list);
-        } catch (error) {
-            console.error("Failed to load parent events:", error);
-            setEvents([]);
-        }
-    };
+    }, [user?.id, user?.role, tokens?.access]);
 
     const loadParentStudentsAndGrades = async () => {
         if (!user || user.role !== "parent") return;
@@ -474,6 +523,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             setGrades(normalizeApiList(gData).map((g) => mapApiGrade(g, "")));
         } catch (err) {
             console.error("Failed to load parent data", err);
+        } finally {
+            setParentStudentsHydrated(true);
         }
     };
 
@@ -523,34 +574,18 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         }
     };
 
-    const ingestEvents = useCallback(
-        (items: ApiEvent[]) => {
-            const accessToken = tokens?.access ?? null;
-            const mappedEvents = items.map(mapEvent);
-            const apiMedia = items.flatMap((ev) =>
-                (ev.media || []).map((m) => mapMedia(m, String(ev.id), accessToken)),
-            );
-            const seenVideoUrls = new Set(
-                apiMedia
-                    .filter((m) => m.type === "video" || m.type === "url")
-                    .map((m) => (m.url || m.filePath || "").trim().toLowerCase()),
-            );
-            const linkMedia = mappedEvents.flatMap((ev) =>
-                (ev.videoLinks || [])
-                    .filter((link) => !seenVideoUrls.has(link.url.trim().toLowerCase()))
-                    .map((link) => mapEventVideoLinkMedia(link, ev.id)),
-            );
-            setEvents(mappedEvents);
-            setEventMedia([...apiMedia, ...linkMedia]);
-        },
-        [tokens?.access],
-    );
-
     const refreshEvents = async () => {
         if (!user) return;
         if (user.role === "parent") await loadParentEvents();
         else if (user.role === "franchise") await loadFranchiseEvents();
     };
+
+    /** Refresh gallery when parent opens Event Gallery (picks up new franchise uploads). */
+    useEffect(() => {
+        if (!user || user.role !== "parent" || !tokens?.access) return;
+        if (!/\/dashboard\/parent\/(showcase|event-gallery)\/?$/i.test(pathname)) return;
+        void loadParentEvents();
+    }, [pathname, user?.id, user?.role, tokens?.access, loadParentEvents]);
 
     const addParent = async (payload: Omit<SchoolParent, "id">) => {
         // Implementation for adding parents if needed
@@ -860,18 +895,47 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     };
 
     // Attendance
-    const loadAttendance = async (dateOrStudentId?: string) => {
-        let url = "";
-        if (user?.role === "parent") {
-            if (!dateOrStudentId) return;
-            url = `/students/parent/attendance/?student_id=${dateOrStudentId}`;
-        } else {
-            url = "/students/franchise/attendance/";
-            if (dateOrStudentId) url += `?date=${dateOrStudentId}`;
-        }
+    const fetchFranchiseAttendance = async (params: {
+        date?: string;
+        month?: string;
+        from?: string;
+        to?: string;
+        className?: string;
+        academicYear?: string;
+    }): Promise<AttendanceRecord[]> => {
+        const qs = new URLSearchParams();
+        if (params.date) qs.set("date", params.date);
+        if (params.month) qs.set("month", params.month);
+        if (params.from) qs.set("from", params.from);
+        if (params.to) qs.set("to", params.to);
+        if (params.className) qs.set("class_name", params.className);
+        if (params.academicYear && params.academicYear !== "all") qs.set("academic_year", params.academicYear);
+        const suffix = qs.toString();
+        const url = suffix ? `/students/franchise/attendance/?${suffix}` : "/students/franchise/attendance/";
         try {
             const data = await authFetch<any>(url);
-            setAttendance(normalizeApiList(data).map(mapAttendance));
+            return normalizeApiList(data).map(mapAttendance);
+        } catch {
+            return [];
+        }
+    };
+
+    const loadAttendance = async (dateOrStudentId?: string) => {
+        if (user?.role === "parent") {
+            if (!dateOrStudentId) return;
+            try {
+                const data = await authFetch<any>(`/students/parent/attendance/?student_id=${dateOrStudentId}`);
+                setAttendance(normalizeApiList(data).map(mapAttendance));
+            } catch {
+                setAttendance([]);
+            }
+            return;
+        }
+        try {
+            const rows = await fetchFranchiseAttendance(
+                dateOrStudentId ? { date: dateOrStudentId } : {},
+            );
+            setAttendance(rows);
         } catch {
             setAttendance([]);
         }
@@ -1026,6 +1090,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         attendance,
         refreshAll,
         refreshEvents,
+        refreshParentEvents,
         addParent,
         addStudent,
         addGradesBulk,
@@ -1046,11 +1111,14 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         franchiseUpdateGrade,
         franchiseDeleteGrade,
         loadAttendance,
+        fetchFranchiseAttendance,
         markAttendance,
         clearAttendanceDate,
         locations,
         updateEnquiryStatus,
         parentSchoolLoading,
+        parentEventsLoading,
+        parentStudentsHydrated,
     };
 
     return <SchoolDataContext.Provider value={value}>{children}</SchoolDataContext.Provider>;

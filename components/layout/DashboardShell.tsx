@@ -30,6 +30,7 @@ export type DashboardShellProps = {
     navItems: DashboardNavItem[];
     children: ReactNode;
     themeKey?: DashboardThemeKey;
+    headerExtra?: ReactNode;
 };
 
 const navThemes: Record<DashboardThemeKey, { active: string; idle: string }> = {
@@ -51,7 +52,14 @@ const navThemes: Record<DashboardThemeKey, { active: string; idle: string }> = {
     },
 };
 
-export function DashboardShell({ role, brand, navItems, children, themeKey = "slate" }: DashboardShellProps) {
+export function DashboardShell({
+    role,
+    brand,
+    navItems,
+    children,
+    themeKey = "slate",
+    headerExtra,
+}: DashboardShellProps) {
     const { logout } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
@@ -135,7 +143,10 @@ export function DashboardShell({ role, brand, navItems, children, themeKey = "sl
                                     )}
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+                                {headerExtra ? (
+                                    <div className="min-w-0 max-w-[min(100%,14rem)] sm:max-w-xs">{headerExtra}</div>
+                                ) : null}
                                 <button
                                     onClick={handleLogoutClick}
                                     className={`group relative overflow-hidden text-white font-semibold transition-all duration-150 rounded-full shadow-sm px-3 py-2 sm:px-4 ${isAdmin

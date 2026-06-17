@@ -23,7 +23,7 @@ export const FRANCHISE_SIDEBAR_NAV: DashboardNavItem[] = [
     { label: "Students", href: "/dashboard/franchise/students/", icon: <UserCircle className="w-4 h-4" /> },
     /** Attendance, Event Gallery, parent tickets → tabs inside Parent App (see parent-portal). */
     { label: "Parent App", href: "/dashboard/franchise/parent-portal/", icon: <LayoutGrid className="w-4 h-4" /> },
-    { label: "Notifications", href: "/dashboard/franchise/notifications/", icon: <Bell className="w-4 h-4" /> },
+    { label: "Centre inbox", href: "/dashboard/franchise/notifications/", icon: <Bell className="w-4 h-4" /> },
     { label: "Add Grades", href: "/dashboard/franchise/add-grades/", icon: <GraduationCap className="w-4 h-4" /> },
     { label: "Parent Support", href: "/dashboard/franchise/parent-tickets/", icon: <LifeBuoy className="w-4 h-4" /> },
     { label: "Drivers", href: "/dashboard/franchise/drivers/", icon: <UserCircle className="w-4 h-4" /> },

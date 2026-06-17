@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
 import { stripEventVideoLinks } from "@/lib/event-gallery-video-links";
 
 type AnnouncementRow = { id: number; title: string; body?: string; published_at?: string };
@@ -17,6 +18,7 @@ type NotificationRow = {
     id: string;
     title: string;
     body?: string;
+    className?: string;
     publishedAt?: string;
     source: "announcement" | "homework" | "fees" | "transport" | "event" | "achievement" | "attendance" | "support_ticket";
     read?: boolean;
@@ -27,6 +29,7 @@ type ApiNotificationRow = {
     source: NotificationRow["source"];
     title?: string;
     body?: string;
+    class_name?: string;
     published_at?: string;
     read?: boolean;
     read_at?: string;
@@ -71,15 +74,20 @@ const sourceLabel: Record<NotificationRow["source"], string> = {
 
 export default function NotificationsPage() {
     const { authFetch } = useAuth();
+    const { selectedStudent, hasMultipleChildren, studentScopeReady, scopedApiPath } = useParentData();
     const [rows, setRows] = useState<NotificationRow[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!studentScopeReady) return;
         let c = false;
         (async () => {
+            setLoading(true);
             try {
-                const payload = await authFetch<ParentNotificationsPayload>("/students/parent/notifications/");
+                const payload = await authFetch<ParentNotificationsPayload>(
+                    scopedApiPath("/students/parent/notifications/"),
+                );
                 const annRaw = payload?.announcements ?? [];
                 const hwRaw = payload?.homework ?? [];
                 const feeRaw = payload?.fees ?? [];
@@ -93,6 +101,7 @@ export default function NotificationsPage() {
                     id: r.id,
                     title: r.title || "Notification",
                     body: r.source === "event" && r.body ? stripEventVideoLinks(r.body) || undefined : r.body,
+                    className: (r.class_name || "").trim() || undefined,
                     publishedAt: r.published_at,
                     source: r.source,
                     read: Boolean(r.read),
@@ -201,7 +210,7 @@ export default function NotificationsPage() {
         return () => {
             c = true;
         };
-    }, [authFetch]);
+    }, [authFetch, scopedApiPath, studentScopeReady, selectedStudent?.id]);
 
     const markAsRead = async (row: NotificationRow) => {
         try {
@@ -233,7 +242,10 @@ export default function NotificationsPage() {
                     </div>
                     <div>
                         <h1 className="text-lg font-semibold text-orange-900">Notifications</h1>
-                        <p className="text-sm text-orange-700">All updates from your centre (announcements, homework, events, fees, transport, achievements, attendance), newest first.</p>
+                        <p className="text-sm text-orange-700">
+                            All updates from your centre (announcements, homework, events, fees, transport, achievements, attendance), newest first.
+                            {hasMultipleChildren && selectedStudent ? ` Showing updates for ${selectedStudent.name}.` : ""}
+                        </p>
                         <p className="text-xs text-orange-600 mt-1">Unread: {unreadCount}</p>
                     </div>
                 </div>
@@ -252,6 +264,11 @@ export default function NotificationsPage() {
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex items-center gap-2 flex-wrap">
                                 <h2 className="font-semibold text-orange-900">{r.title}</h2>
+                                {r.className ? (
+                                    <span className="text-[11px] rounded-full bg-[#F3F4F6] border border-[#E5E7EB] px-2 py-0.5 text-[#374151] font-medium">
+                                        {r.className}
+                                    </span>
+                                ) : null}
                                 <span className="text-[11px] uppercase tracking-wide rounded-full bg-orange-50 border border-orange-100 px-2 py-0.5 text-orange-700">
                                     {sourceLabel[r.source]}
                                 </span>

@@ -1,15 +1,25 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
-import { Bell, Pencil, Trash2 } from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { Bell } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdminData } from "@/components/dashboard/admin/AdminDataProvider";
 import { CmsPublishTargetFields } from "@/components/dashboard/admin/CmsPublishTargetFields";
+import { ManualNotificationCmsLayout } from "@/components/dashboard/ManualNotificationCmsLayout";
+import { ManualNotificationSendToFields } from "@/components/dashboard/ManualNotificationSendToFields";
 import { jsonHeaders } from "@/lib/api-client";
+import { fetchAllApiList, normalizeApiList } from "@/lib/parent-school-api";
 import { CENTRE_PROGRAM_LABELS } from "@/config/centre-program-cards-defaults";
+import {
+    emptySendToForm,
+    sendToFormFromRow,
+    sendToFormToPayload,
+    validateSendToForm,
+    type SendToForm,
+} from "@/lib/manual-notification-send-to";
 import {
     announcementTargetPayload,
     emptyCmsPublishTarget,
@@ -46,8 +56,7 @@ type NotificationAudience = "all" | "class" | "student";
 const NOTIFICATION_CLASS_OPTIONS = CENTRE_PROGRAM_LABELS.map((p) => ({ value: p.label, label: p.label }));
 
 const emptyForm = {
-    audience: "all" as NotificationAudience,
-    student: "",
+    send_to: emptySendToForm(),
     title: "",
     body: "",
     schedule_date: new Date().toISOString().slice(0, 10),
@@ -64,12 +73,6 @@ function scheduleDateFromRow(row: AnnouncementRow) {
     return row.published_at.slice(0, 10);
 }
 
-function audienceFromRow(row: AnnouncementRow): NotificationAudience {
-    if (row.student) return "student";
-    if ((row.class_name || "").trim()) return "class";
-    return "all";
-}
-
 export default function AdminNotificationsCmsPage() {
     const { authFetch } = useAuth();
     const { franchises } = useAdminData();
@@ -77,7 +80,9 @@ export default function AdminNotificationsCmsPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [rows, setRows] = useState<AnnouncementRow[]>([]);
+    const [trackDate, setTrackDate] = useState(todayLocal);
     const [students, setStudents] = useState<MiniStudent[]>([]);
+    const [studentsLoading, setStudentsLoading] = useState(false);
     const [form, setForm] = useState(emptyForm);
     const [publishTarget, setPublishTarget] = useState<CmsPublishTargetForm>(emptyCmsPublishTarget());
     const [editModal, setEditModal] = useState<{ isOpen: boolean; row: AnnouncementRow | null }>({
@@ -91,8 +96,8 @@ export default function AdminNotificationsCmsPage() {
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await authFetch<AnnouncementRow[]>("/students/admin/announcements/?global=1");
-            setRows(Array.isArray(data) ? data : []);
+            const rows = await fetchAllApiList(authFetch, "/students/admin/announcements/?global=1");
+            setRows(normalizeApiList(rows) as AnnouncementRow[]);
         } catch {
             showToast("Unable to load notifications", "error");
             setRows([]);
@@ -109,23 +114,33 @@ export default function AdminNotificationsCmsPage() {
         const target = editModal.isOpen ? editTarget : publishTarget;
         if (target.scope !== "one_centre" || !target.franchiseId) {
             setStudents([]);
+            setStudentsLoading(false);
             return;
         }
         let cancelled = false;
+        setStudentsLoading(true);
         (async () => {
             try {
-                const data = await authFetch<MiniStudent[]>(
+                const rows = await fetchAllApiList(
+                    authFetch,
                     `/students/admin/students/mini/?franchise=${encodeURIComponent(target.franchiseId)}`,
                 );
-                if (!cancelled) setStudents(Array.isArray(data) ? data : []);
+                if (!cancelled) {
+                    setStudents(rows as MiniStudent[]);
+                }
             } catch {
-                if (!cancelled) setStudents([]);
+                if (!cancelled) {
+                    setStudents([]);
+                    showToast("Could not load students for this centre.", "error");
+                }
+            } finally {
+                if (!cancelled) setStudentsLoading(false);
             }
         })();
         return () => {
             cancelled = true;
         };
-    }, [authFetch, editModal.isOpen, editTarget, publishTarget]);
+    }, [authFetch, editModal.isOpen, editTarget, publishTarget, showToast]);
 
     const validateForm = (
         target: CmsPublishTargetForm,
@@ -142,21 +157,43 @@ export default function AdminNotificationsCmsPage() {
         if (!values.visible_to_parents && !values.visible_to_centres) {
             return "Choose at least one audience: parents or centres.";
         }
-        if (target.className.trim() && values.audience === "student" && values.student) {
-            return "Choose either a class filter or one student, not both.";
-        }
-        if (values.audience === "student" && !values.student) return "Select a student.";
-        if (values.audience === "student" && target.scope !== "one_centre") {
-            return "Student targeting is only available for one centre.";
+        if (target.scope === "one_centre") {
+            const sendErr = validateSendToForm(values.send_to);
+            if (sendErr) return sendErr;
+            const { student } = sendToFormToPayload(values.send_to);
+            if (student && target.className.trim()) {
+                return "Choose either a class filter in Publish to or one student in Send to, not both.";
+            }
+        } else if (values.send_to.mode !== "all") {
+            return "Class or student targeting is only available for one centre.";
         }
         if (mode === "create" && !values.schedule_date.trim()) return "Publish date is required.";
         return null;
     };
 
-    const buildAudience = (values: typeof emptyForm, target: CmsPublishTargetForm) => {
-        if (values.audience === "student") return "student" as const;
-        if (values.audience === "class" || target.className.trim()) return "class" as const;
-        return "all" as const;
+    const targetForSendTo = (target: CmsPublishTargetForm, sendTo: SendToForm): CmsPublishTargetForm => {
+        if (target.scope !== "one_centre") return target;
+        const { class_name, student } = sendToFormToPayload(sendTo);
+        if (student) return { ...target, className: "" };
+        if (class_name) return { ...target, className: class_name };
+        return target;
+    };
+
+    const audienceFromSendTo = (target: CmsPublishTargetForm, sendTo: SendToForm): NotificationAudience => {
+        const { class_name, student } = sendToFormToPayload(sendTo);
+        if (target.scope === "one_centre") {
+            if (student) return "student";
+            if (class_name) return "class";
+            return "all";
+        }
+        if (target.className.trim()) return "class";
+        return "all";
+    };
+
+    const studentFromSendTo = (target: CmsPublishTargetForm, sendTo: SendToForm): string => {
+        const { student } = sendToFormToPayload(sendTo);
+        if (target.scope !== "one_centre" || !student) return "";
+        return String(student);
     };
 
     const onSubmit = async (e: FormEvent) => {
@@ -168,23 +205,26 @@ export default function AdminNotificationsCmsPage() {
         }
         setSubmitting(true);
         try {
+            const payloadTarget = targetForSendTo(publishTarget, form.send_to);
             await authFetch("/students/admin/announcements/", {
                 method: "POST",
                 headers: jsonHeaders(),
                 body: JSON.stringify(
-                    announcementTargetPayload(publishTarget, {
+                    announcementTargetPayload(payloadTarget, {
                         title: form.title,
                         body: form.body,
                         schedule_date: form.schedule_date.trim() || todayLocal(),
-                        audience: buildAudience(form, publishTarget),
-                        student: form.student,
+                        audience: audienceFromSendTo(publishTarget, form.send_to),
+                        student: studentFromSendTo(publishTarget, form.send_to),
                         visible_to_parents: form.visible_to_parents,
                         visible_to_centres: form.visible_to_centres,
                     }),
                 ),
             });
+            const sentDate = form.schedule_date.trim() || todayLocal();
             setForm({ ...emptyForm, schedule_date: todayLocal() });
             setPublishTarget(emptyCmsPublishTarget());
+            setTrackDate(sentDate);
             showToast(`Notification published to ${publishTargetSummary(publishTarget, franchises)}.`, "success");
             await load();
         } catch (err: unknown) {
@@ -196,11 +236,9 @@ export default function AdminNotificationsCmsPage() {
 
     const openEdit = (row: AnnouncementRow) => {
         const target = publishTargetFromAnnouncement(row);
-        const audience = audienceFromRow(row);
         setEditTarget(target);
         setEditForm({
-            audience,
-            student: row.student ? String(row.student) : "",
+            send_to: sendToFormFromRow(row.class_name, row.student),
             title: row.title || "",
             body: row.body || "",
             schedule_date: scheduleDateFromRow(row),
@@ -226,16 +264,17 @@ export default function AdminNotificationsCmsPage() {
         }
         setEditSaving(true);
         try {
+            const payloadTarget = targetForSendTo(editTarget, editForm.send_to);
             await authFetch(`/students/admin/announcements/${editModal.row.id}/`, {
                 method: "PATCH",
                 headers: jsonHeaders(),
                 body: JSON.stringify(
-                    announcementTargetPayload(editTarget, {
+                    announcementTargetPayload(payloadTarget, {
                         title: editForm.title,
                         body: editForm.body,
                         schedule_date: editForm.schedule_date.trim() || todayLocal(),
-                        audience: buildAudience(editForm, editTarget),
-                        student: editForm.student,
+                        audience: audienceFromSendTo(editTarget, editForm.send_to),
+                        student: studentFromSendTo(editTarget, editForm.send_to),
                         visible_to_parents: editForm.visible_to_parents,
                         visible_to_centres: editForm.visible_to_centres,
                     }),
@@ -262,6 +301,17 @@ export default function AdminNotificationsCmsPage() {
         }
     };
 
+    const classLabels = NOTIFICATION_CLASS_OPTIONS.map((opt) => opt.label);
+    const allowClassStudentSendTo =
+        publishTarget.scope === "one_centre" && Boolean(publishTarget.franchiseId);
+    const allowEditClassStudentSendTo =
+        editTarget.scope === "one_centre" && Boolean(editTarget.franchiseId);
+
+    const visibleRows = useMemo(
+        () => rows.filter((row) => scheduleDateFromRow(row) === trackDate),
+        [rows, trackDate],
+    );
+
     const audienceBadges = (row: AnnouncementRow) => {
         const parts: string[] = [];
         if (row.visible_to_parents !== false) parts.push("Parents");
@@ -277,157 +327,127 @@ export default function AdminNotificationsCmsPage() {
                         <Bell className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-semibold text-slate-900">Notifications CMS</h1>
+                        <h1 className="text-2xl font-semibold text-slate-900">Notifications</h1>
                         <p className="text-sm text-slate-600 mt-1">
-                            Publish global notifications from head office. Target pan-India, states, cities, or specific
-                            centres and classes. Messages appear in franchise centre inboxes and the parent app.
+                            Same manual notification flow as centres, plus head-office targeting — pan-India, states,
+                            cities, or specific centres. Messages appear in franchise centre inboxes and the parent app.
                         </p>
                     </div>
                 </div>
             </div>
 
-            <form onSubmit={onSubmit} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
-                <h2 className="text-sm font-semibold text-slate-900">New notification</h2>
-
-                <CmsPublishTargetFields
-                    franchises={franchises}
-                    value={publishTarget}
-                    onChange={setPublishTarget}
-                    showClassTarget
-                    classOptions={NOTIFICATION_CLASS_OPTIONS}
-                />
-
-                <div className="flex flex-wrap gap-4 text-sm">
-                    <label className="inline-flex items-center gap-2 font-medium text-slate-700">
-                        <input
-                            type="checkbox"
-                            checked={form.visible_to_parents}
-                            onChange={(e) => setForm((p) => ({ ...p, visible_to_parents: e.target.checked }))}
-                        />
-                        Show to parents (parent app + email)
-                    </label>
-                    <label className="inline-flex items-center gap-2 font-medium text-slate-700">
-                        <input
-                            type="checkbox"
-                            checked={form.visible_to_centres}
-                            onChange={(e) => setForm((p) => ({ ...p, visible_to_centres: e.target.checked }))}
-                        />
-                        Show to centres (franchise notifications inbox)
-                    </label>
-                </div>
-
-                {publishTarget.scope === "one_centre" ? (
-                    <label className="block text-xs font-semibold text-slate-600">
-                        Narrow to one student (optional)
-                        <select
-                            value={form.audience === "student" ? form.student : ""}
-                            onChange={(e) => {
-                                const student = e.target.value;
-                                setForm((p) => ({
-                                    ...p,
-                                    audience: student ? "student" : "all",
-                                    student,
-                                }));
+            <ManualNotificationCmsLayout
+                onSubmit={onSubmit}
+                sendIntro="Send a message to parents and/or centres. Choose a publish date — parents only see it on that day (from midnight IST). Email is sent when it goes live to parents."
+                sendExtra={
+                    <div className="space-y-3">
+                        <CmsPublishTargetFields
+                            franchises={franchises}
+                            value={publishTarget}
+                            onChange={(next) => {
+                                setPublishTarget(next);
+                                if (next.scope !== "one_centre") {
+                                    setForm((p) => ({ ...p, send_to: emptySendToForm() }));
+                                }
                             }}
-                            className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                        >
-                            <option value="">All parents (or class filter above)</option>
-                            {students.map((s) => (
-                                <option key={s.id} value={s.id}>
-                                    {s.full_name} ({s.class_name})
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                ) : null}
-
-                <label className="block text-xs font-semibold text-slate-600">
-                    Publish date
+                            showClassTarget={publishTarget.scope !== "one_centre"}
+                            classOptions={NOTIFICATION_CLASS_OPTIONS}
+                        />
+                        <div className="flex flex-wrap gap-4 text-sm">
+                            <label className="inline-flex items-center gap-2 font-medium text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={form.visible_to_parents}
+                                    onChange={(e) => setForm((p) => ({ ...p, visible_to_parents: e.target.checked }))}
+                                />
+                                Show to parents (parent app)
+                            </label>
+                            <label className="inline-flex items-center gap-2 font-medium text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={form.visible_to_centres}
+                                    onChange={(e) => setForm((p) => ({ ...p, visible_to_centres: e.target.checked }))}
+                                />
+                                Show to centres (franchise notifications inbox)
+                            </label>
+                        </div>
+                    </div>
+                }
+                sendTo={
+                    <ManualNotificationSendToFields
+                        value={form.send_to}
+                        onChange={(send_to) => setForm((p) => ({ ...p, send_to }))}
+                        classOptions={classLabels}
+                        students={students}
+                        allowClassStudent={allowClassStudentSendTo}
+                        studentsLoading={studentsLoading}
+                        disabled={!allowClassStudentSendTo && publishTarget.scope === "one_centre" && !publishTarget.franchiseId}
+                    />
+                }
+                publishDate={
                     <input
                         type="date"
                         required
                         value={form.schedule_date}
                         onChange={(e) => setForm((p) => ({ ...p, schedule_date: e.target.value }))}
-                        className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
                     />
-                </label>
-                <label className="block text-xs font-semibold text-slate-600">
-                    Title
+                }
+                title={
                     <input
                         required
                         value={form.title}
                         onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                        className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+                        placeholder="Title — e.g. PTM reminder"
+                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
                     />
-                </label>
-                <label className="block text-xs font-semibold text-slate-600">
-                    Message
+                }
+                message={
                     <textarea
                         value={form.body}
                         onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
                         rows={4}
-                        className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+                        placeholder="Message — your update for parents"
+                        className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
                     />
-                </label>
-                <Button type="submit" disabled={submitting} className="bg-orange-500">
-                    {submitting ? "Publishing…" : "Publish notification"}
-                </Button>
-            </form>
-
-            <section className="space-y-3">
-                <h2 className="text-sm font-semibold text-slate-900">Published notifications</h2>
-                {loading && <p className="text-sm text-slate-500">Loading…</p>}
-                {!loading && rows.length === 0 && (
-                    <p className="text-sm text-slate-500">No global notifications published yet.</p>
-                )}
-                <ul className="space-y-2">
-                    {rows.map((row) => (
-                        <li
-                            key={row.id}
-                            className="rounded-xl border border-slate-200 bg-white p-4 flex flex-wrap justify-between gap-3"
-                        >
-                            <div className="min-w-0 space-y-1">
-                                <p className="font-semibold text-slate-900">{row.title}</p>
-                                <p className="text-xs text-slate-500">
-                                    {row.publish_target_label || publishTargetSummary(publishTargetFromAnnouncement(row), franchises)}
-                                    {" · "}
-                                    {row.audience_label || "All parents"}
-                                    {" · "}
-                                    {audienceBadges(row)}
-                                </p>
-                                {row.body ? <p className="text-sm text-slate-700 whitespace-pre-wrap">{row.body}</p> : null}
-                                {row.published_at ? (
-                                    <p className="text-[11px] text-slate-400">
-                                        {new Date(row.published_at).toLocaleString()}
-                                    </p>
-                                ) : null}
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                                <Button type="button" variant="outline" size="sm" onClick={() => openEdit(row)}>
-                                    <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-red-700 border-red-200"
-                                    onClick={() => void remove(row.id)}
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            </section>
+                }
+                submitButton={
+                    <Button type="submit" disabled={submitting} className="bg-[#FF922B] text-white w-full sm:w-auto">
+                        {submitting ? "Publishing…" : "Send to parents"}
+                    </Button>
+                }
+                sentIntro="See which head-office notifications were published on the selected date."
+                trackDate={trackDate}
+                onTrackDateChange={setTrackDate}
+                loading={loading}
+                rows={visibleRows.map((row) => ({
+                    id: row.id,
+                    title: row.title,
+                    audience_label: row.audience_label || "All parents",
+                    published_at: row.published_at,
+                    is_scheduled: false,
+                    meta: `${row.publish_target_label || publishTargetSummary(publishTargetFromAnnouncement(row), franchises)} · ${audienceBadges(row)}`,
+                }))}
+                emptySentMessage={`No notifications sent on ${trackDate}. Change the track date or send one.`}
+                onEdit={(row) => {
+                    const fullRow = rows.find((r) => r.id === row.id);
+                    if (fullRow) openEdit(fullRow);
+                }}
+                onDelete={(row) => void remove(row.id)}
+            />
 
             <Modal isOpen={editModal.isOpen} onClose={closeEdit} title="Edit notification" size="lg">
                 <form onSubmit={saveEdit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
                     <CmsPublishTargetFields
                         franchises={franchises}
                         value={editTarget}
-                        onChange={setEditTarget}
-                        showClassTarget
+                        onChange={(next) => {
+                            setEditTarget(next);
+                            if (next.scope !== "one_centre") {
+                                setEditForm((p) => ({ ...p, send_to: emptySendToForm() }));
+                            }
+                        }}
+                        showClassTarget={editTarget.scope !== "one_centre"}
                         classOptions={NOTIFICATION_CLASS_OPTIONS}
                     />
                     <div className="flex flex-wrap gap-4 text-sm">
@@ -452,30 +472,17 @@ export default function AdminNotificationsCmsPage() {
                             Show to centres
                         </label>
                     </div>
-                    {editTarget.scope === "one_centre" ? (
-                        <label className="block text-xs font-semibold text-slate-600">
-                            Narrow to one student (optional)
-                            <select
-                                value={editForm.audience === "student" ? editForm.student : ""}
-                                onChange={(e) => {
-                                    const student = e.target.value;
-                                    setEditForm((p) => ({
-                                        ...p,
-                                        audience: student ? "student" : "all",
-                                        student,
-                                    }));
-                                }}
-                                className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
-                            >
-                                <option value="">All parents (or class filter above)</option>
-                                {students.map((s) => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.full_name} ({s.class_name})
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                    ) : null}
+                    <label className="block text-xs font-semibold text-slate-600">
+                        Send to
+                        <ManualNotificationSendToFields
+                            value={editForm.send_to}
+                            onChange={(send_to) => setEditForm((p) => ({ ...p, send_to }))}
+                            classOptions={classLabels}
+                            students={students}
+                            allowClassStudent={allowEditClassStudentSendTo}
+                            studentsLoading={studentsLoading}
+                        />
+                    </label>
                     <label className="block text-xs font-semibold text-slate-600">
                         Publish date
                         <input

@@ -20,8 +20,8 @@ type FranchiseNotificationRow = {
 };
 
 const sourceLabel: Record<string, string> = {
-    support_ticket: "Support ticket",
-    head_office: "Head office CMS",
+    head_office: "Head office",
+    support_ticket: "Parent support",
 };
 
 export default function FranchiseNotificationsPage() {
@@ -50,18 +50,22 @@ export default function FranchiseNotificationsPage() {
         void load();
     }, [load]);
 
-    const markRead = async (id: number) => {
+    const markRead = async (row: FranchiseNotificationRow) => {
         try {
             const res = await authFetch<{ unread_count?: number }>("/students/franchise/notifications/read/", {
                 method: "POST",
                 headers: jsonHeaders(),
-                body: JSON.stringify({ notification_id: id }),
+                body: JSON.stringify({ notification_id: row.id, source: row.source || "head_office" }),
             });
             if (typeof res?.unread_count === "number") {
                 setUnreadCount(res.unread_count);
             }
             setRows((prev) =>
-                prev.map((r) => (r.id === id ? { ...r, read: true, read_at: new Date().toISOString() } : r)),
+                prev.map((r) =>
+                    r.source === row.source && r.id === row.id
+                        ? { ...r, read: true, read_at: new Date().toISOString() }
+                        : r,
+                ),
             );
         } catch {
             /* ignore */
@@ -75,10 +79,10 @@ export default function FranchiseNotificationsPage() {
                     <Bell className="w-5 h-5" />
                 </div>
                 <div>
-                    <h1 className="text-xl font-semibold text-[#111827]">Notifications</h1>
+                    <h1 className="text-xl font-semibold text-[#111827]">Centre inbox</h1>
                     <p className="text-sm text-[#6B7280]">
-                        Messages from head office — global CMS notifications, support ticket reminders, and other centre
-                        alerts.
+                        Head-office messages and support-ticket reminders for your centre. Parent notifications you send
+                        from Parent Portal are tracked separately under Parent Portal → Notifications.
                         {unreadCount > 0 ? (
                             <span className="ml-1 font-medium text-orange-700">{unreadCount} unread</span>
                         ) : null}
@@ -89,17 +93,21 @@ export default function FranchiseNotificationsPage() {
             {loading && <p className="text-sm text-[#6B7280]">Loading…</p>}
             {!loading && rows.length === 0 && (
                 <p className="text-sm text-[#6B7280] rounded-2xl border border-[#E5E7EB] bg-white p-6">
-                    No notifications yet. When head office publishes a global notification or reminds your centre about a
-                    support ticket, it will appear here.
+                    No messages yet. Head-office announcements and support-ticket reminders will appear here.
                 </p>
             )}
 
             <ul className="space-y-3">
                 {rows.map((row) => {
-                    const action = row.action_path?.trim() || "/dashboard/franchise/parent-tickets/";
+                    const action = row.action_path?.trim() || "/dashboard/franchise/notifications/";
+                    const viewLabel = row.action_path?.includes("parent-portal")
+                        ? "View in Parent Portal"
+                        : row.action_path?.includes("parent-tickets")
+                          ? "Open Parent Support"
+                          : "View";
                     return (
                         <li
-                            key={row.id}
+                            key={`${row.source}-${row.id}`}
                             className={`rounded-2xl border bg-white p-4 shadow-sm ${
                                 row.read ? "border-[#E5E7EB]" : "border-orange-200 bg-orange-50/30"
                             }`}
@@ -128,11 +136,11 @@ export default function FranchiseNotificationsPage() {
                             <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[#E5E7EB]/80">
                                 <Link href={action}>
                                     <Button type="button" size="sm" className="bg-[#FF922B] text-white">
-                                        {row.source === "support_ticket" ? "Open Parent Support" : "View"}
+                                        {viewLabel}
                                     </Button>
                                 </Link>
                                 {!row.read ? (
-                                    <Button type="button" size="sm" variant="outline" onClick={() => void markRead(row.id)}>
+                                    <Button type="button" size="sm" variant="outline" onClick={() => void markRead(row)}>
                                         Mark read
                                     </Button>
                                 ) : null}

@@ -1,7 +1,7 @@
 /** Match parent-app document rows to the file type expected for each category. */
 
 const VIDEO_EXT = new Set([".mp4", ".webm", ".mov", ".m4v", ".avi", ".mkv", ".mpeg", ".mpg", ".3gp", ".flv", ".wmv"]);
-const AUDIO_EXT = new Set([".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac", ".wma"]);
+const AUDIO_EXT = new Set([".mp3", ".wav", ".m4a", ".mp4", ".ogg", ".aac", ".flac", ".wma", ".amr", ".opus"]);
 const PDF_ONLY_CATEGORIES = new Set([
     "PRESCHOOL_POLICIES",
     "HOLIDAY_LISTS",
@@ -55,11 +55,17 @@ export type ParentDocumentMediaRow = {
 };
 
 function rowHasPlayableMedia(row: ParentDocumentMediaRow): boolean {
+    const holidayEntries = (row as { holiday_entries?: unknown }).holiday_entries;
+    const hasHolidayEntries = Array.isArray(holidayEntries) && holidayEntries.length > 0;
+    const cat = (row.category || "").trim().toUpperCase();
+    if (cat === "HOLIDAY_LISTS" && hasHolidayEntries) return true;
     return Boolean(
         (row.file || "").trim() ||
+            (row as { file_view_path?: string }).file_view_path?.trim() ||
             (row.video_embed_url || "").trim() ||
             (row.audio_file || "").trim() ||
-            (row.audio_embed_url || "").trim(),
+            (row.audio_embed_url || "").trim() ||
+            (row as { audio_view_path?: string }).audio_view_path?.trim(),
     );
 }
 

@@ -114,22 +114,32 @@ export const normalizeRole = (role?: string | null): Role => {
 };
 
 function mapApiUserToSession(data: Record<string, unknown>, fallbackEmail = ""): User {
+    const students = Array.isArray(data.students) ? (data.students as Record<string, unknown>[]) : [];
+    const primaryStudent = students[0];
+    const primaryName =
+        primaryStudent?.full_name != null ? String(primaryStudent.full_name).trim() : "";
+    const childName =
+        data.child_name != null
+            ? String(data.child_name)
+            : primaryName || undefined;
+    const displayName =
+        data.display_name != null
+            ? String(data.display_name)
+            : childName;
+    const genderRaw = data.gender ?? primaryStudent?.gender;
+    const genderLabelRaw = data.gender_label ?? primaryStudent?.gender_label;
+
     return {
         id: String(data.id ?? ""),
         email: String(data.email ?? fallbackEmail),
         fullName: data.full_name != null ? String(data.full_name) : undefined,
-        childName: data.child_name != null ? String(data.child_name) : undefined,
-        displayName:
-            data.display_name != null
-                ? String(data.display_name)
-                : data.child_name != null
-                  ? String(data.child_name)
-                  : undefined,
-        gender: normalizeParentGender(data.gender),
+        childName,
+        displayName,
+        gender: normalizeParentGender(genderRaw),
         genderLabel:
-            data.gender_label != null
-                ? String(data.gender_label)
-                : genderLabelFromCode(data.gender),
+            genderLabelRaw != null
+                ? String(genderLabelRaw)
+                : genderLabelFromCode(genderRaw),
         role: normalizeRole(data.role as string | undefined),
     };
 }

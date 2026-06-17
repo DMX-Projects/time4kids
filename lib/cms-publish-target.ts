@@ -1,4 +1,5 @@
 import type { AdminFranchise } from "@/components/dashboard/admin/AdminDataProvider";
+import { normalizeStoredClassFilter } from "@/lib/student-class-match";
 
 export type CmsPublishScope =
     | "pan_india"
@@ -32,6 +33,38 @@ export function emptyCmsPublishTarget(): CmsPublishTargetForm {
         targetStates: [],
         targetCities: [],
         className: "",
+    };
+}
+
+export function validateCmsPublishTarget(target: CmsPublishTargetForm): string | null {
+    if (target.scope === "one_centre" && !target.franchiseId) return "Select a centre.";
+    if (target.scope === "franchises" && target.franchiseIds.length === 0) return "Select at least one centre.";
+    if (target.scope === "state" && target.targetStates.length === 0) return "Select at least one state.";
+    if (target.scope === "city" && target.targetCities.length === 0) return "Select at least one city.";
+    return null;
+}
+
+export function publishTargetFromDoc(doc: {
+    franchise?: number | null;
+    publish_scope?: string;
+    target_states?: string[];
+    target_cities?: string[];
+    target_franchise_ids?: number[];
+    target_class_names?: string[];
+    class_name?: string;
+} | null | undefined): CmsPublishTargetForm {
+    if (!doc) return emptyCmsPublishTarget();
+    const scope =
+        (doc.publish_scope as CmsPublishScope) ||
+        (doc.franchise != null ? "one_centre" : "pan_india");
+    const storedClass = (doc.target_class_names || [])[0] || doc.class_name || "";
+    return {
+        scope,
+        franchiseId: doc.franchise != null ? String(doc.franchise) : "",
+        franchiseIds: (doc.target_franchise_ids || []).map(String),
+        targetStates: doc.target_states || [],
+        targetCities: doc.target_cities || [],
+        className: normalizeStoredClassFilter(storedClass),
     };
 }
 
@@ -93,6 +126,7 @@ export function announcementTargetPayload(
 
 export function parentDocumentTargetPayload(target: CmsPublishTargetForm) {
     const useFranchiseFk = target.scope === "one_centre" && target.franchiseId;
+    const className = normalizeStoredClassFilter(target.className);
     return {
         publish_scope: target.scope,
         target_states: target.scope === "state" ? target.targetStates : [],
@@ -103,8 +137,18 @@ export function parentDocumentTargetPayload(target: CmsPublishTargetForm) {
                 : target.scope === "one_centre" && target.franchiseId
                   ? [Number(target.franchiseId)]
                   : [],
-        target_class_names: target.className.trim() ? [target.className.trim()] : [],
+        target_class_names: className ? [className] : [],
+        class_name: className,
         franchise: useFranchiseFk ? Number(target.franchiseId) : null,
+    };
+}
+
+/** Centre uploads: class filter only (scope is always this centre). */
+export function franchiseDocumentClassPayload(className: string) {
+    const trimmed = normalizeStoredClassFilter(className);
+    return {
+        target_class_names: trimmed ? [trimmed] : [],
+        class_name: trimmed,
     };
 }
 
@@ -112,21 +156,21 @@ export function publishTargetSummary(
     target: CmsPublishTargetForm,
     franchises: AdminFranchise[],
 ): string {
-    if (target.scope === "pan_india") return "Pan-India (all centres)";
-    if (target.scope === "one_centre") {
+    let scope = "—";
+    if (target.scope === "pan_india") scope = "Pan-India (all centres)";
+    else if (target.scope === "one_centre") {
         const f = franchises.find((x) => String(x.id) === target.franchiseId);
-        return f ? f.name : "One centre";
+        scope = f ? f.name : "One centre";
+    } else if (target.scope === "franchises") {
+        scope = `${target.franchiseIds.length} selected centre(s)`;
+    } else if (target.scope === "state") {
+        scope = `States: ${target.targetStates.join(", ") || "—"}`;
+    } else if (target.scope === "city") {
+        scope = `Cities: ${target.targetCities.join(", ") || "—"}`;
     }
-    if (target.scope === "franchises") {
-        return `${target.franchiseIds.length} selected centre(s)`;
-    }
-    if (target.scope === "state") {
-        return `States: ${target.targetStates.join(", ") || "—"}`;
-    }
-    if (target.scope === "city") {
-        return `Cities: ${target.targetCities.join(", ") || "—"}`;
-    }
-    return "—";
+    const classLabel = (target.className || "").trim();
+    if (classLabel) return `${scope} · Class: ${classLabel}`;
+    return scope;
 }
 
 export function publishTargetFromAnnouncement(row: {

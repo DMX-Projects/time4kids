@@ -6,10 +6,19 @@ import {
     type AttendanceRecord,
     type SchoolStudent,
 } from "@/components/dashboard/shared/SchoolDataProvider";
-import { mergeClassOptions, studentGradeMatchesClassFilter } from "@/lib/student-class-match";
-import { CalendarDays, Save, CheckCircle, AlertCircle, Search } from "lucide-react";
+import {
+    CMS_CLASS_SELECT_OPTIONS,
+    classLabelFromSelectValue,
+} from "@/lib/student-class-match";
+import {
+    ATTENDANCE_ACADEMIC_YEAR_OPTIONS,
+    DEFAULT_ATTENDANCE_ACADEMIC_YEAR,
+    studentInAttendanceRoster,
+} from "@/lib/student-academic-year";
+import { CalendarDays, ChevronDown, ChevronRight, History, Save, CheckCircle, AlertCircle, Search } from "lucide-react";
 
 const STUDENT_LIST_PREVIEW = 12;
+const HISTORY_PREVIEW_ROWS = 20;
 
 type AttendanceStatus = AttendanceRecord["status"];
 
@@ -52,6 +61,30 @@ function isPresentChecked(status: AttendanceStatus | ""): boolean {
     return status === "PRESENT";
 }
 
+function formatMonthLabel(monthKey: string): string {
+    const [year, month] = monthKey.split("-");
+    const d = new Date(Number(year), Number(month) - 1, 1);
+    if (Number.isNaN(d.getTime())) return monthKey;
+    return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+function buildEditsForClass(
+    classStudents: SchoolStudent[],
+    attendance: AttendanceRecord[],
+    selectedDate: string,
+): Record<string, AttendanceEdit> {
+    const next: Record<string, AttendanceEdit> = {};
+    for (const s of classStudents) {
+        const saved = attendance.find((r) => r.studentId === s.id && r.date === selectedDate);
+        if (saved && isAttendanceStatus(saved.status)) {
+            next[s.id] = { status: saved.status, note: saved.note || "" };
+        } else {
+            next[s.id] = { status: "", note: "" };
+        }
+    }
+    return next;
+}
+
 export type FranchiseAttendancePanelProps = {
     controlledDate?: string;
     onControlledDateChange?: (date: string) => void;
@@ -61,7 +94,7 @@ export function FranchiseAttendancePanel({
     controlledDate,
     onControlledDateChange,
 }: FranchiseAttendancePanelProps = {}) {
-    const { students, attendance, loadAttendance, markAttendance, refreshAll } = useSchoolData();
+    const { students, fetchFranchiseAttendance, markAttendance, refreshAll } = useSchoolData();
     const [internalDate, setInternalDate] = useState(toLocalYYYYMMDD(new Date()));
     const selectedDate = controlledDate ?? internalDate;
     const setSelectedDate = onControlledDateChange ?? setInternalDate;
@@ -72,7 +105,16 @@ export function FranchiseAttendancePanel({
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [classFilter, setClassFilter] = useState("");
+    const [classSelectValue, setClassSelectValue] = useState("");
+    const [academicYearFilter, setAcademicYearFilter] = useState(DEFAULT_ATTENDANCE_ACADEMIC_YEAR);
     const [showAllStudents, setShowAllStudents] = useState(false);
+
+    const [historyMonth, setHistoryMonth] = useState(() => selectedDate.slice(0, 7));
+    const [historyRows, setHistoryRows] = useState<AttendanceRecord[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyOpen, setHistoryOpen] = useState(true);
+    const [historyExpanded, setHistoryExpanded] = useState(false);
+    const [dayAttendance, setDayAttendance] = useState<AttendanceRecord[]>([]);
 
     useEffect(() => {
         void refreshAll();
@@ -80,38 +122,85 @@ export function FranchiseAttendancePanel({
     }, []);
 
     useEffect(() => {
-        const fetchAtt = async () => {
-            setLoading(true);
-            await loadAttendance(selectedDate);
-            setLoading(false);
-        };
-        fetchAtt();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        setHistoryMonth(selectedDate.slice(0, 7));
     }, [selectedDate]);
 
     useEffect(() => {
-        const initialEdits: Record<string, AttendanceEdit> = {};
-        for (const s of students) {
-            initialEdits[s.id] = { status: "", note: "" };
+        if (!classFilter) {
+            setDayAttendance([]);
+            setEdits({});
+            return;
         }
-        setEdits(initialEdits);
-        setMessage(null);
-    }, [selectedDate, students]);
+        let cancelled = false;
+        setLoading(true);
+        (async () => {
+            const rows = await fetchFranchiseAttendance({
+                date: selectedDate,
+                className: classFilter,
+                academicYear: academicYearFilter,
+            });
+            if (!cancelled) {
+                setDayAttendance(rows);
+                setLoading(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedDate, classFilter, academicYearFilter, fetchFranchiseAttendance]);
+
+    const classStudents = useMemo(() => {
+        if (!classFilter) return [];
+        const q = searchQuery.trim().toLowerCase();
+        return students
+            .filter((s) => studentInAttendanceRoster(s, classFilter, academicYearFilter))
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .filter((s) => {
+                if (!q) return true;
+                return (
+                    s.name.toLowerCase().includes(q) ||
+                    s.rollNumber.toLowerCase().includes(q)
+                );
+            });
+    }, [students, classFilter, academicYearFilter, searchQuery]);
+
+    useEffect(() => {
+        if (!classFilter) return;
+        setEdits(buildEditsForClass(classStudents, dayAttendance, selectedDate));
+    }, [dayAttendance, classStudents, classFilter, selectedDate]);
 
     useEffect(() => {
         setShowAllStudents(false);
         setSearchQuery("");
-        if (!classFilter) return;
-        setEdits((prev) => {
-            const next = { ...prev };
-            for (const s of students) {
-                if (studentGradeMatchesClassFilter(s.grade, classFilter)) {
-                    next[s.id] = { status: "", note: "" };
-                }
+    }, [classFilter, academicYearFilter, selectedDate]);
+
+    useEffect(() => {
+        if (!classFilter) {
+            setHistoryRows([]);
+            return;
+        }
+        let cancelled = false;
+        setHistoryLoading(true);
+        (async () => {
+            const rows = await fetchFranchiseAttendance({
+                month: historyMonth,
+                className: classFilter,
+                academicYear: academicYearFilter,
+            });
+            if (!cancelled) {
+                setHistoryRows(rows);
+                setHistoryLoading(false);
             }
-            return next;
-        });
-    }, [classFilter, students]);
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [classFilter, historyMonth, academicYearFilter, fetchFranchiseAttendance]);
+
+    const handleClassSelect = (value: string) => {
+        setClassSelectValue(value);
+        setClassFilter(classLabelFromSelectValue(value));
+    };
 
     const handleStatusChange = (studentId: string, status: AttendanceStatus | "") => {
         setEdits((prev) => ({
@@ -133,29 +222,6 @@ export function FranchiseAttendancePanel({
         }));
     };
 
-    const sortedStudents = useMemo(
-        () => [...students].sort((a, b) => a.name.localeCompare(b.name)),
-        [students],
-    );
-
-    const classOptions = useMemo(
-        () => mergeClassOptions(sortedStudents.map((s) => s.grade)),
-        [sortedStudents],
-    );
-
-    const classStudents = useMemo(() => {
-        if (!classFilter) return [];
-        const q = searchQuery.trim().toLowerCase();
-        return sortedStudents.filter((s) => {
-            if (!studentGradeMatchesClassFilter(s.grade, classFilter)) return false;
-            if (!q) return true;
-            return (
-                s.name.toLowerCase().includes(q) ||
-                s.rollNumber.toLowerCase().includes(q)
-            );
-        });
-    }, [sortedStudents, classFilter, searchQuery]);
-
     const saveTargets = classStudents;
 
     const visibleStudents = useMemo(() => {
@@ -174,8 +240,10 @@ export function FranchiseAttendancePanel({
 
     const savedOnDateCount = useMemo(
         () =>
-            classStudents.filter((s) => attendance.some((r) => r.studentId === s.id)).length,
-        [classStudents, attendance],
+            classStudents.filter((s) =>
+                dayAttendance.some((r) => r.studentId === s.id && r.date === selectedDate),
+            ).length,
+        [classStudents, dayAttendance, selectedDate],
     );
 
     const allPresentChecked = useMemo(
@@ -184,6 +252,24 @@ export function FranchiseAttendancePanel({
             saveTargets.every((s) => edits[s.id]?.status === "PRESENT"),
         [saveTargets, edits],
     );
+
+    const historyByDate = useMemo(() => {
+        const map = new Map<string, AttendanceRecord[]>();
+        for (const row of historyRows) {
+            const key = row.date || "—";
+            map.set(key, [...(map.get(key) || []), row]);
+        }
+        return Array.from(map.entries())
+            .sort(([a], [b]) => (a > b ? -1 : 1))
+            .map(([date, items]) => [
+                date,
+                items.sort((a, b) => (a.studentName || "").localeCompare(b.studentName || "")),
+            ] as const);
+    }, [historyRows]);
+
+    const visibleHistoryDates = historyExpanded
+        ? historyByDate
+        : historyByDate.slice(0, 5);
 
     const setStatusForStudents = (targets: SchoolStudent[], status: AttendanceStatus | "") => {
         const next: Record<string, AttendanceEdit> = { ...edits };
@@ -226,16 +312,22 @@ export function FranchiseAttendancePanel({
             }
 
             await markAttendance(toSave, selectedDate);
-            setEdits((prev) => {
-                const next = { ...prev };
-                for (const row of toSave) {
-                    next[row.studentId] = { status: "", note: "" };
-                }
-                return next;
+            const dayRows = await fetchFranchiseAttendance({
+                date: selectedDate,
+                className: classFilter,
+                academicYear: academicYearFilter,
             });
+            setDayAttendance(dayRows);
+            setEdits(buildEditsForClass(classStudents, dayRows, selectedDate));
+            const historyRowsNext = await fetchFranchiseAttendance({
+                month: historyMonth,
+                className: classFilter,
+                academicYear: academicYearFilter,
+            });
+            setHistoryRows(historyRowsNext);
             setMessage({
                 type: "success",
-                text: `Status saved — ${toSave.length} student(s) in ${classFilter} for ${selectedDate}. Parents can view this in the Parent App → Attendance.`,
+                text: `Saved ${toSave.length} student(s) in ${classFilter} for ${selectedDate}. Parents see this in the real parent app → Attendance.`,
             });
         } catch {
             setMessage({ type: "error", text: "Failed to save attendance. Please try again." });
@@ -246,6 +338,11 @@ export function FranchiseAttendancePanel({
 
     const handlePresentToggle = (studentId: string, present: boolean) => {
         handleStatusChange(studentId, present ? "PRESENT" : "");
+    };
+
+    const openHistoryDate = (date: string) => {
+        setSelectedDate(date);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const renderStudentRow = (s: SchoolStudent) => {
@@ -268,7 +365,10 @@ export function FranchiseAttendancePanel({
                     />
                     <span className="min-w-0">
                         <span className="block truncate font-medium text-gray-900">{s.name}</span>
-                        <span className="text-xs text-gray-500">Roll {s.rollNumber || "—"}</span>
+                        <span className="text-xs text-gray-500">
+                            Roll {s.rollNumber || "—"}
+                            {s.grade ? ` · ${s.grade}` : ""}
+                        </span>
                     </span>
                 </label>
 
@@ -322,13 +422,13 @@ export function FranchiseAttendancePanel({
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">Mark Attendance</h1>
                         <p className="text-sm text-gray-500">
-                            Choose a <strong>class</strong> and mark each student manually, then save. Nothing is
-                            pre-selected. Parents see saved records in Parent App → Attendance.
+                            Pick academic year, class, and date. Only students in that class and year appear.
+                            Saved records show in the real parent login app → Attendance.
                         </p>
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-4 rounded-xl border border-orange-100 bg-orange-50 p-4 sm:flex-row sm:items-end">
+                <div className="flex flex-col gap-4 rounded-xl border border-orange-100 bg-orange-50 p-4 sm:flex-row sm:flex-wrap sm:items-end">
                     <div className="space-y-1">
                         <label className="text-sm font-medium text-gray-700">Select Date</label>
                         <input
@@ -338,17 +438,31 @@ export function FranchiseAttendancePanel({
                             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-black outline-none focus:border-orange-500 focus:ring-orange-500 sm:w-48"
                         />
                     </div>
-                    <label className="space-y-1 sm:min-w-[220px]">
+                    <label className="space-y-1 sm:min-w-[180px]">
+                        <span className="text-sm font-medium text-gray-700">Academic year</span>
+                        <select
+                            value={academicYearFilter}
+                            onChange={(e) => setAcademicYearFilter(e.target.value)}
+                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-black outline-none focus:border-orange-500 focus:ring-orange-500"
+                        >
+                            {ATTENDANCE_ACADEMIC_YEAR_OPTIONS.map((year) => (
+                                <option key={year} value={year}>
+                                    {year === "all" ? "All years (legacy roster)" : year}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className="space-y-1 sm:min-w-[240px]">
                         <span className="text-sm font-medium text-gray-700">Class</span>
                         <select
-                            value={classFilter}
-                            onChange={(e) => setClassFilter(e.target.value)}
+                            value={classSelectValue}
+                            onChange={(e) => handleClassSelect(e.target.value)}
                             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-black outline-none focus:border-orange-500 focus:ring-orange-500"
                         >
                             <option value="">Select class</option>
-                            {classOptions.map((grade) => (
-                                <option key={grade} value={grade}>
-                                    {grade}
+                            {CMS_CLASS_SELECT_OPTIONS.map((opt) => (
+                                <option key={opt.id} value={opt.id}>
+                                    {opt.label}
                                 </option>
                             ))}
                         </select>
@@ -379,6 +493,10 @@ export function FranchiseAttendancePanel({
                                 className="block w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-black outline-none focus:border-orange-500 focus:ring-orange-500"
                             />
                         </div>
+                        <p className="text-xs text-gray-500">
+                            {classStudents.length} student(s) in {classFilter}
+                            {academicYearFilter !== "all" ? ` · ${academicYearFilter}` : ""}.
+                        </p>
                     </label>
                 ) : null}
             </section>
@@ -401,9 +519,9 @@ export function FranchiseAttendancePanel({
                     <div className="rounded-2xl border border-orange-100 bg-white p-8 text-center text-gray-500 shadow-sm">
                         Loading students and attendance…
                     </div>
-                ) : sortedStudents.length === 0 ? (
+                ) : students.length === 0 ? (
                     <div className="rounded-2xl border border-orange-100 bg-white p-8 text-center text-gray-500 shadow-sm">
-                        No students found. Add students first.
+                        No students found for {academicYearFilter}. Try another academic year or add students first.
                     </div>
                 ) : !classSelected ? (
                     <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50/40 p-8 text-center text-gray-600 shadow-sm">
@@ -412,6 +530,7 @@ export function FranchiseAttendancePanel({
                 ) : classStudents.length === 0 ? (
                     <div className="rounded-2xl border border-orange-100 bg-white p-8 text-center text-gray-500 shadow-sm">
                         No students in {classFilter}
+                        {academicYearFilter !== "all" ? ` for ${academicYearFilter}` : ""}
                         {searchQuery.trim() ? " match your search." : "."}
                     </div>
                 ) : (
@@ -458,6 +577,118 @@ export function FranchiseAttendancePanel({
                     </section>
                 )}
             </div>
+
+            {classSelected ? (
+                <section className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm">
+                    <button
+                        type="button"
+                        onClick={() => setHistoryOpen((open) => !open)}
+                        className="flex w-full items-center justify-between gap-3 bg-orange-50/80 px-4 py-3 text-left"
+                    >
+                        <span className="flex items-center gap-2 text-sm font-bold text-orange-900">
+                            {historyOpen ? (
+                                <ChevronDown className="h-4 w-4 shrink-0" />
+                            ) : (
+                                <ChevronRight className="h-4 w-4 shrink-0" />
+                            )}
+                            <History className="h-4 w-4" />
+                            Attendance history — {classFilter}
+                        </span>
+                        <span className="text-xs font-normal text-orange-700">
+                            {historyRows.length} record(s)
+                        </span>
+                    </button>
+
+                    {historyOpen ? (
+                        <div className="space-y-4 p-4">
+                            <label className="block space-y-1 sm:max-w-xs">
+                                <span className="text-sm font-medium text-gray-700">Month</span>
+                                <input
+                                    type="month"
+                                    value={historyMonth}
+                                    onChange={(e) => setHistoryMonth(e.target.value)}
+                                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-black outline-none focus:border-orange-500"
+                                />
+                            </label>
+
+                            {historyLoading ? (
+                                <p className="text-sm text-gray-500">Loading {formatMonthLabel(historyMonth)}…</p>
+                            ) : historyByDate.length === 0 ? (
+                                <p className="rounded-lg border border-dashed border-orange-200 bg-orange-50/40 p-4 text-sm text-gray-600">
+                                    No saved attendance for {classFilter} in {formatMonthLabel(historyMonth)}.
+                                </p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {visibleHistoryDates.map(([date, items]) => (
+                                        <div
+                                            key={date}
+                                            className="overflow-hidden rounded-xl border border-orange-100"
+                                        >
+                                            <div className="flex flex-wrap items-center justify-between gap-2 bg-orange-50/60 px-3 py-2">
+                                                <span className="text-sm font-semibold text-orange-900">{date}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openHistoryDate(date)}
+                                                    className="text-xs font-semibold text-orange-700 hover:underline"
+                                                >
+                                                    Open in editor
+                                                </button>
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-sm">
+                                                    <thead className="bg-white text-gray-600">
+                                                        <tr>
+                                                            <th className="p-2">Student</th>
+                                                            <th className="p-2">Status</th>
+                                                            <th className="p-2">Note</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {items.slice(0, HISTORY_PREVIEW_ROWS).map((row) => (
+                                                            <tr key={row.id} className="border-t border-orange-50">
+                                                                <td className="p-2 text-gray-900">
+                                                                    {row.studentName || "—"}
+                                                                </td>
+                                                                <td className="p-2 font-medium text-gray-800">
+                                                                    {row.status}
+                                                                </td>
+                                                                <td className="p-2 text-gray-600">{row.note || "—"}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                                {items.length > HISTORY_PREVIEW_ROWS ? (
+                                                    <p className="border-t border-orange-50 px-3 py-2 text-xs text-gray-500">
+                                                        + {items.length - HISTORY_PREVIEW_ROWS} more on this day
+                                                    </p>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {historyByDate.length > 5 && !historyExpanded ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setHistoryExpanded(true)}
+                                            className="w-full rounded-lg border border-dashed border-orange-200 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50"
+                                        >
+                                            Show all {historyByDate.length} days in {formatMonthLabel(historyMonth)}
+                                        </button>
+                                    ) : null}
+                                    {historyExpanded && historyByDate.length > 5 ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setHistoryExpanded(false)}
+                                            className="w-full rounded-lg border border-dashed border-orange-200 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50"
+                                        >
+                                            Show fewer days
+                                        </button>
+                                    ) : null}
+                                </div>
+                            )}
+                        </div>
+                    ) : null}
+                </section>
+            ) : null}
         </div>
     );
 }

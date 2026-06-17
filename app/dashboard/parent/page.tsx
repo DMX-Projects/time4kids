@@ -3,26 +3,26 @@
 import { Sparkles } from "lucide-react";
 import { ParentDashboardQuickLinks } from "@/components/dashboard/parent/ParentDashboardQuickLinks";
 import { ParentDocuments } from "@/components/dashboard/parent/ParentDocuments";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 import { countUpcomingEvents } from "@/lib/parent-dashboard-utils";
+import { gradeVisibleForStudent } from "@/lib/parent-child-content-filter";
 
 export default function ParentDashboardPage() {
     const { user } = useAuth();
-    const { achievements, linkedStudents, selectedStudentId, setSelectedStudentId } = useParentData();
+    const { achievements, selectedStudent } = useParentData();
     const { grades, events, parentSchoolLoading } = useSchoolData();
 
-    const myStudents = linkedStudents;
+    const visibleGradesCount = useMemo(() => {
+        if (!selectedStudent) return grades.length;
+        return grades.filter((g) => gradeVisibleForStudent(g, selectedStudent)).length;
+    }, [grades, selectedStudent]);
+
     const upcomingEventsCount = countUpcomingEvents(events);
 
-    const focusStudent = myStudents.find((s) => s.id === selectedStudentId) ?? myStudents[0];
-    const childLabel =
-        user?.displayName?.trim() ||
-        user?.childName?.trim() ||
-        focusStudent?.name?.trim() ||
-        "";
+    const childLabel = selectedStudent?.name?.trim() || "";
     const welcomeName = childLabel.split(/\s+/)[0] || "there";
 
     const [showConfetti, setShowConfetti] = useState(true);
@@ -56,23 +56,12 @@ export default function ParentDashboardPage() {
                         <h1 className="text-2xl md:text-3xl font-bold text-[#1F2937] leading-tight">
                             Welcome, {welcomeName}!
                         </h1>
-                        {myStudents.length > 1 && (
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-[#374151]">
-                                <span className="font-semibold text-[#1F2937]">Focus on:</span>
-                                <select
-                                    value={selectedStudentId ?? ""}
-                                    onChange={(e) => setSelectedStudentId(e.target.value || null)}
-                                    className="rounded-full border border-orange-200 bg-white px-4 py-2 text-sm font-medium text-[#1F2937] focus:border-orange-400 focus:outline-none max-w-xs"
-                                >
-                                    {myStudents.map((s) => (
-                                        <option key={s.id} value={s.id}>
-                                            {s.name}
-                                            {s.grade ? ` · ${s.grade}` : ""}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
+                        {selectedStudent?.grade ? (
+                            <p className="text-sm text-[#6B7280]">
+                                {selectedStudent.name} · {selectedStudent.grade}
+                                {selectedStudent.section ? ` · Section ${selectedStudent.section}` : ""}
+                            </p>
+                        ) : null}
                         <div className="flex flex-wrap gap-2 text-sm text-orange-800">
                             {cartoonStrip.map((item) => (
                                 <span key={item.label} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E7F5FF] text-[#1F2937] animate-fade-up" style={{ animationDelay: "120ms" }}>
@@ -114,7 +103,7 @@ export default function ParentDashboardPage() {
             <aside className="w-full shrink-0 lg:sticky lg:top-24 lg:z-[5] lg:w-[280px] xl:w-[300px]">
                 <ParentDashboardQuickLinks
                     upcomingEventsCount={upcomingEventsCount}
-                    gradesCount={grades.length}
+                    gradesCount={visibleGradesCount}
                     gradesLoading={parentSchoolLoading}
                 />
             </aside>

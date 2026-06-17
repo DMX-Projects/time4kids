@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, LifeBuoy, Send } from "lucide-react";
+import { LifeBuoy, Send } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -27,6 +27,8 @@ type TicketRow = {
     updated_at?: string;
 };
 
+const TICKETS_PREVIEW_COUNT = 4;
+
 export default function AdminParentSupportTicketsPage() {
     const { authFetch } = useAuth();
     const { franchises } = useAdminData();
@@ -38,6 +40,7 @@ export default function AdminParentSupportTicketsPage() {
     const [unresolvedOnly, setUnresolvedOnly] = useState(true);
     const [remindingId, setRemindingId] = useState<number | null>(null);
     const [reminderNotes, setReminderNotes] = useState<Record<number, string>>({});
+    const [listExpanded, setListExpanded] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -60,6 +63,13 @@ export default function AdminParentSupportTicketsPage() {
     useEffect(() => {
         void load();
     }, [load]);
+
+    useEffect(() => {
+        setListExpanded(false);
+    }, [centreFilter, statusFilter, unresolvedOnly]);
+
+    const visibleRows = listExpanded ? rows : rows.slice(0, TICKETS_PREVIEW_COUNT);
+    const hiddenRowsCount = Math.max(0, rows.length - visibleRows.length);
 
     const unresolvedCount = useMemo(() => rows.filter((r) => r.is_unresolved !== false).length, [rows]);
 
@@ -94,9 +104,9 @@ export default function AdminParentSupportTicketsPage() {
                 <div>
                     <h1 className="text-2xl font-semibold text-slate-900">Parent support tickets</h1>
                     <p className="text-sm text-slate-600 mt-1">
-                        Track tickets raised by parents at every centre. Remind centres to action tickets that are still
-                        open or in progress. Centres see the reminder in <strong>Parent Support</strong> and receive an
-                        email when SendGrid is configured.
+                        Centres handle tickets under <strong>Parent Support</strong>. You see every ticket and its status
+                        here. If a centre has not replied or resolved, use <strong>Notify centre</strong> — they get a
+                        message in <strong>Centre inbox</strong> and an email when SendGrid is configured.
                     </p>
                 </div>
             </div>
@@ -152,7 +162,7 @@ export default function AdminParentSupportTicketsPage() {
             )}
 
             <ul className="space-y-4">
-                {rows.map((t) => {
+                {visibleRows.map((t) => {
                     const unresolved = t.status !== "RESOLVED" && t.status !== "CLOSED";
                     return (
                         <li key={t.id} className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3 shadow-sm">
@@ -214,11 +224,18 @@ export default function AdminParentSupportTicketsPage() {
                 })}
             </ul>
 
-            {!loading && unresolvedOnly && rows.some((t) => t.status !== "RESOLVED") && (
-                <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                    Use &quot;Notify centre&quot; to email the centre login and show an alert on their Parent Support page.
-                </p>
+            {!loading && rows.length > TICKETS_PREVIEW_COUNT && (
+                <div className="flex justify-center pt-1">
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="border-orange-300 bg-orange-50 text-orange-700 font-semibold hover:bg-orange-100 hover:border-orange-400 hover:text-orange-800"
+                        onClick={() => setListExpanded((prev) => !prev)}
+                    >
+                        {listExpanded ? "Show less" : `Show more (${hiddenRowsCount})`}
+                    </Button>
+                </div>
             )}
         </div>
     );

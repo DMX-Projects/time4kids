@@ -1,34 +1,69 @@
 "use client";
 
+import type React from "react";
 import { ClipboardList } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
+import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
+import type { GradeRecord } from "@/components/dashboard/shared/SchoolDataProvider";
+import { mapApiGrade, normalizeApiList } from "@/lib/parent-school-api";
 import { formatStudentClassCaption } from "@/lib/parent-dashboard-utils";
 
 export default function MarksGradesPage() {
-    const { user } = useAuth();
-    const { students, grades } = useSchoolData();
+    const { user, authFetch } = useAuth();
+    const { selectedStudent, hasMultipleChildren, linkedStudents, studentScopeReady, scopedApiPath } = useParentData();
+    const [grades, setGrades] = useState<GradeRecord[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const myStudents = students;
-    const myGrades = grades;
+    useEffect(() => {
+        if (!studentScopeReady || !selectedStudent) return;
+        let cancelled = false;
+        (async () => {
+            setLoading(true);
+            try {
+                const data = await authFetch<unknown>(scopedApiPath("/students/parent/grades/"));
+                const mapped = normalizeApiList(data).map((g) =>
+                    mapApiGrade(g, selectedStudent.id),
+                );
+                if (!cancelled) setGrades(mapped);
+            } catch {
+                if (!cancelled) setGrades([]);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [authFetch, scopedApiPath, selectedStudent, studentScopeReady]);
 
-    const gradesByStudent = myStudents.map((stu) => ({
+    const displayStudents = useMemo(() => {
+        if (selectedStudent && hasMultipleChildren) return [selectedStudent];
+        if (linkedStudents.length > 0) return linkedStudents;
+        return [];
+    }, [selectedStudent, hasMultipleChildren, linkedStudents]);
+
+    const gradesByStudent = displayStudents.map((stu) => ({
         student: stu,
-        grades: myGrades.filter((g) => g.studentId === stu.id),
+        grades: grades.filter((g) => g.studentId === stu.id),
     }));
-
-    const hasMultiple = myStudents.length > 1;
 
     return (
         <div className="space-y-6">
             <Section
                 id="marks-grades"
                 title="Marks / Grades"
-                description={hasMultiple ? "Viewing all students linked to your account." : "Viewing marks shared by your centre."}
+                description={
+                    hasMultipleChildren && selectedStudent
+                        ? `Marks shared by your centre for ${selectedStudent.name}. Switch child from the header.`
+                        : "Viewing marks shared by your centre."
+                }
                 icon={<ClipboardList className="w-5 h-5 text-orange-600" />}
             />
 
-            {gradesByStudent.map(({ student, grades }) => (
+            {loading && <p className="text-sm text-orange-700">Loading grades…</p>}
+
+            {gradesByStudent.map(({ student, grades: studentGrades }) => (
                 <div key={student.id} className="bg-white border border-orange-100 rounded-2xl shadow-sm p-4 space-y-3">
                     <div className="flex items-center justify-between">
                         <div>
@@ -37,34 +72,56 @@ export default function MarksGradesPage() {
                                 Roll: {student.rollNumber || "—"} · {formatStudentClassCaption(student)}
                             </p>
                         </div>
-                        <span className="text-xs px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">{grades.length} subjects</span>
+                        <span className="text-xs px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-100">
+                            {studentGrades.length} subjects
+                        </span>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {grades.map((row) => (
+                        {studentGrades.map((row) => (
                             <div key={row.id} className="border border-orange-100 rounded-xl p-4 flex items-center justify-between">
                                 <div>
                                     <p className="font-semibold text-orange-900 text-sm">{row.subject}</p>
                                     <p className="text-xs text-orange-700">{row.term}</p>
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
-                                    <span className="px-3 py-1 rounded-full bg-orange-50 text-orange-700 text-sm border border-orange-100">{row.grade || "Pending"}</span>
-                                    {row.score !== undefined && <span className="text-[11px] text-orange-700">Score: {row.score}</span>}
+                                    <span className="px-3 py-1 rounded-full bg-orange-50 text-orange-700 text-sm border border-orange-100">
+                                        {row.grade || "Pending"}
+                                    </span>
+                                    {row.score !== undefined && (
+                                        <span className="text-[11px] text-orange-700">Score: {row.score}</span>
+                                    )}
                                 </div>
                             </div>
                         ))}
-                        {grades.length === 0 && <p className="text-sm text-orange-700">No grades shared yet.</p>}
+                        {!loading && studentGrades.length === 0 && (
+                            <p className="text-sm text-orange-700">No grades shared yet.</p>
+                        )}
                     </div>
                 </div>
             ))}
 
-            {gradesByStudent.length === 0 && (
-                <p className="text-sm text-orange-700">No students are linked to your account yet. Please contact your centre.</p>
+            {!loading && gradesByStudent.length === 0 && (
+                <p className="text-sm text-orange-700">
+                    No students are linked to {user?.email || "your account"} yet. Please contact your centre.
+                </p>
             )}
         </div>
     );
 }
 
-function Section({ id, title, description, icon, children }: { id: string; title: string; description?: string; icon: React.ReactNode; children?: React.ReactNode }) {
+function Section({
+    id,
+    title,
+    description,
+    icon,
+    children,
+}: {
+    id: string;
+    title: string;
+    description?: string;
+    icon: React.ReactNode;
+    children?: React.ReactNode;
+}) {
     return (
         <section id={id} className="bg-white border border-orange-100 rounded-2xl shadow-sm p-6 space-y-3">
             <div className="flex items-center gap-3">

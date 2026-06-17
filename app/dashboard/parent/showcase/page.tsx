@@ -6,14 +6,14 @@ import { ParentEventGalleryGrid } from "@/components/dashboard/parent/ParentEven
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 
 export default function ShowcasePage() {
-    const { eventMedia, events, parentSchoolLoading, refreshEvents } = useSchoolData();
+    const { eventMedia, events, parentEventsLoading, refreshEvents } = useSchoolData();
     const eventTitleById = useMemo(() => {
         const m = new Map<string, string>();
         for (const ev of events) m.set(ev.id, ev.title);
         return m;
     }, [events]);
 
-    if (parentSchoolLoading) {
+    if (parentEventsLoading && events.length === 0 && eventMedia.length === 0) {
         return (
             <div className="space-y-6">
                 <section className="bg-white border border-orange-100 rounded-2xl shadow-sm p-6 space-y-2">

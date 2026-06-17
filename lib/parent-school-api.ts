@@ -4,14 +4,51 @@ import { safeRandomId } from "@/lib/utils";
 
 const safeId = () => safeRandomId();
 
-/** DRF list or array */
+/** DRF list, gallery envelope, or array */
 export function normalizeApiList(data: unknown): unknown[] {
     if (Array.isArray(data)) return data;
     if (data && typeof data === "object") {
         const o = data as Record<string, unknown>;
         if (Array.isArray(o.results)) return o.results;
+        if (Array.isArray(o.events)) return o.events;
+        if (Array.isArray(o.data)) return o.data;
     }
     return [];
+}
+
+export type ParentGalleryClassFilter = { value: string; label: string };
+
+export type ParentGalleryApiPayload = {
+    events: unknown[];
+    class_filters?: ParentGalleryClassFilter[];
+    default_class_name?: string;
+    selected_class_name?: string;
+};
+
+/** Parse `GET /events/parent/?wrap=gallery` or a plain event list. */
+export function parseParentGalleryResponse(data: unknown): ParentGalleryApiPayload {
+    if (Array.isArray(data)) {
+        return { events: data };
+    }
+    if (data && typeof data === "object") {
+        const o = data as Record<string, unknown>;
+        if (Array.isArray(o.events)) {
+            return {
+                events: o.events,
+                class_filters: Array.isArray(o.class_filters)
+                    ? (o.class_filters as ParentGalleryClassFilter[])
+                    : undefined,
+                default_class_name:
+                    typeof o.default_class_name === "string" ? o.default_class_name : undefined,
+                selected_class_name:
+                    typeof o.selected_class_name === "string" ? o.selected_class_name : undefined,
+            };
+        }
+        if (Array.isArray(o.results)) {
+            return { events: o.results };
+        }
+    }
+    return { events: [] };
 }
 
 /** Turn DRF ``next`` (absolute or relative) into a path ``authFetch`` accepts. */

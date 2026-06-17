@@ -10,7 +10,7 @@ type Props = {
     compact?: boolean;
 };
 
-export function HolidayEntriesEditor({ rows, onChange, compact = false }: Props) {
+export function HolidayEntriesEditor({ rows = [], onChange, compact = false }: Props) {
     const updateRow = (index: number, patch: Partial<HolidayEntry>) => {
         onChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
     };
