@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Thank You - T.I.M.E. KIDS</title>
+
+    <link rel="shortcut icon" href="images/time-logo.jpg" />
+    <link href="css/main-min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #ff7600 0%, #ec1f25 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        padding: 20px;
+    }
+
+    .thank-you-container {
+        background: #fff;
+        border-radius: 20px;
+        padding: 60px 40px;
+        max-width: 700px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .success-icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 30px;
+        background: #4caf50;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: scaleIn 0.5s ease-out 0.3s both;
+    }
+
+    @keyframes scaleIn {
+        from {
+            transform: scale(0);
+        }
+        to {
+            transform: scale(1);
+        }
+    }
+
+    .success-icon i {
+        font-size: 60px;
+        color: #fff;
+    }
+
+    h1 {
+        font-size: 42px;
+        color: #ff7600;
+        margin-bottom: 20px;
+        font-weight: 900;
+    }
+
+    .thank-you-message {
+        font-size: 20px;
+        color: #333;
+        line-height: 1.6;
+        margin-bottom: 30px;
+    }
+
+    .next-steps {
+        background: #f9f9f9;
+        border-radius: 10px;
+        padding: 30px;
+        margin: 30px 0;
+        text-align: left;
+    }
+
+    .next-steps h2 {
+        font-size: 24px;
+        color: #ec1f25;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .next-steps ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .next-steps li {
+        font-size: 16px;
+        color: #555;
+        margin-bottom: 15px;
+        padding-left: 30px;
+        position: relative;
+        line-height: 1.6;
+    }
+
+    .next-steps li:before {
+        content: "\f00c";
+        font-family: "FontAwesome";
+        position: absolute;
+        left: 0;
+        color: #4caf50;
+        font-size: 18px;
+    }
+
+    .action-buttons {
+        margin-top: 40px;
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 15px 40px;
+        font-size: 18px;
+        font-weight: bold;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+        background-color: #ff7600;
+        color: #fff;
+    }
+
+    .btn-primary:hover {
+        background-color: #e66a00;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 118, 0, 0.3);
+    }
+
+    .btn-secondary {
+        background-color: #ec1f25;
+        color: #fff;
+    }
+
+    .btn-secondary:hover {
+        background-color: #c91a1f;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(236, 31, 37, 0.3);
+    }
+
+    .contact-info {
+        margin-top: 30px;
+        padding-top: 30px;
+        border-top: 2px solid #eee;
+    }
+
+    .contact-info p {
+        font-size: 16px;
+        color: #666;
+        margin: 10px 0;
+    }
+
+    .contact-info a {
+        color: #ff7600;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .contact-info a:hover {
+        text-decoration: underline;
+    }
+
+    @media screen and (max-width: 768px) {
+        .thank-you-container {
+            padding: 40px 25px;
+        }
+
+        h1 {
+            font-size: 32px;
+        }
+
+        .thank-you-message {
+            font-size: 18px;
+        }
+
+        .success-icon {
+            width: 100px;
+            height: 100px;
+        }
+
+        .success-icon i {
+            font-size: 50px;
+        }
+
+        .next-steps {
+            padding: 20px;
+        }
+
+        .next-steps h2 {
+            font-size: 20px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<!-- Facebook Pixel Code -->
+<script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '530571304555113');
+  fbq('track', 'PageView');
+  fbq('track', 'Lead');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=530571304555113&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Facebook Pixel Code -->	
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-17858028843"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-17858028843');
+  gtag('event', 'conversion', {
+      'send_to': 'AW-17858028843/XGqqCOLyrt4bEKvKr8NC',
+      'value': 1.0,
+      'currency': 'INR'
+  });
+</script>
+
+</head>
+<body>
+    <div class="thank-you-container">
+        <div class="success-icon">
+            <i class="fa fa-check"></i>
+        </div>
+        
+        <h1>Thank You!</h1>
+        
+        <div class="thank-you-message">
+            <p><strong>Your form has been submitted successfully!</strong></p>
+            <p>We've received your enquiry and our team will get back to you shortly.</p>
+        </div>
+
+        <div class="next-steps">
+            <h2>What Happens Next?</h2>
+            <ul>
+                <li><strong>We'll Call You</strong> – Our team will reach out to you within 24 hours to discuss your interest.</li>
+                <li><strong>Let's Chat</strong> – We'll help you understand the opportunity and answer all your questions.</li>
+                <li><strong>Get Started</strong> – We'll guide you through the next steps to start your T.I.M.E. Kids Preschool.</li>
+            </ul>
+        </div>
+
+        <div class="action-buttons">
+            <a href="index.html" class="btn btn-primary">Return to Home</a>
+            <a href="index.html#timekidsForm" class="btn btn-secondary">Submit Another Enquiry</a>
+        </div>
+
+        <div class="contact-info">
+            <p><strong>Need immediate assistance?</strong></p>
+            <p>Feel free to contact us directly if you have any urgent queries.</p>
+        </div>
+    </div>
+</body>
+</html>

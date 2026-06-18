@@ -37,6 +37,9 @@
         "node_modules",
         "timekids_crm_clone",
         "timekids-2g",
-        "public/timekids-2g"
+        "public/timekids-2g",
+        "tkids-lp",
+        "public/Timekids-meta-feb",
+        "public/Timekids-lp-feb"
     ]
 }

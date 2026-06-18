@@ -40,6 +40,7 @@ import {
 } from "@/lib/cms-publish-target";
 import { resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
 import { jsonHeaders } from "@/lib/api-client";
+import { localDateString } from "@/lib/parent-portal-calendar";
 
 type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 type ShowToastFn = (message: string, type?: "success" | "error" | "info") => void;
@@ -72,7 +73,7 @@ function normalizeList<T>(data: unknown): T[] {
     return [];
 }
 
-const todayLocal = () => new Date().toISOString().slice(0, 10);
+const todayLocal = () => localDateString();
 
 function rowKindFromDoc(row: NewsletterDocRow): NewsletterRowKind {
     return (
@@ -158,7 +159,7 @@ export function ParentNewsletterCmsPanel({ mode, authFetch, showToast, franchise
                     title: row.title,
                     badge: newsletterKindLabel(kind),
                     meta: `${row.period_start || "—"} · ${source}${(row.target_class_names || [])[0] || row.class_name ? ` · Class: ${(row.target_class_names || [])[0] || row.class_name}` : ""}`,
-                    published_at: row.created_at,
+                    published_at: row.period_start || row.created_at,
                 };
             }),
         [rows, isAdmin, franchises],

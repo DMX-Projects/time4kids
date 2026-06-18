@@ -78,33 +78,20 @@ const nextConfig = {
             { source: '/franchise/thank-you/', destination: '/thank-you.html', permanent: false },
         ];
     },
-    experimental: {
-        optimizePackageImports: ['lucide-react', 'framer-motion', 'gsap'],
-    },
-    webpack: (config, { dev, isServer }) => {
-        if (dev && !isServer) {
-            config.watchOptions = {
-                poll: 1000,
-                aggregateTimeout: 600,
-            };
-        }
-        return config;
-    },
-
-    /**
-     * Proxy browser requests to Django in dev (and when DJANGO_DEV_BACKEND_URL is set).
-     * - `/api/*` — REST API
-     * - `/media/*` — uploaded files
-     * - `/admin/*` — Django admin (proxied from the same host/port as Next dev, e.g. :3000 or :3001)
-     * - `/static/*` — Django admin CSS/JS (DEBUG or after collectstatic)
-     */
     async rewrites() {
+        const landingPageRewrites = [
+            { source: '/Timekids-meta-feb', destination: '/Timekids-meta-feb/index.html' },
+            { source: '/Timekids-meta-feb/', destination: '/Timekids-meta-feb/index.html' },
+            { source: '/Timekids-lp-feb', destination: '/Timekids-lp-feb/index.html' },
+            { source: '/Timekids-lp-feb/', destination: '/Timekids-lp-feb/index.html' },
+        ];
         const isDev = process.env.NODE_ENV === 'development';
         const djangoBase = isDev
             ? djangoFromEnv || djangoDevFallback
             : djangoFromEnv || djangoProdFallback;
-        if (!djangoBase) return [];
+        if (!djangoBase) return landingPageRewrites;
         return [
+            ...landingPageRewrites,
             { source: '/admin/:path*/', destination: `${djangoBase}/admin/:path*/` },
             { source: '/admin/:path*', destination: `${djangoBase}/admin/:path*` },
             { source: '/static/:path*/', destination: `${djangoBase}/static/:path*/` },
@@ -116,6 +103,18 @@ const nextConfig = {
             { source: '/media/:path*', destination: `${djangoBase}/media/:path*` },
             /** `/cms-media/*` is served by `app/cms-media/[[...path]]/route.ts` (Django proxy + public fallbacks). */
         ];
+    },
+    experimental: {
+        optimizePackageImports: ['lucide-react', 'framer-motion', 'gsap'],
+    },
+    webpack: (config, { dev, isServer }) => {
+        if (dev && !isServer) {
+            config.watchOptions = {
+                poll: 1000,
+                aggregateTimeout: 600,
+            };
+        }
+        return config;
     },
 };
 
