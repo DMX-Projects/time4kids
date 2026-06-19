@@ -26,6 +26,7 @@ import {
 } from "@/config/holiday-entries";
 import {
     emptyCmsPublishTarget,
+    holidayCityDropdownOptions,
     parentDocumentTargetPayload,
     publishTargetFromDoc,
     publishTargetSummary,
@@ -33,6 +34,8 @@ import {
     type CmsPublishTargetForm,
 } from "@/lib/cms-publish-target";
 import { jsonHeaders } from "@/lib/api-client";
+
+const todayLocal = () => new Date().toISOString().slice(0, 10);
 
 type AuthFetchFn = <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 type ShowToastFn = (message: string, type?: "success" | "error" | "info") => void;
@@ -69,8 +72,12 @@ type Props = {
     authFetch: AuthFetchFn;
     showToast: ShowToastFn;
     franchises?: AdminFranchise[];
+    /** Pre-built city list for admin holiday rows (all centres). */
+    holidayCityOptions?: string[];
     /** Franchise profile state text — used to lock centre holiday uploads to one state. */
     centreStateFromProfile?: string;
+    /** Franchise profile city — prefilled on centre holiday rows. */
+    centreCityFromProfile?: string;
 };
 
 export function ParentHolidayCmsPanel({
@@ -78,9 +85,12 @@ export function ParentHolidayCmsPanel({
     authFetch,
     showToast,
     franchises = [],
+    holidayCityOptions: holidayCityOptionsProp = [],
     centreStateFromProfile = "",
+    centreCityFromProfile = "",
 }: Props) {
     const isAdmin = mode === "admin";
+    const centreCity = centreCityFromProfile.trim();
     const centreStateCode = useMemo(
         () => (isAdmin ? null : resolveParentDocumentStateCode(centreStateFromProfile)),
         [isAdmin, centreStateFromProfile],
@@ -94,17 +104,23 @@ export function ParentHolidayCmsPanel({
     const [rows, setRows] = useState<HolidayDocRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [trackDate, setTrackDate] = useState(todayLocal);
     const [filterState, setFilterState] = useState("AP");
     const [state, setState] = useState("AP");
     const [pdf, setPdf] = useState<File | null>(null);
-    const [entries, setEntries] = useState<HolidayEntry[]>([emptyHolidayEntry()]);
+    const [pdfLabel, setPdfLabel] = useState("");
+    const [entries, setEntries] = useState<HolidayEntry[]>([emptyHolidayEntry(centreCity)]);
     const [publishTarget, setPublishTarget] = useState<CmsPublishTargetForm>(emptyCmsPublishTarget());
     const [editModal, setEditModal] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
     const [editState, setEditState] = useState("AP");
     const [editPdf, setEditPdf] = useState<File | null>(null);
-    const [editEntries, setEditEntries] = useState<HolidayEntry[]>([emptyHolidayEntry()]);
+    const [editPdfLabel, setEditPdfLabel] = useState("");
+    const [editEntries, setEditEntries] = useState<HolidayEntry[]>([emptyHolidayEntry(centreCity)]);
     const [editTarget, setEditTarget] = useState<CmsPublishTargetForm>(emptyCmsPublishTarget());
     const [editSaving, setEditSaving] = useState(false);
+    const [fetchedLocationRows, setFetchedLocationRows] = useState<
+        { city_name?: unknown; city?: unknown }[]
+    >([]);
     const [viewModal, setViewModal] = useState<{ isOpen: boolean; row: HolidayDocRow | null }>({
         isOpen: false,
         row: null,
@@ -121,6 +137,7 @@ export function ParentHolidayCmsPanel({
             const params = new URLSearchParams({ manage: "holidays" });
             const stateFilter = isAdmin ? filterState : centreStateCode;
             if (stateFilter) params.set("state", stateFilter);
+            if (isAdmin) params.set("date", trackDate);
             const data = await authFetch<unknown>(`${listBase}?${params.toString()}`);
             setRows(normalizeList<HolidayDocRow>(data));
         } catch {
@@ -128,15 +145,54 @@ export function ParentHolidayCmsPanel({
         } finally {
             setLoading(false);
         }
-    }, [authFetch, listBase, filterState, isAdmin, centreStateCode]);
+    }, [authFetch, listBase, filterState, isAdmin, centreStateCode, trackDate]);
 
     useEffect(() => {
         void load();
     }, [load]);
 
+    useEffect(() => {
+        if (!isAdmin) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const data = await authFetch<
+                    | { city_name?: string; city?: string }[]
+                    | { results?: { city_name?: string; city?: string }[] }
+                >("/franchises/public/locations/");
+                const items = Array.isArray(data) ? data : data?.results ?? [];
+                if (!cancelled) setFetchedLocationRows(items);
+            } catch {
+                if (!cancelled) setFetchedLocationRows([]);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [isAdmin, authFetch]);
+
     const stateLabel = (code: string) => PARENT_DOCUMENT_STATES.find((s) => s.value === code)?.label || code;
 
     const effectiveHolidayState = isAdmin ? state : centreStateCode || "";
+
+    const holidayCityOptions = useMemo(() => {
+        if (!isAdmin) return [];
+        if (holidayCityOptionsProp.length > 0) return holidayCityOptionsProp;
+        return holidayCityDropdownOptions(franchises, fetchedLocationRows);
+    }, [isAdmin, holidayCityOptionsProp, franchises, fetchedLocationRows]);
+
+    const holidayEditorProps = isAdmin
+        ? { cityOptions: holidayCityOptions }
+        : { defaultCity: centreCity, lockCity: Boolean(centreCity) };
+
+    const editHolidayEditorProps = isAdmin
+        ? { cityOptions: holidayCityOptions }
+        : { defaultCity: centreCity, lockCity: Boolean(centreCity) };
+
+    const withCentreCity = (rows: HolidayEntry[]): HolidayEntry[] => {
+        if (!centreCity) return rows;
+        return rows.map((row) => ({ ...row, city: row.city.trim() || centreCity }));
+    };
 
     const sentRows: ParentDocumentSentRow[] = useMemo(
         () =>
@@ -170,10 +226,10 @@ export function ParentHolidayCmsPanel({
         [rows, sentRows],
     );
 
-    const centreRows = useMemo(
-        () => sentRows.filter((row) => rows.find((r) => r.id === row.id)?.franchise != null),
-        [rows, sentRows],
-    );
+    const centreRows = useMemo(() => {
+        const base = sentRows.filter((row) => rows.find((r) => r.id === row.id)?.franchise != null);
+        return base.filter((row) => (row.published_at || "").slice(0, 10) === trackDate);
+    }, [rows, sentRows, trackDate]);
 
     const validateHolidayForm = (
         holidayState: string,
@@ -181,11 +237,15 @@ export function ParentHolidayCmsPanel({
         holidayEntries: HolidayEntry[],
         editing: HolidayDocRow | null,
         target: CmsPublishTargetForm,
+        label = "",
     ): string | null => {
         const serialized = serializeHolidayEntries(holidayEntries);
         const hasExistingPdf = Boolean(editing?.file);
         if (!pdfFile && !hasExistingPdf && serialized.length === 0) {
             return "Upload a PDF or add at least one holiday date.";
+        }
+        if (!isAdmin && (pdfFile || hasExistingPdf) && !label.trim()) {
+            return "Enter a label for the PDF so parents know what it is.";
         }
         if (pdfFile && serialized.length > 0) {
             const holidayErr = validateHolidayEntries(holidayEntries);
@@ -205,9 +265,23 @@ export function ParentHolidayCmsPanel({
         return null;
     };
 
+    const centreHolidayTitle = (holidayState: string, label: string) => {
+        const trimmed = label.trim();
+        if (trimmed) return trimmed;
+        const stateName = stateLabel(holidayState);
+        return `${stateName} Holiday List (Centre)`;
+    };
+
     const submit = async (e: FormEvent) => {
         e.preventDefault();
-        const err = validateHolidayForm(effectiveHolidayState, pdf, entries, null, publishTarget);
+        const err = validateHolidayForm(
+            effectiveHolidayState,
+            pdf,
+            entries,
+            null,
+            publishTarget,
+            pdfLabel,
+        );
         if (err) {
             showToast(err, "error");
             return;
@@ -215,8 +289,9 @@ export function ParentHolidayCmsPanel({
         setSubmitting(true);
         try {
             const serialized = serializeHolidayEntries(entries);
-            const stateName = stateLabel(effectiveHolidayState);
-            const title = `${stateName} Holiday List${isAdmin ? "" : " (Centre)"}`;
+            const title = isAdmin
+                ? `${stateLabel(effectiveHolidayState)} Holiday List`
+                : centreHolidayTitle(effectiveHolidayState, pdfLabel);
             const targetPayload = isAdmin ? parentDocumentTargetPayload(publishTarget) : null;
             const franchise = isAdmin ? targetPayload?.franchise ?? null : undefined;
 
@@ -254,9 +329,11 @@ export function ParentHolidayCmsPanel({
                     }),
                 });
             }
-            setEntries([emptyHolidayEntry()]);
+            setEntries([emptyHolidayEntry(centreCity)]);
             setPdf(null);
+            setPdfLabel("");
             setPublishTarget(emptyCmsPublishTarget());
+            setTrackDate(todayLocal());
             showToast("Holiday list saved for parents.", "success");
             await load();
         } catch (err: unknown) {
@@ -284,7 +361,8 @@ export function ParentHolidayCmsPanel({
         const parsed = parseHolidayEntries(full.holiday_entries);
         setEditState(full.state || effectiveHolidayState || filterState);
         setEditPdf(null);
-        setEditEntries(parsed.length > 0 ? parsed : [emptyHolidayEntry()]);
+        setEditPdfLabel(full.title || "");
+        setEditEntries(withCentreCity(parsed.length > 0 ? parsed : [emptyHolidayEntry(centreCity)]));
         setEditTarget(isAdmin ? publishTargetFromDoc(full) : emptyCmsPublishTarget());
         setEditModal({ isOpen: true, id: full.id });
     };
@@ -292,7 +370,8 @@ export function ParentHolidayCmsPanel({
     const closeEdit = () => {
         setEditModal({ isOpen: false, id: null });
         setEditPdf(null);
-        setEditEntries([emptyHolidayEntry()]);
+        setEditPdfLabel("");
+        setEditEntries([emptyHolidayEntry(centreCity)]);
     };
 
     const saveEdit = async (e: FormEvent) => {
@@ -305,6 +384,7 @@ export function ParentHolidayCmsPanel({
             editEntries,
             existing || null,
             editTarget,
+            editPdfLabel,
         );
         if (err) {
             showToast(err, "error");
@@ -313,13 +393,16 @@ export function ParentHolidayCmsPanel({
         setEditSaving(true);
         try {
             const serialized = serializeHolidayEntries(editEntries);
-            const stateName = stateLabel(editState);
+            const holidayState = isAdmin ? editState : centreStateCode || editState;
+            const title = isAdmin
+                ? `${stateLabel(editState)} Holiday List`
+                : centreHolidayTitle(holidayState, editPdfLabel);
             const targetPayload = isAdmin ? parentDocumentTargetPayload(editTarget) : null;
             await authFetch(`${detailBase}${editModal.id}/`, {
                 method: "PATCH",
                 headers: jsonHeaders(),
                 body: JSON.stringify({
-                    title: `${stateName} Holiday List${isAdmin ? "" : " (Centre)"}`,
+                    title,
                     state: editState,
                     academic_year: DEFAULT_HOLIDAY_ACADEMIC_YEAR,
                     holiday_entries: serialized,
@@ -332,6 +415,7 @@ export function ParentHolidayCmsPanel({
                 await authFetch(`${detailBase}${editModal.id}/`, { method: "PATCH", body: fd });
             }
             closeEdit();
+            setTrackDate(todayLocal());
             showToast("Holiday list updated.", "success");
             await load();
         } catch (err: unknown) {
@@ -364,6 +448,12 @@ export function ParentHolidayCmsPanel({
             {centreStateCode ? (
                 <p className="text-xs text-[#4B5563] rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2">
                     <span className="font-semibold text-[#111827]">Your centre state:</span> {centreStateLabel}
+                    {centreCity ? (
+                        <>
+                            {" "}
+                            · <span className="font-semibold text-[#111827]">City:</span> {centreCity}
+                        </>
+                    ) : null}
                 </p>
             ) : (
                 <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
@@ -371,6 +461,26 @@ export function ParentHolidayCmsPanel({
                     holidays.
                 </p>
             )}
+            {!centreCity ? (
+                <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                    Your centre profile does not have a city set. Update it under centre profile so holiday rows
+                    prefill the city automatically.
+                </p>
+            ) : null}
+            <label className="block text-xs font-semibold text-[#4B5563]">
+                PDF label
+                <input
+                    type="text"
+                    value={pdfLabel}
+                    onChange={(e) => setPdfLabel(e.target.value)}
+                    placeholder="e.g. Centre summer break 2026"
+                    maxLength={255}
+                    className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
+                />
+                <span className="mt-1 block font-normal text-[#6B7280]">
+                    Required when you upload a PDF — parents see this name when downloading it.
+                </span>
+            </label>
             <ChecklistFileUploadField
                 id="holiday-pdf-upload"
                 accept=".pdf,application/pdf"
@@ -383,7 +493,7 @@ export function ParentHolidayCmsPanel({
                 <p className="text-xs font-semibold text-[#4B5563]">
                     Add centre-only holidays (merged with head-office list for parents)
                 </p>
-                <HolidayEntriesEditor rows={entries} onChange={setEntries} />
+                <HolidayEntriesEditor rows={entries} onChange={setEntries} {...holidayEditorProps} />
             </div>
         </>
     );
@@ -423,7 +533,7 @@ export function ParentHolidayCmsPanel({
                 <p className="text-xs font-semibold text-[#4B5563]">
                     Add holidays manually (parents see PDF and/or this table)
                 </p>
-                <HolidayEntriesEditor rows={entries} onChange={setEntries} />
+                <HolidayEntriesEditor rows={entries} onChange={setEntries} {...holidayEditorProps} />
             </div>
         </>
     );
@@ -473,10 +583,12 @@ export function ParentHolidayCmsPanel({
                         <ParentDocumentCmsLayout
                             listOnly
                             sentTitle="Your centre holiday lists"
-                            sentIntro="PDF and/or dates uploaded by your centre — you can edit or delete these."
+                            sentIntro="PDF and/or dates uploaded by your centre — filter by upload date, then edit or delete."
+                            trackDate={trackDate}
+                            onTrackDateChange={setTrackDate}
                             loading={loading}
                             rows={centreRows}
-                            emptySentMessage="No centre holiday list added yet."
+                            emptySentMessage={`No centre holiday list uploaded on ${trackDate}. Change the track date or save one.`}
                             onEdit={openEdit}
                             onDelete={remove}
                             canEditRow={() => true}
@@ -513,6 +625,20 @@ export function ParentHolidayCmsPanel({
                                 <span className="font-semibold text-[#111827]">State:</span> {centreStateLabel}
                             </p>
                         ) : null}
+                        <label className="block text-xs font-semibold text-[#4B5563]">
+                            PDF label
+                            <input
+                                type="text"
+                                value={editPdfLabel}
+                                onChange={(e) => setEditPdfLabel(e.target.value)}
+                                placeholder="e.g. Centre summer break 2026"
+                                maxLength={255}
+                                className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
+                            />
+                            <span className="mt-1 block font-normal text-[#6B7280]">
+                                Required when a PDF is attached — parents see this name when downloading it.
+                            </span>
+                        </label>
                         <ChecklistFileUploadField
                             id="holiday-pdf-edit"
                             accept=".pdf,application/pdf"
@@ -524,7 +650,7 @@ export function ParentHolidayCmsPanel({
                             }
                             onChange={setEditPdf}
                         />
-                        <HolidayEntriesEditor rows={editEntries} onChange={setEditEntries} />
+                        <HolidayEntriesEditor rows={editEntries} onChange={setEditEntries} {...editHolidayEditorProps} />
                         <div className="flex flex-wrap gap-2 pt-1">
                             <Button type="submit" disabled={editSaving} className="bg-[#FF922B] text-white">
                                 {editSaving ? "Saving…" : "Save changes"}
@@ -556,7 +682,7 @@ export function ParentHolidayCmsPanel({
                     </Button>
                 }
                 sentTitle="Saved holiday lists"
-                sentIntro="Holiday lists for the selected state — head office and centre uploads."
+                sentIntro="Holiday lists for the selected state — filter by upload/update date."
                 sentFilters={
                     <label className="block text-xs font-semibold text-[#4B5563]">
                         Filter by state
@@ -573,9 +699,11 @@ export function ParentHolidayCmsPanel({
                         </select>
                     </label>
                 }
+                trackDate={trackDate}
+                onTrackDateChange={setTrackDate}
                 loading={loading}
                 rows={sentRows}
-                emptySentMessage={`No holiday list for ${stateLabel(filterState)} yet.`}
+                emptySentMessage={`No holiday list for ${stateLabel(filterState)} on ${trackDate}. Change the track date or save one.`}
                 onEdit={openEdit}
                 onDelete={remove}
                 canEditRow={(row) => {
@@ -621,7 +749,7 @@ export function ParentHolidayCmsPanel({
                         currentName={editPdf?.name ?? (rows.find((r) => r.id === editModal.id)?.file ? "Current PDF on server" : null)}
                         onChange={setEditPdf}
                     />
-                    <HolidayEntriesEditor rows={editEntries} onChange={setEditEntries} />
+                    <HolidayEntriesEditor rows={editEntries} onChange={setEditEntries} {...editHolidayEditorProps} />
                     <div className="flex flex-wrap gap-2 pt-1">
                         <Button type="submit" disabled={editSaving} className="bg-[#FF922B] text-white">
                             {editSaving ? "Saving…" : "Save changes"}

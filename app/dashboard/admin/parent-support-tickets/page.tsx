@@ -106,7 +106,7 @@ export default function AdminParentSupportTicketsPage() {
                     <p className="text-sm text-slate-600 mt-1">
                         Centres handle tickets under <strong>Parent Support</strong>. You see every ticket and its status
                         here. If a centre has not replied or resolved, use <strong>Notify centre</strong> — they get a
-                        message in <strong>Centre inbox</strong> and an email when SendGrid is configured.
+                        message in <strong>Notifications</strong> and an email when SendGrid is configured.
                     </p>
                 </div>
             </div>

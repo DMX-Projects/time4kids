@@ -1,8 +1,11 @@
 import type { CenterPageLink } from "@/config/franchise-center-page-nav";
 import { uploadSourcePathForLink } from "@/lib/centre-page-nav-custom";
+import { effectiveParentUploadCategory } from "@/lib/infer-parent-nav-category";
 import type { FranchiseHubDoc } from "@/components/dashboard/franchise/FranchiseResourceFileRow";
 
 export type AdminCenterPageUploadContext = {
+    /** Checklist top id (built-in section id or custom top uuid). */
+    topId?: string;
     /** Display path, e.g. Academic Documents › Block Material › Block-1 › Playgroup ZIP */
     breadcrumb: string[];
     breadcrumbLabel: string;
@@ -22,14 +25,18 @@ export function sourcePathFromChecklistLink(link: CenterPageLink): string {
 }
 
 export function buildAdminUploadContext(args: {
+    topId?: string;
     topTitle: string;
     groupTitle?: string;
     nestedTitle?: string;
     link: CenterPageLink;
     matchedDocId?: number;
 }): AdminCenterPageUploadContext | null {
-    const category = args.link.adminCategory?.trim();
-    if (!category) return null;
+    const rawCategory = args.link.adminCategory?.trim();
+    if (!rawCategory) return null;
+    const category = args.topId
+        ? effectiveParentUploadCategory(rawCategory, args.topId)
+        : rawCategory;
 
     const breadcrumb = [
         args.topTitle,
@@ -41,6 +48,7 @@ export function buildAdminUploadContext(args: {
     const sourcePath = uploadSourcePathForLink(args.link);
 
     return {
+        topId: args.topId,
         breadcrumb,
         breadcrumbLabel: breadcrumb.join(" › "),
         topTitle: args.topTitle,

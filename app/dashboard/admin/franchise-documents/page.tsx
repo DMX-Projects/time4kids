@@ -609,28 +609,13 @@ export default function AdminFranchiseDocumentsPage() {
                 <p className="mt-2 text-sm text-slate-600">
                     Full nesting is supported: <strong>main section</strong> → <strong>subsection</strong> →{" "}
                     <strong>nested subsection</strong> → <strong>file / link</strong>. Use{" "}
-                    <strong>Add top-level section</strong> below for a new main section. On any section click{" "}
+                    <strong>Add top-level section</strong> (button above the list) for a new main section. On any section click{" "}
                     <strong>Add</strong> → <strong>Add subsection</strong>; on a subsection <strong>Add</strong> →{" "}
                     <strong>Add nested section</strong>; then <strong>Add file / link</strong> for the upload row.
                     Use the trash icon to delete a section, row, or uploaded file. Upload modal accepts a file or a
                     video/embed link (not both).
                 </p>
             </div>
-
-            {loading ? (
-                <p className="text-sm text-slate-600">Loading checklist…</p>
-            ) : (
-                <AdminCentrePageChecklist
-                    sections={mergedSections}
-                    hubDocs={hubDocs}
-                    onManageLink={openFromChecklist}
-                    onAddRequest={handleAddRequest}
-                    onRemoveRequest={handleRemoveRequest}
-                    onRenameRequest={handleRenameRequest}
-                    onDeleteUpload={handleDeleteUpload}
-                    isCustomTop={(id) => isCustomTopSection(customNav, id)}
-                />
-            )}
 
             <div className="flex justify-end">
                 <Button
@@ -647,6 +632,21 @@ export default function AdminFranchiseDocumentsPage() {
                     Add top-level section
                 </Button>
             </div>
+
+            {loading ? (
+                <p className="text-sm text-slate-600">Loading checklist…</p>
+            ) : (
+                <AdminCentrePageChecklist
+                    sections={mergedSections}
+                    hubDocs={hubDocs}
+                    onManageLink={openFromChecklist}
+                    onAddRequest={handleAddRequest}
+                    onRemoveRequest={handleRemoveRequest}
+                    onRenameRequest={handleRenameRequest}
+                    onDeleteUpload={handleDeleteUpload}
+                    isCustomTop={(id) => isCustomTopSection(customNav, id)}
+                />
+            )}
 
             <Modal
                 isOpen={renameModal != null}
@@ -727,7 +727,7 @@ export default function AdminFranchiseDocumentsPage() {
                             <ChecklistFileUploadField
                                 id="add-centre-page-file"
                                 accept=".pdf,.zip,.rar,.7z,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.mp3,.mp4,.wav,.mov,.webm,.htm,.html"
-                                hint="PDF, photos, ZIP, documents, audio, or video (max 50 MB)"
+                                hint="PDF, photos, ZIP, documents, audio, or video"
                                 required={!addEmbedUrl.trim()}
                                 currentName={addFile?.name ?? null}
                                 onChange={setAddFile}
@@ -802,7 +802,7 @@ export default function AdminFranchiseDocumentsPage() {
                     <ChecklistFileUploadField
                         id="centre-page-file"
                         accept=".pdf,.zip,.rar,.7z,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.gif,.webp,.mp3,.mp4,.wav,.mov,.webm,.htm,.html"
-                        hint="PDF, documents, images, audio, video, or ZIP (max 50 MB)"
+                        hint="PDF, documents, images, audio, video, or ZIP"
                         required={!editing && !form.embed_url.trim()}
                         currentName={file?.name ?? (editing?.file ? "Current file on server" : null)}
                         onChange={setFile}

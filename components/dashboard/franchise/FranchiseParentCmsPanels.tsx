@@ -326,6 +326,7 @@ export function FranchiseHolidayPanel({ authFetch, showToast }: { authFetch: Aut
             authFetch={authFetch}
             showToast={showToast}
             centreStateFromProfile={profile.state}
+            centreCityFromProfile={profile.city}
         />
     );
 }

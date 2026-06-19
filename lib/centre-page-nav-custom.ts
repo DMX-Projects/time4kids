@@ -481,7 +481,7 @@ export function mergeCentrePageBlocks(
         .map(finalizeTop)
         .map(visibleTop)
         .filter((item): item is CenterPageTopItem => item != null);
-    return [mergedA, [...mergedB, ...customTops]];
+    return [[...customTops, ...mergedA, ...mergedB]];
 }
 
 export function hideCentrePageStaticTop(
@@ -545,7 +545,7 @@ export function addCustomTopSection(
     };
     return {
         ...data,
-        customTopSections: [...data.customTopSections, top],
+        customTopSections: [top, ...data.customTopSections],
     };
 }
 
@@ -564,7 +564,7 @@ export function addCustomGroup(
         return {
             ...data,
             customTopSections: data.customTopSections.map((t) =>
-                t.id === anchor.topId ? { ...t, groups: [...t.groups, group] } : t,
+                t.id === anchor.topId ? { ...t, groups: [group, ...t.groups] } : t,
             ),
         };
     }
@@ -572,7 +572,7 @@ export function addCustomGroup(
     if (extIdx >= 0) {
         const next = [...data.staticExtensions];
         const ext = { ...next[extIdx] };
-        ext.groups = [...ext.groups, group];
+        ext.groups = [group, ...ext.groups];
         next[extIdx] = ext;
         return { ...data, staticExtensions: next };
     }
@@ -597,7 +597,7 @@ export function addCustomNested(
     };
     const patchGroup = (g: CentrePageCustomGroup): CentrePageCustomGroup => {
         if (g.title !== anchor.groupTitle) return g;
-        return { ...g, nested: [...(g.nested ?? []), nested] };
+        return { ...g, nested: [nested, ...(g.nested ?? [])] };
     };
     if (isCustomTopSection(data, anchor.topId)) {
         return {
@@ -609,13 +609,13 @@ export function addCustomNested(
                     return {
                         ...t,
                         groups: [
-                            ...t.groups,
                             {
                                 id: newCustomId("grp"),
                                 title: anchor.groupTitle,
                                 nested: [nested],
                                 removable: true,
                             },
+                            ...t.groups,
                         ],
                     };
                 }
@@ -631,13 +631,13 @@ export function addCustomNested(
         ext.groups = hasGroup
             ? ext.groups.map(patchGroup)
             : [
-                  ...ext.groups,
                   {
                       id: newCustomId("grp"),
                       title: anchor.groupTitle,
                       nested: [nested],
                       removable: true,
                   },
+                  ...ext.groups,
               ];
         next[extIdx] = ext;
         return { ...data, staticExtensions: next };
@@ -671,13 +671,13 @@ export function addCustomLink(
         rowKey: `custom-${newCustomId("row")}`,
     };
 
-    const appendToStaticSubsection = (): CentrePageNavCustomData => {
+    const prependLinkToStaticSubsection = (): CentrePageNavCustomData => {
         const appends = [...(data.staticGroupLinkAppends ?? [])];
         const idx = appends.findIndex(
             (a) => a.staticTopId === anchor.topId && a.groupTitle === anchor.groupTitle,
         );
         if (idx >= 0) {
-            appends[idx] = { ...appends[idx], links: [...appends[idx].links, link] };
+            appends[idx] = { ...appends[idx], links: [link, ...appends[idx].links] };
         } else {
             appends.push({
                 staticTopId: anchor.topId,
@@ -688,22 +688,22 @@ export function addCustomLink(
         return { ...data, staticGroupLinkAppends: appends };
     };
 
-    const appendToGroup = (g: CentrePageCustomGroup): CentrePageCustomGroup => {
+    const prependLinkToGroup = (g: CentrePageCustomGroup): CentrePageCustomGroup => {
         if (anchor.groupTitle && g.title !== anchor.groupTitle) return g;
         if (anchor.nestedTitle) {
             return {
                 ...g,
                 nested: (g.nested ?? []).map((n) =>
                     n.title === anchor.nestedTitle
-                        ? { ...n, links: [...n.links, link] }
+                        ? { ...n, links: [link, ...n.links] }
                         : n,
                 ),
             };
         }
-        return { ...g, links: [...(g.links ?? []), link] };
+        return { ...g, links: [link, ...(g.links ?? [])] };
     };
 
-    const appendToExtensionGroups = (ext: CentrePageStaticExtension): boolean => {
+    const prependToExtensionGroups = (ext: CentrePageStaticExtension): boolean => {
         if (!anchor.groupTitle || anchor.nestedTitle) return false;
         const hasGroup = ext.groups.some((g) => g.title === anchor.groupTitle);
         if (!hasGroup) return false;
@@ -714,9 +714,9 @@ export function addCustomLink(
         const customTopSections = data.customTopSections.map((t) => {
             if (t.id !== anchor.topId) return t;
             if (!anchor.groupTitle) {
-                return { ...t, directLinks: [...(t.directLinks ?? []), link] };
+                return { ...t, directLinks: [link, ...(t.directLinks ?? [])] };
             }
-            return { ...t, groups: t.groups.map(appendToGroup) };
+            return { ...t, groups: t.groups.map(prependLinkToGroup) };
         });
         return { data: { ...data, customTopSections }, link };
     }
@@ -724,20 +724,20 @@ export function addCustomLink(
     const extIdx = data.staticExtensions.findIndex((e) => e.staticTopId === anchor.topId);
     if (extIdx >= 0) {
         const ext = data.staticExtensions[extIdx];
-        if (anchor.groupTitle && !anchor.nestedTitle && appendToExtensionGroups(ext)) {
+        if (anchor.groupTitle && !anchor.nestedTitle && prependToExtensionGroups(ext)) {
             const next = [...data.staticExtensions];
-            next[extIdx] = { ...ext, groups: ext.groups.map(appendToGroup) };
+            next[extIdx] = { ...ext, groups: ext.groups.map(prependLinkToGroup) };
             return { data: { ...data, staticExtensions: next }, link };
         }
         if (anchor.groupTitle && !anchor.nestedTitle) {
-            return { data: appendToStaticSubsection(), link };
+            return { data: prependLinkToStaticSubsection(), link };
         }
         const next = [...data.staticExtensions];
         const patched = { ...ext };
         if (!anchor.groupTitle) {
-            patched.directLinks = [...(patched.directLinks ?? []), link];
+            patched.directLinks = [link, ...(patched.directLinks ?? [])];
         } else {
-            patched.groups = patched.groups.map(appendToGroup);
+            patched.groups = patched.groups.map(prependLinkToGroup);
         }
         next[extIdx] = patched;
         return { data: { ...data, staticExtensions: next }, link };
@@ -775,7 +775,7 @@ export function addCustomLink(
         };
     }
 
-    return { data: appendToStaticSubsection(), link };
+    return { data: prependLinkToStaticSubsection(), link };
 }
 
 export function removeCustomTopSection(

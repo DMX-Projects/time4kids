@@ -4,7 +4,11 @@ export type HolidayEntry = {
     date: string;
 };
 
-export const emptyHolidayEntry = (): HolidayEntry => ({ city: "", name: "", date: "" });
+export const emptyHolidayEntry = (defaultCity = ""): HolidayEntry => ({
+    city: defaultCity.trim(),
+    name: "",
+    date: "",
+});
 
 export function parseHolidayEntries(raw: unknown): HolidayEntry[] {
     if (!Array.isArray(raw)) return [];

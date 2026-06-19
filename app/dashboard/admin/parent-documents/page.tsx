@@ -17,6 +17,7 @@ import { ChecklistFileUploadField } from "@/components/dashboard/admin/Checklist
 import { CmsPublishTargetFields } from "@/components/dashboard/admin/CmsPublishTargetFields";
 import {
     emptyCmsPublishTarget,
+    holidayCityDropdownOptions,
     parentDocumentTargetPayload,
     publishTargetFromDoc,
     type CmsPublishTargetForm,
@@ -74,7 +75,7 @@ import {
     removeCustomTopSection,
     renameNavLabel,
 } from "@/lib/centre-page-nav-custom";
-import { inferParentCategoryForAnchor } from "@/lib/infer-parent-nav-category";
+import { inferParentCategoryForAnchor, effectiveParentUploadCategory } from "@/lib/infer-parent-nav-category";
 import { mergeParentAppNavBlocks } from "@/lib/merge-parent-app-nav-blocks";
 import {
     buildParentLinkLookupForItem,
@@ -162,7 +163,7 @@ const CMS_MANAGED_PARENT_SECTION_IDS = new Set(["holiday-lists", "newsletters"])
 
 export default function AdminParentDocumentsPage() {
     const { authFetch } = useAuth();
-    const { franchises } = useAdminData();
+    const { franchises, savedLocations, reloadFranchises, franchisesLoading } = useAdminData();
     const { showToast } = useToast();
     const [items, setItems] = useState<ParentDocumentRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -197,9 +198,9 @@ export default function AdminParentDocumentsPage() {
     );
 
     const mergedSections = useMemo(() => {
-        const [builtIn, customTops] = mergeParentAppNavBlocks(navCustom);
+        const [customTops, builtIn] = mergeParentAppNavBlocks(navCustom);
         const filteredBuiltIn = builtIn.filter((item) => !CMS_MANAGED_PARENT_SECTION_IDS.has(item.id));
-        return [filteredBuiltIn, customTops];
+        return [customTops, filteredBuiltIn];
     }, [navCustom]);
 
     const hubDocs = useMemo(() => parentDocsAsHubDocs(items), [items]);
@@ -232,6 +233,17 @@ export default function AdminParentDocumentsPage() {
     const isNewsletter = form.category === PARENT_NEWSLETTER_CATEGORY;
     const holidayStateLabel =
         PARENT_DOCUMENT_STATES.find((s) => s.value === form.state)?.label || form.state || "";
+
+    const holidayCityOptions = useMemo(() => {
+        if (!isHoliday) return [];
+        return holidayCityDropdownOptions(franchises, savedLocations);
+    }, [isHoliday, franchises, savedLocations]);
+
+    useEffect(() => {
+        if (franchises.length === 0 && !franchisesLoading) {
+            void reloadFranchises();
+        }
+    }, [franchises.length, franchisesLoading, reloadFranchises]);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -544,6 +556,9 @@ export default function AdminParentDocumentsPage() {
 
     const openFromChecklist = (ctx: AdminCenterPageUploadContext) => {
         setUploadContext(ctx);
+        const uploadCategory = ctx.topId
+            ? effectiveParentUploadCategory(ctx.category, ctx.topId)
+            : ctx.category;
         const existing = ctx.matchedDocId
             ? items.find((row) => row.id === ctx.matchedDocId)
             : findDocBySourcePath(items, ctx.sourcePath);
@@ -558,7 +573,7 @@ export default function AdminParentDocumentsPage() {
                       ? "audio"
                       : "document";
             setForm({
-                category: existing.category,
+                category: uploadCategory,
                 title: existing.title,
                 description: existing.description || "",
                 academic_year: existing.academic_year || "AY 2026-27",
@@ -577,7 +592,7 @@ export default function AdminParentDocumentsPage() {
             setEditing(null);
             setForm({
                 ...emptyForm,
-                category: ctx.category,
+                category: uploadCategory,
                 title: ctx.linkLabel || "",
                 state: holidayState,
                 source_path: ctx.sourcePath || "",
@@ -1006,22 +1021,6 @@ export default function AdminParentDocumentsPage() {
                 </p>
             </div>
 
-            {loading ? (
-                <p className="text-sm text-slate-500">Loading checklist…</p>
-            ) : (
-                <AdminCentrePageChecklist
-                    sections={mergedSections}
-                    hubDocs={hubDocs}
-                    onManageLink={openFromChecklist}
-                    onAddRequest={handleAddRequest}
-                    onRemoveRequest={handleRemoveRequest}
-                    onRenameRequest={handleRenameRequest}
-                    onDeleteUpload={handleDeleteUpload}
-                    isCustomTop={(id) => isCustomTopSection(navCustom, id)}
-                    linkLookupBuilder={linkLookupBuilder}
-                />
-            )}
-
             <div className="flex justify-end">
                 <Button
                     type="button"
@@ -1037,6 +1036,22 @@ export default function AdminParentDocumentsPage() {
                     Add top-level section
                 </Button>
             </div>
+
+            {loading ? (
+                <p className="text-sm text-slate-500">Loading checklist…</p>
+            ) : (
+                <AdminCentrePageChecklist
+                    sections={mergedSections}
+                    hubDocs={hubDocs}
+                    onManageLink={openFromChecklist}
+                    onAddRequest={handleAddRequest}
+                    onRemoveRequest={handleRemoveRequest}
+                    onRenameRequest={handleRenameRequest}
+                    onDeleteUpload={handleDeleteUpload}
+                    isCustomTop={(id) => isCustomTopSection(navCustom, id)}
+                    linkLookupBuilder={linkLookupBuilder}
+                />
+            )}
 
             <Modal
                 isOpen={renameModal != null}
@@ -1363,7 +1378,11 @@ export default function AdminParentDocumentsPage() {
                             <p className="text-xs font-semibold text-slate-600">
                                 Add holidays manually (parents see PDF and/or this table)
                             </p>
-                            <HolidayEntriesEditor rows={holidayEntries} onChange={setHolidayEntries} />
+                            <HolidayEntriesEditor
+                                rows={holidayEntries}
+                                onChange={setHolidayEntries}
+                                cityOptions={holidayCityOptions}
+                            />
                         </div>
                     ) : null}
                     <label className="flex items-center gap-2 text-sm text-slate-700">

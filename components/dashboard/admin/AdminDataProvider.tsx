@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { jsonHeaders } from "@/lib/api-client";
+import { cityLabelsFromUnknown } from "@/lib/cms-publish-target";
 
 export type AdminFranchise = {
     id: string;
@@ -330,10 +331,11 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             const data = await authFetch<any>('/franchises/public/locations/');
             const items = Array.isArray(data) ? data : (data.results || []);
             setSavedLocations(
-                items.map((loc: { city_name?: string; city?: string; state?: string }) => ({
-                    city_name: loc.city_name || loc.city || '',
-                    state: loc.state || '',
-                })),
+                items.flatMap((loc: { city_name?: unknown; city?: unknown; state?: unknown }) => {
+                    const cities = cityLabelsFromUnknown(loc.city_name ?? loc.city);
+                    const state = String(loc.state ?? "").trim();
+                    return cities.map((city_name) => ({ city_name, state }));
+                }),
             );
         } catch (err) {
             console.error("Failed to load saved locations", err);

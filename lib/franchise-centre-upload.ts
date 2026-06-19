@@ -140,17 +140,17 @@ export function validateFileSize(file: File, kind: ParentUploadKind): string | n
         return `${file.name}: image too large (max 15 MB).`;
     }
     if (kind === "video" && file.size > MAX_VIDEO_BYTES) {
-        return `${file.name}: video too large (max 50 MB).`;
+        return `${file.name}: video file is too large.`;
     }
     if (kind === "document" && file.size > MAX_DOC_BYTES) {
-        return `${file.name}: file too large (max 25 MB).`;
+        return `${file.name}: file is too large.`;
     }
     return null;
 }
 
 export function validateHubFileSize(file: File): string | null {
     if (file.size > MAX_HUB_FILE_BYTES) {
-        return `${file.name}: file too large (max 50 MB).`;
+        return `${file.name}: file is too large.`;
     }
     return null;
 }
