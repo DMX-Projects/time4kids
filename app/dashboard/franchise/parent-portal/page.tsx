@@ -848,7 +848,7 @@ function AnnouncementsTab({ authFetch }: { authFetch: AuthFetchFn }) {
                 <h3 className="text-sm font-semibold text-[#111827]">Parent notifications</h3>
                 <p className="text-xs text-[#6B7280]">
                     Messages that went to parents on the selected date — from your centre or head office. Head-office
-                    centre alerts (not sent to parents) appear under Franchise → Centre inbox.
+                    centre alerts (not sent to parents) appear under Franchise → Notifications.
                 </p>
             </div>
             <label className="block text-xs font-semibold text-[#4B5563]">

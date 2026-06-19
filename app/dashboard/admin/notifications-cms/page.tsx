@@ -330,7 +330,7 @@ export default function AdminNotificationsCmsPage() {
                         <h1 className="text-2xl font-semibold text-slate-900">Notifications</h1>
                         <p className="text-sm text-slate-600 mt-1">
                             Same manual notification flow as centres, plus head-office targeting — pan-India, states,
-                            cities, or specific centres. Messages appear in franchise centre inboxes and the parent app.
+                            cities, or specific centres. Messages appear in franchise notifications and the parent app.
                         </p>
                     </div>
                 </div>
@@ -368,7 +368,7 @@ export default function AdminNotificationsCmsPage() {
                                     checked={form.visible_to_centres}
                                     onChange={(e) => setForm((p) => ({ ...p, visible_to_centres: e.target.checked }))}
                                 />
-                                Show to centres (franchise notifications inbox)
+                                Show to centres (franchise notifications)
                             </label>
                         </div>
                     </div>

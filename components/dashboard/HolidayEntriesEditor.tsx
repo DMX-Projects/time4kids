@@ -1,6 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import { cityLabelsFromUnknown } from "@/lib/cms-publish-target";
 import type { HolidayEntry } from "@/config/holiday-entries";
 import { emptyHolidayEntry } from "@/config/holiday-entries";
 
@@ -8,11 +11,58 @@ type Props = {
     rows: HolidayEntry[];
     onChange: (rows: HolidayEntry[]) => void;
     compact?: boolean;
+    /** When set, city is chosen from a dropdown (admin CMS). */
+    cityOptions?: string[];
+    /** Prefill city on new rows (centre uploads). */
+    defaultCity?: string;
+    /** Lock city to defaultCity for every row (centre uploads). */
+    lockCity?: boolean;
 };
 
-export function HolidayEntriesEditor({ rows = [], onChange, compact = false }: Props) {
+const selectClass =
+    "w-full min-w-[8rem] rounded-lg border border-slate-200 px-2 py-1.5 text-sm bg-white";
+
+export function HolidayEntriesEditor({
+    rows = [],
+    onChange,
+    compact = false,
+    cityOptions,
+    defaultCity = "",
+    lockCity = false,
+}: Props) {
+    const prefilledCity = defaultCity.trim();
+
+    const effectiveCityOptions = useMemo(() => {
+        if (cityOptions === undefined) return [];
+        const seen = new Set<string>();
+        const out: string[] = [];
+        const add = (raw: unknown) => {
+            for (const city of cityLabelsFromUnknown(raw)) {
+                const key = city.toLowerCase();
+                if (seen.has(key)) continue;
+                seen.add(key);
+                out.push(city);
+            }
+        };
+        if (Array.isArray(cityOptions)) {
+            for (const city of cityOptions) add(city);
+        }
+        for (const row of rows) add(row.city);
+        if (lockCity) add(prefilledCity);
+        return out.sort((a, b) => a.localeCompare(b));
+    }, [cityOptions, rows, lockCity, prefilledCity]);
+
+    const citySelectOptions = useMemo(
+        () => effectiveCityOptions.map((city) => ({ value: city, label: city })),
+        [effectiveCityOptions],
+    );
+
+    const useCityDropdown = cityOptions !== undefined || (lockCity && Boolean(prefilledCity));
+
     const updateRow = (index: number, patch: Partial<HolidayEntry>) => {
-        onChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+        const merged =
+            lockCity && prefilledCity ? { ...patch, city: prefilledCity } : patch;
+        onChange(rows.map((row, i) => (i === index ? { ...row, ...merged } : row)));
     };
 
     const removeRow = (index: number) => {
@@ -20,10 +70,50 @@ export function HolidayEntriesEditor({ rows = [], onChange, compact = false }: P
     };
 
     const addRow = () => {
-        onChange([...rows, emptyHolidayEntry()]);
+        onChange([...rows, emptyHolidayEntry(lockCity ? prefilledCity : "")]);
     };
 
-    const displayRows = rows.length > 0 ? rows : [emptyHolidayEntry()];
+    const displayRows =
+        rows.length > 0 ? rows : [emptyHolidayEntry(lockCity ? prefilledCity : "")];
+
+    const renderCityField = (row: HolidayEntry, index: number) => {
+        if (lockCity && prefilledCity) {
+            return (
+                <input
+                    type="text"
+                    value={prefilledCity}
+                    readOnly
+                    className={`${selectClass} bg-slate-50 text-slate-600`}
+                    title="City is set from your centre profile"
+                />
+            );
+        }
+
+        if (useCityDropdown) {
+            return (
+                <SearchableSelect
+                    value={row.city}
+                    onChange={(city) => updateRow(index, { city })}
+                    options={citySelectOptions}
+                    placeholder="Select city"
+                    searchPlaceholder="Search city…"
+                    emptyMessage="No city matches your search."
+                    menuPortal
+                    className="min-w-[8rem] [&_button]:mt-0 [&_button]:rounded-lg [&_button]:py-1.5"
+                />
+            );
+        }
+
+        return (
+            <input
+                type="text"
+                value={row.city}
+                onChange={(e) => updateRow(index, { city: e.target.value })}
+                placeholder="e.g. Hyderabad"
+                className={selectClass}
+            />
+        );
+    };
 
     return (
         <div className="space-y-2">
@@ -38,7 +128,18 @@ export function HolidayEntriesEditor({ rows = [], onChange, compact = false }: P
                     Add row
                 </button>
             </div>
-            <p className="text-[11px] text-slate-500">Add city, holiday name, and date for each holiday.</p>
+            <p className="text-[11px] text-slate-500">
+                {lockCity && prefilledCity
+                    ? `City is set to ${prefilledCity} from your centre profile. Add holiday name and date for each row.`
+                    : useCityDropdown
+                      ? "Search or select city, holiday name, and date for each holiday."
+                      : "Add city, holiday name, and date for each holiday."}
+            </p>
+            {useCityDropdown && !lockCity && effectiveCityOptions.length === 0 ? (
+                <p className="text-[11px] text-amber-800">
+                    No cities found on centres — add a city on each centre under Franchise centres first.
+                </p>
+            ) : null}
             <div className={`overflow-x-auto rounded-xl border border-slate-200 ${compact ? "" : "bg-slate-50 p-2"}`}>
                 <table className="min-w-full text-xs">
                     <thead>
@@ -69,15 +170,7 @@ export function HolidayEntriesEditor({ rows = [], onChange, compact = false }: P
                                         className="w-full min-w-[8rem] rounded-lg border border-slate-200 px-2 py-1.5 text-sm bg-white"
                                     />
                                 </td>
-                                <td className="px-2 py-1">
-                                    <input
-                                        type="text"
-                                        value={row.city}
-                                        onChange={(e) => updateRow(index, { city: e.target.value })}
-                                        placeholder="e.g. Hyderabad"
-                                        className="w-full min-w-[8rem] rounded-lg border border-slate-200 px-2 py-1.5 text-sm bg-white"
-                                    />
-                                </td>
+                                <td className="px-2 py-1">{renderCityField(row, index)}</td>
                                 <td className="px-2 py-1">
                                     {displayRows.length > 1 ? (
                                         <button

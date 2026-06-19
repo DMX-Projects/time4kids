@@ -79,7 +79,7 @@ export default function FranchiseNotificationsPage() {
                     <Bell className="w-5 h-5" />
                 </div>
                 <div>
-                    <h1 className="text-xl font-semibold text-[#111827]">Centre inbox</h1>
+                    <h1 className="text-xl font-semibold text-[#111827]">Notifications</h1>
                     <p className="text-sm text-[#6B7280]">
                         Head-office messages and support-ticket reminders for your centre. Parent notifications you send
                         from Parent Portal are tracked separately under Parent Portal → Notifications.

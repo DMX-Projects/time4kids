@@ -117,5 +117,5 @@ export function mergeParentAppNavBlocks(
         .map(finalize)
         .filter((item): item is CenterPageTopItem => item != null);
 
-    return [builtIn, customTops];
+    return [customTops, builtIn];
 }

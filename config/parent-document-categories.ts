@@ -1,3 +1,6 @@
+/** Default storage category for admin-added parent app sections (mixed files + embed links). */
+export const DEFAULT_CUSTOM_PARENT_DOCUMENT_CATEGORY = "VIDEOS";
+
 /** Parent mobile app document categories (matches Django DocumentCategory). */
 export const PARENT_DOCUMENT_CATEGORIES = [
     { value: "PRESCHOOL_POLICIES", label: "Preschool Policies (PDF)" },

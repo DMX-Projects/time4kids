@@ -1,4 +1,5 @@
 import type { AdminFranchise } from "@/components/dashboard/admin/AdminDataProvider";
+import { parentDocumentStateLabel, resolveParentDocumentStateCode } from "@/config/parent-document-categories";
 import { normalizeStoredClassFilter } from "@/lib/student-class-match";
 
 export type CmsPublishScope =
@@ -68,18 +69,88 @@ export function publishTargetFromDoc(doc: {
     };
 }
 
+/** Turn API / DB city values into individual city names for dropdowns. */
+export function cityLabelsFromUnknown(raw: unknown): string[] {
+    if (raw == null || raw === false) return [];
+    if (Array.isArray(raw)) return raw.flatMap(cityLabelsFromUnknown);
+    const text = String(raw).trim();
+    if (!text) return [];
+    // Recover from Array.prototype.toString() e.g. "Alleppey,Arcot,Barasat"
+    if (text.includes(",") && !text.includes(", ")) {
+        const parts = text
+            .split(",")
+            .map((part) => part.trim())
+            .filter(Boolean);
+        if (parts.length > 1 && parts.every((part) => part.length <= 80)) {
+            return parts;
+        }
+    }
+    return [text];
+}
+
+function normalizeCityLabel(raw: unknown): string {
+    return cityLabelsFromUnknown(raw)[0] || "";
+}
+
 export function uniqueCitiesFromFranchises(franchises: AdminFranchise[]): string[] {
     const seen = new Set<string>();
     const out: string[] = [];
     for (const f of franchises) {
-        const city = (f.city || "").trim();
-        if (!city) continue;
-        const key = city.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push(city);
+        for (const city of cityLabelsFromUnknown(f.city || f.region)) {
+            const key = city.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(city);
+        }
     }
     return out.sort((a, b) => a.localeCompare(b));
+}
+
+export function mergeUniqueCityNames(...groups: unknown[][]): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const group of groups) {
+        for (const raw of group) {
+            for (const city of cityLabelsFromUnknown(raw)) {
+                const key = city.toLowerCase();
+                if (seen.has(key)) continue;
+                seen.add(key);
+                out.push(city);
+            }
+        }
+    }
+    return out.sort((a, b) => a.localeCompare(b));
+}
+
+type SavedLocationRow = { city_name?: unknown; city?: unknown; state?: unknown };
+
+/** All centre cities for holiday row dropdowns (not limited by state). */
+export function holidayCityDropdownOptions(
+    franchises: AdminFranchise[],
+    savedLocations: SavedLocationRow[] = [],
+): string[] {
+    const fromLocations = savedLocations.flatMap((loc) =>
+        cityLabelsFromUnknown(loc.city_name ?? loc.city),
+    );
+    return mergeUniqueCityNames([uniqueCitiesFromFranchises(franchises), fromLocations]);
+}
+
+/** Cities from franchise centres, optionally limited to one parent-document state code. */
+export function uniqueCitiesFromFranchisesForState(
+    franchises: AdminFranchise[],
+    stateCode: string,
+): string[] {
+    const code = (stateCode || "").trim().toUpperCase();
+    if (!code) return uniqueCitiesFromFranchises(franchises);
+    const labelNorm = parentDocumentStateLabel(code).toLowerCase().replace(/[^a-z0-9]/g, "");
+    const inState = franchises.filter((f) => {
+        const resolved = resolveParentDocumentStateCode(f.state);
+        if (resolved === code) return true;
+        const raw = (f.state || "").trim();
+        if (!raw) return false;
+        return raw.toLowerCase().replace(/[^a-z0-9]/g, "") === labelNorm;
+    });
+    return uniqueCitiesFromFranchises(inState.length > 0 ? inState : franchises);
 }
 
 export function announcementTargetPayload(

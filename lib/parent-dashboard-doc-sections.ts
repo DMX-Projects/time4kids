@@ -1,5 +1,6 @@
 import type { CenterPageTopItem } from "@/config/franchise-center-page-nav";
 import { PARENT_APP_DOCUMENT_CHECKLIST } from "@/config/parent-app-document-checklist";
+import { DEFAULT_CUSTOM_PARENT_DOCUMENT_CATEGORY } from "@/config/parent-document-categories";
 import type { ParentDashboardDocumentSection } from "@/config/parent-dashboard-sections";
 import {
     buildParentDashboardSectionItems,
@@ -41,8 +42,8 @@ export function primaryCategoryForTopItem(item: CenterPageTopItem): string | und
         const cat = link.adminCategory?.trim();
         if (cat) return cat;
     }
-    // Custom admin sections (new top-level blocks) use links' category once added.
-    if (item.adminCustom) return "PRESCHOOL_POLICIES";
+    // Custom admin sections — mixed media (not PDF-only policies).
+    if (item.adminCustom) return DEFAULT_CUSTOM_PARENT_DOCUMENT_CATEGORY;
     return undefined;
 }
 
@@ -93,8 +94,9 @@ export function collectParentSectionDocs(
         used.add(docId);
     }
 
+    // Built-in sections also show category-wide uploads; custom sections only use checklist rows.
     const category = primaryCategoryForTopItem(item);
-    if (category) {
+    if (category && !item.adminCustom) {
         for (const doc of buildParentDashboardSectionItems(category, docs)) {
             if (used.has(doc.id)) continue;
             ordered.push(doc);

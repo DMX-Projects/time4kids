@@ -217,6 +217,7 @@ function LinkRowsBlock({
     const rows = links
         .map((link) =>
             buildAdminUploadContext({
+                topId,
                 topTitle,
                 groupTitle,
                 nestedTitle,
