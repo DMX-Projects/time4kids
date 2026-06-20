@@ -29,7 +29,7 @@ export const FRANCHISE_DOCUMENT_CATEGORY_ORDER: { value: string; label: string }
     { value: "INDENT_DOCUMENTS", label: "Indent Documents (Inside & Outside AP)" },
     { value: "ORDERING_DOCUMENTS", label: "Ordering Documents (IK & SM)" },
     { value: "STUDENT_TRANSFER_POLICY", label: "Student Transfer Policy" },
-    { value: "PARENTING_TIPS", label: "Parenting Tips & Articles" },
+    { value: "PARENTING_TIPS", label: "Parental Tips" },
     { value: "AKSHARABHYASAM_SUPPORT_SHEETS", label: "Aksharabhyasam Support Sheets" },
     { value: "ROYALTY_PAYMENTS", label: "Royalty Payments" },
 ];

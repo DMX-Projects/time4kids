@@ -12,6 +12,15 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
 
+import {
+    attendanceStatusClass,
+    attendanceStatusLabel,
+    extractAttendanceList,
+    extractAttendanceSummary,
+    formatAttendancePercentage,
+    type AttendanceSummary,
+} from "@/lib/attendance";
+
 import { localDateString } from "@/lib/parent-portal-calendar";
 
 import { withParentScopedQuery } from "@/lib/parent-student-query";
@@ -58,6 +67,12 @@ type CombinedPayload = {
 
     attendance_for_date?: Row | null;
 
+    attendance_summary?: AttendanceSummary | null;
+
+    attendance_summary_by_month?: Record<string, AttendanceSummary>;
+
+    resolved_attendance?: Row | null;
+
     selected_date?: string | null;
 
 };
@@ -101,17 +116,7 @@ function formatDayLabel(dateStr: string): string {
 
 
 function statusClass(status: string): string {
-
-    const s = status.toUpperCase();
-
-    if (s === "PRESENT") return "text-green-700";
-
-    if (s === "ABSENT") return "text-red-700";
-
-    if (s === "LATE") return "text-amber-700";
-
-    return "text-orange-900";
-
+    return attendanceStatusClass(status);
 }
 
 
@@ -136,6 +141,10 @@ export default function AttendancePage() {
 
     const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => new Set());
 
+    const [monthSummary, setMonthSummary] = useState<AttendanceSummary | null>(null);
+
+    const [summariesByMonth, setSummariesByMonth] = useState<Record<string, AttendanceSummary>>({});
+
 
 
     useEffect(() => {
@@ -158,27 +167,25 @@ export default function AttendancePage() {
 
                 );
 
-                const attendanceRaw = payload?.attendance;
+                const attendanceList = extractAttendanceList(payload) as Row[];
 
-                const attendanceList = Array.isArray(attendanceRaw)
-
-                    ? attendanceRaw
-
-                    : attendanceRaw &&
-
-                        typeof attendanceRaw === "object" &&
-
-                        Array.isArray((attendanceRaw as { results?: unknown[] }).results)
-
-                      ? (attendanceRaw as { results: unknown[] }).results
-
-                      : [];
-
-                if (!c) setRows(attendanceList as Row[]);
+                if (!c) {
+                    setRows(attendanceList);
+                    setSummariesByMonth(payload?.attendance_summary_by_month || {});
+                    setMonthSummary(
+                        extractAttendanceSummary(payload, selectedDate.slice(0, 7)) ||
+                            payload?.attendance_summary ||
+                            null,
+                    );
+                }
 
             } catch {
 
-                if (!c) setRows([]);
+                if (!c) {
+                    setRows([]);
+                    setMonthSummary(null);
+                    setSummariesByMonth({});
+                }
 
             } finally {
 
@@ -226,8 +233,17 @@ export default function AttendancePage() {
 
                 if (c) return;
 
-                const list = Array.isArray(payload?.attendance) ? (payload.attendance as Row[]) : [];
-                setDayAttendance(list[0] ?? null);
+                const list = extractAttendanceList(payload) as Row[];
+                const resolved = payload?.resolved_attendance || list[0] || null;
+                setDayAttendance(resolved);
+                setMonthSummary(
+                    extractAttendanceSummary(payload, selectedDate.slice(0, 7)) ||
+                        payload?.attendance_summary ||
+                        null,
+                );
+                if (payload?.attendance_summary_by_month) {
+                    setSummariesByMonth(payload.attendance_summary_by_month);
+                }
 
             } catch {
 
@@ -377,6 +393,44 @@ export default function AttendancePage() {
 
 
 
+                {monthSummary ? (
+                    <div className="rounded-xl border border-orange-100 bg-white p-4 space-y-3">
+                        <div className="flex flex-wrap items-end justify-between gap-2">
+                            <div>
+                                <h2 className="text-sm font-semibold text-orange-900">
+                                    {formatMonthLabel(selectedDate.slice(0, 7))} summary
+                                </h2>
+                                <p className="text-xs text-orange-700">
+                                    Percentage uses marked days only (present ÷ present + absent). Holidays and unmarked days are excluded.
+                                </p>
+                            </div>
+                            <p className="text-2xl font-bold text-orange-900">
+                                {formatAttendancePercentage(monthSummary.attendance_percentage)}
+                            </p>
+                        </div>
+                        <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                            <div className="rounded-lg bg-green-50 px-3 py-2">
+                                <dt className="text-green-700">Present</dt>
+                                <dd className="text-lg font-semibold text-green-900">{monthSummary.present}</dd>
+                            </div>
+                            <div className="rounded-lg bg-red-50 px-3 py-2">
+                                <dt className="text-red-700">Absent</dt>
+                                <dd className="text-lg font-semibold text-red-900">{monthSummary.absent}</dd>
+                            </div>
+                            <div className="rounded-lg bg-gray-50 px-3 py-2">
+                                <dt className="text-gray-600">Unmarked</dt>
+                                <dd className="text-lg font-semibold text-gray-900">{monthSummary.unmarked}</dd>
+                            </div>
+                            <div className="rounded-lg bg-violet-50 px-3 py-2">
+                                <dt className="text-violet-700">Holiday</dt>
+                                <dd className="text-lg font-semibold text-violet-900">{monthSummary.holiday}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                ) : null}
+
+
+
                 <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4">
 
                     <h2 className="text-sm font-semibold text-orange-900">{formatDayLabel(selectedDate)}</h2>
@@ -384,6 +438,18 @@ export default function AttendancePage() {
                     {dayLoading ? (
 
                         <p className="mt-2 text-sm text-orange-700">Loading attendance for this date…</p>
+
+                    ) : dayAttendance?.status === "HOLIDAY" ? (
+
+                        <p className="mt-2 text-sm text-orange-800">
+                            This date is a holiday — no attendance is marked.
+                        </p>
+
+                    ) : dayAttendance?.status === "UNMARKED" ? (
+
+                        <p className="mt-2 text-sm text-orange-800">
+                            No attendance marked for this working day yet.
+                        </p>
 
                     ) : dayAttendance ? (
 
@@ -395,7 +461,7 @@ export default function AttendancePage() {
 
                                 <dd className={`font-semibold ${statusClass(dayAttendance.status)}`}>
 
-                                    {dayAttendance.status}
+                                    {attendanceStatusLabel(dayAttendance.status)}
 
                                 </dd>
 
@@ -421,7 +487,9 @@ export default function AttendancePage() {
 
                     ) : (
 
-                        <p className="mt-2 text-sm text-orange-800">No attendance marked for this date yet.</p>
+                        <p className="mt-2 text-sm text-orange-800">
+                            No attendance marked for this date yet.
+                        </p>
 
                     )}
 
@@ -487,7 +555,13 @@ export default function AttendancePage() {
 
                                     {formatMonthLabel(month)}
 
-                                    <span className="font-normal text-orange-700">({items.length} records)</span>
+                                    <span className="font-normal text-orange-700">
+                                        ({items.length} records
+                                        {summariesByMonth[month]
+                                            ? ` · ${formatAttendancePercentage(summariesByMonth[month].attendance_percentage)}`
+                                            : ""}
+                                        )
+                                    </span>
 
                                 </span>
 
@@ -541,7 +615,7 @@ export default function AttendancePage() {
 
                                                     <td className="p-2 text-orange-800">{r.student_name || "—"}</td>
 
-                                                    <td className={`p-2 font-medium ${statusClass(r.status)}`}>{r.status}</td>
+                                                    <td className={`p-2 font-medium ${statusClass(r.status)}`}>{attendanceStatusLabel(r.status)}</td>
 
                                                     <td className="p-2 text-orange-700">{r.note || "—"}</td>
 

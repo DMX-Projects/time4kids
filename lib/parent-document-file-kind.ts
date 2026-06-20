@@ -8,8 +8,8 @@ const PDF_ONLY_CATEGORIES = new Set([
     "STUDENT_TRANSFER_POLICY",
     "CONTACT_US",
     "GENERAL_RHYMES",
-    "PARENTING_TIPS",
 ]);
+const RICH_MEDIA_CATEGORIES = new Set(["CLASS_TIMETABLE", "NEWSLETTERS", "PARENTING_TIPS"]);
 const AUDIO_ONLY_CATEGORIES = new Set(["AUDIO_RHYMES"]);
 /** Watch • Hear • Learn — mixed videos, audio, PDFs, and other learning files. */
 const MIXED_MEDIA_CATEGORIES = new Set(["VIDEOS"]);
@@ -77,14 +77,13 @@ export function parentDocumentRowVisible(row: ParentDocumentMediaRow, category: 
         if (
             cat === "VIDEOS" ||
             cat === "AUDIO_RHYMES" ||
-            cat === "CLASS_TIMETABLE" ||
-            cat === "NEWSLETTERS"
+            RICH_MEDIA_CATEGORIES.has(cat)
         ) {
             return true;
         }
     }
     if ((row.audio_embed_url || "").trim() || (row.audio_file || "").trim()) {
-        if (cat === "AUDIO_RHYMES" || cat === "CLASS_TIMETABLE" || cat === "NEWSLETTERS") {
+        if (cat === "AUDIO_RHYMES" || RICH_MEDIA_CATEGORIES.has(cat)) {
             return true;
         }
     }

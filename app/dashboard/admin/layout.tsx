@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Briefcase, Images, MessageSquareQuote, LayoutTemplate, LayoutList, GraduationCap, HelpCircle, FileText, Star, MapPin, Inbox, Bell, LifeBuoy, Newspaper } from "lucide-react";
+import { CalendarDays, Briefcase, Images, MessageSquareQuote, LayoutTemplate, LayoutList, GraduationCap, HelpCircle, FileText, Star, MapPin, Inbox, Bell, LifeBuoy, Newspaper, Lightbulb } from "lucide-react";
 
 import { DashboardShell, DashboardNavItem } from "@/components/layout/DashboardShell";
 import { AdminDataProvider } from "@/components/dashboard/admin/AdminDataProvider";
@@ -24,6 +24,7 @@ const navItems: DashboardNavItem[] = [
     { label: "Centre page documents", href: "/dashboard/admin/franchise-documents", icon: <FileText className="w-5 h-5" /> },
     { label: "Parent documents", href: "/dashboard/admin/parent-documents", icon: <FileText className="w-5 h-5" /> },
     { label: "Newsletters", href: "/dashboard/admin/newsletters-cms", icon: <Newspaper className="w-5 h-5" /> },
+    { label: "Parental Tips", href: "/dashboard/admin/parental-tips-cms", icon: <Lightbulb className="w-5 h-5" /> },
     { label: "Holiday lists", href: "/dashboard/admin/holidays-cms", icon: <CalendarDays className="w-5 h-5" /> },
     { label: "Notifications", href: "/dashboard/admin/notifications-cms", icon: <Bell className="w-5 h-5" /> },
     { label: "Parent support tickets", href: "/dashboard/admin/parent-support-tickets", icon: <LifeBuoy className="w-5 h-5" /> },

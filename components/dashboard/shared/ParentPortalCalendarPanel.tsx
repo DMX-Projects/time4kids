@@ -68,7 +68,7 @@ const portalAnnouncementDetail = (row: Record<string, unknown>): string => {
     return String(row.audience_label || row.body || "").trim();
 };
 
-const CALENDAR_ITEM_TYPES = new Set(["event", "homework", "announcement", "newsletter"]);
+const CALENDAR_ITEM_TYPES = new Set(["event", "homework", "announcement", "newsletter", "holiday", "parental_tip"]);
 
 const mapApiCalendarItem = (row: Record<string, unknown>): PortalCalendarItem | null => {
     const type = String(row.type || "").trim().toLowerCase();
@@ -252,6 +252,25 @@ export function ParentPortalCalendarPanel({
                         date: start,
                         endDate: end || start,
                     });
+                }
+
+                try {
+                    const holidayPayload = await authFetch<{ holiday_dates?: { date: string; label: string }[] }>(
+                        `/students/franchise/attendance/holidays/?month=${encodeURIComponent(month)}`,
+                    );
+                    for (const row of holidayPayload?.holiday_dates ?? []) {
+                        const holidayDate = sliceDate(row.date);
+                        if (!holidayDate) continue;
+                        calendarItems.push({
+                            id: `holiday-${holidayDate}`,
+                            type: "holiday",
+                            title: row.label || "Holiday",
+                            date: holidayDate,
+                            detail: "Holiday",
+                        });
+                    }
+                } catch {
+                    /* calendar still works without holiday overlay */
                 }
 
                 setItems(calendarItems);

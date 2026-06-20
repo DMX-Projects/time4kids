@@ -40,7 +40,7 @@ export const FRANCHISE_DASHBOARD_SECTIONS: FranchiseResourceSection[] = [
             { title: "Indent Documents (Inside & Outside AP)", description: "Regional indent formats and submission steps.", actions: [{ label: "View", href: "/dashboard/franchise/indent-documents" }] },
             { title: "Ordering Documents (IK & SM)", description: "Ordering flows for IK & SM along with SLAs.", actions: [{ label: "Download", href: "/dashboard/franchise/ordering-documents" }] },
             { title: "Student Transfer Policy", description: "Policy pack and approval workflow for student transfers.", actions: [{ label: "View", href: "/dashboard/franchise/student-transfer-policy" }] },
-            { title: "Parenting Tips & Articles", description: "Curated articles for parent engagement (managed by head office).", actions: [{ label: "Open Parent App", href: "/dashboard/franchise/parent-portal/" }] },
+            { title: "Parental Tips", description: "Articles, audio, and videos for parents (head office or centre CMS).", actions: [{ label: "Open Parent App", href: "/dashboard/franchise/parent-portal/?tab=parental_tips" }] },
         ],
     },
     {

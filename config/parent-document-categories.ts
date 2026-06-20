@@ -13,7 +13,7 @@ export const PARENT_DOCUMENT_CATEGORIES = [
     { value: "CONTACT_US", label: "Contact Us" },
     { value: "GENERAL_RHYMES", label: "General Rhymes" },
     { value: "STUDENT_TRANSFER_POLICY", label: "Student Transfer Policy" },
-    { value: "PARENTING_TIPS", label: "Parenting Tips & Articles" },
+    { value: "PARENTING_TIPS", label: "Parental Tips" },
 ] as const;
 
 /** Head-office CMS — includes newsletter (global or per-centre). */
