@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
@@ -20,7 +21,7 @@ type NotificationRow = {
     body?: string;
     className?: string;
     publishedAt?: string;
-    source: "announcement" | "homework" | "fees" | "transport" | "event" | "achievement" | "attendance" | "support_ticket";
+    source: "announcement" | "homework" | "fees" | "transport" | "event" | "achievement" | "attendance" | "support_ticket" | "parental_tip";
     read?: boolean;
 };
 
@@ -70,9 +71,11 @@ const sourceLabel: Record<NotificationRow["source"], string> = {
     achievement: "Achievement",
     attendance: "Attendance",
     support_ticket: "Support",
+    parental_tip: "Parental Tips",
 };
 
 export default function NotificationsPage() {
+    const router = useRouter();
     const { authFetch } = useAuth();
     const { selectedStudent, hasMultipleChildren, studentScopeReady, scopedApiPath } = useParentData();
     const [rows, setRows] = useState<NotificationRow[]>([]);
@@ -228,6 +231,9 @@ export default function NotificationsPage() {
             } else if (!row.read) {
                 setUnreadCount((prev) => Math.max(0, prev - 1));
             }
+            if (row.source === "parental_tip") {
+                router.push("/dashboard/parent/parental-tips");
+            }
         } catch {
             // keep item if request fails
         }
@@ -243,7 +249,7 @@ export default function NotificationsPage() {
                     <div>
                         <h1 className="text-lg font-semibold text-orange-900">Notifications</h1>
                         <p className="text-sm text-orange-700">
-                            All updates from your centre (announcements, homework, events, fees, transport, achievements, attendance), newest first.
+                            All updates from your centre (announcements, homework, parental tips, events, fees, transport, achievements, attendance), newest first.
                             {hasMultipleChildren && selectedStudent ? ` Showing updates for ${selectedStudent.name}.` : ""}
                         </p>
                         <p className="text-xs text-orange-600 mt-1">Unread: {unreadCount}</p>

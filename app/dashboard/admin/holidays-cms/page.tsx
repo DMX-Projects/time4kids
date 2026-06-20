@@ -25,8 +25,8 @@ export default function AdminHolidaysCmsPage() {
             <div className="max-w-2xl">
                 <h1 className="text-2xl font-semibold text-slate-900">Holiday lists</h1>
                 <p className="mt-2 text-sm text-slate-600">
-                    Same layout as centre Parent Portal — state PDF, manual dates, and saved lists by state. Head office
-                    can publish globally or to selected centres.
+                    Head office holiday lists — choose audience (all India, states, cities, or centres), then save PDF
+                    and/or dates. City-wise: tick one city or many. State-wise: tick one state or many.
                 </p>
             </div>
             <ParentHolidayCmsPanel

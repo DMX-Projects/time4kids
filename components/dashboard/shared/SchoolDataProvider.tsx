@@ -137,7 +137,7 @@ export type AttendanceRecord = {
     studentId: string;
     studentName?: string;
     date: string;
-    status: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED" | "HOLIDAY";
+    status: "PRESENT" | "ABSENT" | "UNMARKED" | "HOLIDAY" | "LATE" | "EXCUSED";
     note?: string;
 };
 

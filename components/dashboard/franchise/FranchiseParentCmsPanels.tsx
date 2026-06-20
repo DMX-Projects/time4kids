@@ -9,6 +9,7 @@ import { ManualNotificationSendToFields } from "@/components/dashboard/ManualNot
 import { ParentHolidayCmsPanel } from "@/components/dashboard/ParentHolidayCmsPanel";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
 import { ParentNewsletterCmsPanel } from "@/components/dashboard/ParentNewsletterCmsPanel";
+import { ParentParentalTipsCmsPanel } from "@/components/dashboard/ParentParentalTipsCmsPanel";
 import { CENTRE_CLASS_LABELS } from "@/lib/student-class-match";
 import {
     emptySendToForm,
@@ -316,6 +317,10 @@ export function FranchiseAnnouncementsPanel({
 
 export function FranchiseNewsletterPanel({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
     return <ParentNewsletterCmsPanel mode="franchise" authFetch={authFetch} showToast={showToast} />;
+}
+
+export function FranchiseParentalTipsPanel({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {
+    return <ParentParentalTipsCmsPanel mode="franchise" authFetch={authFetch} showToast={showToast} />;
 }
 
 export function FranchiseHolidayPanel({ authFetch, showToast }: { authFetch: AuthFetchFn; showToast: ShowToastFn }) {

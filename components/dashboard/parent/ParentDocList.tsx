@@ -5,6 +5,7 @@ import { Download, FileText, Play } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useParentData } from "@/components/dashboard/parent/ParentDataProvider";
 import { PARENT_NEWSLETTER_CATEGORY } from "@/config/parent-newsletter";
+import { PARENT_PARENTAL_TIPS_CATEGORY } from "@/config/parent-parental-tips";
 import {
     openNewsletterVideoEmbedLink,
     openParentDocumentAudioFile,
@@ -17,6 +18,7 @@ import { parentDocClassTargets, parentDocVisibleForStudentGrade } from "@/lib/pa
 type DocRow = {
     id: number;
     title: string;
+    description?: string;
     file: string;
     display_title?: string;
     file_view_path?: string | null;
@@ -144,22 +146,28 @@ export function ParentDocList({
 
             <ul className="space-y-3">
                 {docs.map((d) => {
-                    const showNewsletterEmbeds = category === PARENT_NEWSLETTER_CATEGORY;
+                    const showRichMedia =
+                        category === PARENT_NEWSLETTER_CATEGORY || category === PARENT_PARENTAL_TIPS_CATEGORY;
                     const hasStoredFile = Boolean((d.file || "").trim() || (d.file_view_path || "").trim());
                     const hasPdfFile = hasStoredFile;
                     const hasVideoEmbed = Boolean((d.video_embed_url || "").trim());
                     const hasAudioFile = Boolean((d.audio_file || "").trim());
                     const hasAudioEmbed = Boolean((d.audio_embed_url || "").trim());
-                    const classTargets = showNewsletterEmbeds ? parentDocClassTargets(d) : [];
+                    const classTargets = showRichMedia ? parentDocClassTargets(d) : [];
 
                     return (
                     <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-100 bg-white p-4 shadow-sm">
                         <div className="min-w-0">
                             <span className="font-medium text-orange-900 text-sm block">{d.display_title || d.title}</span>
-                            {showNewsletterEmbeds && (d.period_start || d.source_label || classTargets.length) ? (
+                            {showRichMedia &&
+                            (d.description || d.period_start || d.source_label || classTargets.length) ? (
                                 <span className="text-[11px] text-orange-700 mt-0.5 block">
                                     {[
-                                        d.period_start ? String(d.period_start).slice(0, 10) : null,
+                                        category === PARENT_PARENTAL_TIPS_CATEGORY
+                                            ? (d.description || "").trim() || null
+                                            : d.period_start
+                                              ? String(d.period_start).slice(0, 10)
+                                              : null,
                                         d.source_label,
                                         classTargets.length ? `Class: ${classTargets.join(", ")}` : null,
                                     ]
@@ -168,7 +176,7 @@ export function ParentDocList({
                                 </span>
                             ) : null}
                         </div>
-                        {showNewsletterEmbeds ? (
+                        {showRichMedia ? (
                             <div className="flex flex-wrap items-center gap-2">
                                 {hasPdfFile ? (
                                     <button

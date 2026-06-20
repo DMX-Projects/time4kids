@@ -1,4 +1,4 @@
-export type PortalCalendarItemType = "event" | "homework" | "announcement" | "newsletter";
+export type PortalCalendarItemType = "event" | "homework" | "announcement" | "newsletter" | "holiday" | "parental_tip";
 
 export type PortalCalendarItem = {
     id: string;
@@ -15,6 +15,8 @@ export const PORTAL_CALENDAR_TYPE_LABELS: Record<PortalCalendarItemType, string>
     homework: "Homework",
     announcement: "Announcement",
     newsletter: "Newsletter",
+    holiday: "Holiday",
+    parental_tip: "Parental Tips",
 };
 
 export const PORTAL_CALENDAR_TYPE_COLORS: Record<PortalCalendarItemType, string> = {
@@ -22,6 +24,8 @@ export const PORTAL_CALENDAR_TYPE_COLORS: Record<PortalCalendarItemType, string>
     homework: "bg-sky-500",
     announcement: "bg-orange-500",
     newsletter: "bg-emerald-500",
+    holiday: "bg-fuchsia-500",
+    parental_tip: "bg-amber-500",
 };
 
 export function sliceDate(value: unknown): string {

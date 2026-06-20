@@ -11,6 +11,7 @@ export function normalizeApiList(data: unknown): unknown[] {
         const o = data as Record<string, unknown>;
         if (Array.isArray(o.results)) return o.results;
         if (Array.isArray(o.events)) return o.events;
+        if (Array.isArray(o.attendance)) return o.attendance;
         if (Array.isArray(o.data)) return o.data;
     }
     return [];

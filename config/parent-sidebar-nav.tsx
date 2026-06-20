@@ -18,6 +18,7 @@ import {
     LifeBuoy,
     Settings,
     CalendarCheck,
+    Lightbulb,
 } from "lucide-react";
 import type { DashboardNavItem } from "@/components/layout/DashboardShell";
 
@@ -29,6 +30,7 @@ const HIDDEN_WHEN_FLAG: ReadonlySet<string> = new Set([
     "Homework",
     "Notifications",
     "Newsletter",
+    "Parental Tips",
     "Transport",
     "Attendance",
     "Event Gallery",
@@ -44,6 +46,7 @@ const PARENT_SIDEBAR_NAV_ALL: DashboardNavItem[] = [
     { label: "Homework", href: "/dashboard/parent/homework", icon: <BookOpen className="w-[18px] h-[18px]" /> },
     { label: "Notifications", href: "/dashboard/parent/notifications", icon: <Bell className="w-[18px] h-[18px]" /> },
     { label: "Newsletter", href: "/dashboard/parent/timetable", icon: <Newspaper className="w-[18px] h-[18px]" /> },
+    { label: "Parental Tips", href: "/dashboard/parent/parental-tips", icon: <Lightbulb className="w-[18px] h-[18px]" /> },
     { label: "Transport", href: "/dashboard/parent/transport", icon: <Bus className="w-[18px] h-[18px]" /> },
     { label: "Attendance", href: "/dashboard/parent/attendance", icon: <CalendarCheck className="w-[18px] h-[18px]" /> },
     { label: "Event Gallery", href: "/dashboard/parent/showcase", icon: <Sparkles className="w-[18px] h-[18px]" /> },

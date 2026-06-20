@@ -952,7 +952,7 @@ export const FRANCHISE_CENTER_PAGE_BLOCK_B: CenterPageTopItem[] = [
     },
     {
         id: "parenting-tips",
-        title: "Parenting Tips & Articles",
+        title: "Parental Tips",
         groups: [],
         directLinks: [
             {

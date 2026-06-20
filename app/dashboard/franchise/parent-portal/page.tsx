@@ -16,6 +16,7 @@ import {
     FranchiseAnnouncementsPanel,
     FranchiseHolidayPanel,
     FranchiseNewsletterPanel,
+    FranchiseParentalTipsPanel,
 } from "@/components/dashboard/franchise/FranchiseParentCmsPanels";
 
 const HOMEWORK_CLASS_OPTIONS = [
@@ -87,12 +88,14 @@ type Tab =
     | "calendar"
     | "showcase"
     | "fees"
-    | "holidays";
+    | "holidays"
+    | "parental_tips";
 
 const TAB_CONFIG: { id: Tab; label: string }[] = [
     { id: "homework", label: "Homework" },
     { id: "notifications", label: "Notifications" },
     { id: "timetable", label: "Newsletter" },
+    { id: "parental_tips", label: "Parental Tips" },
     { id: "transport", label: "Transport" },
     { id: "calendar", label: "Calendar & Attendance" },
     { id: "showcase", label: "Event Gallery" },
@@ -204,6 +207,7 @@ export default function ParentPortalAdminPage() {
                 <FranchiseAnnouncementsPanel authFetch={authFetch} showToast={showToast} students={students} />
             )}
             {tab === "timetable" && <FranchiseNewsletterPanel authFetch={authFetch} showToast={showToast} />}
+            {tab === "parental_tips" && <FranchiseParentalTipsPanel authFetch={authFetch} showToast={showToast} />}
             {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} />}
             {tab === "calendar" && <CalendarAttendanceTab />}
             {tab === "showcase" && <FranchiseEventsPanel />}

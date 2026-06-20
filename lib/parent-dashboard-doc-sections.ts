@@ -22,7 +22,7 @@ const SECTION_SUBTITLES: Record<string, string> = {
     "contact-us": "PDF files only",
     "general-rhymes": "PDF files only",
     "student-transfer-policy": "PDF files only",
-    "parenting-tips": "PDF files only",
+    "parenting-tips": "PDF, Word, video, and audio",
 };
 
 const SKIP_TOP_IDS = new Set(["newsletters"]);

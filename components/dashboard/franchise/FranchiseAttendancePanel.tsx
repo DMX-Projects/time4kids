@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
     useSchoolData,
     type AttendanceRecord,
@@ -15,50 +16,44 @@ import {
     DEFAULT_ATTENDANCE_ACADEMIC_YEAR,
     studentInAttendanceRoster,
 } from "@/lib/student-academic-year";
+import {
+    ATTENDANCE_DROPDOWN_STATUSES,
+    ATTENDANCE_SAVE_STATUSES,
+    ATTENDANCE_STATUS_LABELS,
+    attendanceStatusLabel,
+    attendanceStatusRowClass,
+    extractAttendanceList,
+    extractFranchiseDayInfo,
+    isAttendanceSaveStatus,
+    type AttendanceResolvedStatus,
+    type AttendanceSaveStatus,
+    type FranchiseAttendanceDayInfo,
+} from "@/lib/attendance";
 import { CalendarDays, ChevronDown, ChevronRight, History, Save, CheckCircle, AlertCircle, Search } from "lucide-react";
 
 const STUDENT_LIST_PREVIEW = 12;
 const HISTORY_PREVIEW_ROWS = 20;
 
-type AttendanceStatus = AttendanceRecord["status"];
+type AttendanceEdit = { status: AttendanceSaveStatus | ""; note: string };
 
-const ATTENDANCE_STATUSES: readonly AttendanceStatus[] = [
-    "PRESENT",
-    "ABSENT",
-    "LATE",
-    "EXCUSED",
-    "HOLIDAY",
+const DROPDOWN_STATUSES = ATTENDANCE_DROPDOWN_STATUSES;
+
+const STATUS_LEGEND: { key: AttendanceResolvedStatus; hint: string }[] = [
+    { key: "PRESENT", hint: "Centre marks child present" },
+    { key: "ABSENT", hint: "Centre marks child absent" },
+    { key: "UNMARKED", hint: "Working day, not saved yet — excluded from %" },
+    { key: "HOLIDAY", hint: "Weekend / holiday calendar — select in dropdown or auto-filled" },
 ];
-
-function isAttendanceStatus(value: string): value is AttendanceStatus {
-    return (ATTENDANCE_STATUSES as readonly string[]).includes(value);
-}
-
-type AttendanceEdit = { status: AttendanceStatus | ""; note: string };
 
 const toLocalYYYYMMDD = (d: Date) => {
     const tzOffset = d.getTimezoneOffset() * 60000;
     return new Date(d.getTime() - tzOffset).toISOString().slice(0, 10);
 };
 
-const STATUS_LABELS: Record<AttendanceStatus, string> = {
-    PRESENT: "Present",
-    ABSENT: "Absent",
-    LATE: "Late",
-    EXCUSED: "Excused",
-    HOLIDAY: "Holiday",
-};
+const STATUS_LABELS = ATTENDANCE_STATUS_LABELS;
 
-function statusRowClass(status: AttendanceStatus | ""): string {
-    if (!status) return "border-gray-200 bg-gray-50/60";
-    if (status === "PRESENT") return "border-green-100 bg-green-50/40";
-    if (status === "ABSENT") return "border-red-100 bg-red-50/50";
-    if (status === "LATE") return "border-amber-100 bg-amber-50/50";
-    return "border-orange-100 bg-orange-50/40";
-}
-
-function isPresentChecked(status: AttendanceStatus | ""): boolean {
-    return status === "PRESENT";
+function statusRowClass(status: string): string {
+    return attendanceStatusRowClass(status);
 }
 
 function formatMonthLabel(monthKey: string): string {
@@ -72,17 +67,33 @@ function buildEditsForClass(
     classStudents: SchoolStudent[],
     attendance: AttendanceRecord[],
     selectedDate: string,
+    defaultHoliday = false,
 ): Record<string, AttendanceEdit> {
+    const dayKey = selectedDate.slice(0, 10);
     const next: Record<string, AttendanceEdit> = {};
     for (const s of classStudents) {
-        const saved = attendance.find((r) => r.studentId === s.id && r.date === selectedDate);
-        if (saved && isAttendanceStatus(saved.status)) {
+        const saved = attendance.find(
+            (r) => r.studentId === s.id && r.date.slice(0, 10) === dayKey,
+        );
+        if (saved && isAttendanceSaveStatus(saved.status)) {
             next[s.id] = { status: saved.status, note: saved.note || "" };
+        } else if (defaultHoliday) {
+            next[s.id] = { status: "HOLIDAY", note: "" };
         } else {
             next[s.id] = { status: "", note: "" };
         }
     }
     return next;
+}
+
+function rosterStudentsForClass(
+    students: SchoolStudent[],
+    classFilter: string,
+    academicYearFilter: string,
+): SchoolStudent[] {
+    return students
+        .filter((s) => studentInAttendanceRoster(s, classFilter, academicYearFilter))
+        .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export type FranchiseAttendancePanelProps = {
@@ -94,6 +105,7 @@ export function FranchiseAttendancePanel({
     controlledDate,
     onControlledDateChange,
 }: FranchiseAttendancePanelProps = {}) {
+    const { authFetch } = useAuth();
     const { students, fetchFranchiseAttendance, markAttendance, refreshAll } = useSchoolData();
     const [internalDate, setInternalDate] = useState(toLocalYYYYMMDD(new Date()));
     const selectedDate = controlledDate ?? internalDate;
@@ -115,6 +127,60 @@ export function FranchiseAttendancePanel({
     const [historyOpen, setHistoryOpen] = useState(true);
     const [historyExpanded, setHistoryExpanded] = useState(false);
     const [dayAttendance, setDayAttendance] = useState<AttendanceRecord[]>([]);
+    const [dayInfo, setDayInfo] = useState<FranchiseAttendanceDayInfo | null>(null);
+    const loadSeqRef = useRef(0);
+    const authFetchRef = useRef(authFetch);
+    authFetchRef.current = authFetch;
+
+    const mapAttendanceRows = useCallback((data: unknown): AttendanceRecord[] => {
+        return extractAttendanceList(data).map((raw) => ({
+            id: String((raw as { id?: number | string }).id ?? ""),
+            studentId: String((raw as { student?: number | string }).student ?? ""),
+            studentName: (raw as { student_name?: string }).student_name,
+            date: String((raw as { date?: string }).date ?? "").slice(0, 10),
+            status: String((raw as { status?: string }).status ?? "") as AttendanceRecord["status"],
+            note: (raw as { note?: string }).note,
+        }));
+    }, []);
+
+    const loadDayAttendance = useCallback(async () => {
+        if (!classFilter) {
+            setDayAttendance([]);
+            setDayInfo(null);
+            setEdits({});
+            return;
+        }
+
+        const seq = ++loadSeqRef.current;
+        setLoading(true);
+        try {
+            const params = new URLSearchParams({
+                date: selectedDate,
+                class_name: classFilter,
+            });
+            if (academicYearFilter && academicYearFilter !== "all") {
+                params.set("academic_year", academicYearFilter);
+            }
+            const data = await authFetchRef.current<unknown>(
+                `/students/franchise/attendance/?${params.toString()}`,
+            );
+            if (seq !== loadSeqRef.current) return;
+
+            const rows = mapAttendanceRows(data);
+            const roster = rosterStudentsForClass(students, classFilter, academicYearFilter);
+            const dayInfoNext = extractFranchiseDayInfo(data);
+            setDayAttendance(rows);
+            setDayInfo(dayInfoNext);
+            setEdits(buildEditsForClass(roster, rows, selectedDate, dayInfoNext?.is_holiday ?? false));
+        } catch {
+            if (seq !== loadSeqRef.current) return;
+            setDayAttendance([]);
+            setDayInfo(null);
+            setEdits({});
+        } finally {
+            if (seq === loadSeqRef.current) setLoading(false);
+        }
+    }, [academicYearFilter, classFilter, mapAttendanceRows, selectedDate, students]);
 
     useEffect(() => {
         void refreshAll();
@@ -126,48 +192,20 @@ export function FranchiseAttendancePanel({
     }, [selectedDate]);
 
     useEffect(() => {
-        if (!classFilter) {
-            setDayAttendance([]);
-            setEdits({});
-            return;
-        }
-        let cancelled = false;
-        setLoading(true);
-        (async () => {
-            const rows = await fetchFranchiseAttendance({
-                date: selectedDate,
-                className: classFilter,
-                academicYear: academicYearFilter,
-            });
-            if (!cancelled) {
-                setDayAttendance(rows);
-                setLoading(false);
-            }
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, [selectedDate, classFilter, academicYearFilter, fetchFranchiseAttendance]);
+        void loadDayAttendance();
+    }, [loadDayAttendance]);
 
     const classStudents = useMemo(() => {
         if (!classFilter) return [];
         const q = searchQuery.trim().toLowerCase();
-        return students
-            .filter((s) => studentInAttendanceRoster(s, classFilter, academicYearFilter))
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .filter((s) => {
-                if (!q) return true;
-                return (
-                    s.name.toLowerCase().includes(q) ||
-                    s.rollNumber.toLowerCase().includes(q)
-                );
-            });
+        return rosterStudentsForClass(students, classFilter, academicYearFilter).filter((s) => {
+            if (!q) return true;
+            return (
+                s.name.toLowerCase().includes(q) ||
+                s.rollNumber.toLowerCase().includes(q)
+            );
+        });
     }, [students, classFilter, academicYearFilter, searchQuery]);
-
-    useEffect(() => {
-        if (!classFilter) return;
-        setEdits(buildEditsForClass(classStudents, dayAttendance, selectedDate));
-    }, [dayAttendance, classStudents, classFilter, selectedDate]);
 
     useEffect(() => {
         setShowAllStudents(false);
@@ -202,7 +240,7 @@ export function FranchiseAttendancePanel({
         setClassFilter(classLabelFromSelectValue(value));
     };
 
-    const handleStatusChange = (studentId: string, status: AttendanceStatus | "") => {
+    const handleStatusChange = (studentId: string, status: AttendanceSaveStatus | "") => {
         setEdits((prev) => ({
             ...prev,
             [studentId]: {
@@ -210,6 +248,7 @@ export function FranchiseAttendancePanel({
                 note: prev[studentId]?.note || "",
             },
         }));
+        setMessage(null);
     };
 
     const handleNoteChange = (studentId: string, note: string) => {
@@ -271,7 +310,7 @@ export function FranchiseAttendancePanel({
         ? historyByDate
         : historyByDate.slice(0, 5);
 
-    const setStatusForStudents = (targets: SchoolStudent[], status: AttendanceStatus | "") => {
+    const setStatusForStudents = (targets: SchoolStudent[], status: AttendanceSaveStatus | "") => {
         const next: Record<string, AttendanceEdit> = { ...edits };
         targets.forEach((s) => {
             next[s.id] = {
@@ -292,7 +331,7 @@ export function FranchiseAttendancePanel({
         try {
             const toSave: Omit<AttendanceRecord, "id">[] = saveTargets.flatMap((s) => {
                 const status = edits[s.id]?.status ?? "";
-                if (!status || !isAttendanceStatus(status)) return [];
+                if (!status || !isAttendanceSaveStatus(status)) return [];
                 return [
                     {
                         studentId: s.id,
@@ -312,13 +351,7 @@ export function FranchiseAttendancePanel({
             }
 
             await markAttendance(toSave, selectedDate);
-            const dayRows = await fetchFranchiseAttendance({
-                date: selectedDate,
-                className: classFilter,
-                academicYear: academicYearFilter,
-            });
-            setDayAttendance(dayRows);
-            setEdits(buildEditsForClass(classStudents, dayRows, selectedDate));
+            await loadDayAttendance();
             const historyRowsNext = await fetchFranchiseAttendance({
                 month: historyMonth,
                 className: classFilter,
@@ -347,13 +380,13 @@ export function FranchiseAttendancePanel({
 
     const renderStudentRow = (s: SchoolStudent) => {
         const edit = edits[s.id] || { status: "", note: "" };
-        const status = edit.status || "";
-        const present = isPresentChecked(status);
+        const selectValue = edit.status || "UNMARKED";
+        const present = edit.status === "PRESENT";
 
         return (
             <div
                 key={s.id}
-                className={`flex flex-col gap-2 rounded-xl border px-3 py-3 sm:flex-row sm:items-center sm:gap-4 ${statusRowClass(status)}`}
+                className={`flex flex-col gap-2 rounded-xl border px-3 py-3 sm:flex-row sm:items-center sm:gap-4 ${statusRowClass(selectValue)}`}
             >
                 <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 sm:items-center">
                     <input
@@ -374,25 +407,27 @@ export function FranchiseAttendancePanel({
 
                 <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                     <select
-                        value={status}
-                        onChange={(e) =>
-                            handleStatusChange(s.id, e.target.value as AttendanceStatus | "")
-                        }
-                        className={`rounded-lg border px-2 py-1.5 text-xs font-semibold outline-none focus:border-orange-500 sm:min-w-[140px] ${
-                            !status
-                                ? "border-gray-300 bg-white text-gray-500"
-                                : status === "PRESENT"
+                        value={selectValue}
+                        onChange={(e) => {
+                            const next = e.target.value;
+                            if (next === "UNMARKED") {
+                                handleStatusChange(s.id, "");
+                            } else if (isAttendanceSaveStatus(next)) {
+                                handleStatusChange(s.id, next);
+                            }
+                        }}
+                        className={`rounded-lg border px-2 py-1.5 text-xs font-semibold outline-none focus:border-orange-500 sm:min-w-[148px] ${
+                            selectValue === "UNMARKED"
+                                ? "border-gray-300 bg-white text-gray-600"
+                                : selectValue === "PRESENT"
                                   ? "border-green-200 bg-green-50 text-green-700"
-                                  : status === "ABSENT"
+                                  : selectValue === "ABSENT"
                                     ? "border-red-200 bg-red-50 text-red-700"
-                                    : status === "LATE"
-                                      ? "border-amber-200 bg-amber-50 text-amber-700"
-                                      : "border-orange-200 bg-orange-50 text-orange-800"
+                                    : "border-violet-200 bg-violet-50 text-violet-800"
                         }`}
                         aria-label={`Attendance status for ${s.name}`}
                     >
-                        <option value="">Select status</option>
-                        {ATTENDANCE_STATUSES.map((value) => (
+                        {DROPDOWN_STATUSES.map((value) => (
                             <option key={value} value={value}>
                                 {STATUS_LABELS[value]}
                             </option>
@@ -422,11 +457,29 @@ export function FranchiseAttendancePanel({
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">Mark Attendance</h1>
                         <p className="text-sm text-gray-500">
-                            Pick academic year, class, and date. Only students in that class and year appear.
-                            Saved records show in the real parent login app → Attendance.
+                            Four attendance types: Present, Absent, Unmarked, Holiday. Mark Present or Absent on working days; Holiday is automatic (weekends + holiday list).
                         </p>
                     </div>
                 </div>
+
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                    {STATUS_LEGEND.map(({ key, hint }) => (
+                        <div
+                            key={key}
+                            className={`rounded-lg border px-3 py-2 text-xs ${attendanceStatusRowClass(key)}`}
+                        >
+                            <p className="font-semibold text-gray-900">{STATUS_LABELS[key]}</p>
+                            <p className="mt-0.5 text-gray-600">{hint}</p>
+                        </div>
+                    ))}
+                </div>
+
+                {dayInfo?.is_holiday ? (
+                    <div className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
+                        <strong>{selectedDate}</strong> is on the holiday calendar
+                        {dayInfo.holiday_label ? ` (${dayInfo.holiday_label})` : ""}. Students default to <strong>Holiday</strong> — change in the dropdown if needed, then Save.
+                    </div>
+                ) : null}
 
                 <div className="flex flex-col gap-4 rounded-xl border border-orange-100 bg-orange-50 p-4 sm:flex-row sm:flex-wrap sm:items-end">
                     <div className="space-y-1">
@@ -650,7 +703,7 @@ export function FranchiseAttendancePanel({
                                                                     {row.studentName || "—"}
                                                                 </td>
                                                                 <td className="p-2 font-medium text-gray-800">
-                                                                    {row.status}
+                                                                    {attendanceStatusLabel(row.status)}
                                                                 </td>
                                                                 <td className="p-2 text-gray-600">{row.note || "—"}</td>
                                                             </tr>

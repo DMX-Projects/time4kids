@@ -110,6 +110,9 @@ export function ParentHolidayCmsPanel({
     const [pdf, setPdf] = useState<File | null>(null);
     const [pdfLabel, setPdfLabel] = useState("");
     const [entries, setEntries] = useState<HolidayEntry[]>([emptyHolidayEntry(centreCity)]);
+    const [specialEntries, setSpecialEntries] = useState<HolidayEntry[]>([emptyHolidayEntry(centreCity)]);
+    const [specialSubmitting, setSpecialSubmitting] = useState(false);
+    const [adminDatesSubmitting, setAdminDatesSubmitting] = useState(false);
     const [publishTarget, setPublishTarget] = useState<CmsPublishTargetForm>(emptyCmsPublishTarget());
     const [editModal, setEditModal] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
     const [editState, setEditState] = useState("AP");
@@ -231,6 +234,79 @@ export function ParentHolidayCmsPanel({
         return base.filter((row) => (row.published_at || "").slice(0, 10) === trackDate);
     }, [rows, sentRows, trackDate]);
 
+    const validateCentrePdfForm = (
+        pdfFile: File | null,
+        label: string,
+        editing: HolidayDocRow | null,
+    ): string | null => {
+        const hasExistingPdf = Boolean(editing?.file);
+        if (!pdfFile && !hasExistingPdf) {
+            return "Upload a PDF for the centre holiday list.";
+        }
+        if ((pdfFile || hasExistingPdf) && !label.trim()) {
+            return "Enter a label for the PDF so parents know what it is.";
+        }
+        return null;
+    };
+
+    const validateSpecialHolidayForm = (holidayEntries: HolidayEntry[]): string | null =>
+        requireHolidayEntries(holidayEntries);
+
+    const validateAdminPdfForm = (pdfFile: File | null, target: CmsPublishTargetForm): string | null => {
+        if (!pdfFile) {
+            return "Upload a holiday PDF.";
+        }
+        return validateCmsPublishTarget(target);
+    };
+
+    const validateAdminHolidayDatesForm = (
+        holidayEntries: HolidayEntry[],
+        target: CmsPublishTargetForm,
+    ): string | null => {
+        const entriesErr = requireHolidayEntries(holidayEntries);
+        if (entriesErr) return entriesErr;
+        return validateCmsPublishTarget(target);
+    };
+
+    const adminHolidayTitle = (target: CmsPublishTargetForm, stateCode = ""): string => {
+        if (target.scope === "pan_india") return "Pan-India Holiday List";
+        if (target.scope === "state") {
+            const states = target.targetStates.length > 0 ? target.targetStates : stateCode ? [stateCode] : [];
+            const labels = states.map((code) => stateLabel(code)).filter(Boolean).join(", ");
+            return labels ? `${labels} Holiday List` : "State Holiday List";
+        }
+        if (target.scope === "city") {
+            const cities = target.targetCities.join(", ");
+            return cities ? `${cities} Holiday List` : "City Holiday List";
+        }
+        if (target.scope === "one_centre") {
+            const centre = franchises.find((f) => String(f.id) === target.franchiseId);
+            return centre?.name ? `${centre.name} Holiday List` : "Centre Holiday List";
+        }
+        if (target.scope === "franchises") {
+            const count = target.franchiseIds.length;
+            return count ? `Holiday List (${count} centres)` : "Holiday List";
+        }
+        return "Holiday List";
+    };
+
+    const adminHolidayScopeHelp = (target: CmsPublishTargetForm): string => {
+        switch (target.scope) {
+            case "pan_india":
+                return "All centres and parents in every state see this list (e.g. Republic Day, Independence Day).";
+            case "state":
+                return "Tick one or more states — only centres in those states see this list.";
+            case "city":
+                return "Tick one or more cities — only centres in those cities see this list. You can select a single city to update just that city.";
+            case "one_centre":
+                return "Only the selected centre and its parents see this list.";
+            case "franchises":
+                return "Only the selected centres and their parents see this list.";
+            default:
+                return "";
+        }
+    };
+
     const validateHolidayForm = (
         holidayState: string,
         pdfFile: File | null,
@@ -255,12 +331,14 @@ export function ParentHolidayCmsPanel({
             const holidayErr = requireHolidayEntries(holidayEntries);
             if (holidayErr) return holidayErr;
         }
-        if (!holidayState) {
-            return isAdmin ? "Select a state." : "Your centre profile does not have a state set. Update centre profile first.";
+        if (!holidayState && !isAdmin) {
+            return "Your centre profile does not have a state set. Update centre profile first.";
         }
         if (isAdmin) {
             const targetErr = validateCmsPublishTarget(target);
             if (targetErr) return targetErr;
+        } else if (!holidayState) {
+            return "Your centre profile does not have a state set. Update centre profile first.";
         }
         return null;
     };
@@ -274,26 +352,14 @@ export function ParentHolidayCmsPanel({
 
     const submit = async (e: FormEvent) => {
         e.preventDefault();
-        const err = validateHolidayForm(
-            effectiveHolidayState,
-            pdf,
-            entries,
-            null,
-            publishTarget,
-            pdfLabel,
-        );
+        const err = validateCentrePdfForm(pdf, pdfLabel, null);
         if (err) {
             showToast(err, "error");
             return;
         }
         setSubmitting(true);
         try {
-            const serialized = serializeHolidayEntries(entries);
-            const title = isAdmin
-                ? `${stateLabel(effectiveHolidayState)} Holiday List`
-                : centreHolidayTitle(effectiveHolidayState, pdfLabel);
-            const targetPayload = isAdmin ? parentDocumentTargetPayload(publishTarget) : null;
-            const franchise = isAdmin ? targetPayload?.franchise ?? null : undefined;
+            const title = centreHolidayTitle(effectiveHolidayState, pdfLabel);
 
             if (pdf) {
                 const fd = new FormData();
@@ -304,42 +370,151 @@ export function ParentHolidayCmsPanel({
                 fd.append("description", "");
                 fd.append("order", "0");
                 fd.append("is_active", "true");
-                if (isAdmin && targetPayload) {
-                    fd.append("publish_scope", targetPayload.publish_scope);
-                    fd.append("target_states", JSON.stringify(targetPayload.target_states));
-                    fd.append("target_cities", JSON.stringify(targetPayload.target_cities));
-                    fd.append("target_franchise_ids", JSON.stringify(targetPayload.target_franchise_ids));
-                    fd.append("target_class_names", JSON.stringify(targetPayload.target_class_names));
-                    if (franchise != null) fd.append("franchise", String(franchise));
-                }
                 fd.append("file", pdf);
-                if (serialized.length > 0) fd.append("holiday_entries", JSON.stringify(serialized));
                 await authFetch(listBase, { method: "POST", body: fd });
-            } else {
-                await authFetch(listBase, {
-                    method: "POST",
-                    headers: jsonHeaders(),
-                    body: JSON.stringify({
-                        category: "HOLIDAY_LISTS",
-                        title,
-                        state: effectiveHolidayState,
-                        academic_year: DEFAULT_HOLIDAY_ACADEMIC_YEAR,
-                        holiday_entries: serialized,
-                        ...(targetPayload || {}),
-                    }),
-                });
             }
-            setEntries([emptyHolidayEntry(centreCity)]);
             setPdf(null);
             setPdfLabel("");
-            setPublishTarget(emptyCmsPublishTarget());
             setTrackDate(todayLocal());
-            showToast("Holiday list saved for parents.", "success");
+            showToast("Centre holiday PDF saved for parents.", "success");
             await load();
         } catch (err: unknown) {
             showToast(err instanceof Error ? err.message : "Save failed.", "error");
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const buildAdminTargetPayload = (
+        target: CmsPublishTargetForm = publishTarget,
+    ) => {
+        const payload = parentDocumentTargetPayload(target);
+        if (payload.publish_scope === "state" && payload.target_states.length === 0) {
+            return payload;
+        }
+        return payload;
+    };
+
+    const buildAdminSaveBody = (target: CmsPublishTargetForm, title: string, extra: Record<string, unknown> = {}) => {
+        const targetPayload = buildAdminTargetPayload(target);
+        const body: Record<string, unknown> = {
+            category: "HOLIDAY_LISTS",
+            title,
+            academic_year: DEFAULT_HOLIDAY_ACADEMIC_YEAR,
+            ...targetPayload,
+            ...extra,
+        };
+        if (targetPayload.publish_scope === "state" && targetPayload.target_states.length > 0) {
+            body.state = targetPayload.target_states[0];
+        } else if (targetPayload.publish_scope === "pan_india" || targetPayload.publish_scope === "city") {
+            body.state = null;
+        }
+        return body;
+    };
+
+    const submitAdminPdf = async (e: FormEvent) => {
+        e.preventDefault();
+        const err = validateAdminPdfForm(pdf, publishTarget);
+        if (err) {
+            showToast(err, "error");
+            return;
+        }
+        setSubmitting(true);
+        try {
+            const title = adminHolidayTitle(publishTarget);
+            const targetPayload = buildAdminTargetPayload();
+
+            const fd = new FormData();
+            fd.append("category", "HOLIDAY_LISTS");
+            fd.append("title", title);
+            if (targetPayload.publish_scope === "state" && targetPayload.target_states[0]) {
+                fd.append("state", targetPayload.target_states[0]);
+            }
+            fd.append("academic_year", DEFAULT_HOLIDAY_ACADEMIC_YEAR);
+            fd.append("description", "");
+            fd.append("order", "0");
+            fd.append("is_active", "true");
+            fd.append("publish_scope", targetPayload.publish_scope);
+            fd.append("target_states", JSON.stringify(targetPayload.target_states));
+            fd.append("target_cities", JSON.stringify(targetPayload.target_cities));
+            fd.append("target_franchise_ids", JSON.stringify(targetPayload.target_franchise_ids));
+            fd.append("target_class_names", JSON.stringify(targetPayload.target_class_names));
+            fd.append("file", pdf!);
+            await authFetch(listBase, { method: "POST", body: fd });
+
+            setPdf(null);
+            setTrackDate(todayLocal());
+            showToast("Holiday PDF saved for parents.", "success");
+            await load();
+        } catch (err: unknown) {
+            showToast(err instanceof Error ? err.message : "Save failed.", "error");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const submitAdminHolidayDates = async (e: FormEvent) => {
+        e.preventDefault();
+        const err = validateAdminHolidayDatesForm(entries, publishTarget);
+        if (err) {
+            showToast(err, "error");
+            return;
+        }
+        setAdminDatesSubmitting(true);
+        try {
+            const serialized = serializeHolidayEntries(entries);
+            const title = adminHolidayTitle(publishTarget);
+            await authFetch(listBase, {
+                method: "POST",
+                headers: jsonHeaders(),
+                body: JSON.stringify(
+                    buildAdminSaveBody(publishTarget, title, { holiday_entries: serialized }),
+                ),
+            });
+            setEntries([emptyHolidayEntry(centreCity)]);
+            setTrackDate(todayLocal());
+            showToast("Holiday dates saved — they appear on the calendar and in attendance.", "success");
+            await load();
+        } catch (err: unknown) {
+            showToast(err instanceof Error ? err.message : "Save failed.", "error");
+        } finally {
+            setAdminDatesSubmitting(false);
+        }
+    };
+
+    const submitSpecialHolidays = async (e: FormEvent) => {
+        e.preventDefault();
+        const err = validateSpecialHolidayForm(specialEntries);
+        if (err) {
+            showToast(err, "error");
+            return;
+        }
+        if (!centreStateCode) {
+            showToast("Your centre profile does not have a state set. Update centre profile first.", "error");
+            return;
+        }
+        setSpecialSubmitting(true);
+        try {
+            const serialized = serializeHolidayEntries(specialEntries);
+            await authFetch(listBase, {
+                method: "POST",
+                headers: jsonHeaders(),
+                body: JSON.stringify({
+                    category: "HOLIDAY_LISTS",
+                    title: centreHolidayTitle(effectiveHolidayState, "Special centre holidays"),
+                    state: effectiveHolidayState,
+                    academic_year: DEFAULT_HOLIDAY_ACADEMIC_YEAR,
+                    holiday_entries: serialized,
+                }),
+            });
+            setSpecialEntries([emptyHolidayEntry(centreCity)]);
+            setTrackDate(todayLocal());
+            showToast("Special holidays saved — they appear on the calendar and in attendance.", "success");
+            await load();
+        } catch (err: unknown) {
+            showToast(err instanceof Error ? err.message : "Save failed.", "error");
+        } finally {
+            setSpecialSubmitting(false);
         }
     };
 
@@ -395,19 +570,28 @@ export function ParentHolidayCmsPanel({
             const serialized = serializeHolidayEntries(editEntries);
             const holidayState = isAdmin ? editState : centreStateCode || editState;
             const title = isAdmin
-                ? `${stateLabel(editState)} Holiday List`
+                ? adminHolidayTitle(editTarget, editState)
                 : centreHolidayTitle(holidayState, editPdfLabel);
-            const targetPayload = isAdmin ? parentDocumentTargetPayload(editTarget) : null;
+            const targetPayload = isAdmin ? buildAdminTargetPayload(editTarget) : null;
+            const patchBody: Record<string, unknown> = {
+                title,
+                academic_year: DEFAULT_HOLIDAY_ACADEMIC_YEAR,
+                holiday_entries: serialized,
+                ...(targetPayload || {}),
+            };
+            if (isAdmin && targetPayload) {
+                if (targetPayload.publish_scope === "state" && targetPayload.target_states[0]) {
+                    patchBody.state = targetPayload.target_states[0];
+                } else if (targetPayload.publish_scope === "pan_india" || targetPayload.publish_scope === "city") {
+                    patchBody.state = null;
+                }
+            } else if (!isAdmin) {
+                patchBody.state = editState;
+            }
             await authFetch(`${detailBase}${editModal.id}/`, {
                 method: "PATCH",
                 headers: jsonHeaders(),
-                body: JSON.stringify({
-                    title,
-                    state: editState,
-                    academic_year: DEFAULT_HOLIDAY_ACADEMIC_YEAR,
-                    holiday_entries: serialized,
-                    ...(targetPayload || {}),
-                }),
+                body: JSON.stringify(patchBody),
             });
             if (editPdf) {
                 const fd = new FormData();
@@ -443,7 +627,7 @@ export function ParentHolidayCmsPanel({
         }
     };
 
-    const franchiseUploadFields = (
+    const franchiseCentreInfo = (
         <>
             {centreStateCode ? (
                 <p className="text-xs text-[#4B5563] rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2">
@@ -467,13 +651,18 @@ export function ParentHolidayCmsPanel({
                     prefill the city automatically.
                 </p>
             ) : null}
+        </>
+    );
+
+    const franchisePdfFields = (
+        <>
             <label className="block text-xs font-semibold text-[#4B5563]">
                 PDF label
                 <input
                     type="text"
                     value={pdfLabel}
                     onChange={(e) => setPdfLabel(e.target.value)}
-                    placeholder="e.g. Centre summer break 2026"
+                    placeholder="e.g. Centre holiday list 2026"
                     maxLength={255}
                     className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
                 />
@@ -484,22 +673,33 @@ export function ParentHolidayCmsPanel({
             <ChecklistFileUploadField
                 id="holiday-pdf-upload"
                 accept=".pdf,application/pdf"
-                hint="Optional centre PDF — add extra dates below"
+                hint="Upload centre holiday PDF for parents"
                 required={false}
                 currentName={pdf?.name ?? null}
                 onChange={setPdf}
             />
-            <div className="space-y-2">
-                <p className="text-xs font-semibold text-[#4B5563]">
-                    Add centre-only holidays (merged with head-office list for parents)
-                </p>
-                <HolidayEntriesEditor rows={entries} onChange={setEntries} {...holidayEditorProps} />
-            </div>
         </>
     );
 
-    const adminUploadFields = (
+    const specialCentreHolidayFields = (
+        <div className="space-y-2">
+            <p className="text-xs text-[#6B7280]">
+                Search or select city, holiday name, and date for each holiday.
+            </p>
+            <HolidayEntriesEditor
+                rows={specialEntries}
+                onChange={setSpecialEntries}
+                {...holidayEditorProps}
+            />
+        </div>
+    );
+
+    const adminSharedFields = (
         <>
+            <p className="text-xs text-[#4B5563] rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2">
+                Choose who receives this holiday list, then save PDF and/or dates below. Same options as notifications
+                CMS: all India, selected states, selected cities (one or many), or specific centres.
+            </p>
             <CmsPublishTargetFields
                 franchises={franchises}
                 value={publishTarget}
@@ -507,58 +707,205 @@ export function ParentHolidayCmsPanel({
                 showClassTarget
                 classOptions={classOptions}
             />
-            <label className="block text-xs font-semibold text-[#4B5563]">
-                State
-                <select
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                >
-                    {PARENT_DOCUMENT_STATES.map((s) => (
-                        <option key={s.value} value={s.value}>
-                            {s.label}
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <ChecklistFileUploadField
-                id="holiday-pdf-upload"
-                accept=".pdf,application/pdf"
-                hint="Holiday PDF — add dates below if you skip the file"
-                required={false}
-                currentName={pdf?.name ?? null}
-                onChange={setPdf}
-            />
-            <div className="space-y-2">
-                <p className="text-xs font-semibold text-[#4B5563]">
-                    Add holidays manually (parents see PDF and/or this table)
-                </p>
-                <HolidayEntriesEditor rows={entries} onChange={setEntries} {...holidayEditorProps} />
-            </div>
+            <p className="text-xs text-[#6B7280]">{adminHolidayScopeHelp(publishTarget)}</p>
         </>
     );
 
-    if (!isAdmin) {
+    const adminPdfFields = (
+        <ChecklistFileUploadField
+            id="holiday-pdf-upload-admin"
+            accept=".pdf,application/pdf"
+            hint="Upload state holiday PDF for parents"
+            required={false}
+            currentName={pdf?.name ?? null}
+            onChange={setPdf}
+        />
+    );
+
+    const adminHolidayDateFields = (
+        <div className="space-y-2">
+            <p className="text-xs text-[#6B7280]">
+                Search or select city, holiday name, and date for each holiday.
+            </p>
+            <HolidayEntriesEditor rows={entries} onChange={setEntries} {...holidayEditorProps} />
+        </div>
+    );
+
+    if (isAdmin) {
         return (
             <>
                 <div className="grid gap-4 lg:grid-cols-2 lg:items-start max-w-5xl">
-                    <form onSubmit={submit} className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
-                        <div className="space-y-1">
-                            <h3 className="text-sm font-semibold text-[#111827]">Add centre holiday list</h3>
-                            <p className="text-xs text-[#6B7280]">
-                                Head-office holidays are managed by admin CMS. Add your centre&apos;s own PDF and/or
-                                extra dates here — parents see both merged together.
-                            </p>
+                    <div className="space-y-4">
+                        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
+                            {adminSharedFields}
                         </div>
-                        {franchiseUploadFields}
-                        <Button
-                            type="submit"
-                            disabled={submitting || !centreStateCode}
-                            className="bg-[#FF922B] text-white w-full sm:w-auto"
+
+                        <form
+                            onSubmit={submitAdminPdf}
+                            className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4"
                         >
-                            {submitting ? "Saving…" : "Save centre holiday list"}
-                        </Button>
+                            <div className="space-y-1">
+                                <h3 className="text-sm font-semibold text-[#111827]">State holiday PDF</h3>
+                                <p className="text-xs text-[#6B7280]">
+                                    Optional PDF for parents — publish scope and state above apply to this upload.
+                                </p>
+                            </div>
+                            {adminPdfFields}
+                            <Button
+                                type="submit"
+                                disabled={submitting}
+                                className="bg-[#FF922B] text-white hover:bg-[#F97316] w-full sm:w-auto"
+                            >
+                                {submitting ? "Saving…" : "Save holiday PDF"}
+                            </Button>
+                        </form>
+
+                        <form
+                            onSubmit={submitAdminHolidayDates}
+                            className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4"
+                        >
+                            <div className="space-y-1">
+                                <h3 className="text-sm font-semibold text-[#111827]">Holiday dates</h3>
+                                <p className="text-xs text-[#6B7280]">
+                                    Manual dates appear on the calendar and in attendance as Holiday (merged with centre
+                                    lists for parents).
+                                </p>
+                            </div>
+                            {adminHolidayDateFields}
+                            <Button
+                                type="submit"
+                                disabled={adminDatesSubmitting}
+                                className="bg-violet-700 text-white hover:bg-violet-800 w-full sm:w-auto"
+                            >
+                                {adminDatesSubmitting ? "Saving…" : "Save holiday dates"}
+                            </Button>
+                        </form>
+                    </div>
+
+                    <ParentDocumentCmsLayout
+                        listOnly
+                        sentTitle="Saved holiday lists"
+                        sentIntro="Holiday lists for the selected state — filter by upload/update date."
+                        sentFilters={
+                            <label className="block text-xs font-semibold text-[#4B5563]">
+                                Filter by state
+                                <select
+                                    value={filterState}
+                                    onChange={(e) => setFilterState(e.target.value)}
+                                    className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
+                                >
+                                    {PARENT_DOCUMENT_STATES.map((s) => (
+                                        <option key={s.value} value={s.value}>
+                                            {s.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        }
+                        trackDate={trackDate}
+                        onTrackDateChange={setTrackDate}
+                        loading={loading}
+                        rows={sentRows}
+                        emptySentMessage={`No holiday list for ${stateLabel(filterState)} on ${trackDate}. Change the track date or save one.`}
+                        onEdit={openEdit}
+                        onDelete={remove}
+                        canEditRow={() => true}
+                        canDeleteRow={() => true}
+                    />
+                </div>
+
+                <Modal isOpen={editModal.isOpen} onClose={closeEdit} title="Edit holiday list" size="md" placement="center">
+                    <form onSubmit={saveEdit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                        <CmsPublishTargetFields
+                            franchises={franchises}
+                            value={editTarget}
+                            onChange={setEditTarget}
+                            showClassTarget
+                            classOptions={classOptions}
+                        />
+                        <label className="block text-xs font-semibold text-[#4B5563]">
+                            State
+                            <select
+                                value={editState}
+                                onChange={(e) => setEditState(e.target.value)}
+                                className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
+                            >
+                                {PARENT_DOCUMENT_STATES.map((s) => (
+                                    <option key={s.value} value={s.value}>
+                                        {s.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <ChecklistFileUploadField
+                            id="holiday-pdf-edit"
+                            accept=".pdf,application/pdf"
+                            hint="Replace PDF"
+                            required={false}
+                            currentName={
+                                editPdf?.name ??
+                                (rows.find((r) => r.id === editModal.id)?.file ? "Current PDF on server" : null)
+                            }
+                            onChange={setEditPdf}
+                        />
+                        <HolidayEntriesEditor rows={editEntries} onChange={setEditEntries} {...editHolidayEditorProps} />
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            <Button type="submit" disabled={editSaving} className="bg-[#FF922B] text-white">
+                                {editSaving ? "Saving…" : "Save changes"}
+                            </Button>
+                            <Button type="button" variant="outline" onClick={closeEdit}>
+                                Cancel
+                            </Button>
+                        </div>
                     </form>
+                </Modal>
+            </>
+        );
+    }
+
+    return (
+        <>
+            <div className="grid gap-4 lg:grid-cols-2 lg:items-start max-w-5xl">
+                    <div className="space-y-4">
+                        {franchiseCentreInfo}
+                        <form onSubmit={submit} className="rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4">
+                            <div className="space-y-1">
+                                <h3 className="text-sm font-semibold text-[#111827]">Centre holiday PDF</h3>
+                                <p className="text-xs text-[#6B7280]">
+                                    Optional PDF for your centre — parents can download it in the app.
+                                </p>
+                            </div>
+                            {franchisePdfFields}
+                            <Button
+                                type="submit"
+                                disabled={submitting || !centreStateCode}
+                                className="bg-[#FF922B] text-white w-full sm:w-auto"
+                            >
+                                {submitting ? "Saving…" : "Save centre holiday PDF"}
+                            </Button>
+                        </form>
+
+                        <form
+                            onSubmit={submitSpecialHolidays}
+                            className="rounded-2xl border border-violet-200 bg-white p-4 space-y-4"
+                        >
+                            <div className="space-y-1">
+                                <h3 className="text-sm font-semibold text-[#111827]">Special centre holidays</h3>
+                                <p className="text-xs text-[#6B7280]">
+                                    Heavy rains, summer vacation, local holidays, etc. — recorded on the calendar and
+                                    in attendance as Holiday (merged with head-office list for parents).
+                                </p>
+                            </div>
+                            {specialCentreHolidayFields}
+                            <Button
+                                type="submit"
+                                disabled={specialSubmitting || !centreStateCode}
+                                className="bg-violet-700 text-white hover:bg-violet-800 w-full sm:w-auto"
+                            >
+                                {specialSubmitting ? "Saving…" : "Save special holidays"}
+                            </Button>
+                        </form>
+                    </div>
 
                     <div className="space-y-4 lg:sticky lg:top-4">
                         <ParentDocumentCmsLayout
@@ -663,103 +1010,4 @@ export function ParentHolidayCmsPanel({
                 </Modal>
             </>
         );
-    }
-
-    return (
-        <>
-            <ParentDocumentCmsLayout
-                onSubmit={submit}
-                uploadTitle={isAdmin ? "Upload holiday list" : "Centre holiday list"}
-                uploadIntro={
-                    isAdmin
-                        ? "State PDF and/or manual holiday dates — saved rows appear in the real parent login app (web + mobile). Choose publish scope like notifications."
-                        : "Saved rows appear in the real parent login app for your centre. Overrides head-office PDF for your centre when uploaded. You can also add manual holiday dates."
-                }
-                uploadFields={adminUploadFields}
-                submitButton={
-                    <Button type="submit" disabled={submitting} className="bg-[#FF922B] text-white w-full sm:w-auto">
-                        {submitting ? "Saving…" : isAdmin ? "Save holiday list" : "Save centre holiday list"}
-                    </Button>
-                }
-                sentTitle="Saved holiday lists"
-                sentIntro="Holiday lists for the selected state — filter by upload/update date."
-                sentFilters={
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        Filter by state
-                        <select
-                            value={filterState}
-                            onChange={(e) => setFilterState(e.target.value)}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                        >
-                            {PARENT_DOCUMENT_STATES.map((s) => (
-                                <option key={s.value} value={s.value}>
-                                    {s.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                }
-                trackDate={trackDate}
-                onTrackDateChange={setTrackDate}
-                loading={loading}
-                rows={sentRows}
-                emptySentMessage={`No holiday list for ${stateLabel(filterState)} on ${trackDate}. Change the track date or save one.`}
-                onEdit={openEdit}
-                onDelete={remove}
-                canEditRow={(row) => {
-                    const full = rows.find((r) => r.id === row.id);
-                    return isAdmin || (full?.franchise != null);
-                }}
-                canDeleteRow={(row) => {
-                    const full = rows.find((r) => r.id === row.id);
-                    return isAdmin || (full?.franchise != null);
-                }}
-            />
-
-            <Modal isOpen={editModal.isOpen} onClose={closeEdit} title="Edit holiday list" size="md" placement="center">
-                <form onSubmit={saveEdit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-                    {isAdmin ? (
-                        <CmsPublishTargetFields
-                            franchises={franchises}
-                            value={editTarget}
-                            onChange={setEditTarget}
-                            showClassTarget
-                            classOptions={classOptions}
-                        />
-                    ) : null}
-                    <label className="block text-xs font-semibold text-[#4B5563]">
-                        State
-                        <select
-                            value={editState}
-                            onChange={(e) => setEditState(e.target.value)}
-                            className="mt-1 w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm"
-                        >
-                            {PARENT_DOCUMENT_STATES.map((s) => (
-                                <option key={s.value} value={s.value}>
-                                    {s.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <ChecklistFileUploadField
-                        id="holiday-pdf-edit"
-                        accept=".pdf,application/pdf"
-                        hint="Replace PDF"
-                        required={false}
-                        currentName={editPdf?.name ?? (rows.find((r) => r.id === editModal.id)?.file ? "Current PDF on server" : null)}
-                        onChange={setEditPdf}
-                    />
-                    <HolidayEntriesEditor rows={editEntries} onChange={setEditEntries} {...editHolidayEditorProps} />
-                    <div className="flex flex-wrap gap-2 pt-1">
-                        <Button type="submit" disabled={editSaving} className="bg-[#FF922B] text-white">
-                            {editSaving ? "Saving…" : "Save changes"}
-                        </Button>
-                        <Button type="button" variant="outline" onClick={closeEdit}>
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
-            </Modal>
-        </>
-    );
 }
