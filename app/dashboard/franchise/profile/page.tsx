@@ -9,80 +9,93 @@ import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseData
 export default function FranchiseProfilePage() {
     const { profile, updateProfile } = useFranchiseData();
     const [form, setForm] = useState(profile);
+    const [saving, setSaving] = useState(false);
+    const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
     useEffect(() => {
         setForm(profile);
     }, [profile]);
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        updateProfile(form);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        setSaving(true);
+        setSavedMsg(null);
+        try {
+            await updateProfile(form);
+            setSavedMsg("Profile saved.");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err) {
+            const detail = err instanceof Error ? err.message : "";
+            setSavedMsg(
+                detail && !detail.startsWith("Request failed")
+                    ? detail
+                    : "Could not save. Check your details and try again.",
+            );
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
         <div className="space-y-6">
             <Section id="profile" title="Profile" description="Keep your franchise contact details up to date." icon={<UserCircle className="w-5 h-5 text-orange-500" />}>
+                {savedMsg && (
+                    <div
+                        className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+                            savedMsg === "Profile saved."
+                                ? "border-green-200 bg-green-50 text-green-800"
+                                : "border-red-200 bg-red-50 text-red-800"
+                        }`}
+                        role="status"
+                    >
+                        {savedMsg}
+                    </div>
+                )}
                 <form className="space-y-3" onSubmit={handleSubmit}>
                     <div className="grid md:grid-cols-2 gap-3">
-                        <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                        <Input
+                            label="Name"
+                            value={form.name}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                setForm({ ...form, name: v, centre: v });
+                            }}
+                            required
+                        />
                         <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                        <Input label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                        <Input label="Centre" value={form.centre} onChange={(e) => setForm({ ...form, centre: e.target.value })} />
+                        <Input
+                            label="Phone"
+                            value={form.phone}
+                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                            placeholder="10-digit mobile number"
+                        />
+                        <Input
+                            label="Centre"
+                            value={form.centre}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                setForm({ ...form, centre: v, name: v });
+                            }}
+                        />
                         <Input label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-                        <Input label="Photo URL" value={form.photo} onChange={(e) => setForm({ ...form, photo: e.target.value })} />
-                        <Input
-                            label="Facebook URL"
-                            type="url"
-                            value={form.facebookUrl || ''}
-                            onChange={(e) => setForm({ ...form, facebookUrl: e.target.value })}
-                            placeholder="https://facebook.com/yourpage"
-                        />
-                        <Input
-                            label="Instagram URL"
-                            type="url"
-                            value={form.instagramUrl || ''}
-                            onChange={(e) => setForm({ ...form, instagramUrl: e.target.value })}
-                            placeholder="https://instagram.com/yourpage"
-                        />
-                        <Input
-                            label="Twitter URL"
-                            type="url"
-                            value={form.twitterUrl || ''}
-                            onChange={(e) => setForm({ ...form, twitterUrl: e.target.value })}
-                            placeholder="https://twitter.com/yourpage"
-                        />
-                        <Input
-                            label="YouTube URL"
-                            type="url"
-                            value={form.youtubeUrl || ''}
-                            onChange={(e) => setForm({ ...form, youtubeUrl: e.target.value })}
-                            placeholder="https://youtube.com/@yourchannel"
-                        />
-                        <Input
-                            label="Map Latitude"
-                            type="number"
-                            step="any"
-                            value={form.latitude ?? ''}
-                            onChange={(e) => setForm({ ...form, latitude: e.target.value ? parseFloat(e.target.value) : null })}
-                            placeholder="e.g. 17.3850"
-                        />
-                        <Input
-                            label="Map Longitude"
-                            type="number"
-                            step="any"
-                            value={form.longitude ?? ''}
-                            onChange={(e) => setForm({ ...form, longitude: e.target.value ? parseFloat(e.target.value) : null })}
-                            placeholder="e.g. 78.4867"
-                        />
-                        <p className="md:col-span-2 text-[11px] text-slate-500 leading-snug -mt-1">
-                            Optional. If both are set, your centre appears as a pin on the public <strong>Locate centre</strong> map. You can copy coordinates from Google Maps (right-click the place → coordinates).
-                        </p>
                     </div>
                     <Textarea label="Bio" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
                     <div className="flex gap-2">
-                        <Button type="submit" size="sm">Save Profile</Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => setForm(profile)}>Reset</Button>
+                        <Button type="submit" size="sm" disabled={saving}>
+                            {saving ? "Saving…" : "Save Profile"}
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={saving}
+                            onClick={() => {
+                                setForm(profile);
+                                setSavedMsg(null);
+                            }}
+                        >
+                            Reset
+                        </Button>
                     </div>
                 </form>
             </Section>

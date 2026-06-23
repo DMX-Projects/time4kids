@@ -209,6 +209,7 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
             setParentProfileLoading(false);
             return;
         }
+        if (!parentStudentsHydrated) return;
         let cancelled = false;
         setParentProfileLoading(true);
         (async () => {
@@ -242,7 +243,7 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
         return () => {
             cancelled = true;
         };
-    }, [user?.role, user?.id, user?.email, user?.fullName, authFetch]);
+    }, [user?.role, user?.id, user?.email, user?.fullName, authFetch, parentStudentsHydrated]);
 
     const mapAchievements = useCallback((list: AchievementApi[]): AchievementRow[] => {
         return list.map((a) => ({
