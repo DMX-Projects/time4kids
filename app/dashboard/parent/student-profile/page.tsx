@@ -10,7 +10,7 @@ import Button from "@/components/ui/Button";
 
 export default function ParentDetailsPage() {
     const { user } = useAuth();
-    const { parentProfile, parentProfileLoading, linkedStudents, updateChildInfo } = useParentData();
+    const { parentProfile, parentProfileLoading, linkedStudents, studentsLoading, updateChildInfo } = useParentData();
 
     return (
         <div className="space-y-6">
@@ -18,7 +18,7 @@ export default function ParentDetailsPage() {
             <Section
                 id="parent-details"
                 title="Parent / guardian details"
-                description="Your contact information on file with the centre."
+                description="Filled automatically from your TiKES / centre record when you log in."
                 icon={<User className="w-5 h-5 text-orange-600" />}
             >
                 <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-5">
@@ -36,16 +36,19 @@ export default function ParentDetailsPage() {
                 </div>
             </Section>
 
-            {/* Editable kids section */}
+            {/* Children — pre-filled from centre / TiKES */}
             <Section
                 id="kids-details"
                 title="Children's details"
-                description="You can edit your child's first and last name here. Class, roll number, and other records are managed by your centre."
+                description="Shown from your centre record. Class and roll number are managed by your preschool."
                 icon={<Users className="w-5 h-5 text-orange-600" />}
             >
-                {linkedStudents.length === 0 ? (
+                {studentsLoading ? (
+                    <p className="text-sm text-orange-700">Loading children&apos;s details…</p>
+                ) : linkedStudents.length === 0 ? (
                     <p className="text-sm text-orange-700">
-                        No students linked yet — contact your centre to add your child.
+                        No students linked yet — contact your centre to add your child. If you just paid fees in TiKES,
+                        ask the centre to confirm your login is activated.
                     </p>
                 ) : (
                     <div className="space-y-4">

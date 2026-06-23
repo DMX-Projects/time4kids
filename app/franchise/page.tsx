@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import FranchiseForm from '@/components/franchise/FranchiseForm';
 import {
     FranchiseNarrativeLeftAside,
@@ -9,6 +10,15 @@ import {
 } from '@/components/franchise/FranchiseNarrativePanel';
 import FranchiseSuccessStoriesSection from '@/components/franchise/FranchiseSuccessStoriesSection';
 import FranchiseMainBranchContactCard from '@/components/franchise/FranchiseMainBranchContactCard';
+
+const FranchiseOfficeMap = dynamic(() => import('@/components/franchise/FranchiseOfficeMap'), {
+    ssr: false,
+    loading: () => (
+        <div className="flex h-[400px] w-full items-center justify-center rounded-3xl bg-slate-100 animate-pulse md:h-[500px]">
+            <p className="text-slate-500">Loading map…</p>
+        </div>
+    ),
+});
 import AnimatedNumbers from '@/components/animations/AnimatedNumbers';
 import TwinklingStars from '@/components/animations/TwinklingStars';
 import { Download } from 'lucide-react';
@@ -17,6 +27,19 @@ import { findMarketingAsset, marketingAssetHref } from '@/lib/marketing-assets';
 import { mediaUrl } from '@/lib/api-client';
 import { DEFAULT_FRANCHISE_PAGE_DATA, mergeFranchisePageData, type FranchisePageData } from '@/config/franchise-page-defaults';
 import { FRANCHISE_BROCHURE_PDF_URL } from '@/config/site-public';
+
+const FRANCHISE_MAIN_BRANCH_DIRECTIONS_URL =
+    "https://www.google.com/maps/place/T.I.M.E./@17.440866,78.4878687,17z/data=!3m1!4b1!4m6!3m5!1s0x3bcb9a109a271861:0xb1fdb2c97eee6868!8m2!3d17.4408609!4d78.4904436!16s%2Fg%2F1tglfsb7";
+
+function mainBranchAddressText(mainBranch: FranchisePageData["main_branch"]): string {
+    if (mainBranch.address_lines?.length) {
+        return mainBranch.address_lines.join("\n");
+    }
+    return (mainBranch.address_html || "")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .trim();
+}
 
 export default function FranchisePage() {
     const [pageData, setPageData] = useState<FranchisePageData>(DEFAULT_FRANCHISE_PAGE_DATA);
@@ -118,7 +141,7 @@ export default function FranchisePage() {
 
                     <div className="mx-auto max-w-6xl space-y-8">
                         <div className="grid items-stretch gap-8 md:grid-cols-2">
-                            <FranchiseMainBranchContactCard branch={mainBranch} />
+                            <FranchiseMainBranchContactCard branch={mainBranch} mapUrl={mainBranch.directions_url} />
                             <FranchiseMainBranchContactCard
                                 branch={mainBranch}
                                 officeTitle={mainBranch.regional_office_title}
@@ -130,18 +153,14 @@ export default function FranchisePage() {
                             />
                         </div>
 
-                        <div className="h-[400px] w-full overflow-hidden rounded-3xl shadow-xl md:h-[500px]">
-                            <iframe
-                                src={mainBranch.map_embed_url}
-                                width="100%"
-                                height="100%"
-                                style={{ border: 0 }}
-                                allowFullScreen
-                                loading="lazy"
-                                referrerPolicy="no-referrer-when-downgrade"
-                                title="T.I.M.E. Kids Corporate Office Location"
-                            />
-                        </div>
+                        <FranchiseOfficeMap
+                            title={mainBranch.office_title || "T.I.M.E. Kids Corporate Office"}
+                            addressText={mainBranchAddressText(mainBranch)}
+                            phone={mainBranch.phone}
+                            email={mainBranch.email}
+                            googleMapsUrl={mainBranch.directions_url || FRANCHISE_MAIN_BRANCH_DIRECTIONS_URL}
+                            directionsLabel={mainBranch.directions_label || "Open T.I.M.E. in Google Maps"}
+                        />
                     </div>
                 </div>
             </section>

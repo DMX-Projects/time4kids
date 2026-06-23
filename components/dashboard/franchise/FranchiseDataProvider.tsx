@@ -291,12 +291,6 @@ export function FranchiseDataProvider({ children }: { children: React.ReactNode 
             contact_phone: payload.phone,
             city: payload.city,
             about: payload.bio,
-            facebook_url: payload.facebookUrl,
-            instagram_url: payload.instagramUrl,
-            twitter_url: payload.twitterUrl,
-            youtube_url: payload.youtubeUrl,
-            latitude: payload.latitude,
-            longitude: payload.longitude,
         };
         const updated = await authFetch<ApiProfile>("/franchises/franchise/profile/", {
             method: "PATCH",

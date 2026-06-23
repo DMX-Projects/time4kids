@@ -13,6 +13,7 @@ export default function FranchiseMainBranchContactCard({
     showAdmissionEmail = true,
     showPhone = true,
     isRegionalOffices = false,
+    mapUrl,
 }: {
     branch: MainBranch;
     officeTitle?: string;
@@ -22,6 +23,8 @@ export default function FranchiseMainBranchContactCard({
     showPhone?: boolean;
     /** Enables aligned state / city / phone grid for regional office HTML */
     isRegionalOffices?: boolean;
+    /** Opens Google Maps place page when address is clicked */
+    mapUrl?: string;
 }) {
     const title = officeTitle?.trim() || branch.office_title;
     const address = addressHtml?.trim() || branch.address_html;
@@ -46,14 +49,28 @@ export default function FranchiseMainBranchContactCard({
                     </div>
                     <div>
                         <p className="mb-1 font-semibold text-gray-900">{addressLabel}</p>
-                        <div
-                            className={
-                                isRegionalOffices || address.includes("tk-regional-offices")
-                                    ? "tk-regional-offices-host text-gray-600"
-                                    : "leading-relaxed text-gray-600"
-                            }
-                            dangerouslySetInnerHTML={{ __html: address }}
-                        />
+                        {mapUrl && !isRegionalOffices ? (
+                            <a
+                                href={mapUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group block leading-relaxed text-gray-600 underline decoration-primary-300 underline-offset-2 hover:text-primary-700"
+                            >
+                                <div dangerouslySetInnerHTML={{ __html: address }} />
+                                <span className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-primary-600 group-hover:text-primary-700">
+                                    View on Google Maps
+                                </span>
+                            </a>
+                        ) : (
+                            <div
+                                className={
+                                    isRegionalOffices || address.includes("tk-regional-offices")
+                                        ? "tk-regional-offices-host text-gray-600"
+                                        : "leading-relaxed text-gray-600"
+                                }
+                                dangerouslySetInnerHTML={{ __html: address }}
+                            />
+                        )}
                     </div>
                 </div>
 

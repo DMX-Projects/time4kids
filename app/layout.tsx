@@ -39,6 +39,14 @@ export const metadata: Metadata = {
     description: "T.I.M.E. Kids preschools offer wholesome, fun-filled and memorable childhood education. With 250+ preschools across India, we provide quality early education with NEP 2020 updated curriculum.",
     keywords: "preschool, play school, nursery, kindergarten, daycare, early education, T.I.M.E. Kids, Hyderabad, Bangalore, Chennai, Pune, Ahmedabad",
     authors: [{ name: "T.I.M.E. Kids" }],
+    icons: {
+        icon: [
+            { url: "/images/favicon.png", type: "image/png", sizes: "32x32" },
+            { url: "/images/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+        ],
+        shortcut: "/images/favicon.png",
+        apple: "/apple-icon.png",
+    },
     openGraph: {
         title: "T.I.M.E. Kids - The Preschool That Cares",
         description: "17 Years of Legacy in Early Education. 250+ preschools across India.",
