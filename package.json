@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "export": "next export",
-    "lint": "next lint"
+    "lint": "next lint",
+    "capture:ppt-screenshots": "node scripts/capture-ppt-screenshots.mjs"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.19.3",

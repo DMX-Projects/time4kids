@@ -91,6 +91,8 @@ export type ParentDataContextValue = {
 
     parentProfile: ParentProfile;
     parentProfileLoading: boolean;
+    parentProfileError: string | null;
+    reloadParentProfile: () => Promise<void>;
     updateParentProfile: (payload: Partial<ParentProfile>) => Promise<void>;
 };
 
@@ -129,6 +131,7 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
         notifications_muted: false,
     });
     const [parentProfileLoading, setParentProfileLoading] = useState(true);
+    const [parentProfileError, setParentProfileError] = useState<string | null>(null);
 
     const parentId = user?.id ?? "";
     const linkedStudents = useMemo(() => {
@@ -204,46 +207,52 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
         });
     }, [user?.role, user?.id, parentSchoolLoading, selectedStudent]);
 
+    const applyParentProfileApi = useCallback(
+        (data: ParentProfileApi) => {
+            setParentProfile({
+                name: String(data.full_name ?? data.display_name ?? user?.fullName ?? ""),
+                email: String(data.email ?? user?.email ?? ""),
+                phone: String(data.phone ?? ""),
+                address: String(data.address ?? ""),
+                city: String(data.city ?? ""),
+                photo: String(data.photo_url ?? ""),
+                franchiseName: String(data.franchise_name ?? ""),
+                franchisePhone: String(data.franchise_contact_phone ?? ""),
+                franchiseEmail: String(data.franchise_contact_email ?? ""),
+                notifications_muted: Boolean(data.notifications_muted),
+            });
+        },
+        [user?.email, user?.fullName],
+    );
+
+    const reloadParentProfile = useCallback(async () => {
+        if (user?.role !== "parent") return;
+        setParentProfileLoading(true);
+        setParentProfileError(null);
+        try {
+            const data = await authFetch<ParentProfileApi>("/accounts/parent/profile/");
+            applyParentProfileApi(data);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Could not load your profile.";
+            setParentProfileError(message);
+            setParentProfile((prev) => ({
+                ...prev,
+                name: user?.fullName || prev.name || user?.email || "",
+                email: user?.email || prev.email || "",
+            }));
+        } finally {
+            setParentProfileLoading(false);
+        }
+    }, [applyParentProfileApi, authFetch, user?.email, user?.fullName, user?.role]);
+
     useEffect(() => {
         if (user?.role !== "parent") {
             setParentProfileLoading(false);
+            setParentProfileError(null);
             return;
         }
-        if (!parentStudentsHydrated) return;
-        let cancelled = false;
-        setParentProfileLoading(true);
-        (async () => {
-            try {
-                const data = await authFetch<ParentProfileApi>("/accounts/parent/profile/");
-                if (cancelled) return;
-                setParentProfile({
-                    name: String(data.full_name ?? user.fullName ?? ""),
-                    email: String(data.email ?? user.email ?? ""),
-                    phone: String(data.phone ?? ""),
-                    address: String(data.address ?? ""),
-                    city: String(data.city ?? ""),
-                    photo: String(data.photo_url ?? ""),
-                    franchiseName: String(data.franchise_name ?? ""),
-                    franchisePhone: String(data.franchise_contact_phone ?? ""),
-                    franchiseEmail: String(data.franchise_contact_email ?? ""),
-                    notifications_muted: Boolean(data.notifications_muted),
-                });
-            } catch {
-                if (!cancelled) {
-                    setParentProfile((prev) => ({
-                        ...prev,
-                        name: user.fullName || prev.name || user.email,
-                        email: user.email,
-                    }));
-                }
-            } finally {
-                if (!cancelled) setParentProfileLoading(false);
-            }
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, [user?.role, user?.id, user?.email, user?.fullName, authFetch, parentStudentsHydrated]);
+        void reloadParentProfile();
+    }, [user?.role, user?.id, reloadParentProfile]);
 
     const mapAchievements = useCallback((list: AchievementApi[]): AchievementRow[] => {
         return list.map((a) => ({
@@ -330,24 +339,30 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
                 merged = { ...prev, ...payload };
                 return merged;
             });
-            const patchBody: Record<string, unknown> = {
-                full_name: merged.name,
-                phone: merged.phone,
-                address: merged.address,
-                city: merged.city,
-                photo_url: merged.photo,
-            };
-            if (merged.notifications_muted !== undefined) {
+            const patchBody: Record<string, unknown> = {};
+            if (payload.name !== undefined) patchBody.full_name = merged.name;
+            if (payload.phone !== undefined) patchBody.phone = merged.phone;
+            if (payload.address !== undefined) patchBody.address = merged.address;
+            if (payload.city !== undefined) patchBody.city = merged.city;
+            if (payload.photo !== undefined) patchBody.photo_url = merged.photo;
+            if (payload.notifications_muted !== undefined) {
                 patchBody.notifications_muted = merged.notifications_muted;
             }
-            await authFetch("/accounts/parent/profile/", {
-                method: "PATCH",
-                headers: jsonHeaders(),
-                body: JSON.stringify(patchBody),
-            });
-            await refreshUser();
+            try {
+                const data = await authFetch<ParentProfileApi>("/accounts/parent/profile/", {
+                    method: "PATCH",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify(patchBody),
+                });
+                applyParentProfileApi(data);
+                setParentProfileError(null);
+                await refreshUser();
+            } catch (err) {
+                await reloadParentProfile();
+                throw err;
+            }
         },
-        [authFetch, refreshUser],
+        [applyParentProfileApi, authFetch, refreshUser, reloadParentProfile],
     );
 
     const value: ParentDataContextValue = {
@@ -379,6 +394,8 @@ export function ParentDataProvider({ children }: { children: React.ReactNode }) 
         deletePhoto,
         parentProfile,
         parentProfileLoading,
+        parentProfileError,
+        reloadParentProfile,
         updateParentProfile,
     };
 
