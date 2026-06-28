@@ -84,12 +84,13 @@ export default function ParentProfilePage() {
                                 value={form.phone}
                                 onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })}
                             />
-                            <Input label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+                            <Input label="Home city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
                             <Input
-                                label="Address"
+                                label="Home address"
                                 value={form.address}
                                 onChange={(e) => setForm({ ...form, address: e.target.value })}
                                 className="md:col-span-2"
+                                placeholder="Your residential address"
                             />
                         </div>
                         <div className="flex gap-2">
