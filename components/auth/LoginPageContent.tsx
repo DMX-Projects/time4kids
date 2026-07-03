@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import { useAuth, postLoginPathForRole } from "@/components/auth/AuthProvider";
 import { Eye, EyeOff, LifeBuoy, Settings } from "lucide-react";
 
-export type LoginPageVariant = "default" | "parent" | "franchise";
+export type LoginPageVariant = "default" | "parent" | "franchise" | "crm";
 
 const copy: Record<
     LoginPageVariant,
@@ -31,6 +31,12 @@ const copy: Record<
         subtitle: "Use your centre username and password",
         leftTitle: "Centre operations",
         leftBody: "Manage parents, events, grades, and resources for your preschool.",
+    },
+    crm: {
+        title: "CRM sign in",
+        subtitle: "Use your CRM email and password",
+        leftTitle: "CRM Dashboard",
+        leftBody: "View and export franchise enquiries from CRM campaigns.",
     },
 };
 
@@ -67,6 +73,10 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
 
             if (variant === "franchise" && user.role !== "franchise") {
                 throw new Error("This page is for franchise centre accounts only.");
+            }
+
+            if (variant === "crm" && user.role !== "crm") {
+                throw new Error("This page is for CRM accounts only.");
             }
 
             setSubmitting(false);
@@ -140,6 +150,8 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                         placeholder={
                                             variant === "franchise"
                                                 ? "Centre username (e.g. domalguda)"
+                                                : variant === "crm"
+                                                  ? "CRM email"
                                                 : variant === "parent"
                                                   ? "Email, username, ID card, or mobile"
                                                   : "Email, username, or mobile"

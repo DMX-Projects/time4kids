@@ -1,0 +1,87 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sky gradient -->
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#87CEEB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E0F2FE;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grassGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#86EFAC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4ADE80;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky -->
+  <rect width="1200" height="600" fill="url(#skyGradient)"/>
+  
+  <!-- Clouds -->
+  <ellipse cx="200" cy="100" rx="60" ry="40" fill="#FFFFFF" opacity="0.8"/>
+  <ellipse cx="220" cy="100" rx="50" ry="35" fill="#FFFFFF" opacity="0.8"/>
+  <ellipse cx="180" cy="100" rx="45" ry="30" fill="#FFFFFF" opacity="0.8"/>
+  
+  <ellipse cx="600" cy="150" rx="70" ry="45" fill="#FFFFFF" opacity="0.8"/>
+  <ellipse cx="625" cy="150" rx="55" ry="40" fill="#FFFFFF" opacity="0.8"/>
+  <ellipse cx="575" cy="150" rx="50" ry="35" fill="#FFFFFF" opacity="0.8"/>
+  
+  <ellipse cx="1000" cy="120" rx="65" ry="40" fill="#FFFFFF" opacity="0.8"/>
+  <ellipse cx="1020" cy="120" rx="50" ry="35" fill="#FFFFFF" opacity="0.8"/>
+  
+  <!-- Sun -->
+  <circle cx="1100" cy="80" r="40" fill="#FACC15" opacity="0.9"/>
+  
+  <!-- Grass -->
+  <rect y="600" width="1200" height="200" fill="url(#grassGradient)"/>
+  
+  <!-- Hills -->
+  <path d="M 0 600 Q 300 550 600 600 T 1200 600 L 1200 800 L 0 800 Z" fill="#86EFAC" opacity="0.7"/>
+  
+  <!-- Trees -->
+  <rect x="100" y="550" width="30" height="50" fill="#8B4513"/>
+  <path d="M 115 500 Q 80 480 85 520 Q 90 480 115 500" fill="#22C55E"/>
+  <path d="M 115 480 Q 75 460 80 500 Q 85 460 115 480" fill="#22C55E"/>
+  
+  <rect x="900" y="560" width="35" height="40" fill="#8B4513"/>
+  <path d="M 917 520 Q 880 500 885 540 Q 890 500 917 520" fill="#22C55E"/>
+  <path d="M 917 500 Q 875 480 880 520 Q 885 480 917 500" fill="#22C55E"/>
+  
+  <!-- House -->
+  <rect x="450" y="500" width="120" height="100" fill="#FF8787" stroke="#FFFFFF" stroke-width="2"/>
+  <polygon points="450,500 510,450 570,500" fill="#E03131"/>
+  <rect x="480" y="550" width="30" height="50" fill="#8B4513"/>
+  <rect x="500" y="530" width="25" height="25" fill="#87CEEB"/>
+  
+  <!-- Alphabet blocks -->
+  <rect x="250" y="550" width="40" height="40" fill="#FF6B6B" rx="5"/>
+  <text x="270" y="575" font-family="Arial" font-size="24" font-weight="bold" fill="#FFFFFF" text-anchor="middle">A</text>
+  
+  <rect x="700" y="540" width="40" height="40" fill="#0EA5E9" rx="5"/>
+  <text x="720" y="565" font-family="Arial" font-size="24" font-weight="bold" fill="#FFFFFF" text-anchor="middle">B</text>
+  
+  <!-- Books -->
+  <rect x="350" y="560" width="30" height="40" fill="#FACC15" rx="2"/>
+  <rect x="355" y="560" width="20" height="5" fill="#CA8A04"/>
+  
+  <rect x="750" y="570" width="30" height="40" fill="#A855F7" rx="2"/>
+  <rect x="755" y="570" width="20" height="5" fill="#7C3AED"/>
+  
+  <!-- Crayons -->
+  <rect x="150" y="570" width="8" height="30" fill="#FF6B6B" rx="4"/>
+  <rect x="1050" y="560" width="8" height="30" fill="#0EA5E9" rx="4"/>
+  <rect x="1065" y="565" width="8" height="30" fill="#FACC15" rx="4"/>
+  
+  <!-- Hot air balloon -->
+  <ellipse cx="300" cy="200" rx="50" ry="70" fill="#FF6B6B" opacity="0.8"/>
+  <ellipse cx="300" cy="200" rx="40" ry="60" fill="#FF8787" opacity="0.9"/>
+  <rect x="295" y="270" width="10" height="30" fill="#8B4513"/>
+  <path d="M 300 300 L 280 320 L 320 320 Z" fill="#4B5563"/>
+  
+  <!-- Kite -->
+  <path d="M 800 180 L 850 200 L 800 220 Z" fill="#E03131"/>
+  <path d="M 800 200 L 850 200" stroke="#4B5563" stroke-width="2"/>
+  <path d="M 800 200 L 780 250" stroke="#4B5563" stroke-width="2"/>
+  
+  <!-- Paper airplanes -->
+  <path d="M 500 100 L 520 110 L 500 120 Z" fill="#0EA5E9" opacity="0.7"/>
+  <path d="M 650 130 L 670 140 L 650 150 Z" fill="#FACC15" opacity="0.7"/>
+</svg>
+

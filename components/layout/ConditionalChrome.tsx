@@ -11,9 +11,11 @@ export default function ConditionalChrome({ children }: { children: React.ReactN
     const isDashboard = pathname.startsWith("/dashboard");
     const isDriverPage = pathname.startsWith("/driver");
     const isLeadsReport = pathname.startsWith("/leads");
+    const isCrmPage = pathname === "/crm" || pathname.startsWith("/crm/");
+    const isCrmAdmin = pathname === "/crm-admin" || pathname.startsWith("/crm-admin/");
     const isSchoolPage = pathSegments[0] === "locations" && pathSegments.length > 2;
 
-    const hideChrome = isDashboard || isDriverPage || isLeadsReport || isSchoolPage;
+    const hideChrome = isDashboard || isDriverPage || isLeadsReport || isCrmPage || isCrmAdmin || isSchoolPage;
 
     if (hideChrome) return null;
     return <>{children}</>;
