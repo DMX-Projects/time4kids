@@ -125,11 +125,17 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
                             {...register('phone', {
                                 required: 'Phone is required',
                                 pattern: {
-                                    value: /^[0-9]{10}$/,
-                                    message: '10 digits please'
+                                    value: /^[6-9][0-9]{9}$/,
+                                    message: 'Enter a valid 10-digit mobile number'
                                 }
                             })}
                             type="tel"
+                            inputMode="numeric"
+                            maxLength={10}
+                            onInput={(e) => {
+                                const el = e.currentTarget;
+                                el.value = el.value.replace(/\D/g, '').slice(0, 10);
+                            }}
                             className="w-full px-5 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium"
                             placeholder="9876543210"
                         />
