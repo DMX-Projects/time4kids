@@ -1,0 +1,389 @@
+/* Instagram page – warm peach / Say hello style */
+.mainContainer {
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: calc(100dvh - env(safe-area-inset-bottom, 0px));
+  position: relative;
+  overflow-x: hidden;
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+  -webkit-overflow-scrolling: touch;
+}
+
+.background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  background-color: #fff8e1;
+  background-image: url('/crm/facebook-bg.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 248, 225, 0.72) 0%,
+    rgba(255, 243, 224, 0.45) 40%,
+    rgba(255, 248, 225, 0.6) 70%,
+    rgba(255, 236, 179, 0.5) 100%
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+.heroSection {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 48px 48px;
+  box-sizing: border-box;
+}
+
+.heroLayout {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 56px;
+}
+
+.contentCol {
+  flex: 0 1 40%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-right: 20px;
+}
+
+.logoRow {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.logoWrap {
+  display: inline-block;
+  padding: 14px 22px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(247, 147, 30, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+}
+
+.logo {
+  height: 100px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.textContent {
+  max-width: 480px;
+}
+
+.subheading {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #00897b;
+  margin: 0 0 10px 0;
+  line-height: 1.35;
+}
+
+.headline {
+  font-size: clamp(2.25rem, 4.5vw, 3.75rem);
+  line-height: 1.15;
+  font-weight: 900;
+  color: #e65100;
+  text-shadow:
+    2px 2px 0 rgba(255, 255, 255, 0.95),
+    -1px -1px 0 rgba(255, 255, 255, 0.7),
+    0 4px 12px rgba(247, 147, 30, 0.12);
+  margin: 0;
+}
+
+.formCol {
+  flex: 0 1 54%;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.formCard {
+  background: #fff;
+  padding: 32px 36px 36px;
+  border-radius: 28px;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.07),
+    0 8px 20px rgba(247, 147, 30, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.formHeader {
+  text-align: center;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed rgba(247, 147, 30, 0.25);
+}
+
+.formHeader h3 {
+  font-size: 26px;
+  color: #f7931e;
+  margin-bottom: 4px;
+}
+
+.formHeader p {
+  color: #666;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.formCard label {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #a26c45;
+  display: block;
+}
+
+.formCard input,
+.formCard select {
+  width: 100%;
+  min-height: 44px;
+  height: 46px;
+  margin-bottom: 10px;
+  padding: 0 16px;
+  font-size: 16px;
+  border-radius: 14px;
+  border: 2px solid #ffefe0;
+  background: #fff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.formCard input::placeholder {
+  color: #c9a86c;
+  opacity: 0.7;
+}
+
+.formCard input:focus,
+.formCard select:focus {
+  border-color: #f7931e;
+  box-shadow: 0 0 0 4px rgba(247, 147, 30, 0.1);
+  outline: none;
+}
+
+.phoneGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.phonePrefix {
+  width: 60px;
+  min-height: 44px;
+  height: 46px;
+  background: #fff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: #f7931e;
+  border: 2px solid #ffefe0;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.formCard button[type="submit"] {
+  min-height: 48px;
+  height: 56px;
+  font-size: 18px;
+  font-weight: 900;
+  border-radius: 28px;
+  background: #f7931e;
+  border: none;
+  color: #fff;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(247, 147, 30, 0.28);
+  transition: all 0.25s ease;
+  margin-top: 8px;
+}
+
+.formCard button[type="submit"]:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(247, 147, 30, 0.4);
+}
+
+.formCard button[type="submit"]:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 1024px) {
+  .heroLayout {
+    flex-direction: column;
+    text-align: center;
+    gap: 32px;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  .contentCol {
+    flex: none;
+    padding-right: 0;
+    align-items: center;
+  }
+
+  .logoRow {
+    justify-content: center;
+  }
+
+  .textContent {
+    margin: 0 auto;
+    max-width: 100%;
+  }
+
+  .headline {
+    font-size: clamp(2rem, 6vw, 3rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .heroSection {
+    padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+    min-height: auto;
+    align-items: flex-start;
+  }
+
+  .heroLayout {
+    gap: 24px;
+    width: 100%;
+  }
+
+  .logoWrap {
+    padding: 10px 14px;
+  }
+
+  .logo {
+    height: 70px;
+    max-width: 180px;
+  }
+
+  .subheading {
+    font-size: 1.05rem;
+  }
+
+  .headline {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    line-height: 1.25;
+  }
+
+  .formCol {
+    width: 100%;
+  }
+
+  .formCard {
+    padding: 24px 16px;
+    max-width: 100%;
+    border-radius: 24px;
+  }
+
+  .formHeader h3 {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroSection {
+    padding: max(12px, env(safe-area-inset-top)) 12px max(20px, env(safe-area-inset-bottom));
+  }
+
+  .heroLayout {
+    gap: 20px;
+  }
+
+  .logo {
+    height: 56px;
+    max-width: 140px;
+  }
+
+  .headline {
+    font-size: 1.35rem;
+  }
+
+  .formCard {
+    padding: 20px 14px;
+    border-radius: 20px;
+  }
+
+  .formCard label {
+    font-size: 14px;
+  }
+
+  .formCard input,
+  .formCard select {
+    min-height: 48px;
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .phonePrefix {
+    min-height: 48px;
+    height: 48px;
+    width: 56px;
+    font-size: 13px;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+
+  .formCard button[type="submit"] {
+    min-height: 52px;
+    height: 52px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 360px) {
+  .logo {
+    height: 48px;
+    max-width: 120px;
+  }
+
+  .headline {
+    font-size: 1.2rem;
+  }
+
+  .formCard {
+    padding: 16px 12px;
+  }
+}

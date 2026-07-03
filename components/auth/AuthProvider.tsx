@@ -6,7 +6,7 @@ import { apiUrl, jsonHeaders, mediaUrl, normalizeApiPath, toApiError } from "@/l
 import { parseFilenameFromContentDisposition } from "@/lib/franchise-download-filename";
 import { AccessLoading } from "@/components/auth/AccessLoading";
 
-type Role = "admin" | "franchise" | "parent" | "driver";
+type Role = "admin" | "crm" | "franchise" | "parent" | "driver";
 
 type User = {
     id: string;
@@ -101,13 +101,14 @@ const LEGACY_STORAGE_KEY = "tk-auth-session";
 const LAST_ROLE_KEY = "tk-auth-last-role";
 
 const storageKeyForRole = (role: Role) => `tk-auth-${role}`;
-const ALL_ROLE_KEYS: string[] = ["admin", "franchise", "parent", "driver"].map((r) => storageKeyForRole(r as Role));
+const ALL_ROLE_KEYS: string[] = ["admin", "crm", "franchise", "parent", "driver"].map((r) => storageKeyForRole(r as Role));
 
 export const normalizeRole = (role?: string | null): Role => {
     const mapped = String(role ?? "")
         .trim()
         .toLowerCase();
     if (mapped === "admin") return "admin";
+    if (mapped === "crm") return "crm";
     if (mapped === "franchise") return "franchise";
     if (mapped === "driver") return "driver";
     return "parent";
@@ -169,6 +170,7 @@ function pathnameDashboardRole(): Role | null {
         if (r === "parent" || r === "franchise" || r === "admin" || r === "driver") return r as Role;
     }
     if (parts[0] === "driver") return "driver";
+    if (parts[0] === "crm-admin") return "crm";
     if (parts[0] === "leads") return "admin";
     return null;
 }
@@ -235,12 +237,12 @@ function readStoredSessionRaw(): string | null {
     }
 
     const last = storage.getItem(LAST_ROLE_KEY) as Role | null;
-    if (last === "parent" || last === "franchise" || last === "admin" || last === "driver") {
+    if (last === "parent" || last === "franchise" || last === "admin" || last === "crm" || last === "driver") {
         const fromLast = storage.getItem(storageKeyForRole(last));
         if (fromLast) return fromLast;
     }
 
-    for (const r of ["admin", "franchise", "parent", "driver"] as const) {
+    for (const r of ["admin", "crm", "franchise", "parent", "driver"] as const) {
         const raw = storage.getItem(storageKeyForRole(r));
         if (raw) return raw;
     }
@@ -703,6 +705,7 @@ export const useAuth = () => {
 export function postLoginPathForRole(role: Role, next?: string | null): string {
     const trimmed = next?.trim();
     if (trimmed) return trimmed;
+    if (role === "crm") return "/crm-admin";
     if (role === "driver") return "/driver/trip";
     return `/dashboard/${role}`;
 }
