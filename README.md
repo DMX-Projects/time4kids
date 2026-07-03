@@ -10,7 +10,6 @@ A modern, responsive preschool website built with Next.js 14, TypeScript, Tailwi
 - 🎭 Smooth animations using Framer Motion and GSAP
 - 📝 Form handling with React Hook Form
 - 🗺️ Centre locator with search and filters
-- 💬 Interactive chatbot
 - 🔐 Login systems for parents and franchise
 - 📊 SEO optimized with meta tags
 
@@ -90,7 +89,6 @@ Time-Kids/
 
 - **Header** - Responsive navigation with login dropdowns
 - **Footer** - Links, contact info, social media, QR codes
-- **Chatbot** - Floating chat widget with quick questions
 - **Forms** - Admission and franchise enquiry forms with validation
 - **Cards** - Reusable card component with glassmorphism
 - **Buttons** - Multiple variants with loading states

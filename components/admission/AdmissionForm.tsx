@@ -285,18 +285,48 @@ const AdmissionForm = ({
                                 { name: 'email', label: 'Email Address', placeholder: 'your@email.com' },
                                 { name: 'phone', label: 'Phone Number', placeholder: '10-digit mobile number' },
                                 { name: 'childName', label: "Child's Name", placeholder: "Enter child's name" }
-                            ].map((field) => (
-                                <div key={field.name} className="space-y-2">
-                                    <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1">
-                                        {field.label} <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        {...register(field.name as any, { required: true })}
-                                        className="w-full px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl focus:ring-4 focus:ring-yellow-100 focus:border-[#FFD95A] outline-none transition-all placeholder:text-gray-400 font-medium text-[#2D2D52]"
-                                        placeholder={field.placeholder}
-                                    />
-                                </div>
-                            ))}
+                            ].map((field) => {
+                                const isPhone = field.name === 'phone';
+                                return (
+                                    <div key={field.name} className="space-y-2">
+                                        <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1">
+                                            {field.label} <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            {...register(field.name as any, {
+                                                required: true,
+                                                ...(isPhone
+                                                    ? {
+                                                          pattern: {
+                                                              value: PHONE_REGEX,
+                                                              message:
+                                                                  'Enter a valid 10-digit mobile number starting with 6-9.',
+                                                          },
+                                                      }
+                                                    : {}),
+                                            })}
+                                            type={isPhone ? 'tel' : 'text'}
+                                            inputMode={isPhone ? 'numeric' : undefined}
+                                            maxLength={isPhone ? 10 : undefined}
+                                            onInput={
+                                                isPhone
+                                                    ? (e) => {
+                                                          const el = e.currentTarget;
+                                                          el.value = el.value.replace(/\D/g, '').slice(0, 10);
+                                                      }
+                                                    : undefined
+                                            }
+                                            className="w-full px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl focus:ring-4 focus:ring-yellow-100 focus:border-[#FFD95A] outline-none transition-all placeholder:text-gray-400 font-medium text-[#2D2D52]"
+                                            placeholder={field.placeholder}
+                                        />
+                                        {isPhone && errors.phone && (
+                                            <p className="text-xs text-red-600 pl-1" role="alert">
+                                                {(errors.phone as any)?.message || 'Enter a valid 10-digit mobile number.'}
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })}
 
                             <div className="space-y-2">
                                 <label className="text-lg font-fredoka font-semibold text-[#2D2D52] pl-1 flex items-center justify-between">
