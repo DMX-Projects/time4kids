@@ -40,18 +40,21 @@ function resolveCrmUrl(path: string): string {
     if (pathname === "/leads" || pathname.startsWith("/leads?")) {
         return apiUrl(`/enquiries/admin/crm-leads/${qs ? `?${qs}` : ""}`);
     }
-    if (pathname === "/centres") {
-        return apiUrl("/enquiries/admin/crm-centres/");
+    if (pathname === "/centres" || pathname.startsWith("/centres?")) {
+        return apiUrl(`/enquiries/admin/crm-centres/${qs ? `?${qs}` : ""}`);
+    }
+    if (pathname === "/cities") {
+        return apiUrl("/enquiries/admin/crm-cities/");
     }
 
-    const leadMatch = pathname.match(/^\/leads\/(\d+)$/);
+    const leadMatch = pathname.match(/^\/leads\/([^/?]+)$/);
     if (leadMatch) {
-        return apiUrl(`/enquiries/admin/crm-leads/${leadMatch[1]}/`);
+        return apiUrl(`/enquiries/admin/crm-leads/${encodeURIComponent(leadMatch[1])}/`);
     }
 
-    const noteMatch = pathname.match(/^\/leads\/(\d+)\/notes$/);
+    const noteMatch = pathname.match(/^\/leads\/([^/?]+)\/notes$/);
     if (noteMatch) {
-        return apiUrl(`/enquiries/admin/crm-leads/${noteMatch[1]}/notes/`);
+        return apiUrl(`/enquiries/admin/crm-leads/${encodeURIComponent(noteMatch[1])}/notes/`);
     }
 
     return apiUrl(path);

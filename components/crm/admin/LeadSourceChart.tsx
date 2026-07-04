@@ -2,10 +2,24 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 
+const SOURCE_LABELS: Record<string, string> = {
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  website: 'Website',
+  admission: 'Admission',
+  contact: 'Centers Enquiry',
+  campaign: 'Campaign Enquiry',
+  landing: 'Landing',
+}
+
 const COLORS = {
   facebook: '#1877F2',
   instagram: '#E4405F',
-  website: '#8B5CF6',
+  campaign: '#8B5CF6',
+  website: '#7C3AED',
+  admission: '#2563EB',
+  contact: '#0EA5E9',
+  landing: '#14B8A6',
   google_ads: '#EA4335',
   referral: '#10B981',
   walk_in: '#F59E0B',
@@ -14,7 +28,7 @@ const COLORS = {
 
 export default function LeadSourceChart({ data }: { data: any[] }) {
   const chartData = data.map((item) => ({
-    name: item.source.charAt(0).toUpperCase() + item.source.slice(1).replace('_', ' '),
+    name: SOURCE_LABELS[item.source] || item.source.charAt(0).toUpperCase() + item.source.slice(1).replace('_', ' '),
     value: parseInt(item.count),
     color: COLORS[item.source as keyof typeof COLORS] || COLORS.other,
   }))

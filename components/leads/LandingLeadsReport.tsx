@@ -110,9 +110,10 @@ type Props = {
 };
 
 const DEV_REPORT_KEY = process.env.NEXT_PUBLIC_LANDING_LEADS_REPORT_KEY?.trim() || "";
+const PAGE_SIZE = 20;
 
 function isLandingLeadsStaff(role: string | undefined) {
-    return role === "admin" || role === "approver";
+    return role === "admin" || role === "approver" || role === "crm";
 }
 
 function LandingLeadsReportInner({ citySlug, title, embedded = false, basePath }: Props) {
@@ -128,6 +129,7 @@ function LandingLeadsReportInner({ citySlug, title, embedded = false, basePath }
     const [search, setSearch] = useState("");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
     const urlKey = searchParams.get("key");
     const reportKey = embedded ? null : (urlKey || getStoredReportKey() || "").trim() || null;
@@ -239,6 +241,16 @@ function LandingLeadsReportInner({ citySlug, title, embedded = false, basePath }
         });
     }, [leads, search, dateFrom, dateTo]);
 
+    useEffect(() => {
+        setVisibleCount(PAGE_SIZE);
+    }, [search, dateFrom, dateTo, apiCityParam, leads]);
+
+    const visibleLeads = useMemo(
+        () => filtered.slice(0, visibleCount),
+        [filtered, visibleCount],
+    );
+    const hasMore = visibleCount < filtered.length;
+
     const clearFilters = () => {
         setSearch("");
         setDateFrom("");
@@ -266,7 +278,9 @@ function LandingLeadsReportInner({ citySlug, title, embedded = false, basePath }
                             <h1 className="mt-1 text-2xl font-bold text-slate-900">{title}</h1>
                             {!loading && (
                                 <p className="mt-1 text-sm text-slate-500">
-                                    {filtered.length} lead{filtered.length === 1 ? "" : "s"}
+                                    {filtered.length === 0
+                                        ? "0 leads"
+                                        : `Showing ${Math.min(visibleCount, filtered.length)} of ${filtered.length} lead${filtered.length === 1 ? "" : "s"}`}
                                     {resolvedCity ? ` in ${resolvedCity}` : ""}
                                 </p>
                             )}
@@ -447,7 +461,7 @@ function LandingLeadsReportInner({ citySlug, title, embedded = false, basePath }
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {filtered.map((lead) => (
+                                    {visibleLeads.map((lead) => (
                                         <tr key={lead.id} className="hover:bg-slate-50/80">
                                             <td className="px-4 py-3 font-medium text-slate-900">
                                                 {lead.name}
@@ -483,7 +497,7 @@ function LandingLeadsReportInner({ citySlug, title, embedded = false, basePath }
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700">
+                                            <td className="px-4 py-3 text-slate-700 whitespace-normal break-words">
                                                 {lead.centre_name || "—"}
                                                 {lead.centre_phone && (
                                                     <div className="text-xs text-slate-500">
@@ -510,6 +524,17 @@ function LandingLeadsReportInner({ citySlug, title, embedded = false, basePath }
                                 </tbody>
                             </table>
                         </div>
+                        {hasMore && (
+                            <div className="border-t border-slate-200 bg-slate-50 px-4 py-4 text-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                                    className="rounded-lg bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
+                                >
+                                    Show more ({filtered.length - visibleCount} remaining)
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
                 </>

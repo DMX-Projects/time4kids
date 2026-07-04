@@ -8,11 +8,26 @@ import { getWhatsAppUrl, getEmailMailto } from '@/lib/crmContactHelpers'
 
 const STATUS_OPTIONS = [
   'new', 'contacted', 'called', 'follow_up', 'interested',
-  'converted', 'dropped', 'not_interested',
+  'meeting_scheduled', 'dropped', 'not_interested', 'converted',
 ]
 const SOURCE_OPTIONS = [
   'facebook', 'instagram', 'website', 'google_ads', 'referral', 'walk_in', 'other',
 ]
+
+const SOURCE_LABELS: Record<string, string> = {
+  contact: 'Centers Enquiry',
+  admission: 'Admission',
+  landing: 'Landing',
+  campaign: 'Campaign Enquiry',
+  website: 'Website',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+}
+
+function sourceLabel(source?: string) {
+  if (!source) return '—'
+  return SOURCE_LABELS[source] || source.replace(/_/g, ' ')
+}
 
 export default function LeadDetailPage() {
   const router = useRouter()
@@ -166,6 +181,8 @@ export default function LeadDetailPage() {
     return <div className="min-h-screen flex items-center justify-center">Lead not found</div>
   }
 
+  const isEditable = lead.editable !== false
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
@@ -184,23 +201,25 @@ export default function LeadDetailPage() {
             <div className="card">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Lead Details</h2>
-                {!editing ? (
-                  <button onClick={() => setEditing(true)} className="btn-secondary text-sm">
-                    Edit All
-                  </button>
-                ) : (
-                  <div className="flex gap-2">
-                    <button onClick={() => setEditing(false)} className="btn-secondary text-sm">
-                      Cancel
+                {isEditable && (
+                  !editing ? (
+                    <button onClick={() => setEditing(true)} className="btn-secondary text-sm">
+                      Edit All
                     </button>
-                    <button onClick={handleSaveAll} disabled={saving} className="btn-primary text-sm disabled:opacity-50">
-                      {saving ? 'Saving...' : 'Save All'}
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditing(false)} className="btn-secondary text-sm">
+                        Cancel
+                      </button>
+                      <button onClick={handleSaveAll} disabled={saving} className="btn-primary text-sm disabled:opacity-50">
+                        {saving ? 'Saving...' : 'Save All'}
+                      </button>
+                    </div>
+                  )
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {editing ? (
+                {editing && isEditable ? (
                   <>
                     <div>
                       <label className="text-sm font-semibold text-gray-600">Full Name</label>
@@ -356,34 +375,42 @@ export default function LeadDetailPage() {
                         </p>
                       </div>
                     )}
+                    {(lead.childAge || lead.enquiryType) && (
+                      <div className="col-span-2 space-y-1">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Enquiry details</label>
+                        <p className="text-gray-700">
+                          {[lead.enquiryType, lead.childAge ? `Child age: ${lead.childAge}` : ''].filter(Boolean).join(' · ') || '—'}
+                        </p>
+                      </div>
+                    )}
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status</label>
                       <div className="relative inline-block">
                         <select
                           value={lead.status}
                           onChange={(e) => handleStatusChange(e.target.value)}
-                          className={`appearance-none pl-3 pr-8 py-1 rounded-full text-xs font-bold uppercase border-0 cursor-pointer focus:ring-2 focus:ring-blue-500/20 ${lead.status === 'converted' ? 'bg-green-100 text-green-700' :
-                            lead.status === 'dropped' ? 'bg-red-100 text-red-700' :
-                              'bg-blue-100 text-blue-700'
-                            }`}
-                        >
-                          {STATUS_OPTIONS.map((s) => (
-                            <option key={s} value={s} className="bg-white text-gray-800 uppercase text-xs font-bold">
-                              {s.replace('_', ' ')}
-                            </option>
-                          ))}
-                        </select>
-                        <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] ${lead.status === 'converted' ? 'text-green-700' :
-                          lead.status === 'dropped' ? 'text-red-700' :
-                            'text-blue-700'
-                          }`}>
-                          ▼
+                            className={`appearance-none pl-3 pr-8 py-1 rounded-full text-xs font-bold uppercase border-0 cursor-pointer focus:ring-2 focus:ring-blue-500/20 ${lead.status === 'converted' ? 'bg-green-100 text-green-700' :
+                              lead.status === 'dropped' ? 'bg-red-100 text-red-700' :
+                                'bg-blue-100 text-blue-700'
+                              }`}
+                          >
+                            {STATUS_OPTIONS.map((s) => (
+                              <option key={s} value={s} className="bg-white text-gray-800 uppercase text-xs font-bold">
+                                {s.replace('_', ' ')}
+                              </option>
+                            ))}
+                          </select>
+                          <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] ${lead.status === 'converted' ? 'text-green-700' :
+                            lead.status === 'dropped' ? 'text-red-700' :
+                              'text-blue-700'
+                            }`}>
+                            ▼
+                          </div>
                         </div>
-                      </div>
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Source</label>
-                      <p className="text-gray-700 capitalize">{lead.source?.replace('_', ' ')}</p>
+                      <p className="text-gray-700">{sourceLabel(lead.source)}</p>
                     </div>
 
                     <div className="col-span-2 pt-4 border-t border-gray-100 mt-2">
@@ -491,23 +518,25 @@ export default function LeadDetailPage() {
                 <div className="absolute bottom-0 left-[-9px] w-4 h-4 rounded-full border-4 border-white bg-gray-200 shadow-sm" />
               </div>
 
-              <div className="mt-8 pt-6 border-t border-gray-100">
-                <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1"><span>➕</span> Add Internal Note</h4>
-                <div className="relative">
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="form-input focus:ring-blue-500 border-gray-200"
-                    rows={3}
-                    placeholder="Type interaction details here..."
-                  />
-                  <div className="flex justify-end mt-3">
-                    <button onClick={handleAddNote} className="btn-primary !py-2 !px-6 text-sm flex items-center gap-2">
-                      <span>💾</span> Save Note
-                    </button>
+              {isEditable && (
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1"><span>➕</span> Add Internal Note</h4>
+                  <div className="relative">
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      className="form-input focus:ring-blue-500 border-gray-200"
+                      rows={3}
+                      placeholder="Type interaction details here..."
+                    />
+                    <div className="flex justify-end mt-3">
+                      <button onClick={handleAddNote} className="btn-primary !py-2 !px-6 text-sm flex items-center gap-2">
+                        <span>💾</span> Save Note
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 

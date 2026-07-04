@@ -12,6 +12,8 @@ type User = {
     id: string;
     email: string;
     role: Role;
+    /** True only for head-office super admins (not the content-only admin). */
+    isSuperuser?: boolean;
     fullName?: string;
     /** Child name from login / me (parent accounts). */
     childName?: string;
@@ -133,6 +135,7 @@ function mapApiUserToSession(data: Record<string, unknown>, fallbackEmail = ""):
     return {
         id: String(data.id ?? ""),
         email: String(data.email ?? fallbackEmail),
+        isSuperuser: Boolean(data.is_superuser),
         fullName: data.full_name != null ? String(data.full_name) : undefined,
         childName,
         displayName,

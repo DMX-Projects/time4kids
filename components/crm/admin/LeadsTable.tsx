@@ -7,11 +7,34 @@ import { toast } from 'react-hot-toast'
 
 interface LeadsTableProps {
   dateRange: { startDate: Date | null; endDate: Date | null }
+  city?: string
   centreId?: string
   status?: string
   source?: string
   title?: string
 }
+
+const SOURCE_LABELS: Record<string, string> = {
+  website: 'Website',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  admission: 'Admission',
+  contact: 'Centers Enquiry',
+  campaign: 'Campaign Enquiry',
+  landing: 'Landing Lead',
+}
+
+const STATUS_OPTIONS = [
+  'new',
+  'contacted',
+  'called',
+  'follow_up',
+  'interested',
+  'meeting_scheduled',
+  'dropped',
+  'not_interested',
+  'converted',
+]
 
 const statusColors: { [key: string]: string } = {
   new: 'status-new',
@@ -19,12 +42,13 @@ const statusColors: { [key: string]: string } = {
   called: 'status-contacted',
   follow_up: 'status-follow-up',
   interested: 'status-interested',
+  meeting_scheduled: 'status-follow-up',
   converted: 'status-converted',
   dropped: 'status-dropped',
   not_interested: 'status-dropped',
 }
 
-export default function LeadsTable({ dateRange, centreId, status, source, title }: LeadsTableProps) {
+export default function LeadsTable({ dateRange, city, centreId, status, source, title }: LeadsTableProps) {
   const router = useRouter()
   const [leads, setLeads] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,7 +64,7 @@ export default function LeadsTable({ dateRange, centreId, status, source, title 
 
   useEffect(() => {
     loadLeads()
-  }, [page, dateRange, centreId, status, source, search])
+  }, [page, dateRange, city, centreId, status, source, search])
 
   const loadLeads = async () => {
     setLoading(true)
@@ -59,6 +83,7 @@ export default function LeadsTable({ dateRange, centreId, status, source, title 
         end.setHours(23, 59, 59, 999)
         params.append('endDate', end.toISOString())
       }
+      if (city) params.append('city', city)
       if (centreId) params.append('centreId', centreId)
       if (status) params.append('status', status)
       if (source) params.append('source', source)
@@ -77,13 +102,15 @@ export default function LeadsTable({ dateRange, centreId, status, source, title 
 
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     try {
-      await api.patch(`/leads/${leadId}`, { status: newStatus })
+      await api.patch(`/leads/${encodeURIComponent(leadId)}`, { status: newStatus })
       toast.success('Status updated successfully')
       loadLeads()
     } catch (error) {
       toast.error('Failed to update status')
     }
   }
+
+  const sourceLabel = (source?: string) => SOURCE_LABELS[source || ''] || source?.replace('_', ' ') || 'Website'
 
   return (
     <div className="card">
@@ -129,7 +156,7 @@ export default function LeadsTable({ dateRange, centreId, status, source, title 
                     <td className="px-4 py-4 font-medium text-gray-900">{lead.fullName}</td>
                     <td className="px-4 py-4 text-gray-600 text-sm">{lead.mobile}</td>
                     <td className="px-4 py-4">
-                      <span className="capitalize text-sm text-gray-500">{lead.source?.replace('_', ' ') || 'Website'}</span>
+                      <span className="capitalize text-sm text-gray-500">{sourceLabel(lead.source)}</span>
                     </td>
                     <td className="px-4 py-4">
                       <select
@@ -137,18 +164,16 @@ export default function LeadsTable({ dateRange, centreId, status, source, title 
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
                         className={`status-badge ${statusColors[lead.status] || 'status-new'} border-0 cursor-pointer text-xs font-bold ring-0 focus:ring-0`}
                       >
-                        <option value="new">New</option>
-                        <option value="contacted">Contacted</option>
-                        <option value="called">Called</option>
-                        <option value="follow_up">Follow Up</option>
-                        <option value="interested">Interested</option>
-                        <option value="converted">Converted</option>
-                        <option value="dropped">Dropped</option>
+                        {STATUS_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option.replace(/_/g, ' ')}
+                          </option>
+                        ))}
                       </select>
                     </td>
                     <td className="px-4 py-4">
                       <button
-                        onClick={() => router.push(`/crm-admin/leads/${lead.id}`)}
+                        onClick={() => router.push(`/crm-admin/leads/${encodeURIComponent(lead.id)}`)}
                         className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold transition-all"
                       >
                         View

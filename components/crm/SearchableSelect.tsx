@@ -28,6 +28,17 @@ const defaultStyles: StylesConfig<Option, false> = {
     ...base,
     color: '#9ca3af',
   }),
+  singleValue: (base) => ({
+    ...base,
+    maxWidth: '100%',
+    whiteSpace: 'normal',
+    lineHeight: 1.3,
+  }),
+  option: (base) => ({
+    ...base,
+    whiteSpace: 'normal',
+    wordBreak: 'break-word',
+  }),
 }
 
 interface SearchableSelectProps {
@@ -47,7 +58,7 @@ export function SearchableSelect({
   disabled = false,
   'aria-label': ariaLabel,
 }: SearchableSelectProps) {
-  const selectedOption = value ? options.find((o) => o.value === value) ?? null : null
+  const selectedOption = options.find((o) => o.value === value) ?? null
 
   return (
     <Select<Option, false>
@@ -64,6 +75,8 @@ export function SearchableSelect({
         option.label.toLowerCase().includes(inputValue.toLowerCase())
       }
       noOptionsMessage={() => 'No options found'}
+      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+      menuPosition="fixed"
     />
   )
 }

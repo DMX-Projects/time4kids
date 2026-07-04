@@ -2,14 +2,17 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 
-const statusOrder = ['new', 'contacted', 'called', 'follow_up', 'interested', 'converted']
+const statusOrder = ['new', 'contacted', 'called', 'follow_up', 'interested', 'meeting_scheduled', 'converted', 'dropped', 'not_interested']
 const statusColors: { [key: string]: string } = {
   new: '#3B82F6',
   contacted: '#10B981',
   called: '#F59E0B',
   follow_up: '#8B5CF6',
   interested: '#EF4444',
+  meeting_scheduled: '#6366F1',
   converted: '#14B8A6',
+  dropped: '#9CA3AF',
+  not_interested: '#6B7280',
 }
 
 export default function ConversionFunnel({ data }: { data: any[] }) {

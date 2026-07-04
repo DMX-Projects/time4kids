@@ -116,7 +116,7 @@ export type Enquiry = {
     childAge?: string;
     message: string;
     createdAt: string;
-    status: "new" | "in-progress" | "closed";
+    status: "new" | "in-progress" | "closed" | "contacted" | "called" | "follow_up" | "interested" | "meeting_scheduled" | "dropped" | "not_interested" | "converted";
     channel: "web" | "dashboard";
     franchiseName?: string;
 };
@@ -358,12 +358,18 @@ const mapMedia = (media: ApiEventMedia, eventId?: string, accessToken?: string |
     };
 };
 
+const VALID_ENQUIRY_STATUSES = new Set([
+    "new", "in-progress", "closed",
+    "contacted", "called", "follow_up", "interested",
+    "meeting_scheduled", "dropped", "not_interested", "converted",
+]);
+
 const normalizeEnquiryStatus = (raw: string | undefined | null): Enquiry["status"] => {
     const value = String(raw || "new")
         .trim()
         .toLowerCase()
-        .replace(/_/g, "-");
-    if (value === "in-progress" || value === "closed" || value === "new") return value;
+        .replace(/ /g, "_");
+    if (VALID_ENQUIRY_STATUSES.has(value)) return value as Enquiry["status"];
     return "new";
 };
 
