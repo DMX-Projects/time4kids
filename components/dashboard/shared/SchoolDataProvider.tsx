@@ -571,8 +571,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
 
     const loadAdminEnquiries = async () => {
         try {
-            const data = await authFetch<any>("/enquiries/admin/all/");
-            const items = Array.isArray(data) ? data : data.results || [];
+            const data = await authFetch<any>("/enquiries/admin/all/?limit=100&page=1");
+            const items = Array.isArray(data) ? data : data?.results || [];
             setEnquiries(items.map(mapEnquiry));
         } catch (err) {
             console.error("Failed to load admin enquiries", err);

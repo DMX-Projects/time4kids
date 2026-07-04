@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Inbox, Phone, Mail, Eye, Search } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { apiUrl, jsonHeaders } from "@/lib/api-client";
@@ -45,6 +45,17 @@ const tabs: { key: EnquiryType; label: string }[] = [
     { key: "contact", label: "Contact" },
 ];
 
+const PAGE_SIZE = 20;
+
+const API_TYPE: Record<EnquiryType, string | undefined> = {
+    all: undefined,
+    admission: "ADMISSION",
+    franchise: "FRANCHISE",
+    contact: "CONTACT",
+};
+
+type TabCounts = Record<EnquiryType, number>;
+
 function mapApiEnquiry(enq: any): Enquiry {
     const source = enq.record_source || (enq.enquiry_type === "FRANCHISE" ? "franchise_enquiry" : "enquiry");
     const idPrefix = source === "franchise_enquiry" ? "f" : "e";
@@ -70,27 +81,63 @@ export default function AdminEnquiriesPage() {
     const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<EnquiryType>("all");
+    const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [tabCounts, setTabCounts] = useState<TabCounts>({
+        all: 0,
+        admission: 0,
+        franchise: 0,
+        contact: 0,
+    });
+
+    useEffect(() => {
+        const t = setTimeout(() => setSearch(searchInput), 350);
+        return () => clearTimeout(t);
+    }, [searchInput]);
 
     const fetchEnquiries = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await authFetch<any>("/enquiries/admin/all/");
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: PAGE_SIZE.toString(),
+            });
+            const typeParam = API_TYPE[activeTab];
+            if (typeParam) params.append("type", typeParam);
+            if (statusFilter !== "all") params.append("status", statusFilter);
+            if (search) params.append("search", search);
+
+            const data = await authFetch<any>(`/enquiries/admin/all/?${params.toString()}`);
             const items = Array.isArray(data) ? data : data?.results || [];
             setEnquiries(items.map(mapApiEnquiry));
+            setTotal(typeof data?.total === "number" ? data.total : items.length);
+            if (data?.counts) {
+                setTabCounts({
+                    all: data.counts.all ?? 0,
+                    admission: data.counts.admission ?? 0,
+                    franchise: data.counts.franchise ?? 0,
+                    contact: data.counts.contact ?? 0,
+                });
+            }
         } catch (err) {
             console.error("Failed to load admin enquiries", err);
             toast.error("Failed to load enquiries.");
         } finally {
             setLoading(false);
         }
-    }, [authFetch]);
+    }, [authFetch, page, activeTab, statusFilter, search]);
 
     useEffect(() => {
         void fetchEnquiries();
     }, [fetchEnquiries]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [search]);
 
     const handleStatusChange = async (enq: Enquiry, newStatus: string) => {
         const rawId = enq.id.replace(/^[ef]-/, "");
@@ -115,25 +162,9 @@ export default function AdminEnquiriesPage() {
         }
     };
 
-    const filtered = useMemo(() => {
-        let items = enquiries;
-        if (activeTab !== "all") {
-            items = items.filter((e) => e.type === activeTab);
-        }
-        if (statusFilter !== "all") {
-            items = items.filter((e) => e.status === statusFilter);
-        }
-        if (search) {
-            const lower = search.toLowerCase();
-            items = items.filter((e) =>
-                e.name.toLowerCase().includes(lower) ||
-                e.email.toLowerCase().includes(lower) ||
-                e.phone?.includes(search) ||
-                e.city?.toLowerCase().includes(lower)
-            );
-        }
-        return items;
-    }, [enquiries, activeTab, search, statusFilter]);
+    const filtered = enquiries;
+
+    const tabCount = (key: EnquiryType) => tabCounts[key] ?? 0;
 
     const getTabColor = (key: string, isActive: boolean) => {
         if (!isActive) return "bg-white text-slate-600 border-slate-200 hover:bg-slate-50";
@@ -170,7 +201,7 @@ export default function AdminEnquiriesPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900">Enquiries</h1>
-                        <p className="text-slate-500 text-sm">Manage admission and franchise requests</p>
+                        <p className="text-slate-500 text-sm">Admission, contact, and franchise leads only</p>
                     </div>
                     <button
                         onClick={fetchEnquiries}
@@ -185,12 +216,15 @@ export default function AdminEnquiriesPage() {
                         {tabs.map((tab) => (
                             <button
                                 key={tab.key}
-                                onClick={() => setActiveTab(tab.key)}
+                                onClick={() => {
+                                    setActiveTab(tab.key);
+                                    setPage(1);
+                                }}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border ${getTabColor(tab.key, activeTab === tab.key)}`}
                             >
                                 {tab.label}
                                 <span className="ml-1.5 text-xs opacity-70">
-                                    ({tab.key === "all" ? enquiries.length : enquiries.filter(e => e.type === tab.key).length})
+                                    ({tabCount(tab.key)})
                                 </span>
                             </button>
                         ))}
@@ -199,7 +233,10 @@ export default function AdminEnquiriesPage() {
                     <div className="flex gap-2 w-full md:w-auto overflow-x-auto">
                         <select
                             value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
+                            onChange={(e) => {
+                                setStatusFilter(e.target.value);
+                                setPage(1);
+                            }}
                             className="w-40 pl-3 pr-8 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white"
                         >
                             <option value="all">All Statuses</option>
@@ -212,8 +249,8 @@ export default function AdminEnquiriesPage() {
                             <input
                                 type="text"
                                 placeholder="Search name, phone, city..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
                                 className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
                             />
                         </div>
@@ -300,6 +337,31 @@ export default function AdminEnquiriesPage() {
                         </tbody>
                     </table>
                 </div>
+                {!loading && total > 0 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50 text-sm text-slate-600">
+                        <span>
+                            Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, total)} of {total} enquiries
+                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white disabled:opacity-50 hover:bg-slate-50"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPage((p) => p + 1)}
+                                disabled={page * PAGE_SIZE >= total}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white disabled:opacity-50 hover:bg-slate-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <Modal isOpen={!!selectedEnquiry} onClose={() => setSelectedEnquiry(null)} title="Enquiry Details">
