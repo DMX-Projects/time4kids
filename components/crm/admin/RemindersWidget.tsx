@@ -18,7 +18,7 @@ interface Lead {
   preferredCentreLocation?: string
 }
 
-export default function RemindersWidget({ source, centreId }: { source?: string; centreId?: string }) {
+export default function RemindersWidget({ source, city, centreId }: { source?: string; city?: string; centreId?: string }) {
   const [data, setData] = useState<{ meetings: Lead[]; followUps: Lead[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -31,6 +31,7 @@ export default function RemindersWidget({ source, centreId }: { source?: string;
     try {
       const params = new URLSearchParams()
       if (source) params.append('source', source)
+      if (city) params.append('city', city)
       if (centreId) params.append('centreId', centreId)
       params.append('_t', Date.now().toString()) // cache bust
 
@@ -47,7 +48,7 @@ export default function RemindersWidget({ source, centreId }: { source?: string;
 
   useEffect(() => {
     fetchReminders(true)
-  }, [source, centreId])
+  }, [source, city, centreId])
 
   const handleSendReminder = async (leadId: string, type: 'meeting' | 'follow-up', channel: 'email' | 'whatsapp' = 'email') => {
     setSendingReminder(`${leadId}-${channel}`)

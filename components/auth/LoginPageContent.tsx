@@ -16,7 +16,7 @@ const copy: Record<
 > = {
     default: {
         title: "Sign In",
-        subtitle: "Parents, centres, drivers, and staff — one login for all roles",
+        subtitle: "",
         leftTitle: "Welcome Back",
         leftBody: "Sign in to access your dashboard, parent app, or driver trip screen.",
     },
@@ -125,7 +125,7 @@ function LoginForm({ variant }: { variant: LoginPageVariant }) {
                                 </svg>
                             </div>
                             <h2 className="text-3xl font-bold text-gray-900">{c.title}</h2>
-                            <p className="text-gray-500">{c.subtitle}</p>
+                            {c.subtitle ? <p className="text-gray-500">{c.subtitle}</p> : null}
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">

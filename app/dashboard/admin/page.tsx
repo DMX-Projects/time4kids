@@ -1,6 +1,22 @@
-import { redirect } from "next/navigation";
+"use client";
 
-/** Admin home — no dashboard screen; land on first sidebar item. */
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
+
 export default function AdminRootPage() {
-    redirect("/dashboard/admin/hero-slides/");
+    const { user } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (user) {
+            if (user.isSuperuser) {
+                router.replace("/dashboard/admin/locations");
+            } else {
+                router.replace("/dashboard/admin/hero-slides");
+            }
+        }
+    }, [user, router]);
+
+    return null;
 }

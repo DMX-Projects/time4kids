@@ -106,8 +106,14 @@ export default function FranchiseEnquiriesPage() {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'new': return 'text-sky-600 bg-sky-50 border-sky-100';
-            case 'in-progress': return 'text-amber-600 bg-amber-50 border-amber-100';
-            case 'closed': return 'text-slate-500 bg-slate-50 border-slate-100';
+            case 'contacted': return 'text-blue-600 bg-blue-50 border-blue-100';
+            case 'called': return 'text-violet-600 bg-violet-50 border-violet-100';
+            case 'follow_up': return 'text-amber-600 bg-amber-50 border-amber-100';
+            case 'interested': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+            case 'meeting_scheduled': return 'text-teal-600 bg-teal-50 border-teal-100';
+            case 'dropped': return 'text-red-500 bg-red-50 border-red-100';
+            case 'not_interested': return 'text-rose-600 bg-rose-50 border-rose-100';
+            case 'converted': return 'text-green-600 bg-green-50 border-green-100';
             default: return 'text-slate-600 bg-slate-50 border-slate-100';
         }
     };
@@ -141,12 +147,18 @@ export default function FranchiseEnquiriesPage() {
                             <select
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-32 pl-3 pr-8 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+                                className="w-40 pl-3 pr-8 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
                             >
-                                <option value="all">All Status</option>
+                                <option value="all">All Statuses</option>
                                 <option value="new">New</option>
-                                <option value="in-progress">In Progress</option>
-                                <option value="closed">Closed</option>
+                                <option value="contacted">Contacted</option>
+                                <option value="called">Called</option>
+                                <option value="follow_up">Follow Up</option>
+                                <option value="interested">Interested</option>
+                                <option value="meeting_scheduled">Meeting Scheduled</option>
+                                <option value="dropped">Dropped</option>
+                                <option value="not_interested">Not Interested</option>
+                                <option value="converted">Converted</option>
                             </select>
                         </div>
                         <div className="relative flex-1 md:w-56">
@@ -170,7 +182,6 @@ export default function FranchiseEnquiriesPage() {
                         <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
                             <tr>
                                 <th className="px-6 py-4 w-48 font-fredoka uppercase tracking-wider text-xs">Applicant</th>
-                                <th className="px-6 py-4 font-fredoka uppercase tracking-wider text-xs">Details</th>
                                 <th className="px-6 py-4 w-64 font-fredoka uppercase tracking-wider text-xs">Note</th>
                                 <th className="px-6 py-4 w-32 font-fredoka uppercase tracking-wider text-xs text-center">Status</th>
                                 <th className="px-4 py-4 w-24 text-center font-fredoka uppercase tracking-wider text-xs">Actions</th>
@@ -179,7 +190,7 @@ export default function FranchiseEnquiriesPage() {
                         <tbody className="divide-y divide-slate-100">
                             {filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                                    <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
                                         No enquiries found.
                                     </td>
                                 </tr>
@@ -209,21 +220,7 @@ export default function FranchiseEnquiriesPage() {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 align-top">
-                                                <div className="flex flex-col gap-1.5">
-                                                    {Object.entries(details).length === 0 ? (
-                                                        <span className="text-slate-400">—</span>
-                                                    ) : (
-                                                        Object.entries(details).map(([key, val]) => (
-                                                            key !== 'State' && (
-                                                                <div key={key} className="text-xs">
-                                                                    <span className="text-slate-500">{key}:</span> <span className="text-slate-700 font-medium">{val}</span>
-                                                                </div>
-                                                            )
-                                                        ))
-                                                    )}
-                                                </div>
-                                            </td>
+
                                             <td className="px-6 py-4 align-top">
                                                 <p className="text-slate-600 text-xs leading-relaxed line-clamp-3" title={note}>
                                                     {note || "—"}
@@ -233,11 +230,17 @@ export default function FranchiseEnquiriesPage() {
                                                 <select
                                                     value={enq.status}
                                                     onChange={(e) => handleStatusChange(enq.id, e.target.value)}
-                                                    className={`text-xs font-medium px-2 py-1.5 rounded-md border text-center appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-orange-200 transition-all w-28 ${getStatusColor(enq.status)}`}
+                                                    className={`text-xs font-medium px-2 py-1.5 rounded-md border text-center appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-orange-200 transition-all w-36 ${getStatusColor(enq.status)}`}
                                                 >
                                                     <option value="new">New</option>
-                                                    <option value="in-progress">In Progress</option>
-                                                    <option value="closed">Closed</option>
+                                                    <option value="contacted">Contacted</option>
+                                                    <option value="called">Called</option>
+                                                    <option value="follow_up">Follow Up</option>
+                                                    <option value="interested">Interested</option>
+                                                    <option value="meeting_scheduled">Meeting Scheduled</option>
+                                                    <option value="dropped">Dropped</option>
+                                                    <option value="not_interested">Not Interested</option>
+                                                    <option value="converted">Converted</option>
                                                 </select>
                                             </td>
                                             <td className="px-4 py-4 align-top text-center">
@@ -303,22 +306,11 @@ export default function FranchiseEnquiriesPage() {
                                         <div className="space-y-1">
                                             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</label>
                                             <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(selectedEnquiry.status)}`}>
-                                                {selectedEnquiry.status.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')}
+                                                {selectedEnquiry.status.replace(/_/g, ' ').split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')}
                                             </span>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <h4 className="text-sm font-semibold text-slate-900 border-b border-slate-100 pb-2 font-fredoka">Details</h4>
-                                        <div className="grid grid-cols-2 gap-2 text-sm">
-                                            {Object.entries(parseEnquiryMessage(selectedEnquiry.message, selectedEnquiry.type).details).map(([key, val]) => (
-                                                <div key={key} className="flex flex-col">
-                                                    <span className="text-slate-500 text-xs">{key}</span>
-                                                    <span className="text-slate-800">{val}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
 
                                     <div className="space-y-2">
                                         <label className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-2">

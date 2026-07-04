@@ -1,48 +1,87 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import api from '@/lib/crmApi'
+import { SearchableSelect } from '@/components/crm/SearchableSelect'
 
 interface CentreSelectorProps {
+  city: string
   value: string
   onChange: (value: string) => void
 }
 
-export default function CentreSelector({ value, onChange }: CentreSelectorProps) {
-  const [centres, setCentres] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+export default function CentreSelector({ city, value, onChange }: CentreSelectorProps) {
+  const [centres, setCentres] = useState<{ id: string; name: string }[]>([])
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    loadCentres()
-  }, [])
-
-  const loadCentres = async () => {
-    try {
-      const response = await api.get('/centres')
-      setCentres(response.data)
-    } catch (error) {
-      console.error('Failed to load centres:', error)
-    } finally {
-      setLoading(false)
+    if (!city) {
+      setCentres([])
+      return
     }
+
+    let cancelled = false
+    const loadCentres = async () => {
+      setLoading(true)
+      try {
+        const params = new URLSearchParams({ city })
+        const response = await api.get(`/centres?${params.toString()}`)
+        if (!cancelled) {
+          setCentres(response.data || [])
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load centres:', error)
+          setCentres([])
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadCentres()
+    return () => {
+      cancelled = true
+    }
+  }, [city])
+
+  const options = useMemo(
+    () => [
+      { value: '', label: 'All Centres' },
+      ...centres.map((centre) => ({ value: centre.id, label: centre.name })),
+    ],
+    [centres],
+  )
+
+  if (!city) {
+    return (
+      <div className="min-w-[300px] max-w-md">
+        <label className="mb-2 block text-sm font-semibold text-gray-700">Select Centre</label>
+        <SearchableSelect
+          options={[{ value: '', label: 'Select a city first' }]}
+          value=""
+          onChange={() => {}}
+          placeholder="Select a city first"
+          disabled={true}
+          aria-label="Select Centre"
+        />
+      </div>
+    )
   }
 
   return (
-    <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">Select Centre</label>
-      <select
+    <div className="min-w-[300px] max-w-md">
+      <label className="mb-2 block text-sm font-semibold text-gray-700">Select Centre</label>
+      <SearchableSelect
+        options={options}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="form-select"
-      >
-        <option value="">All Centres</option>
-        {centres.map((centre) => (
-          <option key={centre.id} value={centre.id}>
-            {centre.name}
-          </option>
-        ))}
-      </select>
+        onChange={onChange}
+        placeholder="All Centres"
+        disabled={loading}
+        aria-label="Select Centre"
+      />
     </div>
   )
 }
-

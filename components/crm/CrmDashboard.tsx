@@ -9,11 +9,51 @@ import crmApi from "@/lib/crmApi";
 import DashboardStats from "@/components/crm/admin/DashboardStats";
 import LeadsTable from "@/components/crm/admin/LeadsTable";
 import DateRangePicker from "@/components/crm/admin/DateRangePicker";
+import CitySelector from "@/components/crm/admin/CitySelector";
 import CentreSelector from "@/components/crm/admin/CentreSelector";
 import RemindersWidget from "@/components/crm/admin/RemindersWidget";
+import LandingLeadsReport from "@/components/leads/LandingLeadsReport";
 
 const LeadSourceChart = lazy(() => import("@/components/crm/admin/LeadSourceChart"));
 const ConversionFunnel = lazy(() => import("@/components/crm/admin/ConversionFunnel"));
+
+type SourceFilter = "" | "admission" | "contact" | "landing" | "campaign" | "franchise";
+type CampaignChannelFilter = "" | "website" | "facebook" | "instagram";
+type StatusFilter = "" | "new" | "contacted" | "called" | "follow_up" | "interested" | "meeting_scheduled" | "converted" | "dropped" | "not_interested";
+
+function apiSourceParam(source: SourceFilter, channel: CampaignChannelFilter): string {
+    if (source === "campaign") return channel || "campaign";
+    return source;
+}
+
+const SOURCE_FILTERS: { id: SourceFilter; label: string; active: string; idle: string }[] = [
+    { id: "", label: "All", active: "border-gray-800 bg-gray-800 text-white", idle: "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100" },
+    { id: "admission", label: "Admission", active: "border-blue-700 bg-blue-700 text-white", idle: "border-blue-100 bg-blue-50 text-blue-800 hover:bg-blue-100" },
+    { id: "contact", label: "Centers Enquiry", active: "border-sky-600 bg-sky-600 text-white", idle: "border-sky-100 bg-sky-50 text-sky-800 hover:bg-sky-100" },
+    { id: "campaign", label: "Campaign Enquiry", active: "border-violet-600 bg-violet-600 text-white", idle: "border-violet-100 bg-violet-50 text-violet-800 hover:bg-violet-100" },
+    { id: "landing", label: "Landing", active: "border-teal-600 bg-teal-600 text-white", idle: "border-teal-100 bg-teal-50 text-teal-800 hover:bg-teal-100" },
+    { id: "franchise", label: "Franchise Enquiry", active: "border-orange-600 bg-orange-600 text-white", idle: "border-orange-100 bg-orange-50 text-orange-800 hover:bg-orange-100" },
+];
+
+const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] = [
+    { id: "", label: "All Channels" },
+    { id: "website", label: "Website" },
+    { id: "facebook", label: "Facebook" },
+    { id: "instagram", label: "Instagram" },
+];
+
+const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
+    { id: "", label: "All Statuses" },
+    { id: "new", label: "New" },
+    { id: "contacted", label: "Contacted" },
+    { id: "called", label: "Called" },
+    { id: "follow_up", label: "Follow Up" },
+    { id: "interested", label: "Interested" },
+    { id: "meeting_scheduled", label: "Meeting Scheduled" },
+    { id: "dropped", label: "Dropped" },
+    { id: "not_interested", label: "Not Interested" },
+    { id: "converted", label: "Converted" },
+];
 
 export default function CrmDashboard() {
     const router = useRouter();
@@ -23,17 +63,35 @@ export default function CrmDashboard() {
         startDate: null,
         endDate: null,
     });
+    const [selectedCity, setSelectedCity] = useState<string>("");
     const [selectedCentre, setSelectedCentre] = useState<string>("");
     const [filterDateRange, setFilterDateRange] = useState<{ startDate: Date | null; endDate: Date | null }>({
         startDate: null,
         endDate: null,
     });
-    const [filterCentre, setFilterCentre] = useState<string>("");
-    const [selectedSource, setSelectedSource] = useState<string>("");
+    const [selectedSource, setSelectedSource] = useState<SourceFilter>("");
+    const [selectedCampaignChannel, setSelectedCampaignChannel] = useState<CampaignChannelFilter>("");
+    const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("");
     const [refreshKey, setRefreshKey] = useState(0);
     const [statsLoading, setStatsLoading] = useState(true);
 
     const isCrmUser = normalizeRole(user?.role) === "crm";
+
+    const handleCityChange = (city: string) => {
+        setSelectedCity(city);
+        setSelectedCentre("");
+    };
+
+    const isLandingView = selectedSource === "landing";
+    const isCampaignView = selectedSource === "campaign";
+    const apiSource = apiSourceParam(selectedSource, selectedCampaignChannel);
+
+    const handleSourceChange = (source: SourceFilter) => {
+        setSelectedSource(source);
+        if (source !== "campaign") {
+            setSelectedCampaignChannel("");
+        }
+    };
 
     useEffect(() => {
         if (authLoading) return;
@@ -43,7 +101,7 @@ export default function CrmDashboard() {
     }, [authLoading, router, user]);
 
     useEffect(() => {
-        if (!isCrmUser) return;
+        if (!isCrmUser || isLandingView) return;
         let cancelled = false;
         setStatsLoading(true);
         const params = new URLSearchParams();
@@ -58,8 +116,10 @@ export default function CrmDashboard() {
             end.setHours(23, 59, 59, 999);
             params.append("endDate", end.toISOString());
         }
+        if (selectedCity) params.append("city", selectedCity);
         if (selectedCentre) params.append("centreId", selectedCentre);
-        if (selectedSource) params.append("source", selectedSource);
+        if (apiSource) params.append("source", apiSource);
+        if (selectedStatus) params.append("status", selectedStatus);
         crmApi
             .get(`/leads/dashboard?${params.toString()}`)
             .then((res) => {
@@ -74,7 +134,7 @@ export default function CrmDashboard() {
         return () => {
             cancelled = true;
         };
-    }, [isCrmUser, dateRange, selectedCentre, selectedSource]);
+    }, [isCrmUser, isLandingView, dateRange, selectedCity, selectedCentre, apiSource, selectedStatus]);
 
     const fetchStats = () => {
         setStatsLoading(true);
@@ -89,8 +149,10 @@ export default function CrmDashboard() {
             end.setHours(23, 59, 59, 999);
             params.append("endDate", end.toISOString());
         }
+        if (selectedCity) params.append("city", selectedCity);
         if (selectedCentre) params.append("centreId", selectedCentre);
-        if (selectedSource) params.append("source", selectedSource);
+        if (apiSource) params.append("source", apiSource);
+        if (selectedStatus) params.append("status", selectedStatus);
         crmApi
             .get(`/leads/dashboard?${params.toString()}`)
             .then((res) => setStats(res.data))
@@ -100,7 +162,6 @@ export default function CrmDashboard() {
 
     const handleApplyFilters = () => {
         setDateRange(filterDateRange);
-        setSelectedCentre(filterCentre);
     };
 
     const handleRefresh = () => {
@@ -122,7 +183,10 @@ export default function CrmDashboard() {
                 end.setHours(23, 59, 59, 999);
                 params.append("endDate", end.toISOString());
             }
+            if (selectedCity) params.append("city", selectedCity);
             if (selectedCentre) params.append("centreId", selectedCentre);
+            if (apiSource) params.append("source", apiSource);
+            if (selectedStatus) params.append("status", selectedStatus);
             const response = await crmApi.get(`/leads?${params.toString()}`);
             const leads = response.data?.leads || [];
             if (leads.length === 0) {
@@ -218,104 +282,167 @@ export default function CrmDashboard() {
 
             <div className="container mx-auto px-4 py-8">
                 <div className="mb-6 rounded-xl bg-white p-6 shadow-lg">
-                    <div className="flex flex-col items-end justify-between gap-6 lg:flex-row">
-                        <div className="flex flex-col">
+                    <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+                        <div className="flex flex-col min-w-0">
                             <label className="mb-2 block text-sm font-semibold text-gray-700">Select Source</label>
-                            <div className="flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedSource(selectedSource === "website" ? "" : "website")}
-                                    className={`flex h-[42px] items-center gap-2 rounded-lg border px-8 font-semibold transition-colors ${selectedSource === "website" ? "border-blue-600 bg-blue-600 text-white" : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"}`}
-                                >
-                                    Webpage
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedSource(selectedSource === "facebook" ? "" : "facebook")}
-                                    className={`flex h-[42px] items-center gap-2 rounded-lg border px-8 font-semibold transition-colors ${selectedSource === "facebook" ? "border-indigo-600 bg-indigo-600 text-white" : "border-indigo-50 text-indigo-700 hover:bg-indigo-100"}`}
-                                >
-                                    Facebook
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedSource(selectedSource === "instagram" ? "" : "instagram")}
-                                    className={`flex h-[42px] items-center gap-2 rounded-lg border px-8 font-semibold transition-colors ${selectedSource === "instagram" ? "border-pink-600 bg-pink-600 text-white" : "border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-100"}`}
-                                >
-                                    Instagram
-                                </button>
+                            <div className="flex flex-wrap gap-2">
+                                {SOURCE_FILTERS.map((item) => {
+                                    const isActive = selectedSource === item.id;
+                                    return (
+                                        <button
+                                            key={item.label}
+                                            type="button"
+                                            onClick={() => handleSourceChange(item.id)}
+                                            className={`flex h-[42px] items-center rounded-lg border px-4 sm:px-6 text-sm font-semibold transition-colors whitespace-nowrap ${isActive ? item.active : item.idle}`}
+                                        >
+                                            {item.label}
+                                        </button>
+                                    );
+                                })}
                             </div>
+                            {!isLandingView ? (
+                                <p className="mt-2 text-xs text-gray-500">
+                                    {selectedSource === ""
+                                        ? "Showing admission, centers enquiry, and campaign leads. Landing page leads are separate."
+                                        : selectedSource === "campaign"
+                                          ? "Campaign enquiry leads from /crm/web, /crm/fb, and /crm/insta forms."
+                                          : `Showing only ${SOURCE_FILTERS.find((s) => s.id === selectedSource)?.label ?? selectedSource} leads.`}
+                                </p>
+                            ) : null}
+                            {isCampaignView ? (
+                                <>
+                                    <label className="mb-2 mt-4 block text-sm font-semibold text-gray-700">Campaign Channel</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {CAMPAIGN_CHANNEL_FILTERS.map((item) => {
+                                            const isActive = selectedCampaignChannel === item.id;
+                                            return (
+                                                <button
+                                                    key={item.label}
+                                                    type="button"
+                                                    onClick={() => setSelectedCampaignChannel(item.id)}
+                                                    className={`flex h-[38px] items-center rounded-lg border px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap ${isActive ? "border-violet-700 bg-violet-700 text-white" : "border-violet-100 bg-violet-50 text-violet-800 hover:bg-violet-100"}`}
+                                                >
+                                                    {item.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            ) : null}
+                            {!isLandingView ? (
+                                <>
+                                    <label className="mb-2 mt-4 block text-sm font-semibold text-gray-700">Select Status</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {STATUS_FILTERS.map((item) => {
+                                            const isActive = selectedStatus === item.id;
+                                            return (
+                                                <button
+                                                    key={item.label}
+                                                    type="button"
+                                                    onClick={() => setSelectedStatus(item.id)}
+                                                    className={`flex h-[38px] items-center rounded-lg border px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap ${isActive ? "border-gray-800 bg-gray-800 text-white" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
+                                                >
+                                                    {item.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            ) : null}
                         </div>
 
-                        <div className="flex gap-4">
-                            <DateRangePicker
-                                startDate={filterDateRange.startDate}
-                                endDate={filterDateRange.endDate}
-                                onChange={(start, end) => setFilterDateRange({ startDate: start, endDate: end })}
-                            />
-                            <CentreSelector value={filterCentre} onChange={setFilterCentre} />
-                            <div className="flex items-end">
-                                <button
-                                    type="button"
-                                    onClick={handleApplyFilters}
-                                    className="btn-secondary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6"
-                                >
-                                    Apply Filters
-                                </button>
+                        {!isLandingView ? (
+                            <div className="flex flex-col items-end gap-4">
+                                <div>
+                                    <DateRangePicker
+                                        startDate={filterDateRange.startDate}
+                                        endDate={filterDateRange.endDate}
+                                        onChange={(start, end) => setFilterDateRange({ startDate: start, endDate: end })}
+                                    />
+                                </div>
+                                <div className="flex flex-nowrap items-end gap-4 overflow-x-auto pb-1">
+                                    <CitySelector value={selectedCity} onChange={handleCityChange} />
+                                    <CentreSelector city={selectedCity} value={selectedCentre} onChange={setSelectedCentre} />
+                                    <button
+                                        type="button"
+                                        onClick={handleApplyFilters}
+                                        className="btn-secondary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6"
+                                    >
+                                        Apply Filters
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        ) : null}
                     </div>
                 </div>
 
-                {statsLoading && !stats ? (
-                    <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="animate-pulse rounded-xl bg-white p-6 shadow">
-                                <div className="mb-4 h-4 w-1/2 rounded bg-gray-200" />
-                                <div className="h-8 w-16 rounded bg-gray-200" />
+                {isLandingView ? (
+                    <LandingLeadsReport title="Landing page leads" embedded basePath="/crm-admin/" />
+                ) : (
+                    <>
+                        {statsLoading && !stats ? (
+                            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <div key={i} className="animate-pulse rounded-xl bg-white p-6 shadow">
+                                        <div className="mb-4 h-4 w-1/2 rounded bg-gray-200" />
+                                        <div className="h-8 w-16 rounded bg-gray-200" />
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                ) : stats ? (
-                    <DashboardStats stats={stats} />
-                ) : null}
+                        ) : stats ? (
+                            <DashboardStats stats={stats} />
+                        ) : null}
 
-                <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    <RemindersWidget key={refreshKey} source={selectedSource} centreId={selectedCentre} />
+                        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                            <RemindersWidget key={refreshKey} source={apiSource} city={selectedCity} centreId={selectedCentre} />
 
-                    {statsLoading && !stats ? (
-                        <>
-                            <div className="flex items-center justify-center py-12 text-gray-500">
-                                <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                            </div>
-                            <div className="flex items-center justify-center py-12 text-gray-500">
-                                <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                            </div>
-                        </>
-                    ) : stats ? (
-                        <Suspense
-                            fallback={
+                            {statsLoading && !stats ? (
                                 <>
-                                    <div className="flex justify-center py-12">
+                                    <div className="flex items-center justify-center py-12 text-gray-500">
                                         <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
                                     </div>
-                                    <div className="flex justify-center py-12">
+                                    <div className="flex items-center justify-center py-12 text-gray-500">
                                         <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
                                     </div>
                                 </>
-                            }
-                        >
-                            <LeadSourceChart data={stats.sourceBreakdown} />
-                            <ConversionFunnel data={stats.statusBreakdown} />
-                        </Suspense>
-                    ) : null}
-                </div>
+                            ) : stats ? (
+                                <Suspense
+                                    fallback={
+                                        <>
+                                            <div className="flex justify-center py-12">
+                                                <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                                            </div>
+                                            <div className="flex justify-center py-12">
+                                                <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                                            </div>
+                                        </>
+                                    }
+                                >
+                                    <LeadSourceChart data={stats.sourceBreakdown} />
+                                    <ConversionFunnel data={stats.statusBreakdown} />
+                                </Suspense>
+                            ) : null}
+                        </div>
 
-                <LeadsTable
-                    key={refreshKey}
-                    dateRange={dateRange}
-                    centreId={selectedCentre}
-                    source={selectedSource}
-                />
+                        <LeadsTable
+                            key={`${refreshKey}-${apiSource}-${selectedStatus}-${selectedCity}-${selectedCentre}`}
+                            dateRange={dateRange}
+                            city={selectedCity}
+                            centreId={selectedCentre}
+                            source={apiSource}
+                            status={selectedStatus}
+                            title={
+                                selectedSource === "campaign"
+                                    ? selectedCampaignChannel
+                                        ? `Campaign Enquiry — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
+                                        : "Campaign Enquiry"
+                                    : selectedSource
+                                      ? `${SOURCE_FILTERS.find((s) => s.id === selectedSource)?.label ?? "Filtered"} Leads`
+                                      : "All Enquiry Reports"
+                            }
+                        />
+                    </>
+                )}
             </div>
         </div>
     );
