@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Select, { StylesConfig } from 'react-select'
 import CreatableSelect from 'react-select/creatable'
 
@@ -18,6 +19,10 @@ const defaultStyles: StylesConfig<Option, false> = {
     ...base,
     borderRadius: 8,
     zIndex: 50,
+  }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999,
   }),
   input: (base) => ({
     ...base,
@@ -48,6 +53,7 @@ interface SearchableSelectProps {
   placeholder?: string
   disabled?: boolean
   'aria-label'?: string
+  searchable?: boolean
 }
 
 export function SearchableSelect({
@@ -57,12 +63,24 @@ export function SearchableSelect({
   placeholder = 'Select...',
   disabled = false,
   'aria-label': ariaLabel,
+  searchable = false,
 }: SearchableSelectProps) {
   const selectedOption = options.find((o) => o.value === value) ?? null
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (!isMounted) {
+    return (
+      <div style={{ minHeight: 42, border: '1px solid #d1d5db', borderRadius: 8, backgroundColor: '#f9fafb' }} />
+    )
+  }
 
   return (
     <Select<Option, false>
-      isSearchable
+      isSearchable={searchable}
       isClearable={false}
       options={options}
       value={selectedOption}
@@ -93,6 +111,18 @@ export function SearchableSelectOrCreate({
   const selectedOption = value
     ? options.find((o) => o.value === value) ?? { value, label: value }
     : null
+
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (!isMounted) {
+    return (
+      <div style={{ minHeight: 42, border: '1px solid #d1d5db', borderRadius: 8, backgroundColor: '#f9fafb' }} />
+    )
+  }
 
   return (
     <CreatableSelect<Option, false>

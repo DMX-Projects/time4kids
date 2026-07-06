@@ -147,7 +147,7 @@ export default function AdmissionPage() {
                 <div className="container mx-auto px-4 relative z-10 text-center">
                     <div className="inline-flex items-center gap-2 bg-white px-6 py-2 rounded-full shadow-sm mb-6 border border-slate-200 hover:scale-110 transition-transform cursor-pointer animate-float">
                         <Sparkles className="w-5 h-5 text-yellow-500 animate-spin-slow" />
-                        <span className="font-bold text-slate-600 tracking-wide uppercase text-sm">Admissions Open 2025-26</span>
+                        <span className="font-bold text-slate-600 tracking-wide uppercase text-sm">Admissions Open 2026-27</span>
                     </div>
                     <div className="max-w-2xl mx-auto">
                         <h1 className="font-display font-black text-4xl md:text-6xl mb-6 text-slate-800 tracking-tight leading-tight">

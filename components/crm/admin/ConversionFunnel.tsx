@@ -2,7 +2,7 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 
-const statusOrder = ['new', 'contacted', 'called', 'follow_up', 'interested', 'meeting_scheduled', 'converted', 'dropped', 'not_interested']
+const statusOrder = ['new', 'contacted', 'follow_up', 'interested', 'meeting_scheduled', 'converted', 'dropped']
 const statusColors: { [key: string]: string } = {
   new: '#3B82F6',
   contacted: '#10B981',
@@ -17,10 +17,28 @@ const statusColors: { [key: string]: string } = {
 
 export default function ConversionFunnel({ data }: { data: any[] }) {
   const chartData = statusOrder.map((status) => {
-    const item = data.find((d) => d.status === status)
+    let count = 0
+    if (status === 'contacted') {
+      const item1 = data.find((d) => d.status === 'contacted')
+      const item2 = data.find((d) => d.status === 'called')
+      count = (item1 ? parseInt(item1.count) : 0) + (item2 ? parseInt(item2.count) : 0)
+    } else if (status === 'dropped') {
+      const item1 = data.find((d) => d.status === 'dropped')
+      const item2 = data.find((d) => d.status === 'not_interested')
+      count = (item1 ? parseInt(item1.count) : 0) + (item2 ? parseInt(item2.count) : 0)
+    } else {
+      const item = data.find((d) => d.status === status)
+      count = item ? parseInt(item.count) : 0
+    }
+
+    let label = status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')
+    if (status === 'new') label = 'Pending'
+    if (status === 'contacted') label = 'Called/Contacted'
+    if (status === 'dropped') label = 'Dropped/Not Interested'
+
     return {
-      status: status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' '),
-      count: item ? parseInt(item.count) : 0,
+      status: label,
+      count: count,
       color: statusColors[status] || '#6B7280',
     }
   })

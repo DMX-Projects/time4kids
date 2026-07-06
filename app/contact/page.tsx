@@ -30,7 +30,7 @@ export default function ContactPage() {
     const footer = useFooterContent();
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormData>();
+    const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormData>({ mode: 'onTouched' });
     const { addEnquiry } = useSchoolData();
     const { showToast } = useToast();
 
@@ -203,7 +203,10 @@ export default function ContactPage() {
                                                 Name <span className="text-red-500">*</span>
                                             </label>
                                             <input
-                                                {...register('name', { required: 'Name is required' })}
+                                                {...register('name', { 
+                                                    required: 'Name is required',
+                                                    minLength: { value: 3, message: 'Name must be at least 3 characters' }
+                                                })}
                                                 type="text"
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                                 placeholder="Your name"
@@ -284,8 +287,9 @@ export default function ContactPage() {
                                         <textarea
                                             {...register('message', { required: 'Message is required' })}
                                             rows={6}
+                                            maxLength={250}
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                                            placeholder="Tell us how we can help you..."
+                                            placeholder="Your message..."
                                         />
                                         {errors.message && <p className="text-red-500 text-sm mt-1">{errors.message.message}</p>}
                                     </div>

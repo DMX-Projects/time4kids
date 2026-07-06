@@ -2,50 +2,59 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
 import { useStateCity } from './../crm/useStateCity';
+
+interface FormData {
+    name: string;
+    email: string;
+    phone: string;
+    state: string;
+    city: string;
+    acknowledge: boolean;
+}
 
 export default function CustomFranchiseEnquiryForm() {
     const { states, stateCity } = useStateCity();
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        state: '',
-        city: '',
-    });
-    const [acknowledged, setAcknowledged] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
-
     const [availableCities, setAvailableCities] = useState<string[]>([]);
 
+    const {
+        register,
+        handleSubmit,
+        watch,
+        setValue,
+        reset,
+        formState: { errors },
+    } = useForm<FormData>({ mode: 'onTouched', defaultValues: { acknowledge: false } });
+
+    const selectedState = watch('state');
+    const acknowledged = watch('acknowledge');
+
     useEffect(() => {
-        if (formData.state && stateCity[formData.state]) {
-            setAvailableCities(stateCity[formData.state]);
-            // If the current city is not in the new state's cities, reset it
-            if (!stateCity[formData.state].includes(formData.city)) {
-                setFormData(prev => ({ ...prev, city: '' }));
-            }
+        if (selectedState && stateCity[selectedState]) {
+            setAvailableCities(stateCity[selectedState]);
         } else {
             setAvailableCities([]);
         }
-    }, [formData.state, stateCity]);
+    }, [selectedState, stateCity]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        let value = e.target.value;
-        if (e.target.name === 'phone') {
-            value = value.replace(/\D/g, '').slice(0, 10);
-        }
-        setFormData(prev => ({
-            ...prev,
-            [e.target.name]: value
-        }));
+    const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setValue('state', e.target.value, { shouldValidate: true });
+        setValue('city', ''); // Reset city on state change
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
+    const onSubmit = async (data: FormData) => {
+        const phone = data.phone?.trim().replace(/\D/g, '').slice(-10) ?? '';
+        if (phone.length !== 10) {
+            toast.error('Please enter a valid 10-digit mobile number.');
+            return;
+        }
+        
+        if (!data.acknowledge) return;
 
+        setLoading(true);
         try {
             const res = await fetch('/api/enquiries/franchise-submit/', {
                 method: 'POST',
@@ -53,11 +62,11 @@ export default function CustomFranchiseEnquiryForm() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    name: formData.name,
-                    email: formData.email,
-                    phone: formData.phone,
-                    state: formData.state,
-                    city: formData.city,
+                    name: data.name?.trim(),
+                    email: data.email?.trim(),
+                    phone: phone,
+                    state: data.state?.trim(),
+                    city: data.city?.trim(),
                     message: '', // Sent as empty string since textarea was removed
                 }),
             });
@@ -90,8 +99,7 @@ export default function CustomFranchiseEnquiryForm() {
                 </p>
                 <button
                     onClick={() => {
-                        setFormData({ name: '', email: '', phone: '', state: '', city: '' });
-                        setAcknowledged(false);
+                        reset();
                         setIsSuccess(false);
                     }}
                     className="mt-6 bg-[#E67E22] hover:bg-[#d6711c] text-white font-bold py-2 px-6 rounded-lg transition-colors"
@@ -103,7 +111,7 @@ export default function CustomFranchiseEnquiryForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <h3 className="text-2xl font-bold text-[#003366] mb-6">Franchise Enquiry</h3>
             
             <div>
@@ -111,13 +119,11 @@ export default function CustomFranchiseEnquiryForm() {
                 <input
                     type="text"
                     id="name"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
+                    {...register('name', { required: 'Full name is required', minLength: { value: 3, message: 'Name must be at least 3 characters' } })}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#E67E22] focus:border-[#E67E22] outline-none transition-all"
                     placeholder="Enter your full name"
                 />
+                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -126,29 +132,28 @@ export default function CustomFranchiseEnquiryForm() {
                     <input
                         type="email"
                         id="email"
-                        name="email"
-                        required
-                        value={formData.email}
-                        onChange={handleChange}
+                        {...register('email', { required: 'Email is required', pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Please enter a valid email address' } })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#E67E22] focus:border-[#E67E22] outline-none transition-all"
                         placeholder="your@email.com"
                     />
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
                 </div>
                 <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1">Phone Number *</label>
                     <input
                         type="tel"
                         id="phone"
-                        name="phone"
-                        required
-                        pattern="[0-9]{10}"
+                        inputMode="numeric"
                         maxLength={10}
-                        title="Please enter a valid 10-digit phone number"
-                        value={formData.phone}
-                        onChange={handleChange}
+                        {...register('phone', { required: 'Mobile number is required', pattern: { value: /^[6-9]\d{9}$/, message: 'Please enter a valid 10-digit mobile number' } })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#E67E22] focus:border-[#E67E22] outline-none transition-all"
                         placeholder="10-digit number"
+                        onInput={(e) => {
+                            const el = e.target as HTMLInputElement;
+                            el.value = el.value.replace(/\D/g, '').slice(0, 10);
+                        }}
                     />
+                    {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
                 </div>
             </div>
 
@@ -157,10 +162,8 @@ export default function CustomFranchiseEnquiryForm() {
                     <label htmlFor="state" className="block text-sm font-medium text-slate-700 mb-1">State *</label>
                     <select
                         id="state"
-                        name="state"
-                        required
-                        value={formData.state}
-                        onChange={handleChange}
+                        {...register('state', { required: 'State is required' })}
+                        onChange={handleStateChange}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#E67E22] focus:border-[#E67E22] outline-none transition-all bg-white"
                     >
                         <option value="" disabled>Select a state</option>
@@ -168,6 +171,7 @@ export default function CustomFranchiseEnquiryForm() {
                             <option key={state} value={state}>{state}</option>
                         ))}
                     </select>
+                    {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state.message}</p>}
                 </div>
 
                 <div>
@@ -175,10 +179,7 @@ export default function CustomFranchiseEnquiryForm() {
                     {availableCities.length > 0 ? (
                         <select
                             id="city"
-                            name="city"
-                            required
-                            value={formData.city}
-                            onChange={handleChange}
+                            {...register('city', { required: 'City is required' })}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#E67E22] focus:border-[#E67E22] outline-none transition-all bg-white"
                         >
                             <option value="" disabled>Select a city</option>
@@ -190,15 +191,13 @@ export default function CustomFranchiseEnquiryForm() {
                         <input
                             type="text"
                             id="city"
-                            name="city"
-                            required
-                            value={formData.city}
-                            onChange={handleChange}
+                            {...register('city', { required: 'City is required' })}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#E67E22] focus:border-[#E67E22] outline-none transition-all"
-                            placeholder={formData.state ? "Enter your city" : "Select a state first"}
-                            disabled={!formData.state}
+                            placeholder={selectedState ? "Enter your city" : "Select a state first"}
+                            disabled={!selectedState}
                         />
                     )}
+                    {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
                 </div>
             </div>
 
@@ -206,15 +205,14 @@ export default function CustomFranchiseEnquiryForm() {
                 <input
                     type="checkbox"
                     id="acknowledge"
-                    required
-                    checked={acknowledged}
-                    onChange={(e) => setAcknowledged(e.target.checked)}
+                    {...register('acknowledge', { required: 'You must acknowledge the terms to proceed' })}
                     className="mt-1 w-4 h-4 text-[#E67E22] border-slate-300 rounded focus:ring-[#E67E22] cursor-pointer"
                 />
                 <label htmlFor="acknowledge" className="text-xs md:text-sm text-slate-600 leading-relaxed cursor-pointer select-none">
                     By ticking on the box, I acknowledge I need a minimum investment of 10-15 lacs* for the preschool. I have read, understood & accepted TKPL privacy policy and the terms & conditions.
                 </label>
             </div>
+            {errors.acknowledge && <p className="text-red-500 text-xs mt-1">{errors.acknowledge.message}</p>}
 
             <button
                 type="submit"

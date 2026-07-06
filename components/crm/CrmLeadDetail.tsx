@@ -3,22 +3,22 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import api from '@/lib/crmApi'
-import { toast } from 'react-hot-toast'
+import { Toaster, toast } from 'react-hot-toast'
 import { getWhatsAppUrl, getEmailMailto } from '@/lib/crmContactHelpers'
 
 const STATUS_OPTIONS = [
-  'new', 'contacted', 'called', 'follow_up', 'interested',
-  'meeting_scheduled', 'dropped', 'not_interested', 'converted',
+  'contacted', 'follow_up', 'interested',
+  'meeting_scheduled', 'dropped', 'converted',
 ]
 const SOURCE_OPTIONS = [
   'facebook', 'instagram', 'website', 'google_ads', 'referral', 'walk_in', 'other',
 ]
 
 const SOURCE_LABELS: Record<string, string> = {
-  contact: 'Centers Enquiry',
+  contact: 'CenterPage',
   admission: 'Admission',
   landing: 'Landing',
-  campaign: 'Campaign Enquiry',
+  campaign: 'Campaign',
   website: 'Website',
   facebook: 'Facebook',
   instagram: 'Instagram',
@@ -57,15 +57,16 @@ export default function LeadDetailPage() {
         franchiseType: lead.franchiseType ?? '',
         investmentRange: lead.investmentRange ?? '',
         expectedStartDate: lead.expectedStartDate ?? '',
+        childAge: lead.childAge ?? '',
         source: lead.source ?? 'website',
         sourceOther: lead.sourceOther ?? '',
-        comments: lead.comments ?? '',
+        newNote: '',
         status: lead.status ?? 'new',
         meetingDate: lead.meetingDate
           ? new Date(lead.meetingDate).toISOString().slice(0, 10)
           : '',
         nextFollowUpDate: lead.nextFollowUpDate
-          ? new Date(lead.nextFollowUpDate).toISOString().slice(0, 16)
+          ? new Date(lead.nextFollowUpDate).toISOString().slice(0, 10)
           : '',
       })
     }
@@ -83,39 +84,30 @@ export default function LeadDetailPage() {
     }
   }
 
-  const handleStatusChange = async (newStatus: string) => {
-    try {
-      await api.patch(`/leads/${params.id}`, { status: newStatus })
-      toast.success('Status updated')
-      loadLead()
-    } catch (error) {
-      toast.error('Failed to update status')
-    }
-  }
-
   const handleSaveAll = async () => {
+    if (!editForm.newNote?.trim()) {
+      toast.error('Please enter a comment before saving.')
+      return
+    }
+
     setSaving(true)
     try {
+      await api.post(`/leads/${params.id}/notes`, { content: editForm.newNote.trim() })
+      
       const payload: Record<string, unknown> = {
-        fullName: editForm.fullName,
-        mobile: editForm.mobile,
-        email: editForm.email,
-        city: editForm.city,
-        state: editForm.state,
-        preferredCentreLocation: editForm.preferredCentreLocation,
-        franchiseType: editForm.franchiseType || undefined,
-        investmentRange: editForm.investmentRange || undefined,
-        expectedStartDate: editForm.expectedStartDate || undefined,
-        source: editForm.source,
-        sourceOther: editForm.sourceOther || undefined,
-        comments: editForm.comments || undefined,
-        status: editForm.status,
         meetingDate: editForm.meetingDate || null,
         nextFollowUpDate: editForm.nextFollowUpDate || null,
+        status: editForm.status,
       }
       await api.patch(`/leads/${params.id}`, payload)
-      toast.success('All fields saved')
-      setEditing(false)
+      
+      if (editForm.status !== lead.status) {
+        toast.success('Status updated successfully!')
+      } else {
+        toast.success('Details saved successfully!')
+      }
+      
+      setEditForm(f => ({ ...f, newNote: '' }))
       loadLead()
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to save')
@@ -185,6 +177,7 @@ export default function LeadDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      <Toaster position="top-center" />
       <div className="container mx-auto px-4">
         <div className="mb-6">
           <button
@@ -201,252 +194,182 @@ export default function LeadDetailPage() {
             <div className="card">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Lead Details</h2>
-                {isEditable && (
-                  !editing ? (
-                    <button onClick={() => setEditing(true)} className="btn-secondary text-sm">
-                      Edit All
-                    </button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button onClick={() => setEditing(false)} className="btn-secondary text-sm">
-                        Cancel
-                      </button>
-                      <button onClick={handleSaveAll} disabled={saving} className="btn-primary text-sm disabled:opacity-50">
-                        {saving ? 'Saving...' : 'Save All'}
-                      </button>
-                    </div>
-                  )
-                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {editing && isEditable ? (
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Full Name</label>
+                  <p className="text-lg font-semibold text-gray-800">{lead.fullName}</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mobile</label>
+                  <p className="text-lg font-semibold text-gray-800">{lead.mobile}</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email</label>
+                  <p className="text-gray-700">{lead.email}</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location</label>
+                  <p className="text-gray-700">{lead.city}, {lead.state}</p>
+                </div>
+                {(lead.franchiseType || lead.investmentRange || lead.expectedStartDate) && (
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Franchise details</label>
+                    <p className="text-gray-700">
+                      {[lead.franchiseType, lead.investmentRange, lead.expectedStartDate].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                  </div>
+                )}
+                {(lead.childAge || lead.enquiryType) && (
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Enquiry details</label>
+                    <p className="text-gray-700">
+                      {[lead.enquiryType, lead.childAge ? `Child age: ${lead.childAge}` : ''].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status</label>
+                  <div className="relative inline-block">
+                    <select
+                      value={editForm.status}
+                      onChange={(e) => setEditForm(f => ({ ...f, status: e.target.value }))}
+                        className={`appearance-none pl-3 pr-8 py-1 rounded-full text-xs font-bold uppercase border-0 cursor-pointer focus:ring-2 focus:ring-blue-500/20 ${editForm.status === 'converted' ? 'bg-green-100 text-green-700' :
+                          editForm.status === 'dropped' ? 'bg-red-100 text-red-700' :
+                            'bg-blue-100 text-blue-700'
+                          }`}
+                      >
+                        {editForm.status === 'new' && (
+                          <option value="new" className="bg-white text-gray-800 text-xs font-bold" disabled>
+                            Pending
+                          </option>
+                        )}
+                        {editForm.status === 'called' && <option value="called" className="bg-white text-gray-800 text-xs font-bold" disabled>Called/Contacted</option>}
+                        {editForm.status === 'not_interested' && <option value="not_interested" className="bg-white text-gray-800 text-xs font-bold" disabled>Dropped/Not Interested</option>}
+                        {STATUS_OPTIONS.map((s) => {
+                          let formatted = s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+                          if (s === 'contacted') formatted = 'Called/Contacted';
+                          if (s === 'dropped') formatted = 'Dropped/Not Interested';
+                          return (
+                            <option key={s} value={s} className="bg-white text-gray-800 text-xs font-bold">
+                              {formatted}
+                            </option>
+                          )
+                        })}
+                      </select>
+                      <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] ${editForm.status === 'converted' ? 'text-green-700' :
+                        editForm.status === 'dropped' ? 'text-red-700' :
+                          'text-blue-700'
+                        }`}>
+                        ▼
+                      </div>
+                    </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Source</label>
+                  <p className="text-gray-700">{sourceLabel(lead.source)}</p>
+                </div>
+
+                {isEditable ? (
                   <>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Full Name</label>
-                      <input
-                        value={editForm.fullName}
-                        onChange={(e) => setEditForm((f) => ({ ...f, fullName: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Mobile</label>
-                      <input
-                        value={editForm.mobile}
-                        onChange={(e) => setEditForm((f) => ({ ...f, mobile: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Email</label>
-                      <input
-                        type="email"
-                        value={editForm.email}
-                        onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">City</label>
-                      <input
-                        value={editForm.city}
-                        onChange={(e) => setEditForm((f) => ({ ...f, city: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">State</label>
-                      <input
-                        value={editForm.state}
-                        onChange={(e) => setEditForm((f) => ({ ...f, state: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Preferred Location</label>
-                      <input
-                        value={editForm.preferredCentreLocation}
-                        onChange={(e) => setEditForm((f) => ({ ...f, preferredCentreLocation: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Franchise Type</label>
-                      <input
-                        value={editForm.franchiseType}
-                        onChange={(e) => setEditForm((f) => ({ ...f, franchiseType: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                        placeholder="e.g. preschool, daycare"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Investment Range</label>
-                      <input
-                        value={editForm.investmentRange}
-                        onChange={(e) => setEditForm((f) => ({ ...f, investmentRange: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                        placeholder="e.g. 20-30 Lakhs"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Expected Start Date</label>
-                      <input
-                        type="date"
-                        value={editForm.expectedStartDate}
-                        onChange={(e) => setEditForm((f) => ({ ...f, expectedStartDate: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Source</label>
-                      <select
-                        value={editForm.source}
-                        onChange={(e) => setEditForm((f) => ({ ...f, source: e.target.value }))}
-                        className="form-select mt-1 w-full"
-                      >
-                        {SOURCE_OPTIONS.map((s) => (
-                          <option key={s} value={s}>{s.replace('_', ' ')}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Status</label>
-                      <select
-                        value={editForm.status}
-                        onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
-                        className="form-select mt-1 w-full"
-                      >
-                        {STATUS_OPTIONS.map((s) => (
-                          <option key={s} value={s}>{s.replace('_', ' ')}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Meeting Date</label>
-                      <input
-                        type="date"
-                        value={editForm.meetingDate}
-                        onChange={(e) => setEditForm((f) => ({ ...f, meetingDate: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-600">Next Follow-up</label>
-                      <input
-                        type="datetime-local"
-                        value={editForm.nextFollowUpDate}
-                        onChange={(e) => setEditForm((f) => ({ ...f, nextFollowUpDate: e.target.value }))}
-                        className="form-input mt-1 w-full"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="text-sm font-semibold text-gray-600">Comments</label>
+                    <div className="col-span-2 pt-4 border-t border-gray-100 mt-2">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">
+                        Comments <span className="text-red-500">*</span>
+                      </label>
                       <textarea
-                        value={editForm.comments}
-                        onChange={(e) => setEditForm((f) => ({ ...f, comments: e.target.value }))}
-                        className="form-input mt-1 w-full"
+                        value={editForm.newNote}
+                        onChange={(e) => setEditForm((f) => ({ ...f, newNote: e.target.value }))}
+                        className="form-input w-full text-sm"
                         rows={3}
+                        placeholder="Add comments here..."
                       />
+                    </div>
+
+                    <div className="col-span-2 flex flex-wrap items-end gap-6 text-sm py-4 border-t border-gray-100 mt-2">
+                      {lead.source === 'campaign' && (
+                        <>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
+                            <input
+                              type="date"
+                              value={editForm.meetingDate}
+                              onChange={(e) => setEditForm((f) => ({ ...f, meetingDate: e.target.value }))}
+                              className="form-input text-sm w-full"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
+                            <input
+                              type="date"
+                              value={editForm.nextFollowUpDate}
+                              onChange={(e) => setEditForm((f) => ({ ...f, nextFollowUpDate: e.target.value }))}
+                              className="form-input text-sm w-full"
+                            />
+                          </div>
+                        </>
+                      )}
+                      <div className="ml-auto">
+                        <button
+                          onClick={handleSaveAll}
+                          disabled={saving}
+                          className="btn-primary text-sm py-1.5 px-4 disabled:opacity-50"
+                        >
+                          {saving ? 'Saving...' : 'Save'}
+                        </button>
+                      </div>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Full Name</label>
-                      <p className="text-lg font-semibold text-gray-800">{lead.fullName}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mobile</label>
-                      <p className="text-lg font-semibold text-gray-800">{lead.mobile}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email</label>
-                      <p className="text-gray-700">{lead.email}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location</label>
-                      <p className="text-gray-700">{lead.city}, {lead.state}</p>
-                    </div>
-                    {(lead.franchiseType || lead.investmentRange || lead.expectedStartDate) && (
-                      <div className="col-span-2 space-y-1">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Franchise details</label>
-                        <p className="text-gray-700">
-                          {[lead.franchiseType, lead.investmentRange, lead.expectedStartDate].filter(Boolean).join(' · ') || '—'}
-                        </p>
-                      </div>
-                    )}
-                    {(lead.childAge || lead.enquiryType) && (
-                      <div className="col-span-2 space-y-1">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Enquiry details</label>
-                        <p className="text-gray-700">
-                          {[lead.enquiryType, lead.childAge ? `Child age: ${lead.childAge}` : ''].filter(Boolean).join(' · ') || '—'}
-                        </p>
-                      </div>
-                    )}
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status</label>
-                      <div className="relative inline-block">
-                        <select
-                          value={lead.status}
-                          onChange={(e) => handleStatusChange(e.target.value)}
-                            className={`appearance-none pl-3 pr-8 py-1 rounded-full text-xs font-bold uppercase border-0 cursor-pointer focus:ring-2 focus:ring-blue-500/20 ${lead.status === 'converted' ? 'bg-green-100 text-green-700' :
-                              lead.status === 'dropped' ? 'bg-red-100 text-red-700' :
-                                'bg-blue-100 text-blue-700'
-                              }`}
-                          >
-                            {STATUS_OPTIONS.map((s) => (
-                              <option key={s} value={s} className="bg-white text-gray-800 uppercase text-xs font-bold">
-                                {s.replace('_', ' ')}
-                              </option>
-                            ))}
-                          </select>
-                          <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] ${lead.status === 'converted' ? 'text-green-700' :
-                            lead.status === 'dropped' ? 'text-red-700' :
-                              'text-blue-700'
-                            }`}>
-                            ▼
-                          </div>
-                        </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Source</label>
-                      <p className="text-gray-700">{sourceLabel(lead.source)}</p>
-                    </div>
-
                     <div className="col-span-2 pt-4 border-t border-gray-100 mt-2">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Comments</label>
-                      <p className="text-gray-700 mt-1 italic">{lead.comments || 'No comments provided'}</p>
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Original Message</label>
+                      <p className="text-gray-700 mt-1 italic">{lead.comments || 'No original message'}</p>
                     </div>
 
-                    <div className="col-span-2 flex gap-6 text-sm py-4 border-t border-gray-100 mt-2">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
-                        <p className="font-medium">{lead.meetingDate ? new Date(lead.meetingDate).toLocaleDateString() : '—'}</p>
+                    {lead.source === 'campaign' && (
+                      <div className="col-span-2 flex gap-6 text-sm py-4 border-t border-gray-100 mt-2">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
+                          <p className="font-medium">{lead.meetingDate ? new Date(lead.meetingDate).toLocaleDateString() : '—'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
+                          <p className="font-medium text-blue-600">{lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleDateString() : '—'}</p>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
-                        <p className="font-medium text-blue-600">{lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleString() : '—'}</p>
-                      </div>
-                    </div>
+                    )}
                   </>
                 )}
+              </div>
+            </div>
+
+          </div>
+
+          <div className="space-y-6">
+
+
+            <div className="card">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
+              <div className="space-y-3">
+                <a href={getWhatsAppUrl(lead.mobile)} target="_blank" rel="noopener noreferrer" className="block px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center font-semibold">WhatsApp</a>
+                <a href={getEmailMailto(lead.email)} target="_blank" rel="noopener noreferrer" className="block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-center font-semibold">Email</a>
               </div>
             </div>
 
             {/* Interaction Timeline */}
             <div className="card">
               <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <span className="text-2xl">⏳</span> Lead Interaction Timeline
+                <span className="text-2xl">⏳</span> History
               </h3>
 
               <div className="relative border-l-2 border-gray-100 ml-3 space-y-8 pb-4">
                 {[
                   ...(lead.notes || []).map((n: any) => ({
                     id: n.id,
-                    type: 'note',
+                    type: 'comment',
                     content: n.content,
                     date: new Date(n.createdAt),
-                    icon: '📝',
+                    icon: '💬',
                     bgColor: 'bg-blue-50',
                     textColor: 'text-blue-800',
                     dotColor: 'bg-blue-500'
@@ -516,45 +439,6 @@ export default function LeadDetailPage() {
                     </div>
                   ))}
                 <div className="absolute bottom-0 left-[-9px] w-4 h-4 rounded-full border-4 border-white bg-gray-200 shadow-sm" />
-              </div>
-
-              {isEditable && (
-                <div className="mt-8 pt-6 border-t border-gray-100">
-                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1"><span>➕</span> Add Internal Note</h4>
-                  <div className="relative">
-                    <textarea
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      className="form-input focus:ring-blue-500 border-gray-200"
-                      rows={3}
-                      placeholder="Type interaction details here..."
-                    />
-                    <div className="flex justify-end mt-3">
-                      <button onClick={handleAddNote} className="btn-primary !py-2 !px-6 text-sm flex items-center gap-2">
-                        <span>💾</span> Save Note
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="card">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <button onClick={() => handleStatusChange('contacted')} className="w-full btn-secondary text-sm">Mark as Contacted</button>
-                <button onClick={() => handleStatusChange('interested')} className="w-full btn-secondary text-sm">Mark as Interested</button>
-                <button onClick={() => handleStatusChange('converted')} className="w-full btn-primary text-sm">Mark as Converted</button>
-              </div>
-            </div>
-
-            <div className="card">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
-              <div className="space-y-3">
-                <a href={getWhatsAppUrl(lead.mobile)} target="_blank" rel="noopener noreferrer" className="block px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center font-semibold">WhatsApp</a>
-                <a href={getEmailMailto(lead.email)} target="_blank" rel="noopener noreferrer" className="block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-center font-semibold">Email</a>
               </div>
             </div>
           </div>

@@ -2,7 +2,8 @@
 
 import { Suspense, lazy, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Toaster } from "react-hot-toast";
+import { Filter, Download } from "lucide-react";
+import { Toaster, toast } from "react-hot-toast";
 import { AccessLoading } from "@/components/auth/AccessLoading";
 import { normalizeRole, useAuth } from "@/components/auth/AuthProvider";
 import crmApi from "@/lib/crmApi";
@@ -11,8 +12,10 @@ import LeadsTable from "@/components/crm/admin/LeadsTable";
 import DateRangePicker from "@/components/crm/admin/DateRangePicker";
 import CitySelector from "@/components/crm/admin/CitySelector";
 import CentreSelector from "@/components/crm/admin/CentreSelector";
+import { SearchableSelect } from "@/components/crm/SearchableSelect";
 import RemindersWidget from "@/components/crm/admin/RemindersWidget";
 import LandingLeadsReport from "@/components/leads/LandingLeadsReport";
+import ReportsView from "@/components/crm/admin/ReportsView";
 
 const LeadSourceChart = lazy(() => import("@/components/crm/admin/LeadSourceChart"));
 const ConversionFunnel = lazy(() => import("@/components/crm/admin/ConversionFunnel"));
@@ -29,10 +32,10 @@ function apiSourceParam(source: SourceFilter, channel: CampaignChannelFilter): s
 const SOURCE_FILTERS: { id: SourceFilter; label: string; active: string; idle: string }[] = [
     { id: "", label: "All", active: "border-gray-800 bg-gray-800 text-white", idle: "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100" },
     { id: "admission", label: "Admission", active: "border-blue-700 bg-blue-700 text-white", idle: "border-blue-100 bg-blue-50 text-blue-800 hover:bg-blue-100" },
-    { id: "contact", label: "Centers Enquiry", active: "border-sky-600 bg-sky-600 text-white", idle: "border-sky-100 bg-sky-50 text-sky-800 hover:bg-sky-100" },
-    { id: "campaign", label: "Campaign Enquiry", active: "border-violet-600 bg-violet-600 text-white", idle: "border-violet-100 bg-violet-50 text-violet-800 hover:bg-violet-100" },
+    { id: "contact", label: "CenterPage", active: "border-sky-600 bg-sky-600 text-white", idle: "border-sky-100 bg-sky-50 text-sky-800 hover:bg-sky-100" },
+    { id: "campaign", label: "Campaign", active: "border-violet-600 bg-violet-600 text-white", idle: "border-violet-100 bg-violet-50 text-violet-800 hover:bg-violet-100" },
+    { id: "franchise", label: "Franchise", active: "border-orange-600 bg-orange-600 text-white", idle: "border-orange-100 bg-orange-50 text-orange-800 hover:bg-orange-100" },
     { id: "landing", label: "Landing", active: "border-teal-600 bg-teal-600 text-white", idle: "border-teal-100 bg-teal-50 text-teal-800 hover:bg-teal-100" },
-    { id: "franchise", label: "Franchise Enquiry", active: "border-orange-600 bg-orange-600 text-white", idle: "border-orange-100 bg-orange-50 text-orange-800 hover:bg-orange-100" },
 ];
 
 const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] = [
@@ -44,18 +47,16 @@ const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] =
 
 const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "", label: "All Statuses" },
-    { id: "new", label: "New" },
-    { id: "contacted", label: "Contacted" },
-    { id: "called", label: "Called" },
+    { id: "new", label: "Pending" },
+    { id: "contacted", label: "Called/Contacted" },
     { id: "follow_up", label: "Follow Up" },
     { id: "interested", label: "Interested" },
     { id: "meeting_scheduled", label: "Meeting Scheduled" },
-    { id: "dropped", label: "Dropped" },
-    { id: "not_interested", label: "Not Interested" },
+    { id: "dropped", label: "Dropped/Not Interested" },
     { id: "converted", label: "Converted" },
 ];
 
-export default function CrmDashboard() {
+export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'reports' | 'all' }) {
     const router = useRouter();
     const { user, loading: authLoading, logout } = useAuth();
     const [stats, setStats] = useState<any>(null);
@@ -63,7 +64,7 @@ export default function CrmDashboard() {
         startDate: null,
         endDate: null,
     });
-    const [selectedCity, setSelectedCity] = useState<string>("");
+    const [selectedCity, setSelectedCity] = useState<string[]>([]);
     const [selectedCentre, setSelectedCentre] = useState<string>("");
     const [filterDateRange, setFilterDateRange] = useState<{ startDate: Date | null; endDate: Date | null }>({
         startDate: null,
@@ -74,10 +75,12 @@ export default function CrmDashboard() {
     const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("");
     const [refreshKey, setRefreshKey] = useState(0);
     const [statsLoading, setStatsLoading] = useState(true);
+    const [reportsFiltersApplied, setReportsFiltersApplied] = useState(false);
+
 
     const isCrmUser = normalizeRole(user?.role) === "crm";
 
-    const handleCityChange = (city: string) => {
+    const handleCityChange = (city: string[]) => {
         setSelectedCity(city);
         setSelectedCentre("");
     };
@@ -116,7 +119,7 @@ export default function CrmDashboard() {
             end.setHours(23, 59, 59, 999);
             params.append("endDate", end.toISOString());
         }
-        if (selectedCity) params.append("city", selectedCity);
+        if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
         if (selectedCentre) params.append("centreId", selectedCentre);
         if (apiSource) params.append("source", apiSource);
         if (selectedStatus) params.append("status", selectedStatus);
@@ -149,7 +152,7 @@ export default function CrmDashboard() {
             end.setHours(23, 59, 59, 999);
             params.append("endDate", end.toISOString());
         }
-        if (selectedCity) params.append("city", selectedCity);
+        if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
         if (selectedCentre) params.append("centreId", selectedCentre);
         if (apiSource) params.append("source", apiSource);
         if (selectedStatus) params.append("status", selectedStatus);
@@ -161,7 +164,40 @@ export default function CrmDashboard() {
     };
 
     const handleApplyFilters = () => {
+        if (view === 'reports') {
+            if (selectedCity.length === 0) {
+                toast.error("Please select a City before generating the report.");
+                return;
+            }
+            if (!filterDateRange.startDate || !filterDateRange.endDate) {
+                toast.error("Please select a complete Date Range before generating the report.");
+                return;
+            }
+        }
         setDateRange(filterDateRange);
+        setReportsFiltersApplied(true);
+    };
+
+    const silentRefreshStats = () => {
+        const params = new URLSearchParams();
+        if (dateRange.startDate) {
+            const start = new Date(dateRange.startDate);
+            start.setHours(0, 0, 0, 0);
+            params.append("startDate", start.toISOString());
+        }
+        if (dateRange.endDate) {
+            const end = new Date(dateRange.endDate);
+            end.setHours(23, 59, 59, 999);
+            params.append("endDate", end.toISOString());
+        }
+        if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
+        if (selectedCentre) params.append("centreId", selectedCentre);
+        if (apiSource) params.append("source", apiSource);
+        if (selectedStatus) params.append("status", selectedStatus);
+        crmApi
+            .get(`/leads/dashboard?${params.toString()}`)
+            .then((res) => setStats(res.data))
+            .catch((err) => console.error("Failed to silent refresh stats:", err));
     };
 
     const handleRefresh = () => {
@@ -183,7 +219,7 @@ export default function CrmDashboard() {
                 end.setHours(23, 59, 59, 999);
                 params.append("endDate", end.toISOString());
             }
-            if (selectedCity) params.append("city", selectedCity);
+            if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
             if (selectedCentre) params.append("centreId", selectedCentre);
             if (apiSource) params.append("source", apiSource);
             if (selectedStatus) params.append("status", selectedStatus);
@@ -282,97 +318,77 @@ export default function CrmDashboard() {
 
             <div className="container mx-auto px-4 py-8">
                 <div className="mb-6 rounded-xl bg-white p-6 shadow-lg">
-                    <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                        <div className="flex flex-col min-w-0">
-                            <label className="mb-2 block text-sm font-semibold text-gray-700">Select Source</label>
-                            <div className="flex flex-wrap gap-2">
-                                {SOURCE_FILTERS.map((item) => {
-                                    const isActive = selectedSource === item.id;
-                                    return (
-                                        <button
-                                            key={item.label}
-                                            type="button"
-                                            onClick={() => handleSourceChange(item.id)}
-                                            className={`flex h-[42px] items-center rounded-lg border px-4 sm:px-6 text-sm font-semibold transition-colors whitespace-nowrap ${isActive ? item.active : item.idle}`}
-                                        >
-                                            {item.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            {!isLandingView ? (
-                                <p className="mt-2 text-xs text-gray-500">
-                                    {selectedSource === ""
-                                        ? "Showing admission, centers enquiry, and campaign leads. Landing page leads are separate."
-                                        : selectedSource === "campaign"
-                                          ? "Campaign enquiry leads from /crm/web, /crm/fb, and /crm/insta forms."
-                                          : `Showing only ${SOURCE_FILTERS.find((s) => s.id === selectedSource)?.label ?? selectedSource} leads.`}
-                                </p>
-                            ) : null}
-                            {isCampaignView ? (
-                                <>
-                                    <label className="mb-2 mt-4 block text-sm font-semibold text-gray-700">Campaign Channel</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {CAMPAIGN_CHANNEL_FILTERS.map((item) => {
-                                            const isActive = selectedCampaignChannel === item.id;
-                                            return (
-                                                <button
-                                                    key={item.label}
-                                                    type="button"
-                                                    onClick={() => setSelectedCampaignChannel(item.id)}
-                                                    className={`flex h-[38px] items-center rounded-lg border px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap ${isActive ? "border-violet-700 bg-violet-700 text-white" : "border-violet-100 bg-violet-50 text-violet-800 hover:bg-violet-100"}`}
-                                                >
-                                                    {item.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </>
-                            ) : null}
-                            {!isLandingView ? (
-                                <>
-                                    <label className="mb-2 mt-4 block text-sm font-semibold text-gray-700">Select Status</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {STATUS_FILTERS.map((item) => {
-                                            const isActive = selectedStatus === item.id;
-                                            return (
-                                                <button
-                                                    key={item.label}
-                                                    type="button"
-                                                    onClick={() => setSelectedStatus(item.id)}
-                                                    className={`flex h-[38px] items-center rounded-lg border px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap ${isActive ? "border-gray-800 bg-gray-800 text-white" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
-                                                >
-                                                    {item.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </>
-                            ) : null}
-                        </div>
+                    <div className="flex flex-col gap-3">
 
-                        {!isLandingView ? (
-                            <div className="flex flex-col items-end gap-4">
-                                <div>
+                        <div className="flex flex-wrap lg:flex-nowrap items-end gap-3 w-full pb-2">
+                            {view !== 'reports' && (
+                                <div className="flex-1 min-w-[140px]">
+                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Select Lead Source</label>
+                                    <SearchableSelect
+                                        value={selectedSource}
+                                        onChange={(val) => handleSourceChange(val as any)}
+                                        options={SOURCE_FILTERS.filter(f => f.id !== "").map(f => ({ value: f.id, label: f.label }))}
+                                        placeholder="Select Source"
+                                    />
+                                </div>
+                            )}
+
+                            {isCampaignView && view !== 'reports' && (
+                                <div className="flex-1 min-w-[140px]">
+                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Select Channel</label>
+                                    <SearchableSelect
+                                        value={selectedCampaignChannel}
+                                        onChange={(val) => setSelectedCampaignChannel(val as any)}
+                                        options={CAMPAIGN_CHANNEL_FILTERS.filter(f => f.id !== "").map(f => ({ value: f.id, label: f.label }))}
+                                        placeholder="Select Channel"
+                                    />
+                                </div>
+                            )}
+
+                            {!isLandingView && view !== 'reports' && (
+                                <div className="flex-1 min-w-[140px]">
+                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Select Status</label>
+                                    <SearchableSelect
+                                        value={selectedStatus}
+                                        onChange={(val) => setSelectedStatus(val as any)}
+                                        options={STATUS_FILTERS.filter(f => f.id !== "").map(f => ({ value: f.id, label: f.label }))}
+                                        placeholder="Select Status"
+                                    />
+                                </div>
+                            )}
+
+                            {!isLandingView && (
+                                <>
+                                    <CitySelector value={selectedCity} onChange={handleCityChange} />
+                                    {view !== 'reports' && (
+                                        <CentreSelector city={selectedCity.length === 1 ? selectedCity[0] : ""} value={selectedCentre} onChange={setSelectedCentre} />
+                                    )}
                                     <DateRangePicker
                                         startDate={filterDateRange.startDate}
                                         endDate={filterDateRange.endDate}
                                         onChange={(start, end) => setFilterDateRange({ startDate: start, endDate: end })}
                                     />
-                                </div>
-                                <div className="flex flex-nowrap items-end gap-4 overflow-x-auto pb-1">
-                                    <CitySelector value={selectedCity} onChange={handleCityChange} />
-                                    <CentreSelector city={selectedCity} value={selectedCentre} onChange={setSelectedCentre} />
                                     <button
                                         type="button"
                                         onClick={handleApplyFilters}
-                                        className="btn-secondary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6"
+                                        className="btn-primary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6"
                                     >
-                                        Apply Filters
+                                        {view === 'reports' ? 'Generate' : 'Apply Filters'}
                                     </button>
-                                </div>
-                            </div>
-                        ) : null}
+                                    
+                                    {view === 'reports' && reportsFiltersApplied && (
+                                        <button
+                                            type="button"
+                                            onClick={() => alert("CSV Download will be ready once the data is hooked up!")}
+                                            className="btn-secondary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6 gap-2"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            Download CSV
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -380,7 +396,9 @@ export default function CrmDashboard() {
                     <LandingLeadsReport title="Landing page leads" embedded basePath="/crm-admin/" />
                 ) : (
                     <>
-                        {statsLoading && !stats ? (
+                        {(view === 'dashboard' || view === 'all') && (
+                            <>
+                                {statsLoading && !stats ? (
                             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 {[1, 2, 3, 4].map((i) => (
                                     <div key={i} className="animate-pulse rounded-xl bg-white p-6 shadow">
@@ -394,7 +412,7 @@ export default function CrmDashboard() {
                         ) : null}
 
                         <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                            <RemindersWidget key={refreshKey} source={apiSource} city={selectedCity} centreId={selectedCentre} />
+                            <RemindersWidget key={refreshKey} source={apiSource} city={selectedCity.join(",")} centreId={selectedCentre} />
 
                             {statsLoading && !stats ? (
                                 <>
@@ -423,24 +441,35 @@ export default function CrmDashboard() {
                                 </Suspense>
                             ) : null}
                         </div>
+                            </>
+                        )}
 
-                        <LeadsTable
-                            key={`${refreshKey}-${apiSource}-${selectedStatus}-${selectedCity}-${selectedCentre}`}
-                            dateRange={dateRange}
-                            city={selectedCity}
-                            centreId={selectedCentre}
-                            source={apiSource}
-                            status={selectedStatus}
-                            title={
-                                selectedSource === "campaign"
-                                    ? selectedCampaignChannel
-                                        ? `Campaign Enquiry — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
-                                        : "Campaign Enquiry"
-                                    : selectedSource
-                                      ? `${SOURCE_FILTERS.find((s) => s.id === selectedSource)?.label ?? "Filtered"} Leads`
-                                      : "All Enquiry Reports"
-                            }
-                        />
+                        {(view === 'reports' || view === 'all') && (
+                            view === 'reports' ? (
+                                reportsFiltersApplied ? (
+                                    <ReportsView dateRange={dateRange} city={selectedCity} />
+                                ) : null
+                            ) : (
+                                <LeadsTable
+                                    key={`${refreshKey}-${apiSource}-${selectedStatus}-${selectedCity}-${selectedCentre}`}
+                                    dateRange={dateRange}
+                                    city={selectedCity.join(",")}
+                                    centreId={selectedCentre}
+                                    source={apiSource}
+                                    status={selectedStatus}
+                                    onLeadUpdated={silentRefreshStats}
+                                    title={
+                                        selectedSource === "campaign"
+                                            ? selectedCampaignChannel
+                                                ? `Campaign Enquiry — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
+                                                : "Campaign Enquiry"
+                                            : selectedSource
+                                              ? `${SOURCE_FILTERS.find((s) => s.id === selectedSource)?.label ?? "Filtered"} Leads`
+                                              : "All Enquiry Reports"
+                                    }
+                                />
+                            )
+                        )}
                     </>
                 )}
             </div>

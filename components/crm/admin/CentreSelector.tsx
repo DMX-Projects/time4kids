@@ -49,7 +49,6 @@ export default function CentreSelector({ city, value, onChange }: CentreSelector
 
   const options = useMemo(
     () => [
-      { value: '', label: 'All Centres' },
       ...centres.map((centre) => ({ value: centre.id, label: centre.name })),
     ],
     [centres],
@@ -57,7 +56,7 @@ export default function CentreSelector({ city, value, onChange }: CentreSelector
 
   if (!city) {
     return (
-      <div className="min-w-[300px] max-w-md">
+      <div className="flex-1 min-w-[140px]">
         <label className="mb-2 block text-sm font-semibold text-gray-700">Select Centre</label>
         <SearchableSelect
           options={[{ value: '', label: 'Select a city first' }]}
@@ -72,13 +71,13 @@ export default function CentreSelector({ city, value, onChange }: CentreSelector
   }
 
   return (
-    <div className="min-w-[300px] max-w-md">
+    <div className="flex-1 min-w-[140px]">
       <label className="mb-2 block text-sm font-semibold text-gray-700">Select Centre</label>
       <SearchableSelect
         options={options}
         value={value}
         onChange={onChange}
-        placeholder="All Centres"
+        placeholder="Select Centre"
         disabled={loading}
         aria-label="Select Centre"
       />

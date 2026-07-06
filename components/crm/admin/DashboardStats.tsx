@@ -10,7 +10,7 @@ interface Stats {
 export default function DashboardStats({ stats }: { stats: Stats }) {
   const cards = [
     {
-      title: 'Total Enquiries',
+      title: 'Total Leads',
       value: stats.totalEnquiries,
       color: 'bg-orange-500',
       icon: '📊',
@@ -40,14 +40,14 @@ export default function DashboardStats({ stats }: { stats: Stats }) {
       {cards.map((card, index) => (
         <div
           key={index}
-          className={`${card.color} rounded-xl shadow-lg p-6 text-white transition-shadow duration-150 hover:shadow-xl`}
+          className={`${card.color} rounded-xl shadow-lg px-5 py-4 text-white transition-shadow duration-150 hover:shadow-xl`}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/80 text-sm font-semibold mb-2">{card.title}</p>
-              <p className="text-4xl font-bold">{card.value}</p>
+              <p className="text-white/80 text-sm font-semibold mb-1">{card.title}</p>
+              <p className="text-3xl font-bold">{card.value}</p>
             </div>
-            <div className="text-5xl opacity-80">{card.icon}</div>
+            <div className="text-4xl opacity-80">{card.icon}</div>
           </div>
         </div>
       ))}

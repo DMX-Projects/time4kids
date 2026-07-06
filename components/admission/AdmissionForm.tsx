@@ -103,6 +103,7 @@ const AdmissionForm = ({
     );
     
     const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<AdmissionFormData>({
+        mode: 'onTouched',
         defaultValues: {
             city: defaultCity || ''
         }
@@ -325,7 +326,15 @@ const AdmissionForm = ({
                                         </label>
                                         <input
                                             {...register(field.name as any, {
-                                                required: true,
+                                                required: 'This field is required.',
+                                                ...(field.name.toLowerCase().includes('name')
+                                                    ? {
+                                                          minLength: {
+                                                              value: 3,
+                                                              message: 'Name must be at least 3 characters.',
+                                                          },
+                                                      }
+                                                    : {}),
                                                 ...(isPhone
                                                     ? {
                                                           pattern: {
@@ -350,9 +359,9 @@ const AdmissionForm = ({
                                             className="w-full px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl focus:ring-4 focus:ring-yellow-100 focus:border-[#FFD95A] outline-none transition-all placeholder:text-gray-400 font-medium text-[#2D2D52]"
                                             placeholder={field.placeholder}
                                         />
-                                        {isPhone && errors.phone && (
+                                        {errors[field.name as keyof typeof errors] && (
                                             <p className="text-xs text-red-600 pl-1" role="alert">
-                                                {(errors.phone as any)?.message || 'Enter a valid 10-digit mobile number.'}
+                                                {(errors[field.name as keyof typeof errors] as any)?.message || 'This field is required.'}
                                             </p>
                                         )}
                                     </div>
@@ -459,6 +468,7 @@ const AdmissionForm = ({
                                     <textarea
                                         {...register('message')}
                                         rows={3}
+                                        maxLength={250}
                                         className="w-full resize-none px-6 py-4 bg-[#FFFCF5] border-2 border-[#FFEBB7] rounded-2xl focus:ring-4 focus:ring-yellow-100 focus:border-[#FFD95A] outline-none transition-all font-medium text-[#2D2D52] placeholder:text-gray-400"
                                         placeholder="Any specific questions or requirements..."
                                     />
