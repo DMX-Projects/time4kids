@@ -50,7 +50,7 @@ export default function FranchiseForm() {
     setValue,
     watch,
     formState: { errors },
-  } = useForm<FormData>()
+  } = useForm<FormData>({ mode: 'onTouched' })
 
   const selectedState = watch('state')
 
@@ -140,7 +140,10 @@ export default function FranchiseForm() {
                   </label>
                   <input
                     type="text"
-                    {...register('fullName', { required: 'Full name is required' })}
+                    {...register('fullName', { 
+                      required: 'Full name is required',
+                      minLength: { value: 3, message: 'Name must be at least 3 characters' }
+                    })}
                     className={styles.input}
                     placeholder="Enter your full name"
                   />
@@ -160,6 +163,11 @@ export default function FranchiseForm() {
                     className={styles.input}
                     placeholder="Enter 10-digit mobile number"
                     maxLength={10}
+                    inputMode="numeric"
+                    onInput={(e) => {
+                      const el = e.currentTarget;
+                      el.value = el.value.replace(/\D/g, '').slice(0, 10);
+                    }}
                   />
                   {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile.message}</p>}
                 </div>
@@ -293,7 +301,7 @@ export default function FranchiseForm() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Comments / Questions</label>
-                  <textarea {...register('comments')} className={styles.input} rows={3} placeholder="Any additional information..." />
+                  <textarea {...register('comments')} className={styles.input} rows={3} maxLength={250} placeholder="Any additional information..." />
                 </div>
 
                 <div className="sticky bottom-4 left-0 right-0 z-10 pt-3">

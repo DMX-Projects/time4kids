@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import api from '@/lib/crmApi'
+import { MultiSelectCheckbox } from '@/components/crm/MultiSelectCheckbox'
 
 interface CitySelectorProps {
-  value: string
-  onChange: (value: string) => void
+  value: string[]
+  onChange: (value: string[]) => void
 }
 
 export default function CitySelector({ value, onChange }: CitySelectorProps) {
@@ -27,22 +28,21 @@ export default function CitySelector({ value, onChange }: CitySelectorProps) {
     }
   }
 
+  const options = useMemo(
+    () => cities.map((city) => ({ value: city.name, label: city.name })),
+    [cities]
+  )
+
   return (
-    <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">Select City</label>
-      <select
+    <div className="flex-1 min-w-[140px] max-w-[240px]">
+      <label className="mb-2 block text-sm font-semibold text-gray-700">Select City</label>
+      <MultiSelectCheckbox
+        options={options}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="form-select min-w-[180px] max-w-xs"
+        onChange={onChange}
+        placeholder="Select City"
         disabled={loading}
-      >
-        <option value="">All Cities</option>
-        {cities.map((city) => (
-          <option key={city.name} value={city.name}>
-            {city.name}
-          </option>
-        ))}
-      </select>
+      />
     </div>
   )
 }

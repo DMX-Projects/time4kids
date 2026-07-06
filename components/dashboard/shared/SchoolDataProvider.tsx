@@ -25,6 +25,13 @@ import {
     parseParentGalleryResponse,
 } from "@/lib/parent-school-api";
 
+export type EnquiryNote = {
+    id: number;
+    content: string;
+    created_at: string;
+    created_by_name?: string;
+};
+
 export type SchoolParent = {
     id: string;
     name: string;
@@ -221,6 +228,9 @@ export type SchoolDataContextValue = {
 
     locations: { city_name: string; state: string }[];
     updateEnquiryStatus: (id: string, status: string) => Promise<void>;
+    updateEnquiryMessage: (id: string, message: string) => Promise<void>;
+    fetchEnquiryNotes: (leadId: string) => Promise<EnquiryNote[]>;
+    addEnquiryNote: (leadId: string, content: string) => Promise<EnquiryNote>;
 
     parentSchoolLoading: boolean;
     /** True while parent event gallery API is in flight. */
@@ -873,31 +883,56 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
                 if (user?.role === "admin") await loadAdminEnquiries();
                 else if (user?.role === "franchise") await loadFranchiseEnquiries();
                 return;
+            } catch (err: unknown) {
+                lastError = err;
+            }
+        }
+        if (lastError) throw lastError;
+    };
+
+    const updateEnquiryMessage = async (id: string, message: string) => {
+        setEnquiries((prev) =>
+            prev.map((e) => {
+                if (e.id === id) return { ...e, message };
+                return e;
+            }),
+        );
+
+        const body = JSON.stringify({ message });
+        const headers = jsonHeaders();
+        let lastError: unknown = null;
+
+        for (const path of enquiryStatusPaths(id)) {
+            try {
+                await authFetch(path, { method: "PATCH", headers, body });
+                if (user?.role === "admin") await loadAdminEnquiries();
+                else if (user?.role === "franchise") await loadFranchiseEnquiries();
+                return;
             } catch (err) {
                 lastError = err;
-                const apiStatus = (err as { status?: number })?.status;
-                if (apiStatus !== 404) break;
             }
         }
-
-        try {
-            if (user?.role === "admin") await loadAdminEnquiries();
-            else if (user?.role === "franchise") await loadFranchiseEnquiries();
-        } catch {
-            if (previous) {
-                setEnquiries((prev) =>
-                    prev.map((e) => (e.id === id ? { ...e, status: previous } : e)),
-                );
-            }
-        }
-        const message =
-            lastError instanceof Error ? lastError.message : "Could not update enquiry status.";
-        showToast(message, "error");
-        throw lastError instanceof Error ? lastError : new Error(message);
+        if (lastError) throw lastError;
     };
 
     const resolveEnquiry = async (id: string) => {
         await patchEnquiryStatusRemote(id, "closed");
+    };
+
+    const fetchEnquiryNotes = async (leadId: string): Promise<EnquiryNote[]> => {
+        try {
+            return await authFetch<EnquiryNote[]>(`/enquiries/notes/${leadId.replace("-", "_")}/`);
+        } catch {
+            return [];
+        }
+    };
+
+    const addEnquiryNote = async (leadId: string, content: string): Promise<EnquiryNote> => {
+        return await authFetch<EnquiryNote>(`/enquiries/notes/${leadId.replace("-", "_")}/`, {
+            method: "POST",
+            headers: jsonHeaders(),
+            body: JSON.stringify({ content }),
+        });
     };
 
     // Attendance
@@ -1122,6 +1157,9 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         clearAttendanceDate,
         locations,
         updateEnquiryStatus,
+        updateEnquiryMessage,
+        fetchEnquiryNotes,
+        addEnquiryNote,
         parentSchoolLoading,
         parentEventsLoading,
         parentStudentsHydrated,

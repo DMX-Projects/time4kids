@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Inbox, Phone, Mail, Eye, Search } from "lucide-react";
+import { Inbox, Phone, Mail, Eye, Search, MessageSquare } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { apiUrl, jsonHeaders } from "@/lib/api-client";
 import Modal from "@/components/ui/Modal";
 import toast from "react-hot-toast";
+import { EnquiryNote } from "@/components/dashboard/shared/SchoolDataProvider";
 
 type EnquiryType = "admission" | "franchise" | "contact" | "all";
 
@@ -25,14 +26,11 @@ type Enquiry = {
 };
 
 const STATUS_OPTIONS = [
-    { value: "new", label: "New" },
-    { value: "contacted", label: "Contacted" },
-    { value: "called", label: "Called" },
+    { value: "contacted", label: "Called/Contacted" },
     { value: "follow_up", label: "Follow Up" },
     { value: "interested", label: "Interested" },
     { value: "meeting_scheduled", label: "Meeting Scheduled" },
-    { value: "dropped", label: "Dropped" },
-    { value: "not_interested", label: "Not Interested" },
+    { value: "dropped", label: "Dropped/Not Interested" },
     { value: "converted", label: "Converted" },
     { value: "in-progress", label: "In Progress" },
     { value: "closed", label: "Closed" },
@@ -53,6 +51,43 @@ const API_TYPE: Record<EnquiryType, string | undefined> = {
     franchise: "FRANCHISE",
     contact: "CONTACT",
 };
+
+// Helper to parse the message string
+function parseEnquiryMessage(message: string, type: string) {
+    if (!message) return { originalPrefix: "", userMessage: "", note: "", details: {} };
+
+    let note = "";
+    let originalPrefix = message;
+
+    const noteMatch = message.match(/\|\s*Note:\s*(.*)/i) || message.match(/,\s*Note:\s*(.*)/i) || message.match(/(?:^|\s)Note:\s*(.*)/i);
+    if (noteMatch) {
+        note = noteMatch[1].trim();
+        originalPrefix = message.substring(0, noteMatch.index).trim();
+        originalPrefix = originalPrefix.replace(/(\||,)\s*$/, "").trim();
+    }
+
+    let userMessage = "";
+    let metaString = originalPrefix;
+
+    const subjectMatch = metaString.match(/^(ADMISSION|FRANCHISE|GENERAL|CONTACT|FEEDBACK|CAREERS):\s*(.*)/i);
+    if (subjectMatch) {
+        userMessage = subjectMatch[2].trim();
+    } else if (!metaString.includes("City:") && !metaString.includes("Child:")) {
+        userMessage = metaString;
+    }
+
+    const details: Record<string, string> = {};
+    if (type === 'admission') {
+        const child = metaString.match(/Child:\s*([^,\|]+)/i)?.[1];
+        const age = metaString.match(/Age:\s*([^,\|]+)/i)?.[1];
+        const program = metaString.match(/Program:\s*([^,\|]+)/i)?.[1];
+        if (child) details['Child Name'] = child.trim();
+        if (age) details['Child Age'] = age.trim();
+        if (program) details.Program = program.trim();
+    }
+
+    return { originalPrefix, userMessage, note, details };
+}
 
 type TabCounts = Record<EnquiryType, number>;
 
@@ -85,8 +120,11 @@ export default function AdminEnquiriesPage() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
+    const [notesHistory, setNotesHistory] = useState<EnquiryNote[]>([]);
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
+    const [editedNote, setEditedNote] = useState("");
+    const [isSavingNote, setIsSavingNote] = useState(false);
     const [tabCounts, setTabCounts] = useState<TabCounts>({
         all: 0,
         admission: 0,
@@ -136,6 +174,17 @@ export default function AdminEnquiriesPage() {
     }, [fetchEnquiries]);
 
     useEffect(() => {
+        if (selectedEnquiry) {
+            authFetch<EnquiryNote[]>(`/enquiries/notes/${selectedEnquiry.id.replace(/^[ef]-/, "").replace("-", "_")}/`)
+                .then(setNotesHistory)
+                .catch(() => setNotesHistory([]));
+        } else {
+            setNotesHistory([]);
+            setEditedNote("");
+        }
+    }, [selectedEnquiry, authFetch]);
+
+    useEffect(() => {
         setPage(1);
     }, [search]);
 
@@ -153,12 +202,34 @@ export default function AdminEnquiriesPage() {
                 credentials: "include",
                 body: JSON.stringify({ status: newStatus }),
             });
+            if (selectedEnquiry?.id === enq.id) {
+                setSelectedEnquiry({ ...selectedEnquiry, status: newStatus });
+            }
             setEnquiries((prev) =>
                 prev.map((e) => (e.id === enq.id ? { ...e, status: newStatus } : e))
             );
-            toast.success("Status updated!");
-        } catch {
-            toast.error("Failed to update status.");
+            toast.success("Status updated successfully");
+        } catch (error) {
+            toast.error("Failed to update status");
+        }
+    };
+
+    const handleSaveNote = async () => {
+        if (!selectedEnquiry || !editedNote.trim()) return;
+        setIsSavingNote(true);
+        try {
+            const newNote = await authFetch<EnquiryNote>(`/enquiries/notes/${selectedEnquiry.id.replace(/^[ef]-/, "").replace("-", "_")}/`, {
+                method: "POST",
+                headers: jsonHeaders(),
+                body: JSON.stringify({ content: editedNote.trim() }),
+            });
+            setNotesHistory((prev) => [...prev, newNote]);
+            setEditedNote("");
+            toast.success("Comment posted successfully");
+        } catch (error) {
+            toast.error("Failed to post comment");
+        } finally {
+            setIsSavingNote(false);
         }
     };
 
@@ -316,6 +387,9 @@ export default function AdminEnquiriesPage() {
                                                     onChange={(e) => handleStatusChange(enq, e.target.value)}
                                                     className={`text-xs font-medium px-2 py-1.5 rounded-md border text-center appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-200 transition-all w-36 ${getStatusColor(enq.status)}`}
                                                 >
+                                                    {enq.status === 'new' && <option value="new" disabled>Select</option>}
+                                                    {enq.status === 'called' && <option value="called" disabled>Called/Contacted</option>}
+                                                    {enq.status === 'not_interested' && <option value="not_interested" disabled>Dropped/Not Interested</option>}
                                                     {STATUS_OPTIONS.map(s => (
                                                         <option key={s.value} value={s.value}>{s.label}</option>
                                                     ))}
@@ -364,7 +438,7 @@ export default function AdminEnquiriesPage() {
                 )}
             </div>
 
-            <Modal isOpen={!!selectedEnquiry} onClose={() => setSelectedEnquiry(null)} title="Enquiry Details">
+            <Modal isOpen={!!selectedEnquiry} onClose={() => { setSelectedEnquiry(null); setEditedNote(""); }} title="Enquiry Details">
                 {selectedEnquiry && (() => {
                     const theme = getTypeTheme(selectedEnquiry.type);
                     return (
@@ -412,16 +486,53 @@ export default function AdminEnquiriesPage() {
                                 )}
                             </div>
 
-                            {selectedEnquiry.message && (
+                            {parseEnquiryMessage(selectedEnquiry.message, selectedEnquiry.type).userMessage && (
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-2">
-                                        <Inbox className="w-3 h-3" /> Message
+                                        <Inbox className="w-3 h-3" /> Enquiry Message
                                     </label>
-                                    <p className="text-slate-700 text-sm whitespace-pre-wrap leading-relaxed bg-white border border-slate-200 p-3 rounded-lg">
-                                        {selectedEnquiry.message || "No message."}
+                                    <p className="text-slate-700 text-sm whitespace-pre-wrap leading-relaxed bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                        {parseEnquiryMessage(selectedEnquiry.message, selectedEnquiry.type).userMessage}
                                     </p>
                                 </div>
                             )}
+
+                            <div className="space-y-3">
+                                <label className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-2">
+                                    <MessageSquare className="w-3 h-3" /> Comments History
+                                </label>
+                                <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                                    {notesHistory.length === 0 ? (
+                                        <p className="text-slate-500 text-sm italic">No comments yet.</p>
+                                    ) : (
+                                        notesHistory.map((n) => (
+                                            <div key={n.id} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                                <p className="text-slate-700 text-sm whitespace-pre-wrap">{n.content}</p>
+                                                <span className="text-[10px] text-slate-400 mt-1 block">
+                                                    {new Date(n.created_at).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                <textarea
+                                    value={editedNote}
+                                    onChange={(e) => setEditedNote(e.target.value)}
+                                    className="w-full text-slate-700 text-sm leading-relaxed bg-white border border-slate-200 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    rows={2}
+                                    placeholder="Add your comments here..."
+                                />
+                                <div className="flex justify-end mt-2">
+                                    <button
+                                        onClick={handleSaveNote}
+                                        disabled={isSavingNote || !editedNote.trim()}
+                                        className={`px-4 py-2 text-white text-sm font-medium rounded-lg ${theme.button} disabled:opacity-50`}
+                                    >
+                                        {isSavingNote ? "Saving..." : "Save"}
+                                    </button>
+                                </div>
+                            </div>
 
                             <div className="flex gap-3 pt-4">
                                 {selectedEnquiry.phone && (

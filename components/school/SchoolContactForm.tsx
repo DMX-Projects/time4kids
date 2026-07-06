@@ -23,7 +23,7 @@ interface SchoolContactFormProps {
 const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
-    const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormData>();
+    const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactFormData>({ mode: 'onTouched' });
     const { addEnquiry } = useSchoolData();
     const { showToast } = useToast();
 
@@ -86,7 +86,10 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
                         Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
-                        {...register('name', { required: 'Name is required' })}
+                        {...register('name', { 
+                            required: 'Name is required',
+                            minLength: { value: 3, message: 'Name must be at least 3 characters' }
+                        })}
                         type="text"
                         className="w-full px-5 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium"
                         placeholder="John Doe"
@@ -152,6 +155,7 @@ const SchoolContactForm = ({ franchiseSlug, city }: SchoolContactFormProps) => {
                     <textarea
                         {...register('message', { required: 'Message is required' })}
                         rows={4}
+                        maxLength={250}
                         className="w-full px-5 py-4 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium resize-none"
                         placeholder="How can we help you?"
                     />

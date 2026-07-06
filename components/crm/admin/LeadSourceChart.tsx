@@ -42,9 +42,9 @@ export default function LeadSourceChart({ data }: { data: any[] }) {
             data={chartData}
             cx="50%"
             cy="50%"
-            labelLine={false}
+            labelLine={true}
             label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-            outerRadius={100}
+            outerRadius={80}
             fill="#8884d8"
             dataKey="value"
           >
