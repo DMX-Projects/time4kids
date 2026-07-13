@@ -14,6 +14,34 @@ const tabs: { key: EnquiryType | 'all'; label: string }[] = [
     { key: "contact", label: "Contact" },
 ];
 
+const STATUS_LABELS: Record<string, string> = {
+  // New statuses
+  untouched: 'Untouched',
+  not_answering: 'Not answering',
+  follow_up: 'Follow-up',
+  visited_school: 'Visited the school',
+  converted_admission: 'Converted to Admission',
+  joined_competition: 'Joined competition',
+  not_interested: 'Not Interested',
+  wrong_enquiry: 'Wrong enquiry',
+
+  // Legacy mappings for display fallback
+  new: 'Untouched',
+  called: 'Not answering',
+  contacted: 'Not answering',
+  not_answering_calls: 'Not answering',
+  hot: 'Follow-up',
+  warm: 'Follow-up',
+  cold: 'Follow-up',
+  meeting_scheduled: 'Visited the school',
+  converted: 'Converted to Admission',
+  converted_mou_signed: 'Converted to Admission',
+  converted_agreement_signed: 'Converted to Admission',
+  dropped: 'Not Interested',
+  join_later: 'Not Interested',
+  interested: 'Follow-up',
+}
+
 const HighlightText = ({ text, highlight }: { text: string; highlight: string }) => {
     if (!highlight || !highlight.trim() || !text) return <>{text}</>;
     const safeHighlight = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -163,15 +191,30 @@ export default function FranchiseEnquiriesPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'new': return 'text-sky-600 bg-sky-50 border-sky-100';
-            case 'contacted': return 'text-blue-600 bg-blue-50 border-blue-100';
-            case 'called': return 'text-violet-600 bg-violet-50 border-violet-100';
-            case 'follow_up': return 'text-amber-600 bg-amber-50 border-amber-100';
-            case 'interested': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
-            case 'meeting_scheduled': return 'text-teal-600 bg-teal-50 border-teal-100';
-            case 'dropped': return 'text-red-500 bg-red-50 border-red-100';
-            case 'not_interested': return 'text-rose-600 bg-rose-50 border-rose-100';
-            case 'converted': return 'text-green-600 bg-green-50 border-green-100';
+            case 'untouched': return 'text-slate-600 bg-slate-50 border-slate-200';
+            case 'not_answering': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+            case 'follow_up': return 'text-blue-600 bg-blue-50 border-blue-200';
+            case 'visited_school': return 'text-teal-600 bg-teal-50 border-teal-200';
+            case 'joined_competition': return 'text-purple-600 bg-purple-50 border-purple-200';
+            case 'converted_admission': return 'text-green-600 bg-green-50 border-green-200';
+            case 'not_interested': return 'text-red-600 bg-red-50 border-red-200';
+            case 'wrong_enquiry': return 'text-orange-600 bg-orange-50 border-orange-200';
+
+            // legacy
+            case 'new': return 'text-slate-600 bg-slate-50 border-slate-200';
+            case 'contacted': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+            case 'called': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+            case 'not_answering_calls': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+            case 'hot': return 'text-blue-600 bg-blue-50 border-blue-200';
+            case 'warm': return 'text-blue-600 bg-blue-50 border-blue-200';
+            case 'cold': return 'text-blue-600 bg-blue-50 border-blue-200';
+            case 'meeting_scheduled': return 'text-teal-600 bg-teal-50 border-teal-200';
+            case 'converted': return 'text-green-600 bg-green-50 border-green-200';
+            case 'converted_mou_signed': return 'text-green-600 bg-green-50 border-green-200';
+            case 'converted_agreement_signed': return 'text-green-600 bg-green-50 border-green-200';
+            case 'dropped': return 'text-red-600 bg-red-50 border-red-200';
+            case 'join_later': return 'text-red-600 bg-red-50 border-red-200';
+            case 'interested': return 'text-blue-600 bg-blue-50 border-blue-200';
             default: return 'text-slate-600 bg-slate-50 border-slate-100';
         }
     };
@@ -209,13 +252,14 @@ export default function FranchiseEnquiriesPage() {
                                     className="w-40 pl-3 pr-8 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
                                 >
                                     <option value="all">All Statuses</option>
-                                    <option value="new">Pending</option>
-                                    <option value="contacted">Called/Contacted</option>
-                                    <option value="follow_up">Follow Up</option>
-                                    <option value="interested">Interested</option>
-                                    <option value="meeting_scheduled">Meeting Scheduled</option>
-                                    <option value="dropped">Dropped/Not Interested</option>
-                                    <option value="converted">Converted</option>
+                                    <option value="untouched">Untouched</option>
+                                    <option value="not_answering">Not answering</option>
+                                    <option value="follow_up">Follow-up</option>
+                                    <option value="visited_school">Visited the school</option>
+                                    <option value="converted_admission">Converted to Admission</option>
+                                    <option value="joined_competition">Joined competition</option>
+                                    <option value="not_interested">Not Interested</option>
+                                    <option value="wrong_enquiry">Wrong enquiry</option>
                                 </select>
                             </div>
                             <div className="relative flex-1 md:w-56">
@@ -293,10 +337,7 @@ export default function FranchiseEnquiriesPage() {
                                                 </td>
                                                 <td className="px-6 py-4 align-top text-center">
                                                     <span className={`inline-block px-2 py-1 rounded text-xs font-medium border ${getStatusColor(enq.status)}`}>
-                                                        {enq.status === 'new' ? 'Pending' :
-                                                         enq.status === 'contacted' ? 'Called/Contacted' :
-                                                         enq.status === 'dropped' ? 'Dropped/Not Interested' :
-                                                         enq.status.replace(/_/g, ' ')}
+                                                        {STATUS_LABELS[enq.status] || enq.status.replace(/_/g, ' ')}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-4 align-top text-center">
@@ -389,15 +430,19 @@ export default function FranchiseEnquiriesPage() {
                                                 onChange={(e) => setModalStatus(e.target.value)}
                                                 className={`text-sm font-semibold px-3 py-2 rounded-lg border cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-orange-200 transition-all block w-full max-w-[250px] shadow-sm ${getStatusColor(modalStatus)}`}
                                             >
-                                                <option value="new">Pending</option>
-                                                <option value="contacted">Called/Contacted</option>
-                                                {selectedEnquiry.status === 'called' && <option value="called" disabled>Called/Contacted</option>}
-                                                <option value="follow_up">Follow Up</option>
-                                                <option value="interested">Interested</option>
-                                                <option value="meeting_scheduled">Meeting Scheduled</option>
-                                                <option value="dropped">Dropped/Not Interested</option>
-                                                {selectedEnquiry.status === 'not_interested' && <option value="not_interested" disabled>Dropped/Not Interested</option>}
-                                                <option value="converted">Converted</option>
+                                                {modalStatus && !['untouched', 'not_answering', 'follow_up', 'visited_school', 'converted_admission', 'joined_competition', 'not_interested', 'wrong_enquiry'].includes(modalStatus) && (
+                                                    <option value={modalStatus} disabled>
+                                                        {STATUS_LABELS[modalStatus] || modalStatus}
+                                                    </option>
+                                                )}
+                                                <option value="untouched">Untouched</option>
+                                                <option value="not_answering">Not answering</option>
+                                                <option value="follow_up">Follow-up</option>
+                                                <option value="visited_school">Visited the school</option>
+                                                <option value="converted_admission">Converted to Admission</option>
+                                                <option value="joined_competition">Joined competition</option>
+                                                <option value="not_interested">Not Interested</option>
+                                                <option value="wrong_enquiry">Wrong enquiry</option>
                                             </select>
                                         </div>
                                     </div>

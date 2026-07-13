@@ -68,7 +68,7 @@ const portalAnnouncementDetail = (row: Record<string, unknown>): string => {
     return String(row.audience_label || row.body || "").trim();
 };
 
-const CALENDAR_ITEM_TYPES = new Set(["event", "homework", "announcement", "newsletter", "holiday", "parental_tip"]);
+const CALENDAR_ITEM_TYPES = new Set(["event", "homework", "announcement", "newsletter", "holiday", "parental_tip", "activity"]);
 
 const mapApiCalendarItem = (row: Record<string, unknown>): PortalCalendarItem | null => {
     const type = String(row.type || "").trim().toLowerCase();

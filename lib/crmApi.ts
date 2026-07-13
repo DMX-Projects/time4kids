@@ -47,7 +47,10 @@ function resolveCrmUrl(path: string): string {
         return apiUrl(`/enquiries/admin/crm-centres/${qs ? `?${qs}` : ""}`);
     }
     if (pathname === "/cities") {
-        return apiUrl("/enquiries/admin/crm-cities/");
+        return apiUrl(`/enquiries/admin/crm-cities/${qs ? `?${qs}` : ""}`);
+    }
+    if (pathname === "/states") {
+        return apiUrl(`/enquiries/admin/crm-states/${qs ? `?${qs}` : ""}`);
     }
 
     const leadMatch = pathname.match(/^\/leads\/([^/?]+)$/);

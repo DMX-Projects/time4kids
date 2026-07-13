@@ -7,19 +7,22 @@ import { MultiSelectCheckbox } from '@/components/crm/MultiSelectCheckbox'
 interface CitySelectorProps {
   value: string[]
   onChange: (value: string[]) => void
+  state?: string
 }
 
-export default function CitySelector({ value, onChange }: CitySelectorProps) {
+export default function CitySelector({ value, onChange, state }: CitySelectorProps) {
   const [cities, setCities] = useState<{ name: string }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadCities()
-  }, [])
+  }, [state])
 
   const loadCities = async () => {
     try {
-      const response = await api.get('/cities')
+      const params = new URLSearchParams()
+      if (state) params.append('state', state)
+      const response = await api.get(`/cities?${params.toString()}`)
       setCities(response.data || [])
     } catch (error) {
       console.error('Failed to load cities:', error)

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, ChevronDown, ChevronRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { fetchAllApiList } from "@/lib/parent-school-api";
@@ -18,6 +18,7 @@ import {
     FranchiseNewsletterPanel,
     FranchiseParentalTipsPanel,
 } from "@/components/dashboard/franchise/FranchiseParentCmsPanels";
+import { FranchiseDailyActivitiesPanel } from "@/components/dashboard/franchise/FranchiseDailyActivitiesPanel";
 
 const HOMEWORK_CLASS_OPTIONS = [
     { value: "", label: "All classes" },
@@ -84,6 +85,7 @@ type Tab =
     | "homework"
     | "notifications"
     | "timetable"
+    | "activities"
     | "transport"
     | "calendar"
     | "showcase"
@@ -95,6 +97,7 @@ const TAB_CONFIG: { id: Tab; label: string }[] = [
     { id: "homework", label: "Homework" },
     { id: "notifications", label: "Notifications" },
     { id: "timetable", label: "Newsletter" },
+    { id: "activities", label: "Today's Activities" },
     { id: "parental_tips", label: "Parental Tips" },
     { id: "transport", label: "Transport" },
     { id: "calendar", label: "Calendar & Attendance" },
@@ -207,8 +210,9 @@ export default function ParentPortalAdminPage() {
                 <FranchiseAnnouncementsPanel authFetch={authFetch} showToast={showToast} students={students} />
             )}
             {tab === "timetable" && <FranchiseNewsletterPanel authFetch={authFetch} showToast={showToast} />}
+            {tab === "activities" && <FranchiseDailyActivitiesPanel authFetch={authFetch} showToast={showToast} />}
             {tab === "parental_tips" && <FranchiseParentalTipsPanel authFetch={authFetch} showToast={showToast} />}
-            {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} />}
+            {tab === "transport" && <TransportTab authFetch={authFetch} showToast={showToast} students={students} />}
             {tab === "calendar" && <CalendarAttendanceTab />}
             {tab === "showcase" && <FranchiseEventsPanel />}
             {tab === "fees" && <FranchiseFeesPanel authFetch={authFetch} showToast={showToast} />}
@@ -267,6 +271,29 @@ function HomeworkTab({
     const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
     const [editModal, setEditModal] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
     const [editSaving, setEditSaving] = useState(false);
+    const [submissionsModal, setSubmissionsModal] = useState<{
+        isOpen: boolean;
+        row: HomeworkRow | null;
+        loading: boolean;
+        list: any[];
+    }>({ isOpen: false, row: null, loading: false, list: [] });
+
+    const openSubmissions = async (row: HomeworkRow) => {
+        setSubmissionsModal({ isOpen: true, row, loading: true, list: [] });
+        try {
+            const detail = await authFetch<any>(`/students/franchise/homework/${row.id}/`);
+            setSubmissionsModal({
+                isOpen: true,
+                row,
+                loading: false,
+                list: detail.submissions || [],
+            });
+        } catch {
+            showToast("Failed to load submissions", "error");
+            setSubmissionsModal((prev) => ({ ...prev, isOpen: false, loading: false }));
+        }
+    };
+
     const [editForm, setEditForm] = useState({
         class_name: "",
         assigned_date: "",
@@ -514,6 +541,13 @@ function HomeworkTab({
         <li key={r.id} className="flex items-center justify-between gap-2 px-4 py-3 text-sm">
             <span className="font-medium text-[#1F2937] min-w-0">{r.title}</span>
             <div className="flex items-center gap-3 shrink-0">
+                <button
+                    type="button"
+                    className="text-[#FF922B] text-xs font-semibold hover:underline"
+                    onClick={() => void openSubmissions(r)}
+                >
+                    Submissions
+                </button>
                 <button type="button" className="text-[#2563EB] text-xs font-semibold" onClick={() => void openEdit(r)}>
                     Edit
                 </button>
@@ -800,6 +834,82 @@ function HomeworkTab({
                 confirmText="Yes, Delete"
                 variant="danger"
             />
+
+            <Modal
+                isOpen={submissionsModal.isOpen}
+                onClose={() => setSubmissionsModal((prev) => ({ ...prev, isOpen: false }))}
+                title={`Submissions — ${submissionsModal.row?.title || ""}`}
+                size="md"
+                placement="center"
+            >
+                {submissionsModal.loading ? (
+                    <div className="py-12 text-center text-xs text-gray-500 font-bold">
+                        Loading submissions...
+                    </div>
+                ) : submissionsModal.list.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-gray-400 font-semibold border border-dashed border-gray-200 rounded-2xl">
+                        No submissions yet. Parents haven&apos;t marked this homework as completed.
+                    </div>
+                ) : (
+                    <div className="max-h-[420px] overflow-y-auto space-y-3 pr-1">
+                        <div className="divide-y border border-[#E5E7EB] rounded-2xl bg-white overflow-hidden">
+                            {submissionsModal.list.map((sub: any) => (
+                                <div key={sub.id} className="p-4 flex items-center justify-between gap-4 text-xs">
+                                    <div className="space-y-1">
+                                        <p className="font-bold text-[#1F2937]">{sub.student_name}</p>
+                                        <p className="text-[10px] text-gray-400 font-semibold uppercase">
+                                            Completed on {new Date(sub.completed_at).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                        {sub.completed_images && sub.completed_images.length > 0 ? (
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                {sub.completed_images.map((imgUrl: string, idx: number) => (
+                                                    <a
+                                                        key={idx}
+                                                        href={imgUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="block hover:opacity-90 relative group"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <img
+                                                            src={imgUrl}
+                                                            alt={`Submission thumbnail ${idx + 1}`}
+                                                            className="w-12 h-12 object-cover rounded-lg border border-orange-100 shadow-xs"
+                                                        />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        ) : sub.completed_image ? (
+                                            <a
+                                                href={sub.completed_image}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="block hover:opacity-90 relative group"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <img
+                                                    src={sub.completed_image}
+                                                    alt="Submission thumbnail"
+                                                    className="w-12 h-12 object-cover rounded-lg border border-orange-100 shadow-xs"
+                                                />
+                                            </a>
+                                        ) : (
+                                            <span className="text-[10px] font-bold text-gray-400 italic">
+                                                No image uploaded
+                                            </span>
+                                        )}
+                                        <span className="px-2 py-0.5 font-bold rounded-lg border border-green-100 bg-green-50 text-green-700">
+                                            Completed ✓
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }
@@ -918,32 +1028,29 @@ function AnnouncementsTab({ authFetch }: { authFetch: AuthFetchFn }) {
 function TransportTab({
     authFetch,
     showToast,
+    students,
 }: {
     authFetch: AuthFetchFn;
     showToast: ShowToastFn;
+    students: MiniStudent[];
 }) {
-    const emptyRouteForm = {
-        route_name: "",
-        driver_profile: "",
+    const [drivers, setDrivers] = useState<any[]>([]);
+    const [rows, setRows] = useState<any[]>([]);
+    const [assignments, setAssignments] = useState<any[]>([]);
+    
+    // Left side form state
+    const [routeName, setRouteName] = useState("");
+    const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [studentSearchQuery, setStudentSearchQuery] = useState("");
+    const [expandedClasses, setExpandedClasses] = useState<Record<string, boolean>>({});
+    const [expandedAssignedRoutes, setExpandedAssignedRoutes] = useState<Record<number, boolean>>({});
+
+    const toggleClass = (className: string) => {
+        setExpandedClasses(prev => ({ ...prev, [className]: !prev[className] }));
     };
 
-    const [form, setForm] = useState(emptyRouteForm);
-    const [drivers, setDrivers] = useState<any[]>([]);
-    const [rows, setRows] = useState<
-        Array<{
-            id: number;
-            route_name: string;
-            vehicle_number?: string;
-            driver_name?: string;
-            driver_token?: string;
-            driver_info?: {
-                full_name: string;
-                email: string;
-            };
-            tracking_note?: string;
-        }>
-    >([]);
-    const [editingRouteId, setEditingRouteId] = useState<number | null>(null);
+    // Delete confirmation state
     const [confirmDelete, setConfirmDelete] = useState<{
         isOpen: boolean;
         id: number | null;
@@ -954,15 +1061,18 @@ function TransportTab({
 
     const load = useCallback(async () => {
         try {
-            const [routeData, driverData] = await Promise.all([
+            const [routeData, driverData, assignmentData] = await Promise.all([
                 authFetch<unknown>("/students/franchise/transport/"),
                 authFetch<unknown>("/students/franchise/drivers/"),
+                authFetch<unknown>("/students/franchise/transport-assignments/"),
             ]);
             setRows(normalizeList<any>(routeData));
             setDrivers(normalizeList<any>(driverData));
+            setAssignments(normalizeList<any>(assignmentData));
         } catch {
             setRows([]);
             setDrivers([]);
+            setAssignments([]);
         }
     }, [authFetch]);
 
@@ -970,35 +1080,63 @@ function TransportTab({
         void load();
     }, [load]);
 
-    const submit = async (e: React.FormEvent) => {
+    // Create Route & Assign Students
+    const submitCreateRoute = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!routeName.trim()) return;
+        
+        setIsSubmitting(true);
         try {
-            const payload = {
-                route_name: form.route_name.trim(),
-                driver_profile: form.driver_profile ? Number(form.driver_profile) : null,
-            };
-
-            if (editingRouteId) {
-                await authFetch(`/students/franchise/transport/${editingRouteId}/`, {
-                    method: "PATCH",
-                    headers: jsonHeaders(),
-                    body: JSON.stringify(payload),
-                });
-                showToast("Route updated successfully", "success");
-            } else {
-                await authFetch("/students/franchise/transport/", {
-                    method: "POST",
-                    headers: jsonHeaders(),
-                    body: JSON.stringify(payload),
-                });
-                showToast("Route added successfully", "success");
+            // 1. Create Route
+            const routeRes = await authFetch<any>("/students/franchise/transport/", {
+                method: "POST",
+                headers: jsonHeaders(),
+                body: JSON.stringify({ route_name: routeName.trim() }),
+            });
+            
+            const newRouteId = routeRes.id;
+            
+            // 2. Assign selected students
+            if (selectedStudents.length > 0) {
+                await Promise.all(selectedStudents.map(async (studentId) => {
+                    await authFetch("/students/franchise/transport-assignments/", {
+                        method: "POST",
+                        headers: jsonHeaders(),
+                        body: JSON.stringify({
+                            route: newRouteId,
+                            student: studentId,
+                            pickup_stop: "",
+                            drop_stop: "",
+                        }),
+                    });
+                }));
             }
 
-            setForm(emptyRouteForm);
-            setEditingRouteId(null);
+            showToast("Route created and students assigned", "success");
+            setRouteName("");
+            setSelectedStudents([]);
+            await load();
+        } catch (err) {
+            showToast("Failed to create route or assign students", "error");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Quick assign driver to existing route
+    const assignDriver = async (routeId: number, driverProfileId: string) => {
+        try {
+            await authFetch(`/students/franchise/transport/${routeId}/`, {
+                method: "PATCH",
+                headers: jsonHeaders(),
+                body: JSON.stringify({
+                    driver_profile: driverProfileId ? Number(driverProfileId) : null,
+                }),
+            });
+            showToast("Driver assigned", "success");
             await load();
         } catch {
-            showToast("Save failed", "error");
+            showToast("Failed to assign driver", "error");
         }
     };
 
@@ -1012,103 +1150,199 @@ function TransportTab({
         }
     };
 
-    const startEditing = (route: any) => {
-        setEditingRouteId(route.id);
-        setForm({
-            route_name: route.route_name || "",
-            driver_profile: route.driver_profile?.id?.toString() || route.driver_profile?.toString() || "",
-        });
-        window.scrollTo({ top: 0, behavior: "smooth" });
+    const deleteAssignment = async (id: number) => {
+        try {
+            await authFetch(`/students/franchise/transport-assignments/${id}/`, { method: "DELETE" });
+            showToast("Student removed from route", "success");
+            await load();
+        } catch {
+            showToast("Failed to remove student", "error");
+        }
     };
 
-    return (
-        <div className="space-y-4 max-w-3xl">
-            <form onSubmit={submit} className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3 max-w-md">
-                <input
-                    required
-                    placeholder="Route name"
-                    value={form.route_name}
-                    onChange={(e) => setForm((p) => ({ ...p, route_name: e.target.value }))}
-                    className="w-full rounded-xl border px-3 py-2 text-sm"
-                />
-                <select
-                    value={form.driver_profile}
-                    onChange={(e) => setForm((p) => ({ ...p, driver_profile: e.target.value }))}
-                    className="w-full rounded-xl border px-3 py-2 text-sm bg-white"
-                >
-                    <option value="">Assign driver account</option>
-                    {drivers.map((d) => (
-                        <option key={d.id} value={d.id}>
-                            {d.user?.full_name || d.user?.email}
-                        </option>
-                    ))}
-                </select>
-                <div className="flex flex-wrap gap-2 pt-1">
-                <Button type="submit" className="bg-[#FF922B] text-white w-fit">
-                    {editingRouteId ? "Update route" : "Add route"}
-                </Button>
-                {editingRouteId && (
-                    <Button 
-                        type="button" 
-                        onClick={() => {
-                            setEditingRouteId(null);
-                            setForm(emptyRouteForm);
-                        }}
-                        className="bg-gray-100 text-gray-700 w-fit"
-                    >
-                        Cancel
-                    </Button>
-                )}
-                </div>
-            </form>
+    const unassignedStudents = students
+        .filter(s => !assignments.some(a => a.student === s.id))
+        .filter(s => s.full_name.toLowerCase().includes(studentSearchQuery.toLowerCase()) || 
+                     (s.class_name && s.class_name.toLowerCase().includes(studentSearchQuery.toLowerCase())));
 
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-[#111827]">Driver links</p>
-                    <button type="button" onClick={() => void load()} className="text-xs text-[#2563EB] underline">
-                        Refresh
+
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            
+            {/* LEFT SIDE: Creation Flow */}
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 shadow-sm space-y-6">
+                <div>
+                    <h3 className="text-lg font-bold text-[#111827]">Create New Route</h3>
+                    <p className="text-sm text-[#6B7280]">Select students and add a new route for them.</p>
+                </div>
+                
+                <form onSubmit={submitCreateRoute} className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-[#374151]">1. Select Unassigned Students</label>
+                        <input
+                            type="text"
+                            placeholder="Search students by name or class..."
+                            value={studentSearchQuery}
+                            onChange={(e) => setStudentSearchQuery(e.target.value)}
+                            className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                        />
+                        <div className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] h-64 overflow-y-auto p-2 space-y-2">
+                            {unassignedStudents.length === 0 ? (
+                                <p className="text-xs text-[#6B7280] text-center p-4">All students are assigned to routes.</p>
+                            ) : (
+                                unassignedStudents.map((s) => (
+                                    <label key={s.id} className="flex items-center gap-3 p-2 hover:bg-white rounded-lg cursor-pointer border border-transparent hover:border-gray-200 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedStudents.includes(s.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) setSelectedStudents([...selectedStudents, s.id]);
+                                                else setSelectedStudents(selectedStudents.filter(id => id !== s.id));
+                                            }}
+                                            className="rounded border-gray-300 text-orange-500 focus:ring-orange-500 w-4 h-4"
+                                        />
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#111827]">{s.full_name}</p>
+                                            <p className="text-[10px] text-[#6B7280]">{s.class_name || "No class"}</p>
+                                        </div>
+                                    </label>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-[#374151]">2. Name the Route</label>
+                        <input
+                            required
+                            placeholder="e.g. Morning Pickup Route 1"
+                            value={routeName}
+                            onChange={(e) => setRouteName(e.target.value)}
+                            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                        />
+                    </div>
+
+                    <Button 
+                        type="submit" 
+                        disabled={isSubmitting || !routeName.trim()}
+                        className="bg-[#FF922B] hover:bg-[#F97316] text-white w-full py-3 rounded-xl font-semibold shadow-sm transition-colors"
+                    >
+                        {isSubmitting ? "Creating..." : `Create Route & Assign ${selectedStudents.length} Students`}
+                    </Button>
+                </form>
+            </div>
+
+            {/* RIGHT SIDE: Management & History */}
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b">
+                    <div>
+                        <h3 className="text-lg font-bold text-[#111827]">Route History & Management</h3>
+                        <p className="text-sm text-[#6B7280]">Assign drivers and manage your routes.</p>
+                    </div>
+                    <button type="button" onClick={() => void load()} className="p-2 text-gray-500 hover:text-[#2563EB] hover:bg-blue-50 rounded-lg transition-colors">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     </button>
                 </div>
-                {rows.length === 0 && <p className="text-sm text-[#6B7280]">No routes added yet.</p>}
-                <ul className="space-y-2">
+
+                <div className="space-y-4 max-h-[800px] overflow-y-auto pr-1">
+                    {rows.length === 0 && (
+                        <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                            <p className="text-sm text-gray-500">No routes created yet.</p>
+                        </div>
+                    )}
+                    
                     {rows.map((r) => (
-                            <li key={r.id} className="rounded-xl border border-[#E5E7EB] p-3">
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="flex-1">
-                                        <p className="font-medium text-[#111827]">{r.route_name}</p>
-                                        <p className="text-xs text-[#4B5563]">
-                                            {r.driver_info
-                                                ? `Driver: ${r.driver_info.full_name} (${r.driver_info.email})`
-                                                : "No driver assigned"}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                        <button
-                                            type="button"
-                                            onClick={() => startEditing(r)}
-                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            title="Edit route"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setConfirmDelete({ isOpen: true, id: r.id })}
-                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Delete route"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </button>
+                        <div key={r.id} className="rounded-xl border border-[#E5E7EB] overflow-hidden bg-[#F9FAFB]">
+                            {/* Route Header */}
+                            <div className="p-4 bg-white border-b flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-[#111827] text-base">{r.route_name}</h4>
+                                    
+                                    {/* Quick Driver Assign */}
+                                    <div className="mt-3">
+                                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Assigned Driver</label>
+                                        {r.driver_profile ? (
+                                            <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg py-1.5 px-3">
+                                                <span className="text-sm font-semibold text-[#111827]">
+                                                    {drivers.find(d => d.id === (r.driver_profile?.id || r.driver_profile))?.user?.full_name || "Assigned"}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => assignDriver(r.id, "")}
+                                                    className="text-xs text-red-500 font-semibold hover:underline"
+                                                >
+                                                    Unassign
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <select
+                                                value=""
+                                                onChange={(e) => assignDriver(r.id, e.target.value)}
+                                                className="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-1.5 px-2 bg-gray-50 hover:bg-white transition-colors"
+                                            >
+                                                <option value="">-- Select driver to assign --</option>
+                                                {drivers.map((d) => (
+                                                    <option key={d.id} value={d.id}>
+                                                        {d.user?.full_name || d.user?.email}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
-                                {r.driver_token && (
-                                    <div className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
-                                        Route Authorized for Live Tracking
-                                    </div>
-                                )}
-                            </li>
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmDelete({ isOpen: true, id: r.id })}
+                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                    title="Delete route"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
+
+                            {/* Assigned Students */}
+                            <div className="p-4">
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assigned Students</p>
+                                <ul className="space-y-1">
+                                    {(() => {
+                                        const routeAssignments = assignments.filter(a => a.route === r.id);
+                                        const isExpanded = expandedAssignedRoutes[r.id];
+                                        const visibleAssignments = isExpanded ? routeAssignments : routeAssignments.slice(0, 10);
+                                        
+                                        return (
+                                            <>
+                                                {routeAssignments.length === 0 && (
+                                                    <li className="text-xs text-gray-500 italic">No students assigned.</li>
+                                                )}
+                                                {visibleAssignments.map((a) => (
+                                                    <li key={a.id} className="flex items-center justify-between group py-1 border-b border-transparent hover:border-gray-200">
+                                                        <span className="text-sm font-medium text-gray-700">{a.student_name}</span>
+                                                        <button
+                                                            onClick={() => deleteAssignment(a.id)}
+                                                            className="text-xs text-red-500 opacity-0 group-hover:opacity-100 font-semibold hover:underline transition-opacity px-2"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                                {routeAssignments.length > 10 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setExpandedAssignedRoutes(prev => ({...prev, [r.id]: !isExpanded}))}
+                                                        className="w-full text-center text-xs font-semibold text-blue-600 hover:text-blue-800 py-2 mt-1 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    >
+                                                        {isExpanded ? "Show less" : `Show all ${routeAssignments.length} students`}
+                                                    </button>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </ul>
+                            </div>
+                        </div>
                     ))}
-                </ul>
+                </div>
             </div>
 
             <ConfirmModal
@@ -1118,10 +1352,11 @@ function TransportTab({
                     if (confirmDelete.id) void deleteRoute(confirmDelete.id);
                 }}
                 title="Delete route"
-                description="Are you sure you want to delete this route?"
+                description="Are you sure you want to delete this route and all its assignments?"
                 confirmText="Yes, delete"
                 variant="danger"
             />
         </div>
     );
 }
+

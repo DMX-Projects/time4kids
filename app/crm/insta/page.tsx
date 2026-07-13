@@ -23,11 +23,7 @@ interface FormData {
   expectedStartDate?: string
 }
 
-const FRANCHISE_TYPES = [
-  { value: 'preschool', label: 'Preschool' },
-  { value: 'daycare', label: 'Daycare' },
-  { value: 'learning_center', label: 'Learning Center' },
-]
+// Removed FRANCHISE_TYPES
 
 const INVESTMENT_RANGES = [
   '10-20 Lakhs',
@@ -225,25 +221,14 @@ export default function InstagramPage() {
                   {errors.preferredCentreLocation && <p style={{ color: 'red', fontSize: '12px', marginTop: '4px', marginBottom: '8px' }}>{errors.preferredCentreLocation.message}</p>}
                 </div>
 
-                <div className={styles.formRow}>
-                  <div>
-                    <label htmlFor="ig-franchise">Franchise Type</label>
-                    <select id="ig-franchise" {...register('franchiseType')}>
-                      <option value="">Select Type</option>
-                      {FRANCHISE_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="ig-investment">Investment Range</label>
-                    <select id="ig-investment" {...register('investmentRange')}>
-                      <option value="">Select Range</option>
-                      {INVESTMENT_RANGES.map((r) => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label htmlFor="ig-investment">Investment Range</label>
+                  <select id="ig-investment" {...register('investmentRange')}>
+                    <option value="">Select Range</option>
+                    {INVESTMENT_RANGES.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

@@ -28,6 +28,7 @@ export const HIDE_PARENT_SIDEBAR_MAIN_LINKS = false;
 const HIDDEN_WHEN_FLAG: ReadonlySet<string> = new Set([
     "My details",
     "Homework",
+    "Today's Activities",
     "Notifications",
     "Newsletter",
     "Parental Tips",
@@ -44,6 +45,7 @@ const PARENT_SIDEBAR_NAV_ALL: DashboardNavItem[] = [
     { label: "Dashboard", href: "/dashboard/parent", icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
     { label: "My details", href: "/dashboard/parent/student-profile", icon: <User className="w-[18px] h-[18px]" /> },
     { label: "Homework", href: "/dashboard/parent/homework", icon: <BookOpen className="w-[18px] h-[18px]" /> },
+    { label: "Today's Activities", href: "/dashboard/parent/activities", icon: <CalendarCheck className="w-[18px] h-[18px] text-pink-500" /> },
     { label: "Notifications", href: "/dashboard/parent/notifications", icon: <Bell className="w-[18px] h-[18px]" /> },
     { label: "Newsletter", href: "/dashboard/parent/timetable", icon: <Newspaper className="w-[18px] h-[18px]" /> },
     { label: "Parental Tips", href: "/dashboard/parent/parental-tips", icon: <Lightbulb className="w-[18px] h-[18px]" /> },

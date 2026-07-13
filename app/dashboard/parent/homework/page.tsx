@@ -16,6 +16,16 @@ type HwRow = {
     attachment?: string | null;
     attachment_name?: string;
     attachment_kind?: "IMAGE" | "PDF" | string;
+    submission?: {
+        id: number;
+        student: number;
+        homework: number;
+        completed_image?: string | null;
+        images?: { id: number; image: string }[] | null;
+        is_completed: boolean;
+        completed_at: string;
+        updated_at: string;
+    } | null;
 };
 
 const normalizeHomework = (data: unknown): HwRow[] => {
@@ -35,6 +45,59 @@ export default function HomeworkPage() {
     const [rows, setRows] = useState<HwRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+    const [selectedFiles, setSelectedFiles] = useState<Record<number, File[]>>({});
+    const [submittingId, setSubmittingId] = useState<number | null>(null);
+
+    const submitHomework = async (homeworkId: number) => {
+        if (!selectedStudent?.id) return;
+        setSubmittingId(homeworkId);
+        try {
+            const formData = new FormData();
+            formData.append("student", String(selectedStudent.id));
+            const files = selectedFiles[homeworkId];
+            if (files && files.length > 0) {
+                files.forEach((file) => {
+                    formData.append("completed_image", file);
+                });
+            }
+
+            const sub = await authFetch<HwRow["submission"]>(`/students/parent/homework/${homeworkId}/submit/`, {
+                method: "POST",
+                body: formData,
+            });
+
+            setRows((prev) =>
+                prev.map((r) => (r.id === homeworkId ? { ...r, submission: sub } : r))
+            );
+            setSelectedFiles((prev) => {
+                const next = { ...prev };
+                delete next[homeworkId];
+                return next;
+            });
+        } catch (err) {
+            console.error("Failed to submit homework", err);
+        } finally {
+            setSubmittingId(null);
+        }
+    };
+
+    const markAsIncomplete = async (homeworkId: number) => {
+        if (!selectedStudent?.id) return;
+        try {
+            const params = new URLSearchParams({
+                student: String(selectedStudent.id),
+            });
+            await authFetch(`/students/parent/homework/${homeworkId}/submit/?${params.toString()}`, {
+                method: "DELETE",
+            });
+
+            setRows((prev) =>
+                prev.map((r) => (r.id === homeworkId ? { ...r, submission: null } : r))
+            );
+        } catch (err) {
+            console.error("Failed to mark as incomplete", err);
+        }
+    };
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -227,10 +290,138 @@ export default function HomeworkPage() {
                                                         )}
                                                     </div>
                                                 ) : null}
-                                                <div className="mt-6 flex justify-end">
-                                                    <div className="px-3 py-1 bg-orange-50 rounded-full text-[10px] font-bold text-orange-600">
-                                                        VIEWED ✓
-                                                    </div>
+                                                {/* Homework Submission Panel */}
+                                                <div className="mt-6 pt-5 border-t border-orange-50 space-y-4">
+                                                    <p className="text-[11px] font-black text-orange-500 uppercase tracking-widest">
+                                                        Completion Status
+                                                    </p>
+
+                                                    {h.submission?.is_completed ? (
+                                                        <div className="bg-green-50/60 border border-green-100 rounded-2xl p-4 space-y-3">
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                                                    Completed
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        void markAsIncomplete(h.id);
+                                                                    }}
+                                                                    className="text-xs text-red-600 hover:text-red-800 hover:underline font-bold"
+                                                                >
+                                                                    Mark as Incomplete
+                                                                </button>
+                                                            </div>
+                                                            {h.submission.images && h.submission.images.length > 0 ? (
+                                                                <div className="space-y-2">
+                                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                                                                        Submitted Page Images ({h.submission.images.length}):
+                                                                    </p>
+                                                                    <div className="flex flex-wrap gap-3">
+                                                                        {h.submission.images.map((imgObj) => (
+                                                                            <div key={imgObj.id} className="relative group/img w-32 h-32 rounded-xl overflow-hidden border border-green-100 bg-white shadow-xs">
+                                                                                <img
+                                                                                    src={imgObj.image}
+                                                                                    alt="Completed homework page"
+                                                                                    className="h-full w-full object-cover"
+                                                                                />
+                                                                                <a
+                                                                                    href={imgObj.image}
+                                                                                    target="_blank"
+                                                                                    rel="noreferrer"
+                                                                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white text-[10px] font-bold transition-opacity"
+                                                                                    onClick={(e) => e.stopPropagation()}
+                                                                                >
+                                                                                    Open Image
+                                                                                </a>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ) : h.submission.completed_image ? (
+                                                                <div className="space-y-1">
+                                                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                                                                        Submitted Page Image:
+                                                                    </p>
+                                                                    <div className="relative group/img max-w-sm rounded-xl overflow-hidden border border-green-100 bg-white">
+                                                                        <img
+                                                                            src={h.submission.completed_image}
+                                                                            alt="Completed homework page"
+                                                                            className="max-h-48 object-cover w-full"
+                                                                        />
+                                                                        <a
+                                                                            href={h.submission.completed_image}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity"
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                        >
+                                                                            Open full image
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="bg-orange-50/30 border border-orange-100/60 rounded-2xl p-4 space-y-4">
+                                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                                <div className="space-y-1">
+                                                                    <p className="text-xs font-bold text-gray-700">
+                                                                        Mark this homework as completed
+                                                                    </p>
+                                                                    <p className="text-[10px] text-gray-500 font-medium">
+                                                                        You can optionally upload photos of the completed pages.
+                                                                    </p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={submittingId === h.id}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        void submitHomework(h.id);
+                                                                    }}
+                                                                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 self-start sm:self-auto disabled:opacity-50"
+                                                                >
+                                                                    {submittingId === h.id ? "Saving..." : "Mark as Completed"}
+                                                                </button>
+                                                            </div>
+
+                                                            {/* Image Upload Input */}
+                                                            <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                                                                <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider">
+                                                                    Upload Completed Homework Page(s) (Optional)
+                                                                </label>
+                                                                <div className="flex items-center gap-3">
+                                                                    <input
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        multiple
+                                                                        id={`file-input-${h.id}`}
+                                                                        onChange={(e) => {
+                                                                            const files = e.target.files;
+                                                                            if (files && files.length > 0) {
+                                                                                setSelectedFiles((prev) => ({ ...prev, [h.id]: Array.from(files) }));
+                                                                            }
+                                                                        }}
+                                                                        className="hidden"
+                                                                    />
+                                                                    <label
+                                                                        htmlFor={`file-input-${h.id}`}
+                                                                        className="cursor-pointer px-3 py-1.5 bg-white border border-gray-200 hover:border-orange-300 text-gray-700 text-xs font-bold rounded-lg transition-colors inline-flex items-center gap-1"
+                                                                    >
+                                                                        📁 Choose Image(s)
+                                                                    </label>
+                                                                    <span className="text-xs text-gray-500 font-medium truncate max-w-xs">
+                                                                        {selectedFiles[h.id] && selectedFiles[h.id].length > 0
+                                                                            ? `${selectedFiles[h.id].length} file(s) chosen`
+                                                                            : "No files chosen"}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

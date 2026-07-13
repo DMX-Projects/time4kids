@@ -43,7 +43,7 @@ const tabs: { key: EnquiryType; label: string }[] = [
     { key: "contact", label: "Contact" },
 ];
 
-const PAGE_SIZE = 20;
+// PAGE_SIZE is now a dynamic state variable
 
 const API_TYPE: Record<EnquiryType, string | undefined> = {
     all: undefined,
@@ -122,6 +122,7 @@ export default function AdminEnquiriesPage() {
     const [selectedEnquiry, setSelectedEnquiry] = useState<Enquiry | null>(null);
     const [notesHistory, setNotesHistory] = useState<EnquiryNote[]>([]);
     const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
     const [total, setTotal] = useState(0);
     const [editedNote, setEditedNote] = useState("");
     const [isSavingNote, setIsSavingNote] = useState(false);
@@ -142,7 +143,7 @@ export default function AdminEnquiriesPage() {
         try {
             const params = new URLSearchParams({
                 page: page.toString(),
-                limit: PAGE_SIZE.toString(),
+                limit: pageSize.toString(),
             });
             const typeParam = API_TYPE[activeTab];
             if (typeParam) params.append("type", typeParam);
@@ -167,7 +168,7 @@ export default function AdminEnquiriesPage() {
         } finally {
             setLoading(false);
         }
-    }, [authFetch, page, activeTab, statusFilter, search]);
+    }, [authFetch, page, pageSize, activeTab, statusFilter, search]);
 
     useEffect(() => {
         void fetchEnquiries();
@@ -186,7 +187,7 @@ export default function AdminEnquiriesPage() {
 
     useEffect(() => {
         setPage(1);
-    }, [search]);
+    }, [search, pageSize]);
 
     const handleStatusChange = async (enq: Enquiry, newStatus: string) => {
         const rawId = enq.id.replace(/^[ef]-/, "");
@@ -337,6 +338,13 @@ export default function AdminEnquiriesPage() {
                                 <th className="px-6 py-4">Applicant</th>
                                 <th className="px-6 py-4">Location</th>
                                 <th className="px-6 py-4">Type</th>
+                                {activeTab === 'admission' && (
+                                    <>
+                                        <th className="px-6 py-4">Child Name</th>
+                                        <th className="px-6 py-4">Child Age</th>
+                                        <th className="px-6 py-4">Program</th>
+                                    </>
+                                )}
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-4 py-4 text-center">Actions</th>
                             </tr>
@@ -344,13 +352,13 @@ export default function AdminEnquiriesPage() {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                                    <td colSpan={activeTab === 'admission' ? 8 : 5} className="px-6 py-12 text-center text-slate-500">
                                         Loading enquiries...
                                     </td>
                                 </tr>
                             ) : filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                                    <td colSpan={activeTab === 'admission' ? 8 : 5} className="px-6 py-12 text-center text-slate-500">
                                         <Inbox className="w-8 h-8 mx-auto mb-2 text-slate-300" />
                                         No enquiries found.
                                     </td>
@@ -381,6 +389,19 @@ export default function AdminEnquiriesPage() {
                                                     {enq.type}
                                                 </span>
                                             </td>
+                                            {activeTab === 'admission' && (() => {
+                                                const msg = enq.message || '';
+                                                const child = msg.match(/Child:\s*([^,\|]+)/i)?.[1]?.trim() || '—';
+                                                const age = enq.childAge || msg.match(/Age:\s*([^,\|]+)/i)?.[1]?.trim() || '—';
+                                                const program = msg.match(/Program:\s*([^,\|]+)/i)?.[1]?.trim() || '—';
+                                                return (
+                                                    <>
+                                                        <td className="px-6 py-4 align-top text-slate-600 font-medium">{child}</td>
+                                                        <td className="px-6 py-4 align-top text-slate-600">{age}</td>
+                                                        <td className="px-6 py-4 align-top text-slate-600">{program}</td>
+                                                    </>
+                                                );
+                                            })()}
                                             <td className="px-6 py-4 align-top">
                                                 <select
                                                     value={enq.status}
@@ -411,31 +432,88 @@ export default function AdminEnquiriesPage() {
                         </tbody>
                     </table>
                 </div>
-                {!loading && total > 0 && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50 text-sm text-slate-600">
-                        <span>
-                            Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, total)} of {total} enquiries
-                        </span>
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                disabled={page === 1}
-                                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white disabled:opacity-50 hover:bg-slate-50"
-                            >
-                                Previous
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setPage((p) => p + 1)}
-                                disabled={page * PAGE_SIZE >= total}
-                                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white disabled:opacity-50 hover:bg-slate-50"
-                            >
-                                Next
-                            </button>
+                {!loading && total > 0 && (() => {
+                    const totalPages = Math.ceil(total / pageSize);
+                    
+                    // Generate pagination items
+                    const getPageNumbers = () => {
+                        const items: (number | string)[] = [];
+                        if (totalPages <= 7) {
+                            for (let i = 1; i <= totalPages; i++) items.push(i);
+                        } else {
+                            if (page <= 4) {
+                                items.push(1, 2, 3, 4, 5, "...", totalPages);
+                            } else if (page >= totalPages - 3) {
+                                items.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                            } else {
+                                items.push(1, "...", page - 1, page, page + 1, "...", totalPages);
+                            }
+                        }
+                        return items;
+                    };
+
+                    return (
+                        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50 text-sm text-slate-600">
+                            <div className="flex items-center gap-4">
+                                <span>
+                                    Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total} enquiries
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-slate-500">Show:</span>
+                                    <select
+                                        value={pageSize}
+                                        onChange={(e) => setPageSize(Number(e.target.value))}
+                                        className="bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-slate-500 text-xs font-semibold text-slate-700"
+                                    >
+                                        <option value="10">10</option>
+                                        <option value="20">20</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white disabled:opacity-50 hover:bg-slate-50 text-xs font-medium"
+                                >
+                                    Prev
+                                </button>
+                                
+                                {getPageNumbers().map((item, idx) => (
+                                    item === "..." ? (
+                                        <span key={`dots-${idx}`} className="px-2 py-1 text-slate-400">...</span>
+                                    ) : (
+                                        <button
+                                            key={`page-${item}`}
+                                            type="button"
+                                            onClick={() => setPage(Number(item))}
+                                            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                                                page === item
+                                                    ? "bg-slate-950 text-white border-slate-950 font-bold"
+                                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                            }`}
+                                        >
+                                            {item}
+                                        </button>
+                                    )
+                                ))}
+
+                                <button
+                                    type="button"
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={page >= totalPages}
+                                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white disabled:opacity-50 hover:bg-slate-50 text-xs font-medium"
+                                >
+                                    Next
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
             </div>
 
             <Modal isOpen={!!selectedEnquiry} onClose={() => { setSelectedEnquiry(null); setEditedNote(""); }} title="Enquiry Details">

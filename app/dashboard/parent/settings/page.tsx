@@ -50,6 +50,7 @@ export default function ParentSettingsPage() {
 
     const [form, setForm] = useState({
         name: "",
+        email: "",
         phone: "",
         city: "",
         address: "",
@@ -61,11 +62,12 @@ export default function ParentSettingsPage() {
     useEffect(() => {
         setForm({
             name: parentProfile.name,
+            email: parentProfile.email || user?.email || "",
             phone: parentProfile.phone,
             city: parentProfile.city,
             address: parentProfile.address,
         });
-    }, [parentProfile]);
+    }, [parentProfile, user]);
 
     const displayEmail = parentProfile.email || user?.email || "—";
 
@@ -92,6 +94,7 @@ export default function ParentSettingsPage() {
         try {
             await updateParentProfile({
                 name: form.name.trim(),
+                email: form.email.trim(),
                 phone,
                 city: form.city.trim(),
                 address: form.address.trim(),
@@ -172,10 +175,10 @@ export default function ParentSettingsPage() {
                             <Input
                                 label="Email / login"
                                 type="email"
-                                value={displayEmail}
-                                disabled
-                                readOnly
-                                title="Email is managed by your centre login"
+                                value={form.email}
+                                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                                required
+                                title="Used to log in and receive notifications"
                             />
                             <Input
                                 label="Mobile"
@@ -227,6 +230,7 @@ export default function ParentSettingsPage() {
                                     setSaveFeedback(null);
                                     setForm({
                                         name: parentProfile.name,
+                                        email: parentProfile.email || user?.email || "",
                                         phone: parentProfile.phone,
                                         city: parentProfile.city,
                                         address: parentProfile.address,

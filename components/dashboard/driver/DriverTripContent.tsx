@@ -10,7 +10,8 @@ import { useToast } from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import { apiUrl, jsonHeaders } from "@/lib/api-client";
-import { RouteInfo, ActiveTrip } from "./types";
+import { RouteInfo, ActiveTrip, AssignedStudent } from "./types";
+import { StudentList } from "./StudentList";
 
 const TOKEN_KEY = "tk-driver-route-token";
 
@@ -40,6 +41,7 @@ export function DriverTripContent() {
     const searchParams = useSearchParams();
     const [route, setRoute] = useState<RouteInfo | null>(null);
     const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
+    const [students, setStudents] = useState<AssignedStudent[]>([]);
     const [loading, setLoading] = useState(false);
     const [startingTrip, setStartingTrip] = useState(false);
     const { showToast } = useToast();
@@ -202,6 +204,7 @@ export function DriverTripContent() {
                 }
 
                 if (data.all_routes) setAllRoutes(data.all_routes);
+                if (data.students) setStudents(data.students);
                 if (data.route && !selectedRouteId) {
                     setSelectedRouteId(String(data.route.id));
                 }
@@ -222,6 +225,34 @@ export function DriverTripContent() {
         },
         [user, authFetch, selectedRouteId, showToast, endGpsWatch, shareLocationNow, resolveRouteId],
     );
+
+    const handleStatusChange = async (studentId: number, status: string) => {
+        try {
+            let res;
+            const payload = { route_id: resolveRouteId(), student_id: studentId, status };
+            if (user?.role === "driver") {
+                res = await authFetch("/students/driver/me/trip/student-status/", {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify(payload),
+                });
+            } else {
+                const token = localStorage.getItem(TOKEN_KEY);
+                res = await fetch(apiUrl(`/students/driver/transport/${token}/student-status/`), {
+                    method: "POST",
+                    headers: jsonHeaders(),
+                    body: JSON.stringify(payload),
+                });
+                if (!res.ok) throw new Error();
+            }
+            
+            const newStudents = students.map((s) => (s.student_id === studentId ? { ...s, status: status as any } : s));
+            setStudents(newStudents);
+            showToast("Student status updated", "success");
+        } catch (err) {
+            showToast("Failed to update status", "error");
+        }
+    };
 
     useEffect(() => {
         if (authLoading) return;
@@ -423,11 +454,7 @@ export function DriverTripContent() {
                                         🚌 {route.vehicle_number}
                                     </span>
                                 )}
-                                {route.destination && (
-                                    <span className="text-sm font-semibold text-orange-700 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                        <MapPin className="w-3.5 h-3.5" /> {route.destination}
-                                    </span>
-                                )}
+                                
                             </div>
                         </div>
 
@@ -435,7 +462,7 @@ export function DriverTripContent() {
                             <Button
                                 onClick={startTrip}
                                 disabled={startingTrip || loading}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg min-h-[52px]"
+                                className="w-full text-white py-4 rounded-xl font-bold text-lg min-h-[52px]"
                             >
                                 {startingTrip ? (
                                     <>
@@ -452,7 +479,7 @@ export function DriverTripContent() {
                             <Button
                                 onClick={() => setIsStopModalOpen(true)}
                                 disabled={loading}
-                                className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg min-h-[52px]"
+                                className="w-full text-white py-4 rounded-xl font-bold text-lg min-h-[52px]"
                             >
                                 <Square className="w-5 h-5 mr-2 shrink-0" /> Stop
                             </Button>
@@ -464,6 +491,8 @@ export function DriverTripContent() {
                                 Sharing live location with parents
                             </p>
                         )}
+
+
                     </section>
                 )}
 
@@ -501,17 +530,17 @@ export function DriverTripContent() {
             <Modal
                 isOpen={isStopModalOpen}
                 onClose={() => setIsStopModalOpen(false)}
-                title="Stop trip"
+                title="Last Drop Completed"
                 size="sm"
                 placement="center"
             >
-                <p className="text-gray-600 text-sm">Parents will no longer see live tracking for this route.</p>
+                <p className="text-gray-600 text-sm">Are you sure you want to complete this trip? Parents will no longer see live tracking.</p>
                 <div className="mt-5 grid grid-cols-2 gap-3">
                     <Button variant="outline" onClick={() => setIsStopModalOpen(false)}>
                         Cancel
                     </Button>
                     <Button className="bg-red-600 text-white" onClick={stopTrip}>
-                        Stop
+                        Complete
                     </Button>
                 </div>
             </Modal>

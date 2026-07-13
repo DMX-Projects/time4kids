@@ -23,11 +23,7 @@ interface FormData {
   comments?: string
 }
 
-const franchiseTypes = [
-  { value: 'preschool', label: 'Preschool' },
-  { value: 'daycare', label: 'Daycare' },
-  { value: 'learning_center', label: 'Learning Center' },
-]
+// Removed franchiseTypes
 
 const investmentRanges = [
   '10-20 Lakhs',
@@ -272,26 +268,14 @@ export default function FranchiseForm() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Franchise Type</label>
-                    <select {...register('franchiseType')} className={styles.select}>
-                      <option value="">Select Type</option>
-                      {franchiseTypes.map((type) => (
-                        <option key={type.value} value={type.value}>{type.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Investment Range</label>
-                    <select {...register('investmentRange')} className={styles.select}>
-                      <option value="">Select Range</option>
-                      {investmentRanges.map((range) => (
-                        <option key={range} value={range}>{range}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Investment Range</label>
+                  <select {...register('investmentRange')} className={styles.select}>
+                    <option value="">Select Range</option>
+                    {investmentRanges.map((range) => (
+                      <option key={range} value={range}>{range}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

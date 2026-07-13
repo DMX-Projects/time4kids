@@ -378,6 +378,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const logout = () => {
+        if (tokens?.access) {
+            fetch(apiUrl("/auth/logout/"), {
+                method: "POST",
+                headers: { Authorization: `Bearer ${tokens.access}` }
+            }).catch(() => {});
+        }
         const prev = user;
         setUser(null);
         setTokens(null);
