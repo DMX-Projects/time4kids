@@ -1,11 +1,9 @@
 export type RouteInfo = {
     id: number;
     route_name: string;
-    description?: string;
     vehicle_number?: string;
     driver_name?: string;
     driver_phone?: string;
-    destination?: string;
 };
 
 export type ActiveTrip = {

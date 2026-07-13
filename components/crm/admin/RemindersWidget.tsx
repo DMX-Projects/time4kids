@@ -111,7 +111,7 @@ export default function RemindersWidget({ source, city, centreId }: { source?: s
         {meetings.length > 0 && (
           <div>
             <h4 className="font-semibold text-gray-700 mb-2">
-              📅 Upcoming meetings (next 7 days)
+              Upcoming meetings
             </h4>
             <div className="max-h-[320px] overflow-y-auto no-scrollbar pr-1">
               <ul className="space-y-2">
@@ -135,22 +135,6 @@ export default function RemindersWidget({ source, city, centreId }: { source?: s
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-1 flex-wrap">
-                      <button
-                        onClick={() => handleSendReminder(lead.id, 'meeting', 'whatsapp')}
-                        disabled={!!sendingReminder}
-                        className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {sendingReminder === `${lead.id}-whatsapp` ? '...' : 'WhatsApp'}
-                      </button>
-                      <button
-                        onClick={() => handleSendReminder(lead.id, 'meeting', 'email')}
-                        disabled={!!sendingReminder}
-                        className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {sendingReminder === `${lead.id}-email` ? '...' : 'Email'}
-                      </button>
-                    </div>
                   </li>
                 ))}
               </ul>
@@ -161,7 +145,7 @@ export default function RemindersWidget({ source, city, centreId }: { source?: s
         {followUps.length > 0 && (
           <div>
             <h4 className="font-semibold text-gray-700 mb-2">
-              🔔 Follow-ups due (scheduled or idle 24h+)
+              Follow-ups
             </h4>
             <div className="max-h-[320px] overflow-y-auto no-scrollbar pr-1">
               <ul className="space-y-2">
@@ -178,27 +162,12 @@ export default function RemindersWidget({ source, city, centreId }: { source?: s
                         >
                           {lead.fullName}
                         </Link>
-                        <span className="text-gray-500 text-sm ml-2 capitalize">
-                          {lead.status.replace('_', ' ')}
-                          {lead.nextFollowUpDate && ` (Due: ${new Date(lead.nextFollowUpDate).toLocaleString()})`}
-                        </span>
+                        {lead.nextFollowUpDate && (
+                          <span className="text-gray-500 text-sm ml-2">
+                            (Due: {new Date(lead.nextFollowUpDate).toLocaleString()})
+                          </span>
+                        )}
                       </div>
-                    </div>
-                    <div className="flex gap-1 flex-wrap">
-                      <button
-                        onClick={() => handleSendReminder(lead.id, 'follow-up', 'whatsapp')}
-                        disabled={!!sendingReminder}
-                        className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {sendingReminder === `${lead.id}-whatsapp` ? '...' : 'WhatsApp'}
-                      </button>
-                      <button
-                        onClick={() => handleSendReminder(lead.id, 'follow-up', 'email')}
-                        disabled={!!sendingReminder}
-                        className="px-2 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {sendingReminder === `${lead.id}-email` ? '...' : 'Email'}
-                      </button>
                     </div>
                   </li>
                 ))}

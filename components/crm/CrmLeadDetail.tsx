@@ -6,10 +6,87 @@ import api from '@/lib/crmApi'
 import { Toaster, toast } from 'react-hot-toast'
 import { getWhatsAppUrl, getEmailMailto } from '@/lib/crmContactHelpers'
 
-const STATUS_OPTIONS = [
-  'contacted', 'follow_up', 'interested',
-  'meeting_scheduled', 'dropped', 'converted',
+const STATUS_LABELS: Record<string, string> = {
+  // Non-franchise specific
+  untouched: 'Untouched',
+  not_answering: 'Not answering',
+  follow_up: 'Follow-up',
+  visited_school: 'Visited the school',
+  converted_admission: 'Converted to Admission',
+  joined_competition: 'Joined competition',
+  not_interested: 'Not Interested',
+  wrong_enquiry: 'Wrong enquiry',
+
+  // Franchise specific
+  hot: 'Hot',
+  warm: 'Warm',
+  cold: 'Cold',
+  converted_mou_signed: 'Converted – MOU Signed',
+  converted_agreement_signed: 'Converted – Agreement Signed',
+  join_later: 'Join Later',
+  not_answering_calls: 'Not Answering Calls',
+
+  // Legacy mappings for display fallback
+  new: 'Untouched',
+  called: 'Not answering',
+  contacted: 'Not answering',
+  converted: 'Converted to Admission',
+  dropped: 'Not Interested',
+  interested: 'Follow-up',
+  meeting_scheduled: 'Visited the school',
+}
+
+const NON_FRANCHISE_OPTIONS = [
+  'untouched',
+  'not_answering',
+  'follow_up',
+  'visited_school',
+  'converted_admission',
+  'joined_competition',
+  'not_interested',
+  'wrong_enquiry',
 ]
+
+const FRANCHISE_OPTIONS = [
+  'untouched',
+  'hot',
+  'warm',
+  'follow_up',
+  'cold',
+  'converted_mou_signed',
+  'converted_agreement_signed',
+  'join_later',
+  'not_interested',
+  'not_answering_calls',
+]
+
+const STATUS_COLORS: Record<string, string> = {
+  untouched: 'bg-gray-100 text-gray-700 border border-gray-200',
+  not_answering: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  follow_up: 'bg-blue-100 text-blue-800 border border-blue-200',
+  visited_school: 'bg-teal-100 text-teal-800 border border-teal-200',
+  converted_admission: 'bg-green-100 text-green-700 border border-green-200',
+  joined_competition: 'bg-purple-100 text-purple-700 border border-purple-200',
+  not_interested: 'bg-red-100 text-red-700 border border-red-200',
+  wrong_enquiry: 'bg-orange-100 text-orange-700 border border-orange-200',
+
+  hot: 'bg-red-100 text-red-700 border border-red-200',
+  warm: 'bg-orange-100 text-orange-700 border border-orange-200',
+  cold: 'bg-blue-50 text-blue-700 border border-blue-100',
+  converted_mou_signed: 'bg-green-100 text-green-700 border border-green-200',
+  converted_agreement_signed: 'bg-green-200 text-green-800 border border-green-300',
+  join_later: 'bg-purple-100 text-purple-700 border border-purple-200',
+  not_answering_calls: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+
+  // Legacy mappings for display fallback
+  new: 'bg-gray-100 text-gray-700 border border-gray-200',
+  called: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  contacted: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  converted: 'bg-green-100 text-green-700 border border-green-200',
+  dropped: 'bg-red-100 text-red-700 border border-red-200',
+  interested: 'bg-blue-100 text-blue-800 border border-blue-200',
+  meeting_scheduled: 'bg-teal-100 text-teal-800 border border-teal-200',
+}
 const SOURCE_OPTIONS = [
   'facebook', 'instagram', 'website', 'google_ads', 'referral', 'walk_in', 'other',
 ]
@@ -92,7 +169,10 @@ export default function LeadDetailPage() {
 
     setSaving(true)
     try {
-      await api.post(`/leads/${params.id}/notes`, { content: editForm.newNote.trim() })
+      await api.post(`/leads/${params.id}/notes`, { 
+        content: editForm.newNote.trim(),
+        status: editForm.status
+      })
       
       const payload: Record<string, unknown> = {
         meetingDate: editForm.meetingDate || null,
@@ -234,40 +314,67 @@ export default function LeadDetailPage() {
                     <select
                       value={editForm.status}
                       onChange={(e) => setEditForm(f => ({ ...f, status: e.target.value }))}
-                        className={`appearance-none pl-3 pr-8 py-1 rounded-full text-xs font-bold uppercase border-0 cursor-pointer focus:ring-2 focus:ring-blue-500/20 ${editForm.status === 'converted' ? 'bg-green-100 text-green-700' :
-                          editForm.status === 'dropped' ? 'bg-red-100 text-red-700' :
-                            'bg-blue-100 text-blue-700'
-                          }`}
-                      >
-                        {editForm.status === 'new' && (
-                          <option value="new" className="bg-white text-gray-800 text-xs font-bold" disabled>
-                            Pending
-                          </option>
-                        )}
-                        {editForm.status === 'called' && <option value="called" className="bg-white text-gray-800 text-xs font-bold" disabled>Called/Contacted</option>}
-                        {editForm.status === 'not_interested' && <option value="not_interested" className="bg-white text-gray-800 text-xs font-bold" disabled>Dropped/Not Interested</option>}
-                        {STATUS_OPTIONS.map((s) => {
-                          let formatted = s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
-                          if (s === 'contacted') formatted = 'Called/Contacted';
-                          if (s === 'dropped') formatted = 'Dropped/Not Interested';
-                          return (
-                            <option key={s} value={s} className="bg-white text-gray-800 text-xs font-bold">
-                              {formatted}
-                            </option>
-                          )
-                        })}
-                      </select>
-                      <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] ${editForm.status === 'converted' ? 'text-green-700' :
-                        editForm.status === 'dropped' ? 'text-red-700' :
-                          'text-blue-700'
-                        }`}>
+                      className={`appearance-none pl-3 pr-8 py-1 rounded-full text-xs font-bold uppercase border-0 cursor-pointer focus:ring-2 focus:ring-blue-500/20 ${
+                        editForm.status?.startsWith('converted') ? 'bg-green-100 text-green-700' :
+                        ['dropped', 'not_interested', 'wrong_enquiry'].includes(editForm.status) ? 'bg-red-100 text-red-700' :
+                        editForm.status === 'untouched' ? 'bg-gray-100 text-gray-700' :
+                        'bg-blue-100 text-blue-700'
+                      }`}
+                    >
+                      {(() => {
+                        const isFranchise = lead?.source === 'franchise'
+                        const optionsList = isFranchise ? FRANCHISE_OPTIONS : NON_FRANCHISE_OPTIONS
+                        return (
+                          <>
+                            {editForm.status && !optionsList.includes(editForm.status) && (
+                              <option value={editForm.status} className="bg-white text-gray-800 text-xs font-bold" disabled>
+                                {STATUS_LABELS[editForm.status] || editForm.status}
+                              </option>
+                            )}
+                            {optionsList.map((s) => (
+                              <option key={s} value={s} className="bg-white text-gray-800 text-xs font-bold">
+                                {STATUS_LABELS[s] || s}
+                              </option>
+                            ))}
+                          </>
+                        )
+                      })()}
+                    </select>
+                    <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] ${
+                      editForm.status?.startsWith('converted') ? 'text-green-700' :
+                      ['dropped', 'not_interested'].includes(editForm.status) ? 'text-red-700' :
+                      'text-blue-700'
+                    }`}>
                         ▼
                       </div>
                     </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Source</label>
-                  <p className="text-gray-700">{sourceLabel(lead.source)}</p>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Enquiry Source</label>
+                  <p className="text-gray-700 font-semibold">{sourceLabel(lead.source)}</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Enquiry Date</label>
+                  <p className="text-gray-700">
+                    {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Last Follow-up Date</label>
+                  <p className="text-gray-700">
+                    {(() => {
+                      const notesDates = (lead.notes || []).map((n: any) => new Date(n.createdAt).getTime());
+                      if (notesDates.length === 0) return '—';
+                      const lastDate = new Date(Math.max(...notesDates));
+                      return lastDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                    })()}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Next Follow-up Date</label>
+                  <p className="text-gray-700 font-semibold text-blue-600">
+                    {lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                  </p>
                 </div>
 
                 {isEditable ? (
@@ -286,18 +393,16 @@ export default function LeadDetailPage() {
                     </div>
 
                     <div className="col-span-2 flex flex-wrap items-end gap-6 text-sm py-4 border-t border-gray-100 mt-2">
-                      {lead.source === 'campaign' && (
-                        <>
-                          <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
-                            <input
-                              type="date"
-                              value={editForm.meetingDate}
-                              onChange={(e) => setEditForm((f) => ({ ...f, meetingDate: e.target.value }))}
-                              className="form-input text-sm w-full"
-                            />
-                          </div>
-                          <div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
+                          <input
+                            type="date"
+                            value={editForm.meetingDate}
+                            onChange={(e) => setEditForm((f) => ({ ...f, meetingDate: e.target.value }))}
+                            className="form-input text-sm w-full"
+                          />
+                        </div>
+                        <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
                             <input
                               type="date"
@@ -306,8 +411,6 @@ export default function LeadDetailPage() {
                               className="form-input text-sm w-full"
                             />
                           </div>
-                        </>
-                      )}
                       <div className="ml-auto">
                         <button
                           onClick={handleSaveAll}
@@ -326,18 +429,16 @@ export default function LeadDetailPage() {
                       <p className="text-gray-700 mt-1 italic">{lead.comments || 'No original message'}</p>
                     </div>
 
-                    {lead.source === 'campaign' && (
-                      <div className="col-span-2 flex gap-6 text-sm py-4 border-t border-gray-100 mt-2">
-                        <div>
-                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
-                          <p className="font-medium">{lead.meetingDate ? new Date(lead.meetingDate).toLocaleDateString() : '—'}</p>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
-                          <p className="font-medium text-blue-600">{lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleDateString() : '—'}</p>
-                        </div>
+                    <div className="col-span-2 flex gap-6 text-sm py-4 border-t border-gray-100 mt-2">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
+                        <p className="font-medium">{lead.meetingDate ? new Date(lead.meetingDate).toLocaleDateString() : '—'}</p>
                       </div>
-                    )}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
+                        <p className="font-medium text-blue-600">{lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleDateString() : '—'}</p>
+                      </div>
+                    </div>
                   </>
                 )}
               </div>
@@ -372,7 +473,8 @@ export default function LeadDetailPage() {
                     icon: '💬',
                     bgColor: 'bg-blue-50',
                     textColor: 'text-blue-800',
-                    dotColor: 'bg-blue-500'
+                    dotColor: 'bg-blue-500',
+                    status: n.status
                   })),
                   ...(lead.auditLogs || []).map((a: any) => ({
                     id: a.id,
@@ -429,10 +531,19 @@ export default function LeadDetailPage() {
                         <div className="text-gray-800 text-sm leading-relaxed">{item.content}</div>
                         {item.user && <div className="mt-2 text-[10px] text-gray-400 font-medium">Action by: {item.user}</div>}
                         {item.status && (
-                          <div className="mt-1">
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${item.status === 'sent' ? 'bg-green-200 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                              {item.status.toUpperCase()}
-                            </span>
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            {item.type === 'comment' ? (
+                              <>
+                                <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Status:</span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-800 border border-gray-200'}`}>
+                                  {STATUS_LABELS[item.status] || item.status.replace('_', ' ')}
+                                </span>
+                              </>
+                            ) : (
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${item.status === 'sent' ? 'bg-green-200 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {item.status.toUpperCase()}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>

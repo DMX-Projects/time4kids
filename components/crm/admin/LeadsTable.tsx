@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast'
 interface LeadsTableProps {
   dateRange: { startDate: Date | null; endDate: Date | null }
   city?: string
+  state?: string
   centreId?: string
   status?: string
   source?: string
@@ -47,33 +48,71 @@ const SOURCE_LABELS: Record<string, string> = {
   landing: 'Landing Lead',
 }
 
-const STATUS_OPTIONS = [
-  'contacted',
-  'follow_up',
-  'interested',
-  'meeting_scheduled',
-  'dropped',
-  'converted',
-]
+const STATUS_LABELS: Record<string, string> = {
+  // Non-franchise specific
+  untouched: 'Untouched',
+  not_answering: 'Not answering',
+  follow_up: 'Follow-up',
+  visited_school: 'Visited the school',
+  converted_admission: 'Converted to Admission',
+  joined_competition: 'Joined competition',
+  not_interested: 'Not Interested',
+  wrong_enquiry: 'Wrong enquiry',
 
-const statusColors: { [key: string]: string } = {
-  new: 'status-new',
-  contacted: 'status-contacted',
-  called: 'status-contacted',
-  follow_up: 'status-follow-up',
-  interested: 'status-interested',
-  meeting_scheduled: 'status-follow-up',
-  converted: 'status-converted',
-  dropped: 'status-dropped',
-  not_interested: 'status-dropped',
+  // Franchise specific
+  hot: 'Hot',
+  warm: 'Warm',
+  cold: 'Cold',
+  converted_mou_signed: 'Converted – MOU Signed',
+  converted_agreement_signed: 'Converted – Agreement Signed',
+  join_later: 'Join Later',
+  not_answering_calls: 'Not Answering Calls',
+
+  // Legacy mappings for display fallback
+  new: 'Untouched',
+  called: 'Not answering',
+  contacted: 'Not answering',
+  converted: 'Converted to Admission',
+  dropped: 'Not Interested',
+  interested: 'Follow-up',
+  meeting_scheduled: 'Visited the school',
 }
 
-export default function LeadsTable({ dateRange, city, centreId, status, source, search, title, onLeadUpdated }: LeadsTableProps) {
+const statusColors: { [key: string]: string } = {
+  untouched: 'bg-gray-100 text-gray-700 border border-gray-200',
+  not_answering: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  follow_up: 'bg-blue-100 text-blue-700 border border-blue-200',
+  visited_school: 'bg-teal-100 text-teal-700 border border-teal-200',
+  converted_admission: 'bg-green-100 text-green-700 border border-green-200',
+  joined_competition: 'bg-purple-100 text-purple-700 border border-purple-200',
+  not_interested: 'bg-red-100 text-red-700 border border-red-200',
+  wrong_enquiry: 'bg-orange-100 text-orange-700 border border-orange-200',
+
+  hot: 'bg-red-100 text-red-700 border border-red-200',
+  warm: 'bg-orange-100 text-orange-700 border border-orange-200',
+  cold: 'bg-blue-50 text-blue-700 border border-blue-100',
+  converted_mou_signed: 'bg-green-100 text-green-700 border border-green-200',
+  converted_agreement_signed: 'bg-green-200 text-green-800 border border-green-300',
+  join_later: 'bg-purple-100 text-purple-700 border border-purple-200',
+  not_answering_calls: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+
+  // Legacy mappings for display fallback
+  new: 'bg-gray-100 text-gray-700 border border-gray-200',
+  called: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  contacted: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  converted: 'bg-green-100 text-green-700 border border-green-200',
+  dropped: 'bg-red-100 text-red-700 border border-red-200',
+  interested: 'bg-blue-100 text-blue-700 border border-blue-200',
+  meeting_scheduled: 'bg-teal-100 text-teal-700 border border-teal-200',
+}
+
+export default function LeadsTable({ dateRange, city, state, centreId, status, source, search, title, onLeadUpdated }: LeadsTableProps) {
   const router = useRouter()
   const [leads, setLeads] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [total, setTotal] = useState(0)
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -85,15 +124,19 @@ export default function LeadsTable({ dateRange, city, centreId, status, source, 
   }, [searchTerm])
 
   useEffect(() => {
+    setPage(1)
+  }, [pageSize])
+
+  useEffect(() => {
     loadLeads()
-  }, [page, dateRange, city, centreId, status, source, debouncedSearch])
+  }, [page, pageSize, dateRange, city, state, centreId, status, source, debouncedSearch])
 
   const loadLeads = async (silent = false) => {
     if (!silent) setLoading(true)
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '10',
+        limit: pageSize.toString(),
       })
       if (dateRange.startDate) {
         const start = new Date(dateRange.startDate)
@@ -106,6 +149,7 @@ export default function LeadsTable({ dateRange, city, centreId, status, source, 
         params.append('endDate', end.toISOString())
       }
       if (city) params.append('city', city)
+      if (state) params.append('state', state)
       if (centreId) params.append('centreId', centreId)
       if (status) params.append('status', status)
       if (source) params.append('source', source)
@@ -140,6 +184,26 @@ export default function LeadsTable({ dateRange, city, centreId, status, source, 
   }
 
   const sourceLabel = (source?: string) => SOURCE_LABELS[source || ''] || source?.replace('_', ' ') || 'Website'
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '—'
+    try {
+      const d = new Date(dateStr)
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    } catch {
+      return '—'
+    }
+  }
+
+  const formatDateTime = (dateStr?: string) => {
+    if (!dateStr) return '—'
+    try {
+      const d = new Date(dateStr)
+      return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    } catch {
+      return '—'
+    }
+  }
 
   return (
     <div className="card">
@@ -179,9 +243,25 @@ export default function LeadsTable({ dateRange, city, centreId, status, source, 
                 <tr className="bg-gray-100 uppercase tracking-wider">
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Name</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Contact</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">City / Location</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Centre</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">State</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">City</th>
+                  {source !== 'franchise' && (
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Centre</th>
+                  )}
+                  {source === 'admission' && (
+                    <>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Child Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Child Age</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Program</th>
+                    </>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Source</th>
+                  {source === 'franchise' && (
+                    <>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Registration Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Last User Activity</th>
+                    </>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Action</th>
                 </tr>
@@ -196,19 +276,47 @@ export default function LeadsTable({ dateRange, city, centreId, status, source, 
                       <HighlightText text={lead.mobile || ''} highlight={debouncedSearch} />
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm">
-                      <HighlightText text={lead.city || lead.state || '-'} highlight={debouncedSearch} />
+                      <HighlightText text={lead.state || '-'} highlight={debouncedSearch} />
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm">
-                      <HighlightText text={lead.preferredCentreLocation || '-'} highlight={debouncedSearch} />
+                      <HighlightText text={lead.city || '-'} highlight={debouncedSearch} />
                     </td>
+                    {source !== 'franchise' && (
+                      <td className="px-4 py-4 text-gray-600 text-sm">
+                        <HighlightText text={lead.preferredCentreLocation || '-'} highlight={debouncedSearch} />
+                      </td>
+                    )}
+                    {source === 'admission' && (() => {
+                      const msg = lead.comments || '';
+                      const child = msg.match(/Child:\s*([^,\|]+)/i)?.[1]?.trim() || '—';
+                      const age = lead.childAge || msg.match(/Age:\s*([^,\|]+)/i)?.[1]?.trim() || '—';
+                      const program = msg.match(/Program:\s*([^,\|]+)/i)?.[1]?.trim() || '—';
+                      return (
+                        <>
+                          <td className="px-4 py-4 text-gray-600 text-sm">{child}</td>
+                          <td className="px-4 py-4 text-gray-600 text-sm">{age}</td>
+                          <td className="px-4 py-4 text-gray-600 text-sm">{program}</td>
+                        </>
+                      );
+                    })()}
                     <td className="px-4 py-4">
                       <span className="capitalize text-sm text-gray-500">
                         <HighlightText text={sourceLabel(lead.source) || ''} highlight={debouncedSearch} />
                       </span>
                     </td>
+                    {source === 'franchise' && (
+                      <>
+                        <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
+                          {formatDate(lead.createdAt)}
+                        </td>
+                        <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
+                          {formatDateTime(lead.updatedAt)}
+                        </td>
+                      </>
+                    )}
                     <td className="px-4 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${statusColors[lead.status] || 'bg-gray-100 text-gray-600'}`}>
-                        {lead.status === 'new' ? 'Pending' : lead.status === 'not_interested' ? 'Dropped' : lead.status === 'meeting_scheduled' ? 'Meeting Scheduled' : lead.status === 'follow_up' ? 'Follow Up' : (lead.status || '').replace('_', ' ')}
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[lead.status] || 'bg-gray-100 text-gray-600'}`}>
+                        {STATUS_LABELS[lead.status] || (lead.status || '').replace('_', ' ')}
                       </span>
                     </td>
                     <td className="px-4 py-4">
@@ -226,27 +334,85 @@ export default function LeadsTable({ dateRange, city, centreId, status, source, 
           </div>
 
           {/* Pagination */}
-          <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4 border-t border-gray-100 pt-6">
-            <div className="text-xs font-medium text-gray-400 uppercase tracking-widest">
-              Showing {(page - 1) * 10 + 1} to {Math.min(page * 10, total)} of {total} leads
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage(page - 1)}
-                disabled={page === 1}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 text-sm font-medium transition-all"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPage(page + 1)}
-                disabled={page * 10 >= total}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 text-sm font-medium transition-all"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          {(() => {
+            const totalPages = Math.ceil(total / pageSize);
+            
+            const getPageNumbers = () => {
+              const items: (number | string)[] = [];
+              if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) items.push(i);
+              } else {
+                if (page <= 4) {
+                  items.push(1, 2, 3, 4, 5, "...", totalPages);
+                } else if (page >= totalPages - 3) {
+                  items.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                } else {
+                  items.push(1, "...", page - 1, page, page + 1, "...", totalPages);
+                }
+              }
+              return items;
+            };
+
+            return (
+              <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4 border-t border-gray-100 pt-6 text-sm text-gray-500">
+                <div className="flex items-center gap-4">
+                  <div className="text-xs font-medium text-gray-400 uppercase tracking-widest">
+                    Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total} leads
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <span className="text-gray-400 uppercase tracking-widest font-medium">Show:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => setPageSize(Number(e.target.value))}
+                      className="bg-white border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 font-semibold text-gray-700"
+                    >
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage(page - 1)}
+                    disabled={page === 1}
+                    className="px-2.5 py-1.5 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 text-xs font-medium transition-all"
+                  >
+                    Prev
+                  </button>
+
+                  {getPageNumbers().map((item, idx) => (
+                    item === "..." ? (
+                      <span key={`dots-${idx}`} className="px-2 py-1 text-gray-400">...</span>
+                    ) : (
+                      <button
+                        key={`page-${item}`}
+                        type="button"
+                        onClick={() => setPage(Number(item))}
+                        className={`px-3 py-1.5 rounded border text-xs font-medium transition-all ${
+                          page === item
+                            ? "bg-blue-600 text-white border-blue-600 font-bold"
+                            : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    )
+                  ))}
+
+                  <button
+                    onClick={() => setPage(page + 1)}
+                    disabled={page >= totalPages}
+                    className="px-2.5 py-1.5 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 text-xs font-medium transition-all"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </>
       )}
     </div>

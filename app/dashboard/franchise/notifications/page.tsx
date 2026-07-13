@@ -22,6 +22,7 @@ type FranchiseNotificationRow = {
 const sourceLabel: Record<string, string> = {
     head_office: "Head office",
     support_ticket: "Parent support",
+    driver_activity: "Driver Activity",
 };
 
 export default function FranchiseNotificationsPage() {

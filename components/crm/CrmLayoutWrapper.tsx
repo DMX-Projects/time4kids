@@ -16,7 +16,14 @@ export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
         <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
             <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col shrink-0 z-10">
                 <div className="h-16 flex items-center px-6 border-b border-gray-200 shrink-0">
-                    <span className="font-bold text-lg text-gray-800">T.I.M.E. Kids CRM</span>
+                    <div 
+                        onClick={() => window.location.reload()} 
+                        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                        title="Click to reload page"
+                    >
+                        <img src="/time-kids-logo-new.png" alt="T.I.M.E. Kids Logo" className="h-8 w-auto object-contain" />
+                        <span className="font-bold text-sm text-gray-500 uppercase tracking-wider">CRM</span>
+                    </div>
                 </div>
                 <SidebarNav />
             </aside>

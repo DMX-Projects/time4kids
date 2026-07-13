@@ -11,6 +11,7 @@ import DashboardStats from "@/components/crm/admin/DashboardStats";
 import LeadsTable from "@/components/crm/admin/LeadsTable";
 import DateRangePicker from "@/components/crm/admin/DateRangePicker";
 import CitySelector from "@/components/crm/admin/CitySelector";
+import StateSelector from "@/components/crm/admin/StateSelector";
 import CentreSelector from "@/components/crm/admin/CentreSelector";
 import { SearchableSelect } from "@/components/crm/SearchableSelect";
 import RemindersWidget from "@/components/crm/admin/RemindersWidget";
@@ -65,6 +66,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         endDate: null,
     });
     const [selectedCity, setSelectedCity] = useState<string[]>([]);
+    const [selectedState, setSelectedState] = useState<string[]>([]);
     const [selectedCentre, setSelectedCentre] = useState<string>("");
     const [filterDateRange, setFilterDateRange] = useState<{ startDate: Date | null; endDate: Date | null }>({
         startDate: null,
@@ -80,8 +82,23 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
     const isCrmUser = normalizeRole(user?.role) === "crm";
 
+    const getHeaderTitle = () => {
+        const sourceObj = SOURCE_FILTERS.find((f) => f.id === selectedSource);
+        const label = sourceObj && sourceObj.id !== "" ? sourceObj.label : "";
+        if (view === "reports") {
+            return label ? `${label} Reports` : "Reports";
+        }
+        return label ? `${label} Dashboard` : "Admin Dashboard";
+    };
+
     const handleCityChange = (city: string[]) => {
         setSelectedCity(city);
+        setSelectedCentre("");
+    };
+
+    const handleStateChange = (state: string[]) => {
+        setSelectedState(state);
+        setSelectedCity([]);
         setSelectedCentre("");
     };
 
@@ -120,6 +137,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             params.append("endDate", end.toISOString());
         }
         if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
+        if (selectedState.length > 0) params.append("state", selectedState.join(","));
         if (selectedCentre) params.append("centreId", selectedCentre);
         if (apiSource) params.append("source", apiSource);
         if (selectedStatus) params.append("status", selectedStatus);
@@ -137,7 +155,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [isCrmUser, isLandingView, dateRange, selectedCity, selectedCentre, apiSource, selectedStatus]);
+    }, [isCrmUser, isLandingView, dateRange, selectedCity, selectedState, selectedCentre, apiSource, selectedStatus]);
 
     const fetchStats = () => {
         setStatsLoading(true);
@@ -153,6 +171,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             params.append("endDate", end.toISOString());
         }
         if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
+        if (selectedState.length > 0) params.append("state", selectedState.join(","));
         if (selectedCentre) params.append("centreId", selectedCentre);
         if (apiSource) params.append("source", apiSource);
         if (selectedStatus) params.append("status", selectedStatus);
@@ -191,6 +210,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             params.append("endDate", end.toISOString());
         }
         if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
+        if (selectedState.length > 0) params.append("state", selectedState.join(","));
         if (selectedCentre) params.append("centreId", selectedCentre);
         if (apiSource) params.append("source", apiSource);
         if (selectedStatus) params.append("status", selectedStatus);
@@ -304,7 +324,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                             className="flex cursor-pointer items-center gap-2 text-2xl font-bold text-gray-800 transition-colors hover:text-blue-600"
                             title="Click to reload page"
                         >
-                            Admin Dashboard
+                            {getHeaderTitle()}
                         </h1>
                     </div>
                     <div className="flex items-center gap-4">
@@ -321,17 +341,15 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                     <div className="flex flex-col gap-3">
 
                         <div className="flex flex-wrap lg:flex-nowrap items-end gap-3 w-full pb-2">
-                            {view !== 'reports' && (
-                                <div className="flex-1 min-w-[140px]">
-                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Select Lead Source</label>
-                                    <SearchableSelect
-                                        value={selectedSource}
-                                        onChange={(val) => handleSourceChange(val as any)}
-                                        options={SOURCE_FILTERS.filter(f => f.id !== "").map(f => ({ value: f.id, label: f.label }))}
-                                        placeholder="Select Source"
-                                    />
-                                </div>
-                            )}
+                            <div className="flex-1 min-w-[140px]">
+                                <label className="mb-2 block text-sm font-semibold text-gray-700">Select Lead Type</label>
+                                <SearchableSelect
+                                    value={selectedSource}
+                                    onChange={(val) => handleSourceChange(val as any)}
+                                    options={(view === 'reports' ? SOURCE_FILTERS : SOURCE_FILTERS.filter(f => f.id !== "")).map(f => ({ value: f.id, label: f.label }))}
+                                    placeholder="Select Type"
+                                />
+                            </div>
 
                             {isCampaignView && view !== 'reports' && (
                                 <div className="flex-1 min-w-[140px]">
@@ -359,8 +377,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
                             {!isLandingView && (
                                 <>
-                                    <CitySelector value={selectedCity} onChange={handleCityChange} />
-                                    {view !== 'reports' && (
+                                    <StateSelector value={selectedState} onChange={handleStateChange} />
+                                    <CitySelector value={selectedCity} onChange={handleCityChange} state={selectedState.join(",")} />
+                                    {view !== 'reports' && selectedSource !== "franchise" && (
                                         <CentreSelector city={selectedCity.length === 1 ? selectedCity[0] : ""} value={selectedCentre} onChange={setSelectedCentre} />
                                     )}
                                     <DateRangePicker
@@ -437,7 +456,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     }
                                 >
                                     <LeadSourceChart data={stats.sourceBreakdown} />
-                                    <ConversionFunnel data={stats.statusBreakdown} />
+                                    <ConversionFunnel data={stats.statusBreakdown} isFranchise={apiSource === 'franchise'} />
                                 </Suspense>
                             ) : null}
                         </div>
@@ -447,13 +466,14 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                         {(view === 'reports' || view === 'all') && (
                             view === 'reports' ? (
                                 reportsFiltersApplied ? (
-                                    <ReportsView dateRange={dateRange} city={selectedCity} />
+                                    <ReportsView dateRange={dateRange} city={selectedCity} state={selectedState} source={selectedSource} />
                                 ) : null
                             ) : (
                                 <LeadsTable
-                                    key={`${refreshKey}-${apiSource}-${selectedStatus}-${selectedCity}-${selectedCentre}`}
+                                    key={`${refreshKey}-${apiSource}-${selectedStatus}-${selectedCity}-${selectedCentre}-${selectedState.join(",")}`}
                                     dateRange={dateRange}
                                     city={selectedCity.join(",")}
+                                    state={selectedState.join(",")}
                                     centreId={selectedCentre}
                                     source={apiSource}
                                     status={selectedStatus}

@@ -116,7 +116,8 @@ export default function TransportPage() {
         let cancelled = false;
         (async () => {
             try {
-                const data = await authFetch<RouteRow[]>("/students/parent/transport/");
+                const url = selectedStudent ? `/students/parent/transport/?student_id=${selectedStudent.id}` : "/students/parent/transport/";
+                const data = await authFetch<RouteRow[]>(url);
                 if (!cancelled) setRows(Array.isArray(data) ? data : []);
             } catch {
                 if (!cancelled) setRows([]);
@@ -127,7 +128,7 @@ export default function TransportPage() {
         return () => {
             cancelled = true;
         };
-    }, [authFetch]);
+    }, [authFetch, selectedStudent]);
 
     // Live GPS: one check on open; poll only when a trip is live or parent is watching a route.
     useEffect(() => {
@@ -138,7 +139,8 @@ export default function TransportPage() {
                 return;
             }
             try {
-                const data = await authFetch<LiveTripPayload>("/students/parent/transport/live/");
+                const url = selectedStudent ? `/students/parent/transport/live/?student_id=${selectedStudent.id}` : "/students/parent/transport/live/";
+                const data = await authFetch<LiveTripPayload>(url);
                 if (!cancelled) setLiveTrip(data);
             } catch {
                 if (!cancelled) setLiveTrip(null);
@@ -149,7 +151,7 @@ export default function TransportPage() {
         return () => {
             cancelled = true;
         };
-    }, [authFetch]);
+    }, [authFetch, selectedStudent]);
 
     useEffect(() => {
         let cancelled = false;
@@ -160,7 +162,8 @@ export default function TransportPage() {
                 return;
             }
             try {
-                const data = await authFetch<LiveTripPayload>("/students/parent/transport/live/");
+                const url = selectedStudent ? `/students/parent/transport/live/?student_id=${selectedStudent.id}` : "/students/parent/transport/live/";
+                const data = await authFetch<LiveTripPayload>(url);
                 if (!cancelled) setLiveTrip(data);
             } catch {
                 if (!cancelled) setLiveTrip(null);
@@ -196,8 +199,9 @@ export default function TransportPage() {
     }, [rows, selectedStudent, hasMultipleChildren]);
 
     useEffect(() => {
-        if (selectedRouteId == null) return;
-        if (!visibleRows.some((r) => r.id === selectedRouteId)) {
+        if (visibleRows.length === 1 && selectedRouteId !== visibleRows[0].id) {
+            setSelectedRouteId(visibleRows[0].id);
+        } else if (selectedRouteId != null && !visibleRows.some((r) => r.id === selectedRouteId)) {
             setSelectedRouteId(null);
         }
     }, [visibleRows, selectedRouteId]);
@@ -261,72 +265,74 @@ export default function TransportPage() {
 
             {!loading && visibleRows.length > 0 && (
                 <>
-                    <section className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                            <h2 className="text-base font-semibold text-orange-950">Select route</h2>
-                            <span className="text-xs text-orange-600 font-medium">
-                                {visibleRows.length} route{visibleRows.length === 1 ? "" : "s"}
-                            </span>
-                        </div>
-
-                        <div className="-mx-1 px-1 overflow-x-auto pb-1 scrollbar-thin">
-                            <div className="flex gap-3 min-w-min">
-                                {visibleRows.map((r) => {
-                                    const isSelected = selectedRouteId === r.id;
-                                    const isLive = liveByRouteId.has(Number(r.id));
-                                    const driverShort =
-                                        r.driver_info?.full_name?.split(" ")[0] || "No driver";
-                                    const hasMyChild = (r.my_students?.length ?? 0) > 0;
-
-                                    return (
-                                        <button
-                                            key={r.id}
-                                            type="button"
-                                            onClick={() => handleSelectRoute(r.id)}
-                                            className={`relative flex-shrink-0 w-[148px] sm:w-[168px] text-left rounded-2xl border-2 p-4 transition-all duration-200 shadow-sm ${
-                                                isSelected
-                                                    ? "border-orange-500 bg-orange-50 ring-2 ring-orange-200 scale-[1.02]"
-                                                    : "border-orange-100 bg-white hover:border-orange-300 hover:bg-orange-50/50"
-                                            }`}
-                                        >
-                                            {hasMyChild && (
-                                                <span className="absolute -top-2 left-2 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white shadow">
-                                                    Your child
-                                                </span>
-                                            )}
-                                            {isLive && (
-                                                <span className="absolute -top-2 right-2 flex items-center gap-1 rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-bold text-white shadow">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                                    LIVE
-                                                </span>
-                                            )}
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 mb-1">
-                                                Route
-                                            </p>
-                                            <p className="font-bold text-orange-950 text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
-                                                {r.route_name}
-                                            </p>
-                                            <p className="mt-2 text-xs text-gray-600 truncate">{driverShort}</p>
-                                            {driverServiceNumber(r) && (
-                                                <p className="text-[10px] text-gray-500 mt-0.5 truncate">
-                                                    {driverServiceNumber(r)}
-                                                </p>
-                                            )}
-                                            {isSelected && (
-                                                <ChevronRight className="absolute bottom-3 right-3 w-4 h-4 text-orange-500" />
-                                            )}
-                                        </button>
-                                    );
-                                })}
+                    {visibleRows.length > 1 && (
+                        <section className="space-y-3">
+                            <div className="flex items-center justify-between gap-2">
+                                <h2 className="text-base font-semibold text-orange-950">Select route</h2>
+                                <span className="text-xs text-orange-600 font-medium">
+                                    {visibleRows.length} routes
+                                </span>
                             </div>
-                        </div>
 
-                        {!selectedRouteId && (
-                            <p className="text-sm text-center text-orange-700 bg-orange-50/80 border border-dashed border-orange-200 rounded-xl py-6 px-4">
-                                Select a route slot above to open the map and full details.
-                            </p>
-                        )}
-                    </section>
+                            <div className="-mx-1 px-1 overflow-x-auto pb-1 scrollbar-thin">
+                                <div className="flex gap-3 min-w-min">
+                                    {visibleRows.map((r) => {
+                                        const isSelected = selectedRouteId === r.id;
+                                        const isLive = liveByRouteId.has(Number(r.id));
+                                        const driverShort =
+                                            r.driver_info?.full_name?.split(" ")[0] || "No driver";
+                                        const hasMyChild = (r.my_students?.length ?? 0) > 0;
+
+                                        return (
+                                            <button
+                                                key={r.id}
+                                                type="button"
+                                                onClick={() => handleSelectRoute(r.id)}
+                                                className={`relative flex-shrink-0 w-[148px] sm:w-[168px] text-left rounded-2xl border-2 p-4 transition-all duration-200 shadow-sm ${
+                                                    isSelected
+                                                        ? "border-orange-500 bg-orange-50 ring-2 ring-orange-200 scale-[1.02]"
+                                                        : "border-orange-100 bg-white hover:border-orange-300 hover:bg-orange-50/50"
+                                                }`}
+                                            >
+                                                {hasMyChild && (
+                                                    <span className="absolute -top-2 left-2 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white shadow">
+                                                        Your child
+                                                    </span>
+                                                )}
+                                                {isLive && (
+                                                    <span className="absolute -top-2 right-2 flex items-center gap-1 rounded-full bg-green-600 px-2 py-0.5 text-[10px] font-bold text-white shadow">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                                        LIVE
+                                                    </span>
+                                                )}
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 mb-1">
+                                                    Route
+                                                </p>
+                                                <p className="font-bold text-orange-950 text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
+                                                    {r.route_name}
+                                                </p>
+                                                <p className="mt-2 text-xs text-gray-600 truncate">{driverShort}</p>
+                                                {driverServiceNumber(r) && (
+                                                    <p className="text-[10px] text-gray-500 mt-0.5 truncate">
+                                                        {driverServiceNumber(r)}
+                                                    </p>
+                                                )}
+                                                {isSelected && (
+                                                    <ChevronRight className="absolute bottom-3 right-3 w-4 h-4 text-orange-500" />
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {!selectedRouteId && (
+                                <p className="text-sm text-center text-orange-700 bg-orange-50/80 border border-dashed border-orange-200 rounded-xl py-6 px-4">
+                                    Select a route slot above to open the map and full details.
+                                </p>
+                            )}
+                        </section>
+                    )}
 
                     {selectedRoute && (
                         <section className="rounded-2xl border-2 border-orange-200 bg-white shadow-md overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -462,13 +468,7 @@ export default function TransportPage() {
                                     )}
                                 </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedRouteId(null)}
-                                    className="w-full text-sm font-semibold text-orange-700 py-2 rounded-xl border border-orange-200 hover:bg-orange-50"
-                                >
-                                    Close route details
-                                </button>
+
                             </div>
                         </section>
                     )}

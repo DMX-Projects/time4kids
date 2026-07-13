@@ -63,7 +63,9 @@ export function MultiSelectCheckbox({
     ? placeholder 
     : value.length === options.length 
       ? 'All Selected' 
-      : `${value.length} Selected`
+      : value.length <= 2
+        ? value.map(val => options.find(o => o.value === val)?.label).filter(Boolean).join(', ')
+        : `${value.length} Selected`
 
   return (
     <div className={`relative w-full ${disabled ? 'opacity-50 pointer-events-none' : ''}`} ref={containerRef}>

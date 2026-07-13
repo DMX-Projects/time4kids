@@ -172,6 +172,30 @@ export function ParentDashboardQuickLinks({
                     </div>
                 </div>
             </Link>
+
+            <Link
+                href="/dashboard/parent/activities"
+                aria-label="Open Today's Activities"
+                className="relative block overflow-hidden rounded-2xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 focus-visible:ring-offset-2"
+            >
+                <div className="absolute top-0 left-0 right-0 h-1 bg-pink-500" aria-hidden />
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-pink-500 text-white shadow-sm">
+                        <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-[#1F2937]">
+                            Today's Activities
+                            <span className="rounded-full bg-pink-50 px-2.5 py-0.5 text-[11px] uppercase tracking-wide text-pink-700 font-bold">
+                                Daily Brief
+                            </span>
+                        </p>
+                        <p className="text-xs text-[#4B5563] mt-1">
+                            Check drawings, dance, and stories conducted today.
+                        </p>
+                    </div>
+                </div>
+            </Link>
         </div>
     );
 }
