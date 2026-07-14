@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/crmApi'
 import { toast } from 'react-hot-toast'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface LeadsTableProps {
   dateRange: { startDate: Date | null; endDate: Date | null }
@@ -108,7 +109,18 @@ const statusColors: { [key: string]: string } = {
 
 export default function LeadsTable({ dateRange, city, state, centreId, status, source, search, title, onLeadUpdated }: LeadsTableProps) {
   const router = useRouter()
+  const tableContainerRef = useRef<HTMLDivElement>(null)
   const [leads, setLeads] = useState<any[]>([])
+
+  const scrollTable = (direction: 'left' | 'right') => {
+    if (tableContainerRef.current) {
+      const scrollAmount = 250;
+      tableContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  }
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
@@ -237,11 +249,36 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto overflow-y-visible">
+          {/* Mobile Scroll Indicator & Control Buttons */}
+          <div className="lg:hidden flex items-center justify-between px-2 py-2 bg-gray-50 rounded-xl mb-3 border border-gray-200 text-xs">
+            <span className="text-gray-500 font-medium pl-1.5">
+              Scroll table horizontally to view all columns
+            </span>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => scrollTable('left')}
+                className="flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-gray-200 text-gray-500 shadow-sm active:bg-gray-100 focus:outline-none"
+                aria-label="Scroll Left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollTable('right')}
+                className="flex items-center justify-center w-8 h-8 rounded-lg bg-white border border-gray-200 text-gray-500 shadow-sm active:bg-gray-100 focus:outline-none"
+                aria-label="Scroll Right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div ref={tableContainerRef} className="overflow-x-auto overflow-y-visible">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-100 uppercase tracking-wider">
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 sticky left-0 bg-gray-100 z-20 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Name</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Contact</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">State</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">City</th>
@@ -268,8 +305,8 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {leads.map((lead) => (
-                  <tr key={lead.id} className={`hover:bg-gray-50 transition-colors ${updatingId === lead.id ? 'opacity-60' : ''}`}>
-                    <td className="px-4 py-4 font-medium text-gray-900">
+                  <tr key={lead.id} className={`group hover:bg-gray-50 transition-colors ${updatingId === lead.id ? 'opacity-60' : ''}`}>
+                    <td className="px-4 py-4 font-medium text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                       <HighlightText text={lead.fullName || ''} highlight={debouncedSearch} />
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm">

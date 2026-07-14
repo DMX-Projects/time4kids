@@ -110,15 +110,37 @@ export default function FranchiseEnquiriesPage() {
     const [editedNote, setEditedNote] = useState("");
     const [isSavingNote, setIsSavingNote] = useState(false);
     const { showToast } = useToast();
+    const [nextFollowUpDate, setNextFollowUpDate] = useState("");
+    const [meetingDate, setMeetingDate] = useState("");
+
+    const toLocalDatetimeString = (isoString?: string) => {
+        if (!isoString) return "";
+        try {
+            const date = new Date(isoString);
+            const pad = (num: number) => String(num).padStart(2, "0");
+            const year = date.getFullYear();
+            const month = pad(date.getMonth() + 1);
+            const day = pad(date.getDate());
+            const hours = pad(date.getHours());
+            const minutes = pad(date.getMinutes());
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        } catch {
+            return "";
+        }
+    };
 
     useEffect(() => {
         if (selectedEnquiry) {
             fetchEnquiryNotes(selectedEnquiry.id).then(setNotesHistory);
             setModalStatus(selectedEnquiry.status);
+            setNextFollowUpDate(toLocalDatetimeString(selectedEnquiry.nextFollowUpDate));
+            setMeetingDate(toLocalDatetimeString(selectedEnquiry.meetingDate));
         } else {
             setNotesHistory([]);
             setEditedNote("");
             setModalStatus("");
+            setNextFollowUpDate("");
+            setMeetingDate("");
         }
     }, [selectedEnquiry, fetchEnquiryNotes]);
 
@@ -175,7 +197,9 @@ export default function FranchiseEnquiriesPage() {
         const counts: Record<string, number> = {};
         filtered.forEach(e => {
             const source = e.type || "other";
-            counts[source] = (counts[source] || 0) + 1;
+            if (source !== "franchise") {
+                counts[source] = (counts[source] || 0) + 1;
+            }
         });
         return Object.entries(counts).map(([source, count]) => ({ source, count: count.toString() }));
     }, [filtered]);
@@ -411,18 +435,46 @@ export default function FranchiseEnquiriesPage() {
                                             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Email</label>
                                             <p className="text-slate-900 font-medium text-sm">{selectedEnquiry.email}</p>
                                         </div>
-                                        <div className="space-y-1">
+                                        <div className="space-y-1 font-semibold">
                                             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Phone</label>
                                             <p className="text-slate-900 font-medium text-sm">{selectedEnquiry.phone || '—'}</p>
                                         </div>
-                                        <div className="col-span-2 space-y-2 mt-2 pt-4 border-t border-slate-200/60">
-                                            <label className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-2">
-                                                <Inbox className="w-3 h-3" /> Initial Message
-                                            </label>
-                                            <p className="text-slate-700 text-sm whitespace-pre-wrap leading-relaxed">
-                                                {parseEnquiryMessage(selectedEnquiry.message, selectedEnquiry.type).userMessage || parseEnquiryMessage(selectedEnquiry.message, selectedEnquiry.type).note || "No additional message provided."}
-                                            </p>
-                                        </div>
+                                        {(() => {
+                                            const parsed = parseEnquiryMessage(selectedEnquiry.message, selectedEnquiry.type);
+                                            return (
+                                                <>
+                                                    {parsed.details['Child Name'] && (
+                                                        <div className="space-y-1">
+                                                            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Child Name</label>
+                                                            <p className="text-slate-900 font-medium text-sm">{parsed.details['Child Name']}</p>
+                                                        </div>
+                                                    )}
+                                                    {parsed.details['Child Age'] && (
+                                                        <div className="space-y-1">
+                                                            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Child Age</label>
+                                                            <p className="text-slate-900 font-medium text-sm">{parsed.details['Child Age']}</p>
+                                                        </div>
+                                                    )}
+                                                    {parsed.details['Program'] && (
+                                                        <div className="space-y-1">
+                                                            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Program</label>
+                                                            <p className="text-slate-900 font-medium text-sm">{parsed.details['Program']}</p>
+                                                        </div>
+                                                    )}
+                                                    <div className="col-span-2 space-y-2 mt-2 pt-4 border-t border-slate-200/60">
+                                                        <label className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-2">
+                                                            <Inbox className="w-3 h-3" /> Student Comments
+                                                        </label>
+                                                        <p className="text-slate-700 text-sm whitespace-pre-wrap leading-relaxed">
+                                                            {selectedEnquiry.type === 'admission'
+                                                                ? (parsed.note || "No additional message provided.")
+                                                                : (parsed.originalPrefix || "No additional message provided.")
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
                                         <div className="space-y-1 col-span-2 mt-2">
                                             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</label>
                                             <select
@@ -445,6 +497,36 @@ export default function FranchiseEnquiriesPage() {
                                                 <option value="wrong_enquiry">Wrong enquiry</option>
                                             </select>
                                         </div>
+
+                                        {modalStatus === 'follow_up' && (
+                                            <div className="space-y-1 col-span-2 mt-2 animate-fadeIn">
+                                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                                    Next Follow-up Date & Time <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={nextFollowUpDate}
+                                                    onChange={(e) => setNextFollowUpDate(e.target.value)}
+                                                    required
+                                                    className="w-full text-slate-700 text-sm leading-relaxed bg-white border border-slate-200 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 max-w-[250px] block"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {(modalStatus === 'visited_school' || modalStatus === 'meeting_scheduled') && (
+                                            <div className="space-y-1 col-span-2 mt-2 animate-fadeIn">
+                                                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                                    Meeting/School Visit Date & Time <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={meetingDate}
+                                                    onChange={(e) => setMeetingDate(e.target.value)}
+                                                    required
+                                                    className="w-full text-slate-700 text-sm leading-relaxed bg-white border border-slate-200 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 max-w-[250px] block"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
 
                                     </div>
@@ -476,7 +558,7 @@ export default function FranchiseEnquiriesPage() {
 
                                         <div className="space-y-2">
                                             <label className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-2">
-                                                <Inbox className="w-3 h-3" /> Add New Note
+                                                <Inbox className="w-3 h-3" /> Center Comments
                                             </label>
                                             <textarea
                                                 value={editedNote}
@@ -494,12 +576,21 @@ export default function FranchiseEnquiriesPage() {
                                                             const newNote = await addEnquiryNote(selectedEnquiry.id, editedNote.trim());
                                                             setNotesHistory((prev) => [...prev, newNote]);
                                                             
-                                                            // Update status if it changed
-                                                            if (modalStatus && modalStatus !== selectedEnquiry.status) {
-                                                                await updateEnquiryStatus(selectedEnquiry.id, modalStatus);
-                                                                // Also update the local state so it doesn't trigger again on subsequent saves
-                                                                selectedEnquiry.status = modalStatus as any;
-                                                            }
+                                                            const isFollowUp = modalStatus === 'follow_up';
+                                                            const isMeeting = modalStatus === 'visited_school' || modalStatus === 'meeting_scheduled';
+                                                            const followUpISO = isFollowUp && nextFollowUpDate ? new Date(nextFollowUpDate).toISOString() : null;
+                                                            const meetingISO = isMeeting && meetingDate ? new Date(meetingDate).toISOString() : null;
+
+                                                            await updateEnquiryStatus(
+                                                                selectedEnquiry.id,
+                                                                modalStatus,
+                                                                meetingISO,
+                                                                followUpISO
+                                                            );
+                                                            
+                                                            selectedEnquiry.status = modalStatus as any;
+                                                            selectedEnquiry.nextFollowUpDate = followUpISO || undefined;
+                                                            selectedEnquiry.meetingDate = meetingISO || undefined;
 
                                                             setEditedNote("");
                                                             showToast("Enquiry saved successfully!", "success");
@@ -509,7 +600,12 @@ export default function FranchiseEnquiriesPage() {
                                                             setIsSavingNote(false);
                                                         }
                                                     }}
-                                                    disabled={isSavingNote || !editedNote.trim()}
+                                                    disabled={
+                                                        isSavingNote || 
+                                                        !editedNote.trim() || 
+                                                        (modalStatus === 'follow_up' && !nextFollowUpDate) ||
+                                                        ((modalStatus === 'visited_school' || modalStatus === 'meeting_scheduled') && !meetingDate)
+                                                    }
                                                     className={`px-4 py-2 text-white text-sm font-medium rounded-lg ${theme.button} disabled:opacity-50`}
                                                 >
                                                     {isSavingNote ? "Saving..." : "Save"}

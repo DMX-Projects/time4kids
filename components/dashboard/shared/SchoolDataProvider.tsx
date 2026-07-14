@@ -123,9 +123,11 @@ export type Enquiry = {
     childAge?: string;
     message: string;
     createdAt: string;
-    status: "new" | "in-progress" | "closed" | "contacted" | "called" | "follow_up" | "interested" | "meeting_scheduled" | "dropped" | "not_interested" | "converted";
+    status: "new" | "in-progress" | "closed" | "contacted" | "called" | "follow_up" | "interested" | "meeting_scheduled" | "dropped" | "not_interested" | "converted" | "untouched" | "not_answering" | "visited_school" | "converted_admission" | "joined_competition" | "wrong_enquiry" | "hot" | "warm" | "cold" | "converted_mou_signed" | "converted_agreement_signed" | "join_later" | "not_answering_calls";
     channel: "web" | "dashboard";
     franchiseName?: string;
+    meetingDate?: string;
+    nextFollowUpDate?: string;
 };
 
 export type BulkGradeRow = {
@@ -227,7 +229,7 @@ export type SchoolDataContextValue = {
     clearAttendanceDate: (date: string) => Promise<number>;
 
     locations: { city_name: string; state: string }[];
-    updateEnquiryStatus: (id: string, status: string) => Promise<void>;
+    updateEnquiryStatus: (id: string, status: string, meetingDate?: string | null, nextFollowUpDate?: string | null) => Promise<void>;
     updateEnquiryMessage: (id: string, message: string) => Promise<void>;
     fetchEnquiryNotes: (leadId: string) => Promise<EnquiryNote[]>;
     addEnquiryNote: (leadId: string, content: string) => Promise<EnquiryNote>;
@@ -372,15 +374,19 @@ const VALID_ENQUIRY_STATUSES = new Set([
     "new", "in-progress", "closed",
     "contacted", "called", "follow_up", "interested",
     "meeting_scheduled", "dropped", "not_interested", "converted",
+    "untouched", "not_answering", "visited_school", "converted_admission",
+    "joined_competition", "wrong_enquiry", "hot", "warm", "cold",
+    "converted_mou_signed", "converted_agreement_signed", "join_later",
+    "not_answering_calls"
 ]);
 
 const normalizeEnquiryStatus = (raw: string | undefined | null): Enquiry["status"] => {
-    const value = String(raw || "new")
+    const value = String(raw || "untouched")
         .trim()
         .toLowerCase()
         .replace(/ /g, "_");
     if (VALID_ENQUIRY_STATUSES.has(value)) return value as Enquiry["status"];
-    return "new";
+    return "untouched";
 };
 
 const mapEnquiry = (enq: ApiEnquiry): Enquiry => {
@@ -860,20 +866,43 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         return [primary, fallback];
     };
 
-    const patchEnquiryStatusRemote = async (id: string, status: string) => {
+    const patchEnquiryStatusRemote = async (
+        id: string,
+        status: string,
+        meetingDate?: string | null,
+        nextFollowUpDate?: string | null
+    ) => {
         const normalizedStatus = normalizeEnquiryStatus(status);
         const previous = enquiries.find((e) => e.id === id)?.status;
         const phone = enquiries.find((e) => e.id === id)?.phone?.trim();
 
         setEnquiries((prev) =>
             prev.map((e) => {
-                if (e.id === id) return { ...e, status: normalizedStatus };
-                if (phone && e.phone?.trim() === phone) return { ...e, status: normalizedStatus };
+                if (e.id === id) {
+                    return {
+                        ...e,
+                        status: normalizedStatus,
+                        ...(meetingDate !== undefined ? { meetingDate: meetingDate || undefined } : {}),
+                        ...(nextFollowUpDate !== undefined ? { nextFollowUpDate: nextFollowUpDate || undefined } : {}),
+                    };
+                }
+                if (phone && e.phone?.trim() === phone) {
+                    return {
+                        ...e,
+                        status: normalizedStatus,
+                        ...(meetingDate !== undefined ? { meetingDate: meetingDate || undefined } : {}),
+                        ...(nextFollowUpDate !== undefined ? { nextFollowUpDate: nextFollowUpDate || undefined } : {}),
+                    };
+                }
                 return e;
             }),
         );
 
-        const body = JSON.stringify({ status: normalizedStatus });
+        const payload: Record<string, any> = { status: normalizedStatus };
+        if (meetingDate !== undefined) payload.meeting_date = meetingDate;
+        if (nextFollowUpDate !== undefined) payload.next_follow_up_date = nextFollowUpDate;
+
+        const body = JSON.stringify(payload);
         const headers = jsonHeaders();
         let lastError: unknown = null;
 
@@ -1117,8 +1146,13 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         }
     };
 
-    const updateEnquiryStatus = async (id: string, status: string) => {
-        await patchEnquiryStatusRemote(id, status);
+    const updateEnquiryStatus = async (
+        id: string,
+        status: string,
+        meetingDate?: string | null,
+        nextFollowUpDate?: string | null
+    ) => {
+        await patchEnquiryStatusRemote(id, status, meetingDate, nextFollowUpDate);
     };
 
     const value: SchoolDataContextValue = {

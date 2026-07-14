@@ -25,13 +25,40 @@ type Enquiry = {
     recordSource?: string;
 };
 
+const NON_FRANCHISE_OPTIONS = [
+    { value: "untouched", label: "Untouched" },
+    { value: "not_answering", label: "Not answering" },
+    { value: "follow_up", label: "Follow-up" },
+    { value: "visited_school", label: "Visited the school" },
+    { value: "converted_admission", label: "Converted to Admission" },
+    { value: "joined_competition", label: "Joined competition" },
+    { value: "not_interested", label: "Not Interested" },
+    { value: "wrong_enquiry", label: "Wrong enquiry" },
+];
+
+const FRANCHISE_OPTIONS = [
+    { value: "untouched", label: "Untouched" },
+    { value: "hot", label: "Hot" },
+    { value: "warm", label: "Warm" },
+    { value: "follow_up", label: "Follow-up" },
+    { value: "cold", label: "Cold" },
+    { value: "converted_mou_signed", label: "Converted – MOU Signed" },
+    { value: "converted_agreement_signed", label: "Converted – Agreement Signed" },
+    { value: "join_later", label: "Join Later" },
+    { value: "not_interested", label: "Not Interested" },
+    { value: "not_answering_calls", label: "Not Answering Calls" },
+];
+
 const STATUS_OPTIONS = [
-    { value: "contacted", label: "Called/Contacted" },
-    { value: "follow_up", label: "Follow Up" },
-    { value: "interested", label: "Interested" },
-    { value: "meeting_scheduled", label: "Meeting Scheduled" },
-    { value: "dropped", label: "Dropped/Not Interested" },
-    { value: "converted", label: "Converted" },
+    ...NON_FRANCHISE_OPTIONS,
+    ...FRANCHISE_OPTIONS.filter(fo => !NON_FRANCHISE_OPTIONS.some(nfo => nfo.value === fo.value)),
+    { value: "new", label: "Untouched" },
+    { value: "called", label: "Not answering" },
+    { value: "contacted", label: "Not answering" },
+    { value: "converted", label: "Converted to Admission" },
+    { value: "dropped", label: "Not Interested" },
+    { value: "interested", label: "Follow-up" },
+    { value: "meeting_scheduled", label: "Visited the school" },
     { value: "in-progress", label: "In Progress" },
     { value: "closed", label: "Closed" },
 ];
@@ -105,7 +132,7 @@ function mapApiEnquiry(enq: any): Enquiry {
         childAge: enq.child_age,
         message: enq.message || "",
         createdAt: enq.created_at,
-        status: enq.status || "new",
+        status: enq.status || "untouched",
         franchiseName: enq.franchise_name,
         recordSource: source,
     };
@@ -258,12 +285,24 @@ export default function AdminEnquiriesPage() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case "new": return "text-sky-600 bg-sky-50 border-sky-100";
-            case "converted": return "text-green-600 bg-green-50 border-green-100";
-            case "dropped": case "not_interested": return "text-red-500 bg-red-50 border-red-100";
-            case "follow_up": case "meeting_scheduled": return "text-amber-600 bg-amber-50 border-amber-100";
-            case "in-progress": case "contacted": case "called": case "interested": return "text-blue-600 bg-blue-50 border-blue-100";
-            default: return "text-slate-600 bg-slate-50 border-slate-100";
+            case "untouched": case "new":
+                return "text-slate-600 bg-slate-50 border-slate-200";
+            case "not_answering": case "not_answering_calls": case "called": case "contacted":
+                return "text-yellow-600 bg-yellow-50 border-yellow-100";
+            case "follow_up": case "hot": case "warm": case "cold": case "interested": case "in-progress":
+                return "text-blue-600 bg-blue-50 border-blue-100";
+            case "visited_school": case "meeting_scheduled":
+                return "text-teal-600 bg-teal-50 border-teal-100";
+            case "converted_admission": case "converted": case "converted_mou_signed": case "converted_agreement_signed":
+                return "text-green-600 bg-green-50 border-green-100";
+            case "joined_competition":
+                return "text-purple-600 bg-purple-50 border-purple-100";
+            case "not_interested": case "dropped": case "join_later":
+                return "text-red-500 bg-red-50 border-red-100";
+            case "wrong_enquiry":
+                return "text-orange-600 bg-orange-50 border-orange-100";
+            default:
+                return "text-slate-600 bg-slate-50 border-slate-100";
         }
     };
 
@@ -291,6 +330,16 @@ export default function AdminEnquiriesPage() {
                                 onClick={() => {
                                     setActiveTab(tab.key);
                                     setPage(1);
+                                    
+                                    // Reset status filter if it is not valid in the new tab
+                                    const allowedOptions = tab.key === "franchise"
+                                        ? FRANCHISE_OPTIONS.map(o => o.value)
+                                        : tab.key === "all"
+                                        ? STATUS_OPTIONS.map(o => o.value)
+                                        : NON_FRANCHISE_OPTIONS.map(o => o.value);
+                                    if (statusFilter !== "all" && !allowedOptions.includes(statusFilter)) {
+                                        setStatusFilter("all");
+                                    }
                                 }}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border ${getTabColor(tab.key, activeTab === tab.key)}`}
                             >
@@ -312,7 +361,12 @@ export default function AdminEnquiriesPage() {
                             className="w-40 pl-3 pr-8 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white"
                         >
                             <option value="all">All Statuses</option>
-                            {STATUS_OPTIONS.map(s => (
+                            {(activeTab === "franchise"
+                                ? FRANCHISE_OPTIONS
+                                : activeTab === "all"
+                                ? STATUS_OPTIONS.filter(so => !["new", "called", "contacted", "converted", "dropped", "interested", "meeting_scheduled", "in-progress", "closed"].includes(so.value))
+                                : NON_FRANCHISE_OPTIONS
+                            ).map(s => (
                                 <option key={s.value} value={s.value}>{s.label}</option>
                             ))}
                         </select>
@@ -408,10 +462,12 @@ export default function AdminEnquiriesPage() {
                                                     onChange={(e) => handleStatusChange(enq, e.target.value)}
                                                     className={`text-xs font-medium px-2 py-1.5 rounded-md border text-center appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-200 transition-all w-36 ${getStatusColor(enq.status)}`}
                                                 >
-                                                    {enq.status === 'new' && <option value="new" disabled>Select</option>}
-                                                    {enq.status === 'called' && <option value="called" disabled>Called/Contacted</option>}
-                                                    {enq.status === 'not_interested' && <option value="not_interested" disabled>Dropped/Not Interested</option>}
-                                                    {STATUS_OPTIONS.map(s => (
+                                                    {["new", "called", "contacted", "converted", "dropped", "interested", "meeting_scheduled", "in-progress", "closed"].includes(enq.status) && (
+                                                        <option value={enq.status} disabled>
+                                                            {STATUS_OPTIONS.find(s => s.value === enq.status)?.label || enq.status}
+                                                        </option>
+                                                    )}
+                                                    {(enq.type === 'franchise' ? FRANCHISE_OPTIONS : NON_FRANCHISE_OPTIONS).map(s => (
                                                         <option key={s.value} value={s.value}>{s.label}</option>
                                                     ))}
                                                 </select>

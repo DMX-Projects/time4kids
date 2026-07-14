@@ -34,7 +34,12 @@ function CrmAdminLoginInner() {
         try {
             const email = String(data.email ?? "").trim();
             const password = String(data.password ?? "");
-            const next = searchParams.get("next") || "/crm-admin";
+            const rawNext = searchParams.get("next") || "/crm-admin";
+            // Zone + national CRM always stay inside CRM admin (never main site login/dashboard).
+            const next =
+                rawNext.startsWith("/crm-admin") && !rawNext.startsWith("/crm-admin/login")
+                    ? rawNext
+                    : "/crm-admin";
 
             const { user } = await login(email, password, {
                 authPath: "/auth/crm/login/",

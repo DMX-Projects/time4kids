@@ -2,7 +2,7 @@
 
 import { Suspense, lazy, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Filter, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
 import { AccessLoading } from "@/components/auth/AccessLoading";
 import { normalizeRole, useAuth } from "@/components/auth/AuthProvider";
@@ -21,17 +21,42 @@ import ReportsView from "@/components/crm/admin/ReportsView";
 const LeadSourceChart = lazy(() => import("@/components/crm/admin/LeadSourceChart"));
 const ConversionFunnel = lazy(() => import("@/components/crm/admin/ConversionFunnel"));
 
-type SourceFilter = "" | "admission" | "contact" | "landing" | "campaign" | "franchise";
+type SourceFilter = "" | "admission" | "contact" | "landing" | "campaign" | "franchise" | "all";
 type CampaignChannelFilter = "" | "website" | "facebook" | "instagram";
-type StatusFilter = "" | "new" | "contacted" | "called" | "follow_up" | "interested" | "meeting_scheduled" | "converted" | "dropped" | "not_interested";
+type StatusFilter =
+    | ""
+    | "untouched"
+    | "not_answering"
+    | "follow_up"
+    | "visited_school"
+    | "converted_admission"
+    | "joined_competition"
+    | "not_interested"
+    | "wrong_enquiry"
+    | "hot"
+    | "warm"
+    | "cold"
+    | "converted_mou_signed"
+    | "converted_agreement_signed"
+    | "join_later"
+    | "not_answering_calls"
+    // Legacy just in case
+    | "new"
+    | "contacted"
+    | "called"
+    | "interested"
+    | "meeting_scheduled"
+    | "converted"
+    | "dropped";
 
 function apiSourceParam(source: SourceFilter, channel: CampaignChannelFilter): string {
     if (source === "campaign") return channel || "campaign";
+    if (source === "all") return "";
     return source;
 }
 
 const SOURCE_FILTERS: { id: SourceFilter; label: string; active: string; idle: string }[] = [
-    { id: "", label: "All", active: "border-gray-800 bg-gray-800 text-white", idle: "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100" },
+    { id: "all", label: "All", active: "border-gray-800 bg-gray-800 text-white", idle: "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100" },
     { id: "admission", label: "Admission", active: "border-blue-700 bg-blue-700 text-white", idle: "border-blue-100 bg-blue-50 text-blue-800 hover:bg-blue-100" },
     { id: "contact", label: "CenterPage", active: "border-sky-600 bg-sky-600 text-white", idle: "border-sky-100 bg-sky-50 text-sky-800 hover:bg-sky-100" },
     { id: "campaign", label: "Campaign", active: "border-violet-600 bg-violet-600 text-white", idle: "border-violet-100 bg-violet-50 text-violet-800 hover:bg-violet-100" },
@@ -46,15 +71,30 @@ const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] =
     { id: "instagram", label: "Instagram" },
 ];
 
-const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
+const NON_FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "", label: "All Statuses" },
-    { id: "new", label: "Pending" },
-    { id: "contacted", label: "Called/Contacted" },
-    { id: "follow_up", label: "Follow Up" },
-    { id: "interested", label: "Interested" },
-    { id: "meeting_scheduled", label: "Meeting Scheduled" },
-    { id: "dropped", label: "Dropped/Not Interested" },
-    { id: "converted", label: "Converted" },
+    { id: "untouched", label: "Untouched" },
+    { id: "not_answering", label: "Not answering" },
+    { id: "follow_up", label: "Follow-up" },
+    { id: "visited_school", label: "Visited the school" },
+    { id: "converted_admission", label: "Converted to Admission" },
+    { id: "joined_competition", label: "Joined competition" },
+    { id: "not_interested", label: "Not Interested" },
+    { id: "wrong_enquiry", label: "Wrong enquiry" },
+];
+
+const FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
+    { id: "", label: "All Statuses" },
+    { id: "untouched", label: "Untouched" },
+    { id: "hot", label: "Hot" },
+    { id: "warm", label: "Warm" },
+    { id: "follow_up", label: "Follow-up" },
+    { id: "cold", label: "Cold" },
+    { id: "converted_mou_signed", label: "Converted – MOU Signed" },
+    { id: "converted_agreement_signed", label: "Converted – Agreement Signed" },
+    { id: "join_later", label: "Join Later" },
+    { id: "not_interested", label: "Not Interested" },
+    { id: "not_answering_calls", label: "Not Answering Calls" },
 ];
 
 export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'reports' | 'all' }) {
@@ -79,7 +119,6 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const [statsLoading, setStatsLoading] = useState(true);
     const [reportsFiltersApplied, setReportsFiltersApplied] = useState(false);
 
-
     const isCrmUser = normalizeRole(user?.role) === "crm";
 
     const getHeaderTitle = () => {
@@ -94,22 +133,49 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const handleCityChange = (city: string[]) => {
         setSelectedCity(city);
         setSelectedCentre("");
+        if (view === 'reports') {
+            setReportsFiltersApplied(false);
+        }
     };
 
     const handleStateChange = (state: string[]) => {
         setSelectedState(state);
         setSelectedCity([]);
         setSelectedCentre("");
+        if (view === 'reports') {
+            setReportsFiltersApplied(false);
+        }
     };
 
     const isLandingView = selectedSource === "landing";
     const isCampaignView = selectedSource === "campaign";
+    const isFranchise = selectedSource === "franchise";
     const apiSource = apiSourceParam(selectedSource, selectedCampaignChannel);
+    const currentStatusFilters = isFranchise ? FRANCHISE_FILTERS : NON_FRANCHISE_FILTERS;
 
     const handleSourceChange = (source: SourceFilter) => {
         setSelectedSource(source);
         if (source !== "campaign") {
             setSelectedCampaignChannel("");
+        }
+        
+        // Ensure selectedStatus is valid for the new source
+        const nextIsFranchise = source === "franchise";
+        const allowedStatuses = nextIsFranchise
+            ? FRANCHISE_FILTERS.map(f => f.id)
+            : NON_FRANCHISE_FILTERS.map(f => f.id);
+        if (selectedStatus && !allowedStatuses.includes(selectedStatus)) {
+            setSelectedStatus("");
+        }
+        
+        // Reset reports filter application state on source change
+        if (view === 'reports') {
+            setReportsFiltersApplied(false);
+            setSelectedState([]);
+            setSelectedCity([]);
+            setSelectedCentre("");
+            setFilterDateRange({ startDate: null, endDate: null });
+            setDateRange({ startDate: null, endDate: null });
         }
     };
 
@@ -184,6 +250,10 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
     const handleApplyFilters = () => {
         if (view === 'reports') {
+            if (!selectedSource) {
+                toast.error("Please select a Lead Type before generating the report.");
+                return;
+            }
             if (selectedCity.length === 0) {
                 toast.error("Please select a City before generating the report.");
                 return;
@@ -316,22 +386,42 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     return (
         <div className="min-h-screen bg-gray-50">
             <Toaster position="top-center" />
-            <header className="border-b bg-white shadow-sm">
-                <div className="container mx-auto flex items-center justify-between px-4 py-4">
-                    <div className="flex items-center gap-4">
-                        <h1
-                            onClick={() => window.location.reload()}
-                            className="flex cursor-pointer items-center gap-2 text-2xl font-bold text-gray-800 transition-colors hover:text-blue-600"
-                            title="Click to reload page"
-                        >
-                            {getHeaderTitle()}
-                        </h1>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <span className="text-gray-600">Welcome, {user.fullName || user.email}</span>
-                        <button onClick={handleLogout} className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700">
-                            Logout
-                        </button>
+            <header className="border-b bg-white shadow-sm sticky top-0 z-30">
+                <div className="container mx-auto px-4">
+                    <div className="flex items-center justify-between py-4">
+                        <div className="flex items-center gap-2.5">
+                            <img
+                                src="/time-kids-logo-new.png"
+                                alt="T.I.M.E. Kids Logo"
+                                className="md:hidden h-8 w-auto object-contain"
+                            />
+                            <h1 className="flex items-center gap-2 text-lg md:text-2xl font-bold text-gray-800">
+                                {getHeaderTitle()}
+                            </h1>
+                        </div>
+                        <div className="hidden md:flex items-center gap-4">
+                            {user.crmRegion ? (
+                                <span className="rounded-full bg-violet-50 border border-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
+                                    {user.crmRegion.replace("_", " ")}
+                                </span>
+                            ) : user.crmZone ? (
+                                <span className="rounded-full bg-indigo-50 border border-indigo-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-indigo-700">
+                                    {user.crmZone} Zone
+                                </span>
+                            ) : (
+                                <span className="rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-600">
+                                    All Zones
+                                </span>
+                            )}
+                            <span className="text-sm text-gray-600">Welcome, {user.fullName || user.email}</span>
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 text-sm font-medium transition-colors"
+                            >
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -340,25 +430,28 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                 <div className="mb-6 rounded-xl bg-white p-6 shadow-lg">
                     <div className="flex flex-col gap-3">
 
-                        <div className="flex flex-wrap lg:flex-nowrap items-end gap-3 w-full pb-2">
-                            <div className="flex-1 min-w-[140px]">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap items-end gap-3 w-full pb-2">
+                            <div className="flex-1 min-w-[140px] w-full">
                                 <label className="mb-2 block text-sm font-semibold text-gray-700">Select Lead Type</label>
-                                <SearchableSelect
+                                 <SearchableSelect
                                     value={selectedSource}
                                     onChange={(val) => handleSourceChange(val as any)}
-                                    options={(view === 'reports' ? SOURCE_FILTERS : SOURCE_FILTERS.filter(f => f.id !== "")).map(f => ({ value: f.id, label: f.label }))}
+                                    options={(view === 'reports' ? SOURCE_FILTERS : SOURCE_FILTERS.filter(f => f.id !== "all")).map(f => ({ value: f.id, label: f.label }))}
                                     placeholder="Select Type"
                                 />
                             </div>
 
-                            {isCampaignView && view !== 'reports' && (
+                            {isCampaignView && (
                                 <div className="flex-1 min-w-[140px]">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Select Channel</label>
                                     <SearchableSelect
                                         value={selectedCampaignChannel}
-                                        onChange={(val) => setSelectedCampaignChannel(val as any)}
-                                        options={CAMPAIGN_CHANNEL_FILTERS.filter(f => f.id !== "").map(f => ({ value: f.id, label: f.label }))}
-                                        placeholder="Select Channel"
+                                        onChange={(val) => {
+                                            setSelectedCampaignChannel(val as any);
+                                            if (view === "reports") setReportsFiltersApplied(false);
+                                        }}
+                                        options={CAMPAIGN_CHANNEL_FILTERS.map(f => ({ value: f.id, label: f.label }))}
+                                        placeholder="All Channels"
                                     />
                                 </div>
                             )}
@@ -369,8 +462,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     <SearchableSelect
                                         value={selectedStatus}
                                         onChange={(val) => setSelectedStatus(val as any)}
-                                        options={STATUS_FILTERS.filter(f => f.id !== "").map(f => ({ value: f.id, label: f.label }))}
-                                        placeholder="Select Status"
+                                        options={currentStatusFilters.map(f => ({ value: f.id, label: f.label }))}
+                                        placeholder="All Statuses"
                                     />
                                 </div>
                             )}
@@ -385,12 +478,17 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     <DateRangePicker
                                         startDate={filterDateRange.startDate}
                                         endDate={filterDateRange.endDate}
-                                        onChange={(start, end) => setFilterDateRange({ startDate: start, endDate: end })}
+                                        onChange={(start, end) => {
+                                            setFilterDateRange({ startDate: start, endDate: end });
+                                            if (view === 'reports') {
+                                                setReportsFiltersApplied(false);
+                                            }
+                                        }}
                                     />
                                     <button
                                         type="button"
                                         onClick={handleApplyFilters}
-                                        className="btn-primary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6"
+                                        className="btn-primary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6 w-full lg:w-auto"
                                     >
                                         {view === 'reports' ? 'Generate' : 'Apply Filters'}
                                     </button>
@@ -399,7 +497,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         <button
                                             type="button"
                                             onClick={() => alert("CSV Download will be ready once the data is hooked up!")}
-                                            className="btn-secondary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6 gap-2"
+                                            className="btn-secondary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6 gap-2 w-full lg:w-auto"
                                         >
                                             <Download className="w-4 h-4" />
                                             Download CSV
@@ -466,7 +564,12 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                         {(view === 'reports' || view === 'all') && (
                             view === 'reports' ? (
                                 reportsFiltersApplied ? (
-                                    <ReportsView dateRange={dateRange} city={selectedCity} state={selectedState} source={selectedSource} />
+                                    <ReportsView
+                                        dateRange={dateRange}
+                                        city={selectedCity}
+                                        state={selectedState}
+                                        source={apiSource || selectedSource}
+                                    />
                                 ) : null
                             ) : (
                                 <LeadsTable

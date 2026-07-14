@@ -15,6 +15,10 @@ type User = {
     /** True only for head-office super admins (not the content-only admin). */
     isSuperuser?: boolean;
     fullName?: string;
+    /** CRM only: EAST | WEST | NORTH | SOUTH | empty = national (all zones). */
+    crmZone?: string;
+    /** CRM only: NORTH_R1 | SOUTH_R2 | etc. | empty = full zone / national. */
+    crmRegion?: string;
     /** Child name from login / me (parent accounts). */
     childName?: string;
     /** Use for greetings in the parent app — child name, not parent full_name. */
@@ -137,6 +141,8 @@ function mapApiUserToSession(data: Record<string, unknown>, fallbackEmail = ""):
         email: String(data.email ?? fallbackEmail),
         isSuperuser: Boolean(data.is_superuser),
         fullName: data.full_name != null ? String(data.full_name) : undefined,
+        crmZone: data.crm_zone != null ? String(data.crm_zone).trim().toUpperCase() : undefined,
+        crmRegion: data.crm_region != null ? String(data.crm_region).trim().toUpperCase() : undefined,
         childName,
         displayName,
         gender: normalizeParentGender(genderRaw),
