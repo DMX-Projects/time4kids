@@ -1,12 +1,21 @@
 "use client";
 
-import { Suspense, lazy, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Download } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
 import { AccessLoading } from "@/components/auth/AccessLoading";
 import { normalizeRole, useAuth } from "@/components/auth/AuthProvider";
 import crmApi from "@/lib/crmApi";
+import {
+    buildCrmDashboardHref,
+    datesFromSnapshot,
+    hardRefreshCrmDashboard,
+    loadCrmDashboardFilters,
+    saveCrmDashboardFilters,
+    snapshotFromSearchParams,
+    type CrmDashboardFiltersSnapshot,
+} from "@/lib/crmDashboardFilters";
 import DashboardStats from "@/components/crm/admin/DashboardStats";
 import LeadsTable from "@/components/crm/admin/LeadsTable";
 import DateRangePicker from "@/components/crm/admin/DateRangePicker";
@@ -24,7 +33,7 @@ const ConversionFunnel = lazy(() => import("@/components/crm/admin/ConversionFun
 type SourceFilter = "" | "admission" | "contact" | "landing" | "campaign" | "franchise" | "all";
 type CampaignChannelFilter = "" | "website" | "facebook" | "instagram";
 type StatusFilter =
-    | ""
+    | "all"
     | "untouched"
     | "not_answering"
     | "follow_up"
@@ -47,12 +56,18 @@ type StatusFilter =
     | "interested"
     | "meeting_scheduled"
     | "converted"
-    | "dropped";
+    | "dropped"
+    | "";
 
 function apiSourceParam(source: SourceFilter, channel: CampaignChannelFilter): string {
     if (source === "campaign") return channel || "campaign";
     if (source === "all") return "";
     return source;
+}
+
+function apiStatusParam(status: StatusFilter): string {
+    if (!status || status === "all") return "";
+    return status;
 }
 
 const SOURCE_FILTERS: { id: SourceFilter; label: string; active: string; idle: string }[] = [
@@ -72,7 +87,7 @@ const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] =
 ];
 
 const NON_FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
-    { id: "", label: "All Statuses" },
+    { id: "all", label: "All Status" },
     { id: "untouched", label: "Untouched" },
     { id: "not_answering", label: "Not answering" },
     { id: "follow_up", label: "Follow-up" },
@@ -84,7 +99,7 @@ const NON_FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
 ];
 
 const FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
-    { id: "", label: "All Statuses" },
+    { id: "all", label: "All Status" },
     { id: "untouched", label: "Untouched" },
     { id: "hot", label: "Hot" },
     { id: "warm", label: "Warm" },
@@ -99,27 +114,108 @@ const FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
 
 export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'reports' | 'all' }) {
     const router = useRouter();
+    const pathname = usePathname();
     const { user, loading: authLoading, logout } = useAuth();
     const [stats, setStats] = useState<any>(null);
+    const [filtersReady, setFiltersReady] = useState(false);
     const [dateRange, setDateRange] = useState<{ startDate: Date | null; endDate: Date | null }>({
         startDate: null,
         endDate: null,
     });
     const [selectedCity, setSelectedCity] = useState<string[]>([]);
     const [selectedState, setSelectedState] = useState<string[]>([]);
-    const [selectedCentre, setSelectedCentre] = useState<string>("");
+    const [selectedCentre, setSelectedCentre] = useState<string[]>([]);
     const [filterDateRange, setFilterDateRange] = useState<{ startDate: Date | null; endDate: Date | null }>({
         startDate: null,
         endDate: null,
     });
     const [selectedSource, setSelectedSource] = useState<SourceFilter>("");
     const [selectedCampaignChannel, setSelectedCampaignChannel] = useState<CampaignChannelFilter>("");
-    const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("");
+    const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
     const [refreshKey, setRefreshKey] = useState(0);
     const [statsLoading, setStatsLoading] = useState(true);
     const [reportsFiltersApplied, setReportsFiltersApplied] = useState(false);
+    const snapshotRef = useRef<CrmDashboardFiltersSnapshot | null>(null);
 
     const isCrmUser = normalizeRole(user?.role) === "crm";
+    const returnPath = view === "reports" ? "/crm-admin/reports" : "/crm-admin";
+
+    const applySnapshot = (saved: CrmDashboardFiltersSnapshot) => {
+        const { filterDateRange: savedFilter, dateRange: savedApplied } = datesFromSnapshot(saved);
+        setSelectedCity(Array.isArray(saved.selectedCity) ? saved.selectedCity : []);
+        setSelectedState(Array.isArray(saved.selectedState) ? saved.selectedState : []);
+        setSelectedCentre(Array.isArray(saved.selectedCentre) ? saved.selectedCentre : []);
+        setSelectedSource((saved.selectedSource as SourceFilter) || "");
+        setSelectedCampaignChannel((saved.selectedCampaignChannel as CampaignChannelFilter) || "");
+        const restoredStatus = (saved.selectedStatus as StatusFilter) || "all";
+        setSelectedStatus(restoredStatus);
+        setFilterDateRange(savedFilter);
+        setDateRange(savedApplied);
+        setReportsFiltersApplied(Boolean(saved.reportsFiltersApplied));
+    };
+
+    useEffect(() => {
+        const fromUrl =
+            typeof window !== "undefined"
+                ? snapshotFromSearchParams(new URLSearchParams(window.location.search))
+                : null;
+        const saved = fromUrl || loadCrmDashboardFilters();
+        if (saved) {
+            applySnapshot({ ...saved, returnPath });
+        }
+        setFiltersReady(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- restore once on mount
+    }, []);
+
+    const currentSnapshot: CrmDashboardFiltersSnapshot = useMemo(
+        () => ({
+            returnPath,
+            selectedCity,
+            selectedState,
+            selectedCentre,
+            selectedSource,
+            selectedCampaignChannel,
+            selectedStatus,
+            filterStart: filterDateRange.startDate?.toISOString() ?? null,
+            filterEnd: filterDateRange.endDate?.toISOString() ?? null,
+            appliedStart: dateRange.startDate?.toISOString() ?? null,
+            appliedEnd: dateRange.endDate?.toISOString() ?? null,
+            reportsFiltersApplied,
+        }),
+        [
+            returnPath,
+            selectedCity,
+            selectedState,
+            selectedCentre,
+            selectedSource,
+            selectedCampaignChannel,
+            selectedStatus,
+            filterDateRange,
+            dateRange,
+            reportsFiltersApplied,
+        ],
+    );
+
+    snapshotRef.current = currentSnapshot;
+
+    const returnHref = useMemo(() => buildCrmDashboardHref(currentSnapshot), [currentSnapshot]);
+
+    const persistFiltersNow = () => {
+        if (snapshotRef.current) {
+            saveCrmDashboardFilters(snapshotRef.current);
+        }
+    };
+
+    useEffect(() => {
+        if (!filtersReady) return;
+        saveCrmDashboardFilters(currentSnapshot);
+        const next = buildCrmDashboardHref(currentSnapshot);
+        const current =
+            typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "";
+        if (pathname?.startsWith("/crm-admin") && current !== next) {
+            router.replace(next, { scroll: false });
+        }
+    }, [filtersReady, currentSnapshot, pathname, router]);
 
     const getHeaderTitle = () => {
         const sourceObj = SOURCE_FILTERS.find((f) => f.id === selectedSource);
@@ -132,7 +228,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
     const handleCityChange = (city: string[]) => {
         setSelectedCity(city);
-        setSelectedCentre("");
+        // Centre filter only works for a single city
+        setSelectedCentre([]);
         if (view === 'reports') {
             setReportsFiltersApplied(false);
         }
@@ -141,7 +238,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const handleStateChange = (state: string[]) => {
         setSelectedState(state);
         setSelectedCity([]);
-        setSelectedCentre("");
+        setSelectedCentre([]);
         if (view === 'reports') {
             setReportsFiltersApplied(false);
         }
@@ -150,7 +247,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const isLandingView = selectedSource === "landing";
     const isCampaignView = selectedSource === "campaign";
     const isFranchise = selectedSource === "franchise";
+    const hasLeadType = Boolean(selectedSource);
     const apiSource = apiSourceParam(selectedSource, selectedCampaignChannel);
+    const apiStatus = apiStatusParam(selectedStatus);
     const currentStatusFilters = isFranchise ? FRANCHISE_FILTERS : NON_FRANCHISE_FILTERS;
 
     const handleSourceChange = (source: SourceFilter) => {
@@ -158,22 +257,16 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         if (source !== "campaign") {
             setSelectedCampaignChannel("");
         }
-        
-        // Ensure selectedStatus is valid for the new source
-        const nextIsFranchise = source === "franchise";
-        const allowedStatuses = nextIsFranchise
-            ? FRANCHISE_FILTERS.map(f => f.id)
-            : NON_FRANCHISE_FILTERS.map(f => f.id);
-        if (selectedStatus && !allowedStatuses.includes(selectedStatus)) {
-            setSelectedStatus("");
-        }
+
+        // Always reset to All Status when lead type changes
+        setSelectedStatus("all");
         
         // Reset reports filter application state on source change
         if (view === 'reports') {
             setReportsFiltersApplied(false);
             setSelectedState([]);
             setSelectedCity([]);
-            setSelectedCentre("");
+            setSelectedCentre([]);
             setFilterDateRange({ startDate: null, endDate: null });
             setDateRange({ startDate: null, endDate: null });
         }
@@ -187,7 +280,13 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     }, [authLoading, router, user]);
 
     useEffect(() => {
-        if (!isCrmUser || isLandingView) return;
+        if (!filtersReady || !isCrmUser || isLandingView) return;
+        // Dashboard: wait until a lead type is chosen, then filter by that type
+        if (!hasLeadType) {
+            setStats(null);
+            setStatsLoading(false);
+            return;
+        }
         let cancelled = false;
         setStatsLoading(true);
         const params = new URLSearchParams();
@@ -204,9 +303,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         }
         if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
         if (selectedState.length > 0) params.append("state", selectedState.join(","));
-        if (selectedCentre) params.append("centreId", selectedCentre);
+        if (selectedCentre.length > 0) params.append("centreId", selectedCentre.join(","));
         if (apiSource) params.append("source", apiSource);
-        if (selectedStatus) params.append("status", selectedStatus);
+        if (apiStatus) params.append("status", apiStatus);
         crmApi
             .get(`/leads/dashboard?${params.toString()}`)
             .then((res) => {
@@ -221,7 +320,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [isCrmUser, isLandingView, dateRange, selectedCity, selectedState, selectedCentre, apiSource, selectedStatus]);
+    }, [filtersReady, isCrmUser, isLandingView, hasLeadType, dateRange, selectedCity, selectedState, selectedCentre, apiSource, apiStatus]);
 
     const fetchStats = () => {
         setStatsLoading(true);
@@ -238,9 +337,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         }
         if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
         if (selectedState.length > 0) params.append("state", selectedState.join(","));
-        if (selectedCentre) params.append("centreId", selectedCentre);
+        if (selectedCentre.length > 0) params.append("centreId", selectedCentre.join(","));
         if (apiSource) params.append("source", apiSource);
-        if (selectedStatus) params.append("status", selectedStatus);
+        if (apiStatus) params.append("status", apiStatus);
         crmApi
             .get(`/leads/dashboard?${params.toString()}`)
             .then((res) => setStats(res.data))
@@ -249,11 +348,11 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     };
 
     const handleApplyFilters = () => {
+        if (!selectedSource) {
+            toast.error("Please select a Lead Type first.");
+            return;
+        }
         if (view === 'reports') {
-            if (!selectedSource) {
-                toast.error("Please select a Lead Type before generating the report.");
-                return;
-            }
             if (selectedCity.length === 0) {
                 toast.error("Please select a City before generating the report.");
                 return;
@@ -281,9 +380,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         }
         if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
         if (selectedState.length > 0) params.append("state", selectedState.join(","));
-        if (selectedCentre) params.append("centreId", selectedCentre);
+        if (selectedCentre.length > 0) params.append("centreId", selectedCentre.join(","));
         if (apiSource) params.append("source", apiSource);
-        if (selectedStatus) params.append("status", selectedStatus);
+        if (apiStatus) params.append("status", apiStatus);
         crmApi
             .get(`/leads/dashboard?${params.toString()}`)
             .then((res) => setStats(res.data))
@@ -310,9 +409,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                 params.append("endDate", end.toISOString());
             }
             if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
-            if (selectedCentre) params.append("centreId", selectedCentre);
+            if (selectedCentre.length > 0) params.append("centreId", selectedCentre.join(","));
             if (apiSource) params.append("source", apiSource);
-            if (selectedStatus) params.append("status", selectedStatus);
+            if (apiStatus) params.append("status", apiStatus);
             const response = await crmApi.get(`/leads?${params.toString()}`);
             const leads = response.data?.leads || [];
             if (leads.length === 0) {
@@ -361,7 +460,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         router.push("/crm-admin/login");
     };
 
-    if (authLoading || !user) {
+    if (authLoading || !user || !filtersReady) {
         return <AccessLoading />;
     }
 
@@ -389,7 +488,12 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             <header className="border-b bg-white shadow-sm sticky top-0 z-30">
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between py-4">
-                        <div className="flex items-center gap-2.5">
+                        <button
+                            type="button"
+                            onClick={hardRefreshCrmDashboard}
+                            className="flex items-center gap-2.5 bg-transparent border-0 p-0 cursor-pointer hover:opacity-80"
+                            title="Refresh CRM dashboard"
+                        >
                             <img
                                 src="/time-kids-logo-new.png"
                                 alt="T.I.M.E. Kids Logo"
@@ -398,7 +502,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                             <h1 className="flex items-center gap-2 text-lg md:text-2xl font-bold text-gray-800">
                                 {getHeaderTitle()}
                             </h1>
-                        </div>
+                        </button>
                         <div className="hidden md:flex items-center gap-4">
                             {user.crmRegion ? (
                                 <span className="rounded-full bg-violet-50 border border-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
@@ -436,7 +540,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                  <SearchableSelect
                                     value={selectedSource}
                                     onChange={(val) => handleSourceChange(val as any)}
-                                    options={(view === 'reports' ? SOURCE_FILTERS : SOURCE_FILTERS.filter(f => f.id !== "all")).map(f => ({ value: f.id, label: f.label }))}
+                                    options={SOURCE_FILTERS.map(f => ({ value: f.id, label: f.label }))}
                                     placeholder="Select Type"
                                 />
                             </div>
@@ -456,24 +560,31 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
-                            {!isLandingView && view !== 'reports' && (
+                            {!isLandingView && view !== 'reports' && hasLeadType && (
                                 <div className="flex-1 min-w-[140px]">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Select Status</label>
                                     <SearchableSelect
-                                        value={selectedStatus}
-                                        onChange={(val) => setSelectedStatus(val as any)}
+                                        key={`status-${selectedSource}`}
+                                        value={selectedStatus || "all"}
+                                        onChange={(val) => setSelectedStatus((val || "all") as StatusFilter)}
                                         options={currentStatusFilters.map(f => ({ value: f.id, label: f.label }))}
-                                        placeholder="All Statuses"
+                                        placeholder="All Status"
                                     />
                                 </div>
                             )}
 
-                            {!isLandingView && (
+                            {!isLandingView && hasLeadType && (
                                 <>
                                     <StateSelector value={selectedState} onChange={handleStateChange} />
                                     <CitySelector value={selectedCity} onChange={handleCityChange} state={selectedState.join(",")} />
                                     {view !== 'reports' && selectedSource !== "franchise" && (
-                                        <CentreSelector city={selectedCity.length === 1 ? selectedCity[0] : ""} value={selectedCentre} onChange={setSelectedCentre} />
+                                        <CentreSelector
+                                            key={`centres-${selectedCity.join('|')}-${selectedState.join('|')}`}
+                                            cities={selectedCity}
+                                            states={selectedState}
+                                            value={selectedCentre}
+                                            onChange={setSelectedCentre}
+                                        />
                                     )}
                                     <DateRangePicker
                                         startDate={filterDateRange.startDate}
@@ -509,7 +620,14 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                     </div>
                 </div>
 
-                {isLandingView ? (
+                {!hasLeadType && !isLandingView ? (
+                    <div className="rounded-xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
+                        <p className="text-base font-semibold text-gray-800">Select a Lead Type to start</p>
+                        <p className="mt-2 text-sm text-gray-500">
+                            Choose Admission, CenterPage, Campaign, Franchise, or Landing — then status, city, and centre filters will appear.
+                        </p>
+                    </div>
+                ) : isLandingView ? (
                     <LandingLeadsReport title="Landing page leads" embedded basePath="/crm-admin/" />
                 ) : (
                     <>
@@ -529,7 +647,14 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                         ) : null}
 
                         <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-                            <RemindersWidget key={refreshKey} source={apiSource} city={selectedCity.join(",")} centreId={selectedCentre} />
+                            <RemindersWidget
+                                key={refreshKey}
+                                source={apiSource}
+                                city={selectedCity.join(",")}
+                                centreId={selectedCentre.join(",")}
+                                returnHref={returnHref}
+                                onBeforeNavigate={persistFiltersNow}
+                            />
 
                             {statsLoading && !stats ? (
                                 <>
@@ -570,16 +695,24 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         state={selectedState}
                                         source={apiSource || selectedSource}
                                     />
-                                ) : null
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center shadow-sm">
+                                        <p className="text-sm text-gray-500">
+                                            Set filters and click Generate to view the report.
+                                        </p>
+                                    </div>
+                                )
                             ) : (
                                 <LeadsTable
-                                    key={`${refreshKey}-${apiSource}-${selectedStatus}-${selectedCity}-${selectedCentre}-${selectedState.join(",")}`}
+                                    key={`${refreshKey}-${apiSource}-${apiStatus}-${selectedCity}-${selectedCentre.join(",")}-${selectedState.join(",")}`}
                                     dateRange={dateRange}
                                     city={selectedCity.join(",")}
                                     state={selectedState.join(",")}
-                                    centreId={selectedCentre}
+                                    centreId={selectedCentre.join(",")}
                                     source={apiSource}
-                                    status={selectedStatus}
+                                    status={apiStatus}
+                                    returnHref={returnHref}
+                                    onBeforeNavigate={persistFiltersNow}
                                     onLeadUpdated={silentRefreshStats}
                                     title={
                                         selectedSource === "campaign"

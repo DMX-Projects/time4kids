@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import api from '@/lib/crmApi'
 import { Toaster, toast } from 'react-hot-toast'
 import { getWhatsAppUrl, getEmailMailto } from '@/lib/crmContactHelpers'
+import { getCrmDashboardReturnHref, isSafeCrmReturnHref } from '@/lib/crmDashboardFilters'
 import { Clock } from 'lucide-react'
 
 const toLocalDatetimeString = (dateStr: string | undefined | null) => {
@@ -242,13 +243,24 @@ export default function LeadDetailPage() {
     }
   }, [lead])
 
+  const goBackToDashboard = () => {
+    if (typeof window !== 'undefined') {
+      const from = new URLSearchParams(window.location.search).get('from')
+      if (isSafeCrmReturnHref(from)) {
+        router.push(from)
+        return
+      }
+    }
+    router.push(getCrmDashboardReturnHref())
+  }
+
   const loadLead = async () => {
     try {
       const response = await api.get(`/leads/${params.id}`)
       setLead(response.data)
     } catch (error) {
       toast.error('Failed to load lead details')
-      router.push('/crm-admin')
+      goBackToDashboard()
     } finally {
       setLoading(false)
     }
@@ -355,7 +367,7 @@ export default function LeadDetailPage() {
       <div className="container mx-auto px-4">
         <div className="mb-6 flex items-center justify-between gap-3">
           <button
-            onClick={() => router.push('/crm-admin')}
+            onClick={goBackToDashboard}
             className="text-blue-600 hover:text-blue-800"
           >
             ← Back to Dashboard

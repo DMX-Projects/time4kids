@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SidebarNav } from "@/components/crm/SidebarNav";
+import { hardRefreshCrmDashboard } from "@/lib/crmDashboardFilters";
 
 export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -32,14 +33,15 @@ export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
         <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
             <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col shrink-0 z-10">
                 <div className="h-16 flex items-center px-6 border-b border-gray-200 shrink-0">
-                    <div
-                        onClick={() => window.location.reload()}
-                        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-                        title="Click to reload page"
+                    <button
+                        type="button"
+                        onClick={hardRefreshCrmDashboard}
+                        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-0 p-0"
+                        title="Refresh CRM dashboard"
                     >
                         <img src="/time-kids-logo-new.png" alt="T.I.M.E. Kids Logo" className="h-8 w-auto object-contain" />
                         <span className="font-bold text-sm text-gray-500 uppercase tracking-wider">CRM</span>
-                    </div>
+                    </button>
                 </div>
                 <SidebarNav />
             </aside>
