@@ -34,7 +34,7 @@ export default function StateSelector({ value, onChange }: StateSelectorProps) {
   )
 
   return (
-    <div className="flex-1 min-w-[140px] max-w-[240px]">
+    <div className="flex-1 min-w-[140px] w-full sm:max-w-[240px]">
       <label className="mb-2 block text-sm font-semibold text-gray-700">Select State</label>
       <MultiSelectCheckbox
         options={options}

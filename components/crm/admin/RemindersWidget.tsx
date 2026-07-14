@@ -16,7 +16,47 @@ interface Lead {
   createdAt: string
   status: string
   preferredCentreLocation?: string
+  source?: string
+  leadKind?: string
+  enquiryType?: string
 }
+
+const getLeadTypeLabel = (lead: Lead) => {
+  if (lead.leadKind === 'franchiseenquiry' || lead.enquiryType === 'FRANCHISE' || lead.source === 'franchise') {
+    return 'Franchise';
+  }
+  if (lead.leadKind === 'enquiry') {
+    if (lead.enquiryType === 'ADMISSION') return 'Admission';
+    if (lead.enquiryType === 'CONTACT') return 'CenterPage';
+    return 'Enquiry';
+  }
+  if (lead.leadKind === 'crm') {
+    return 'Campaign';
+  }
+  return 'Lead';
+};
+
+const formatReminderDateTime = (dateStr: string | undefined) => {
+  if (!dateStr) return '—';
+  const date = new Date(dateStr);
+  
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  };
+  
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  };
+  
+  const formattedDate = date.toLocaleDateString('en-IN', dateOptions);
+  const formattedTime = date.toLocaleTimeString('en-IN', timeOptions);
+  
+  return `${formattedDate}, ${formattedTime}`;
+};
 
 export default function RemindersWidget({ source, city, centreId }: { source?: string; city?: string; centreId?: string }) {
   const [data, setData] = useState<{ meetings: Lead[]; followUps: Lead[] } | null>(null)
@@ -82,7 +122,7 @@ export default function RemindersWidget({ source, city, centreId }: { source?: s
         <div>
           <h3 className="text-xl font-bold text-gray-800">Reminders</h3>
           <p className="text-sm text-gray-600">
-            Upcoming meetings and follow-ups.
+            Upcoming meetings and follow-ups within next 7 days.
           </p>
         </div>
         <button
@@ -118,20 +158,25 @@ export default function RemindersWidget({ source, city, centreId }: { source?: s
                 {meetings.map((lead) => (
                   <li
                     key={lead.id}
-                    className="flex flex-col gap-2 py-2 border-b border-gray-100 last:border-0"
+                    className="flex flex-col gap-1 py-2 border-b border-gray-100 last:border-0"
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <Link
-                          href={`/crm-admin/leads/${lead.id}`}
-                          className="text-blue-600 hover:underline font-medium"
-                        >
-                          {lead.fullName}
-                        </Link>
-                        <span className="text-gray-500 text-sm ml-2">
-                          {lead.meetingDate
-                            ? new Date(lead.meetingDate).toLocaleString()
-                            : ''}
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center flex-wrap gap-2">
+                          <Link
+                            href={`/crm-admin/leads/${lead.id}`}
+                            className="text-blue-600 hover:underline font-medium"
+                          >
+                            {lead.fullName}
+                          </Link>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                            {getLeadTypeLabel(lead)}
+                          </span>
+                        </div>
+                        <span className="text-gray-500 text-xs mt-0.5">
+                          Date: <span className="font-semibold text-gray-700">
+                            {formatReminderDateTime(lead.meetingDate)}
+                          </span>
                         </span>
                       </div>
                     </div>
@@ -152,19 +197,26 @@ export default function RemindersWidget({ source, city, centreId }: { source?: s
                 {followUps.map((lead) => (
                   <li
                     key={lead.id}
-                    className="flex flex-col gap-2 py-2 border-b border-gray-100 last:border-0"
+                    className="flex flex-col gap-1 py-2 border-b border-gray-100 last:border-0"
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <Link
-                          href={`/crm-admin/leads/${lead.id}`}
-                          className="text-blue-600 hover:underline font-medium"
-                        >
-                          {lead.fullName}
-                        </Link>
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center flex-wrap gap-2">
+                          <Link
+                            href={`/crm-admin/leads/${lead.id}`}
+                            className="text-blue-600 hover:underline font-medium"
+                          >
+                            {lead.fullName}
+                          </Link>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                            {getLeadTypeLabel(lead)}
+                          </span>
+                        </div>
                         {lead.nextFollowUpDate && (
-                          <span className="text-gray-500 text-sm ml-2">
-                            (Due: {new Date(lead.nextFollowUpDate).toLocaleString()})
+                          <span className="text-gray-500 text-xs mt-0.5">
+                            Due: <span className="font-semibold text-gray-700">
+                              {formatReminderDateTime(lead.nextFollowUpDate)}
+                            </span>
                           </span>
                         )}
                       </div>

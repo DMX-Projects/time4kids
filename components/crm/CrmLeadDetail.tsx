@@ -5,6 +5,103 @@ import { useRouter, useParams } from 'next/navigation'
 import api from '@/lib/crmApi'
 import { Toaster, toast } from 'react-hot-toast'
 import { getWhatsAppUrl, getEmailMailto } from '@/lib/crmContactHelpers'
+import { Clock } from 'lucide-react'
+
+const toLocalDatetimeString = (dateStr: string | undefined | null) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  const YYYY = d.getFullYear();
+  const MM = String(d.getMonth() + 1).padStart(2, '0');
+  const DD = String(d.getDate()).padStart(2, '0');
+  const HH = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${YYYY}-${MM}-${DD}T${HH}:${mm}`;
+};
+
+const formatLeadDateTime = (dateStr: string | undefined | null) => {
+  if (!dateStr) return '—';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '—';
+  return date.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
+interface LeadTemplate {
+  whatsapp: string;
+  emailSubject: string;
+  emailBody: string;
+}
+
+const getTemplatesForLead = (lead: any): LeadTemplate => {
+  const isFranchise = lead.leadKind === 'franchiseenquiry' || lead.enquiryType === 'FRANCHISE' || lead.source === 'franchise';
+  const isAdmission = lead.leadKind === 'enquiry' && lead.enquiryType === 'ADMISSION';
+  const isCenterPage = lead.leadKind === 'enquiry' && lead.enquiryType === 'CONTACT';
+  
+  if (isFranchise) {
+    return {
+      whatsapp: "Hi! I am from T.I.M.E. Kids. We received your franchise enquiry and would love to connect with you. When would be a good time to talk?",
+      emailSubject: "T.I.M.E. Kids – Follow-up on your franchise enquiry",
+      emailBody: `Hi,
+
+I'm following up on your franchise enquiry with T.I.M.E. Kids.
+
+We'd love to discuss the opportunity with you. Please let us know a convenient time for a quick call.
+
+Best regards,
+T.I.M.E. Kids Team`
+    };
+  }
+  
+  if (isAdmission) {
+    return {
+      whatsapp: "Hi! I am from T.I.M.E. Kids. We received your preschool admission enquiry and would love to connect with you to discuss the details. When would be a good time to talk?",
+      emailSubject: "T.I.M.E. Kids Preschool – Follow-up on your admission enquiry",
+      emailBody: `Hi,
+
+I'm following up on your preschool admission enquiry with T.I.M.E. Kids.
+
+We'd love to invite you and your child for a visit to our center and share the details. Please let us know a convenient time to connect.
+
+Best regards,
+T.I.M.E. Kids Team`
+    };
+  }
+  
+  if (isCenterPage) {
+    return {
+      whatsapp: "Hi! I am from T.I.M.E. Kids. We received your enquiry and would love to connect with you to assist. When would be a good time to talk?",
+      emailSubject: "T.I.M.E. Kids – Follow-up on your enquiry",
+      emailBody: `Hi,
+
+I'm following up on your enquiry with T.I.M.E. Kids.
+
+We'd love to help answer any questions you have. Please let us know a convenient time for a quick call.
+
+Best regards,
+T.I.M.E. Kids Team`
+    };
+  }
+  
+  return {
+    whatsapp: "Hi! I am from T.I.M.E. Kids. We saw that you registered interest via our online campaign. When would be a good time to talk?",
+    emailSubject: "T.I.M.E. Kids – Information regarding your inquiry",
+    emailBody: `Hi,
+
+I'm following up on your interest registered via our online campaign with T.I.M.E. Kids.
+
+We'd love to connect and share more details with you. Please let us know a convenient time for a quick call.
+
+Best regards,
+T.I.M.E. Kids Team`
+  };
+};
 
 const STATUS_LABELS: Record<string, string> = {
   // Non-franchise specific
@@ -139,12 +236,8 @@ export default function LeadDetailPage() {
         sourceOther: lead.sourceOther ?? '',
         newNote: '',
         status: lead.status ?? 'new',
-        meetingDate: lead.meetingDate
-          ? new Date(lead.meetingDate).toISOString().slice(0, 10)
-          : '',
-        nextFollowUpDate: lead.nextFollowUpDate
-          ? new Date(lead.nextFollowUpDate).toISOString().slice(0, 10)
-          : '',
+        meetingDate: toLocalDatetimeString(lead.meetingDate),
+        nextFollowUpDate: toLocalDatetimeString(lead.nextFollowUpDate),
       })
     }
   }, [lead])
@@ -175,8 +268,8 @@ export default function LeadDetailPage() {
       })
       
       const payload: Record<string, unknown> = {
-        meetingDate: editForm.meetingDate || null,
-        nextFollowUpDate: editForm.nextFollowUpDate || null,
+        meetingDate: editForm.meetingDate ? new Date(editForm.meetingDate).toISOString() : null,
+        nextFollowUpDate: editForm.nextFollowUpDate ? new Date(editForm.nextFollowUpDate).toISOString() : null,
         status: editForm.status,
       }
       await api.patch(`/leads/${params.id}`, payload)
@@ -254,12 +347,13 @@ export default function LeadDetailPage() {
   }
 
   const isEditable = lead.editable !== false
+  const isFranchiseLead = lead.leadKind === 'franchiseenquiry' || lead.enquiryType === 'FRANCHISE' || lead.source === 'franchise';
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <Toaster position="top-center" />
       <div className="container mx-auto px-4">
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between gap-3">
           <button
             onClick={() => router.push('/crm-admin')}
             className="text-blue-600 hover:text-blue-800"
@@ -322,8 +416,7 @@ export default function LeadDetailPage() {
                       }`}
                     >
                       {(() => {
-                        const isFranchise = lead?.source === 'franchise'
-                        const optionsList = isFranchise ? FRANCHISE_OPTIONS : NON_FRANCHISE_OPTIONS
+                        const optionsList = isFranchiseLead ? FRANCHISE_OPTIONS : NON_FRANCHISE_OPTIONS
                         return (
                           <>
                             {editForm.status && !optionsList.includes(editForm.status) && (
@@ -392,30 +485,32 @@ export default function LeadDetailPage() {
                       />
                     </div>
 
-                    <div className="col-span-2 flex flex-wrap items-end gap-6 text-sm py-4 border-t border-gray-100 mt-2">
-                        <div>
+                    <div className={`col-span-2 grid grid-cols-1 ${isFranchiseLead ? 'sm:grid-cols-2' : ''} gap-4 text-sm py-4 border-t border-gray-100 mt-2`}>
+                      {isFranchiseLead && (
+                        <div className="w-full max-w-[260px]">
                           <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
                           <input
-                            type="date"
+                            type="datetime-local"
                             value={editForm.meetingDate}
                             onChange={(e) => setEditForm((f) => ({ ...f, meetingDate: e.target.value }))}
                             className="form-input text-sm w-full"
                           />
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
-                            <input
-                              type="date"
-                              value={editForm.nextFollowUpDate}
-                              onChange={(e) => setEditForm((f) => ({ ...f, nextFollowUpDate: e.target.value }))}
-                              className="form-input text-sm w-full"
-                            />
-                          </div>
-                      <div className="ml-auto">
+                      )}
+                      <div className="w-full max-w-[260px]">
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
+                        <input
+                          type="datetime-local"
+                          value={editForm.nextFollowUpDate}
+                          onChange={(e) => setEditForm((f) => ({ ...f, nextFollowUpDate: e.target.value }))}
+                          className="form-input text-sm w-full"
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-2 flex justify-end mt-2">
                         <button
                           onClick={handleSaveAll}
                           disabled={saving}
-                          className="btn-primary text-sm py-1.5 px-4 disabled:opacity-50"
+                          className="btn-primary text-sm py-1.5 px-6 w-full sm:w-auto disabled:opacity-50"
                         >
                           {saving ? 'Saving...' : 'Save'}
                         </button>
@@ -430,13 +525,15 @@ export default function LeadDetailPage() {
                     </div>
 
                     <div className="col-span-2 flex gap-6 text-sm py-4 border-t border-gray-100 mt-2">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
-                        <p className="font-medium">{lead.meetingDate ? new Date(lead.meetingDate).toLocaleDateString() : '—'}</p>
-                      </div>
+                      {isFranchiseLead && (
+                        <div>
+                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
+                          <p className="font-medium">{formatLeadDateTime(lead.meetingDate)}</p>
+                        </div>
+                      )}
                       <div>
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
-                        <p className="font-medium text-blue-600">{lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleDateString() : '—'}</p>
+                        <p className="font-medium text-blue-600">{formatLeadDateTime(lead.nextFollowUpDate)}</p>
                       </div>
                     </div>
                   </>
@@ -449,13 +546,34 @@ export default function LeadDetailPage() {
           <div className="space-y-6">
 
 
-            <div className="card">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
-              <div className="space-y-3">
-                <a href={getWhatsAppUrl(lead.mobile)} target="_blank" rel="noopener noreferrer" className="block px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center font-semibold">WhatsApp</a>
-                <a href={getEmailMailto(lead.email)} target="_blank" rel="noopener noreferrer" className="block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-center font-semibold">Email</a>
-              </div>
-            </div>
+             <div className="card">
+               <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
+               <div className="space-y-3">
+                 {lead && (() => {
+                   const templates = getTemplatesForLead(lead);
+                   return (
+                     <>
+                       <a
+                         href={getWhatsAppUrl(lead.mobile, templates.whatsapp)}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="block px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center font-semibold"
+                       >
+                         WhatsApp
+                       </a>
+                       <a
+                         href={getEmailMailto(lead.email, templates.emailSubject, templates.emailBody)}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-center font-semibold"
+                       >
+                         Email
+                       </a>
+                     </>
+                   );
+                 })()}
+               </div>
+             </div>
 
             {/* Interaction Timeline */}
             <div className="card">
