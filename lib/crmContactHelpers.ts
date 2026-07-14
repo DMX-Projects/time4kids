@@ -3,6 +3,9 @@
  * Ported from timekids_crm_clone/lib/contact-helpers.ts
  */
 
+/** Franchise team inbox — CC on CRM Direct Contact emails */
+export const CRM_FRANCHISE_EMAIL = "franchise@timekidspreschools.com";
+
 const DEFAULT_WHATSAPP_MESSAGE =
     "Hi! I am from T.I.M.E. Kids. We received your franchise enquiry and would love to connect with you. When would be a good time to talk?";
 
@@ -27,10 +30,13 @@ export function getEmailMailto(
     email: string,
     subject: string = DEFAULT_EMAIL_SUBJECT,
     body: string = DEFAULT_EMAIL_BODY,
+    cc: string = CRM_FRANCHISE_EMAIL,
 ): string {
     const params = new URLSearchParams();
     if (subject) params.set("subject", subject);
     if (body) params.set("body", body);
+    if (cc) params.set("cc", cc);
     const q = params.toString();
-    return `mailto:${encodeURIComponent(email)}${q ? `?${q}` : ""}`;
+    const to = (email || "").trim() || cc;
+    return `mailto:${encodeURIComponent(to)}${q ? `?${q}` : ""}`;
 }

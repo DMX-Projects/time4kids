@@ -129,7 +129,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         startDate: null,
         endDate: null,
     });
-    const [selectedSource, setSelectedSource] = useState<SourceFilter>("");
+    const [selectedSource, setSelectedSource] = useState<SourceFilter>("all");
     const [selectedCampaignChannel, setSelectedCampaignChannel] = useState<CampaignChannelFilter>("");
     const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
     const [refreshKey, setRefreshKey] = useState(0);
@@ -145,7 +145,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         setSelectedCity(Array.isArray(saved.selectedCity) ? saved.selectedCity : []);
         setSelectedState(Array.isArray(saved.selectedState) ? saved.selectedState : []);
         setSelectedCentre(Array.isArray(saved.selectedCentre) ? saved.selectedCentre : []);
-        setSelectedSource((saved.selectedSource as SourceFilter) || "");
+        setSelectedSource((saved.selectedSource as SourceFilter) || "all");
         setSelectedCampaignChannel((saved.selectedCampaignChannel as CampaignChannelFilter) || "");
         const restoredStatus = (saved.selectedStatus as StatusFilter) || "all";
         setSelectedStatus(restoredStatus);
@@ -247,7 +247,6 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const isLandingView = selectedSource === "landing";
     const isCampaignView = selectedSource === "campaign";
     const isFranchise = selectedSource === "franchise";
-    const hasLeadType = Boolean(selectedSource);
     const apiSource = apiSourceParam(selectedSource, selectedCampaignChannel);
     const apiStatus = apiStatusParam(selectedStatus);
     const currentStatusFilters = isFranchise ? FRANCHISE_FILTERS : NON_FRANCHISE_FILTERS;
@@ -281,12 +280,6 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
     useEffect(() => {
         if (!filtersReady || !isCrmUser || isLandingView) return;
-        // Dashboard: wait until a lead type is chosen, then filter by that type
-        if (!hasLeadType) {
-            setStats(null);
-            setStatsLoading(false);
-            return;
-        }
         let cancelled = false;
         setStatsLoading(true);
         const params = new URLSearchParams();
@@ -320,7 +313,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [filtersReady, isCrmUser, isLandingView, hasLeadType, dateRange, selectedCity, selectedState, selectedCentre, apiSource, apiStatus]);
+    }, [filtersReady, isCrmUser, isLandingView, dateRange, selectedCity, selectedState, selectedCentre, apiSource, apiStatus]);
 
     const fetchStats = () => {
         setStatsLoading(true);
@@ -348,15 +341,12 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     };
 
     const handleApplyFilters = () => {
-        if (!selectedSource) {
-            toast.error("Please select a Lead Type first.");
-            return;
-        }
         if (view === 'reports') {
-            if (selectedCity.length === 0) {
-                toast.error("Please select a City before generating the report.");
+            if (!selectedSource) {
+                toast.error("Please select a Lead Type first.");
                 return;
             }
+            // Empty state/city means All — allowed
             if (!filterDateRange.startDate || !filterDateRange.endDate) {
                 toast.error("Please select a complete Date Range before generating the report.");
                 return;
@@ -560,7 +550,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
-                            {!isLandingView && view !== 'reports' && hasLeadType && (
+                            {!isLandingView && view !== 'reports' && (
                                 <div className="flex-1 min-w-[140px]">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Select Status</label>
                                     <SearchableSelect
@@ -573,7 +563,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
-                            {!isLandingView && hasLeadType && (
+                            {!isLandingView && (
                                 <>
                                     <StateSelector value={selectedState} onChange={handleStateChange} />
                                     <CitySelector value={selectedCity} onChange={handleCityChange} state={selectedState.join(",")} />
@@ -599,7 +589,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     <button
                                         type="button"
                                         onClick={handleApplyFilters}
-                                        className="btn-primary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6 w-full lg:w-auto"
+                                        className="btn-primary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6 w-full lg:w-auto self-end"
                                     >
                                         {view === 'reports' ? 'Generate' : 'Apply Filters'}
                                     </button>
@@ -620,14 +610,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                     </div>
                 </div>
 
-                {!hasLeadType && !isLandingView ? (
-                    <div className="rounded-xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
-                        <p className="text-base font-semibold text-gray-800">Select a Lead Type to start</p>
-                        <p className="mt-2 text-sm text-gray-500">
-                            Choose Admission, CenterPage, Campaign, Franchise, or Landing — then status, city, and centre filters will appear.
-                        </p>
-                    </div>
-                ) : isLandingView ? (
+                {isLandingView ? (
                     <LandingLeadsReport title="Landing page leads" embedded basePath="/crm-admin/" />
                 ) : (
                     <>

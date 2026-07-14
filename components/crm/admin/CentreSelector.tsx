@@ -75,7 +75,7 @@ export default function CentreSelector({
         options={options}
         value={value}
         onChange={onChange}
-        placeholder={loading ? 'Loading centres...' : centres.length ? 'Select Centre' : 'No centres found'}
+        placeholder="All"
         disabled={loading || centres.length === 0}
       />
     </div>

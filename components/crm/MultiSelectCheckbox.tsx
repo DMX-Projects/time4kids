@@ -20,11 +20,13 @@ export function MultiSelectCheckbox({
   options,
   value,
   onChange,
-  placeholder = 'Select...',
+  placeholder = 'All',
   disabled = false
 }: MultiSelectCheckboxProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  /** After user unchecks All — show nothing selected until they pick again */
+  const [deselectedAll, setDeselectedAll] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -37,34 +39,80 @@ export function MultiSelectCheckbox({
     return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [])
 
+  // Parent restored a concrete selection
+  useEffect(() => {
+    if (value.length > 0) setDeselectedAll(false)
+  }, [value])
+
+  // Explicit every-option selection collapses to All (empty = all for filters)
+  useEffect(() => {
+    if (deselectedAll) return
+    if (options.length === 0 || value.length === 0) return
+    if (value.length !== options.length) return
+    const optionSet = new Set(options.map((o) => o.value))
+    if (value.every((v) => optionSet.has(v))) {
+      onChange([])
+    }
+  }, [options, value, onChange, deselectedAll])
+
   const filteredOptions = useMemo(() => {
     return options.filter(o => o.label.toLowerCase().includes(searchTerm.toLowerCase()))
   }, [options, searchTerm])
-  
-  const allSelected = value.length === options.length && options.length > 0
-  
+
+  const fullySelected =
+    options.length > 0 && value.length === options.length && value.every((v) => options.some((o) => o.value === v))
+
+  // Empty value = All (no filter), unless user just unchecked All
+  const isAll = !deselectedAll && (value.length === 0 || fullySelected)
+
   const handleSelectAll = () => {
-    if (allSelected) {
+    if (isAll) {
+      // Deselect All → clear every checkbox
+      setDeselectedAll(true)
       onChange([])
-    } else {
-      onChange(options.map(o => o.value))
+      return
     }
+    // Select All → All (empty = no filter)
+    setDeselectedAll(false)
+    onChange([])
   }
 
   const handleToggle = (val: string) => {
+    if (isAll) {
+      // Uncheck one item while All was on → keep every other option
+      setDeselectedAll(false)
+      onChange(options.map((o) => o.value).filter((v) => v !== val))
+      return
+    }
+
+    if (deselectedAll && value.length === 0) {
+      // Start from nothing selected → pick this one
+      setDeselectedAll(false)
+      onChange([val])
+      return
+    }
+
     if (value.includes(val)) {
-      onChange(value.filter(v => v !== val))
+      const next = value.filter((v) => v !== val)
+      setDeselectedAll(next.length === 0)
+      onChange(next)
     } else {
-      onChange([...value, val])
+      const next = [...value, val]
+      setDeselectedAll(false)
+      if (options.length > 0 && next.length === options.length) {
+        onChange([]) // back to All
+      } else {
+        onChange(next)
+      }
     }
   }
-  
-  const displayValue = value.length === 0 
-    ? placeholder 
-    : value.length === options.length 
-      ? 'All Selected' 
+
+  const displayValue = deselectedAll
+    ? 'Select...'
+    : isAll
+      ? 'All'
       : value.length <= 2
-        ? value.map(val => options.find(o => o.value === val)?.label).filter(Boolean).join(', ')
+        ? value.map((val) => options.find((o) => o.value === val)?.label).filter(Boolean).join(', ')
         : `${value.length} Selected`
 
   return (
@@ -74,8 +122,8 @@ export function MultiSelectCheckbox({
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between min-h-[42px] px-3 py-2 bg-white border border-gray-300 rounded-lg hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left"
       >
-        <span className={`text-sm truncate ${value.length === 0 ? 'text-gray-400' : 'text-gray-800'}`}>
-          {displayValue}
+        <span className={`text-sm truncate ${deselectedAll ? 'text-gray-400' : 'text-gray-800'}`}>
+          {displayValue || placeholder}
         </span>
         <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
       </button>
@@ -99,13 +147,13 @@ export function MultiSelectCheckbox({
                 <input
                   type="checkbox"
                   className="mr-3 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={allSelected}
+                  checked={isAll}
                   onChange={handleSelectAll}
                 />
-                Select All
+                All
               </label>
             )}
-            
+
             {filteredOptions.length === 0 ? (
               <div className="px-3 py-4 text-center text-sm text-gray-500">No options found</div>
             ) : (
@@ -114,7 +162,7 @@ export function MultiSelectCheckbox({
                   <input
                     type="checkbox"
                     className="mr-3 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    checked={value.includes(opt.value)}
+                    checked={isAll || value.includes(opt.value)}
                     onChange={() => handleToggle(opt.value)}
                   />
                   {opt.label}
