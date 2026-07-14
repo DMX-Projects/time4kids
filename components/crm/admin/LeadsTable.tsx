@@ -15,6 +15,8 @@ interface LeadsTableProps {
   source?: string
   search?: string
   title?: string
+  returnHref?: string
+  onBeforeNavigate?: () => void
   onLeadUpdated?: () => void
 }
 
@@ -107,10 +109,19 @@ const statusColors: { [key: string]: string } = {
   meeting_scheduled: 'bg-teal-100 text-teal-700 border border-teal-200',
 }
 
-export default function LeadsTable({ dateRange, city, state, centreId, status, source, search, title, onLeadUpdated }: LeadsTableProps) {
+export default function LeadsTable({ dateRange, city, state, centreId, status, source, search, title, returnHref, onBeforeNavigate, onLeadUpdated }: LeadsTableProps) {
   const router = useRouter()
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const [leads, setLeads] = useState<any[]>([])
+
+  const openLead = (leadId: string) => {
+    onBeforeNavigate?.()
+    const base = `/crm-admin/leads/${encodeURIComponent(leadId)}`
+    const href = returnHref
+      ? `${base}?from=${encodeURIComponent(returnHref)}`
+      : base
+    router.push(href)
+  }
 
   const scrollTable = (direction: 'left' | 'right') => {
     if (tableContainerRef.current) {
@@ -358,7 +369,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     </td>
                     <td className="px-4 py-4">
                       <button
-                        onClick={() => router.push(`/crm-admin/leads/${encodeURIComponent(lead.id)}`)}
+                        onClick={() => openLead(lead.id)}
                         className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold transition-all"
                       >
                         View

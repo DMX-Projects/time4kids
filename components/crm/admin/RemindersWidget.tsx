@@ -58,7 +58,19 @@ const formatReminderDateTime = (dateStr: string | undefined) => {
   return `${formattedDate}, ${formattedTime}`;
 };
 
-export default function RemindersWidget({ source, city, centreId }: { source?: string; city?: string; centreId?: string }) {
+export default function RemindersWidget({
+  source,
+  city,
+  centreId,
+  returnHref,
+  onBeforeNavigate,
+}: {
+  source?: string
+  city?: string
+  centreId?: string
+  returnHref?: string
+  onBeforeNavigate?: () => void
+}) {
   const [data, setData] = useState<{ meetings: Lead[]; followUps: Lead[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -164,7 +176,12 @@ export default function RemindersWidget({ source, city, centreId }: { source?: s
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center flex-wrap gap-2">
                           <Link
-                            href={`/crm-admin/leads/${lead.id}`}
+                            href={
+                              returnHref
+                                ? `/crm-admin/leads/${lead.id}?from=${encodeURIComponent(returnHref)}`
+                                : `/crm-admin/leads/${lead.id}`
+                            }
+                            onClick={() => onBeforeNavigate?.()}
                             className="text-blue-600 hover:underline font-medium"
                           >
                             {lead.fullName}
@@ -203,7 +220,12 @@ export default function RemindersWidget({ source, city, centreId }: { source?: s
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center flex-wrap gap-2">
                           <Link
-                            href={`/crm-admin/leads/${lead.id}`}
+                            href={
+                              returnHref
+                                ? `/crm-admin/leads/${lead.id}?from=${encodeURIComponent(returnHref)}`
+                                : `/crm-admin/leads/${lead.id}`
+                            }
+                            onClick={() => onBeforeNavigate?.()}
                             className="text-blue-600 hover:underline font-medium"
                           >
                             {lead.fullName}

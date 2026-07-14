@@ -2,32 +2,46 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import api from '@/lib/crmApi'
-import { SearchableSelect } from '@/components/crm/SearchableSelect'
+import { MultiSelectCheckbox } from '@/components/crm/MultiSelectCheckbox'
 
 interface CentreSelectorProps {
-  city: string
-  value: string
-  onChange: (value: string) => void
+  cities?: string[]
+  states?: string[]
+  value: string[]
+  onChange: (value: string[]) => void
 }
 
-export default function CentreSelector({ city, value, onChange }: CentreSelectorProps) {
+export default function CentreSelector({
+  cities = [],
+  states = [],
+  value,
+  onChange,
+}: CentreSelectorProps) {
   const [centres, setCentres] = useState<{ id: string; name: string }[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  const citiesKey = cities.join(',')
+  const statesKey = states.join(',')
 
   useEffect(() => {
-    if (!city) {
-      setCentres([])
-      return
-    }
-
     let cancelled = false
+
     const loadCentres = async () => {
       setLoading(true)
       try {
-        const params = new URLSearchParams({ city })
-        const response = await api.get(`/centres?${params.toString()}`)
+        const params = new URLSearchParams()
+        if (cities.length === 1) {
+          params.set('city', cities[0])
+        } else if (cities.length > 1 && cities.length <= 40) {
+          params.set('city', citiesKey)
+        } else if (states.length > 0 && states.length <= 40) {
+          params.set('state', statesKey)
+        }
+
+        const qs = params.toString()
+        const response = await api.get(`/centres${qs ? `?${qs}` : ''}`)
         if (!cancelled) {
-          setCentres(response.data || [])
+          setCentres(Array.isArray(response.data) ? response.data : [])
         }
       } catch (error) {
         if (!cancelled) {
@@ -35,9 +49,7 @@ export default function CentreSelector({ city, value, onChange }: CentreSelector
           setCentres([])
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
+        if (!cancelled) setLoading(false)
       }
     }
 
@@ -45,41 +57,26 @@ export default function CentreSelector({ city, value, onChange }: CentreSelector
     return () => {
       cancelled = true
     }
-  }, [city])
+  }, [cities.length, citiesKey, states.length, statesKey])
 
   const options = useMemo(
-    () => [
-      ...centres.map((centre) => ({ value: centre.id, label: centre.name })),
-    ],
+    () =>
+      centres.map((centre) => ({
+        value: String(centre.id),
+        label: centre.name,
+      })),
     [centres],
   )
 
-  if (!city) {
-    return (
-      <div className="flex-1 min-w-[140px]">
-        <label className="mb-2 block text-sm font-semibold text-gray-700">Select Centre</label>
-        <SearchableSelect
-          options={[{ value: '', label: 'Select a city first' }]}
-          value=""
-          onChange={() => {}}
-          placeholder="Select a city first"
-          disabled={true}
-          aria-label="Select Centre"
-        />
-      </div>
-    )
-  }
-
   return (
-    <div className="flex-1 min-w-[140px]">
+    <div className="flex-1 min-w-[140px] w-full sm:max-w-[240px]">
       <label className="mb-2 block text-sm font-semibold text-gray-700">Select Centre</label>
-      <SearchableSelect
+      <MultiSelectCheckbox
         options={options}
         value={value}
         onChange={onChange}
-        placeholder="Select Centre"
-        disabled={loading}
-        aria-label="Select Centre"
+        placeholder={loading ? 'Loading centres...' : centres.length ? 'Select Centre' : 'No centres found'}
+        disabled={loading || centres.length === 0}
       />
     </div>
   )
