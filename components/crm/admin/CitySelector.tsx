@@ -43,7 +43,7 @@ export default function CitySelector({ value, onChange, state }: CitySelectorPro
         options={options}
         value={value}
         onChange={onChange}
-        placeholder="Select City"
+        placeholder="All"
         disabled={loading}
       />
     </div>

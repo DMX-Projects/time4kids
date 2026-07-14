@@ -40,7 +40,7 @@ export default function StateSelector({ value, onChange }: StateSelectorProps) {
         options={options}
         value={value}
         onChange={onChange}
-        placeholder="Select State"
+        placeholder="All"
         disabled={loading}
       />
     </div>

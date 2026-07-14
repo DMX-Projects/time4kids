@@ -144,7 +144,17 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
                 normalizedData[k.toLowerCase()] = data[k];
             });
             setReportData(normalizedData);
-            setCities(city.map((name) => ({ name })));
+            // Empty city = All → use cities returned by the API
+            if (city.length > 0) {
+                setCities(city.map((name) => ({ name })));
+            } else {
+                const fromApi = Object.keys(data)
+                    .map((name) => name.trim())
+                    .filter(Boolean)
+                    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+                    .map((name) => ({ name }));
+                setCities(fromApi);
+            }
         } catch (error) {
             console.error("Failed to load reports data:", error);
         } finally {
