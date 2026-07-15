@@ -1,20 +1,20 @@
 /**
- * Helpers for opening WhatsApp and Email with pre-filled content.
- * Ported from timekids_crm_clone/lib/contact-helpers.ts
+ * Helpers for WhatsApp links and Email templates.
+ * Direct Contact Email is sent server-side From franchise@… (not mailto).
  */
 
-/** Franchise team inbox — CC on CRM Direct Contact emails */
+/** From address used by CRM Direct Contact / reminder emails (SendGrid) */
 export const CRM_FRANCHISE_EMAIL = "franchise@timekidspreschools.com";
 
 const DEFAULT_WHATSAPP_MESSAGE =
-    "Hi! I am from T.I.M.E. Kids. We received your franchise enquiry and would love to connect with you. When would be a good time to talk?";
+    "Hi! I am from T.I.M.E. Kids. We received your franchise enquiry and would like to connect with you. When would be a good time to talk?";
 
 const DEFAULT_EMAIL_SUBJECT = "T.I.M.E. Kids – Follow-up on your franchise enquiry";
 const DEFAULT_EMAIL_BODY = `Hi,
 
 I'm following up on your franchise enquiry with T.I.M.E. Kids.
 
-We'd love to discuss the opportunity with you. Please let us know a convenient time for a quick call.
+We'd like to discuss the opportunity with you. Please let us know a convenient time for a quick call.
 
 Best regards,
 T.I.M.E. Kids Team`;
@@ -26,17 +26,16 @@ export function getWhatsAppUrl(mobile: string, message: string = DEFAULT_WHATSAP
     return `https://wa.me/${num}?text=${encoded}`;
 }
 
+/** @deprecated Prefer server send via /leads/send-reminder; kept for fallbacks. */
 export function getEmailMailto(
     email: string,
     subject: string = DEFAULT_EMAIL_SUBJECT,
     body: string = DEFAULT_EMAIL_BODY,
-    cc: string = CRM_FRANCHISE_EMAIL,
 ): string {
     const params = new URLSearchParams();
     if (subject) params.set("subject", subject);
     if (body) params.set("body", body);
-    if (cc) params.set("cc", cc);
     const q = params.toString();
-    const to = (email || "").trim() || cc;
+    const to = (email || "").trim();
     return `mailto:${encodeURIComponent(to)}${q ? `?${q}` : ""}`;
 }
