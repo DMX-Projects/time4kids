@@ -84,6 +84,10 @@ const nextConfig = {
             { source: '/Timekids-meta-feb/', destination: '/Timekids-meta-feb/index.html' },
             { source: '/Timekids-lp-feb', destination: '/Timekids-lp-feb/index.html' },
             { source: '/Timekids-lp-feb/', destination: '/Timekids-lp-feb/index.html' },
+            { source: '/Timekids-meta-july', destination: '/Timekids-meta-july/index.html' },
+            { source: '/Timekids-meta-july/', destination: '/Timekids-meta-july/index.html' },
+            { source: '/Timekids-lp-july', destination: '/Timekids-lp-july/index.html' },
+            { source: '/Timekids-lp-july/', destination: '/Timekids-lp-july/index.html' },
         ];
         const isDev = process.env.NODE_ENV === 'development';
         const djangoBase = isDev
