@@ -477,7 +477,10 @@ $(document).ready(function () {
                console.log('response', response);
                console.log(response[0].Id)
                if (response[0].Id != undefined) {
-                  location.replace("thank-you.html");
+                  // Stay on page after submit (no thank-you redirect)
+                  $('#form-submit-button').prop('disabled', false);
+                  $('#form-submit-button').val('Submit');
+                  clearInterval(submitInterval);
                }
             }
          });
