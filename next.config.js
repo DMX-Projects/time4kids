@@ -76,6 +76,9 @@ const nextConfig = {
             { source: '/timekids-2g/pages/thank-you-fb.html', destination: '/thank-you-fb.html', permanent: false },
             { source: '/franchise/thank-you', destination: '/thank-you.html', permanent: false },
             { source: '/franchise/thank-you/', destination: '/thank-you.html', permanent: false },
+            /** July LPs — no thank-you page; Meritto may still post to thank-you.html */
+            { source: '/Timekids-meta-july/thank-you.html', destination: '/Timekids-meta-july/', permanent: false },
+            { source: '/Timekids-lp-july/thank-you.html', destination: '/Timekids-lp-july/', permanent: false },
         ];
     },
     async rewrites() {
