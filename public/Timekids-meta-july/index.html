@@ -4,6 +4,208 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script>
+    (function () {
+        var IS_DEV_HOST = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+        var BANNER_ID = 'tk-form-submit-status';
+        var IFRAME_SANDBOX = 'allow-scripts allow-same-origin allow-forms';
+
+        function isBlockedRedirect(url) {
+            var value = String(url || '');
+            if (!value || value === '#' || /^javascript:/i.test(value)) return false;
+            return /thank[-_ ]?you|thankyou|\/thank\b|\/thank-you/i.test(value);
+        }
+
+        function isExternalHostUrl(url) {
+            try {
+                var parsed = new URL(String(url || ''), window.location.href);
+                if (!/^https?:$/i.test(parsed.protocol)) return false;
+                return parsed.origin !== window.location.origin;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function showSubmitStatus(message, type) {
+            var banner = document.getElementById(BANNER_ID);
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = BANNER_ID;
+                banner.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:99999;max-width:92vw;padding:14px 18px;border-radius:10px;color:#fff;font:600 15px/1.4 Overpass,Arial,sans-serif;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.2);display:none;';
+                document.addEventListener('DOMContentLoaded', function () {
+                    if (!document.getElementById(BANNER_ID) && document.body) {
+                        document.body.appendChild(banner);
+                    }
+                });
+            }
+            if (document.body && !banner.parentNode) document.body.appendChild(banner);
+            banner.style.background = type === 'error' ? '#c0392b' : '#1f8a4c';
+            banner.textContent = message;
+            banner.style.display = 'block';
+            clearTimeout(showSubmitStatus._timer);
+            showSubmitStatus._timer = setTimeout(function () {
+                banner.style.display = 'none';
+            }, 12000);
+        }
+
+        function showFormSubmittedMessage() {
+            showSubmitStatus(
+                IS_DEV_HOST
+                    ? 'Form submitted. Stayed on this page — open DevTools > Network and filter: nopaperforms'
+                    : 'Thank you! Your enquiry has been submitted successfully. Our team will contact you shortly.'
+            );
+        }
+
+        function blockRedirect(url, source) {
+            if (!isBlockedRedirect(url) && !(IS_DEV_HOST && isExternalHostUrl(url))) return false;
+            console.info('[T.I.M.E. Kids form] Blocked redirect:', url, 'via', source);
+            showFormSubmittedMessage();
+            return true;
+        }
+
+        function lockNopaperformsIframe(iframe) {
+            if (!iframe || iframe.tagName !== 'IFRAME') return;
+            if (iframe.getAttribute('sandbox') !== IFRAME_SANDBOX) {
+                iframe.setAttribute('sandbox', IFRAME_SANDBOX);
+            }
+        }
+
+        function shouldLockIframe(iframe) {
+            if (!iframe) return false;
+            var src = iframe.getAttribute('src') || '';
+            return /nopaperforms|timekidspreschools|meritto/i.test(src) || !!(iframe.closest && iframe.closest('.npf_wgts'));
+        }
+
+        function scanForNopaperformsIframes(root) {
+            (root || document).querySelectorAll('iframe').forEach(function (iframe) {
+                if (shouldLockIframe(iframe)) lockNopaperformsIframe(iframe);
+            });
+        }
+
+        var locationProto = window.Location && window.Location.prototype;
+        if (locationProto) {
+            var hrefDesc = Object.getOwnPropertyDescriptor(locationProto, 'href');
+            if (hrefDesc && hrefDesc.set) {
+                var originalHrefSet = hrefDesc.set;
+                Object.defineProperty(locationProto, 'href', {
+                    configurable: true,
+                    enumerable: hrefDesc.enumerable,
+                    get: hrefDesc.get,
+                    set: function (url) {
+                        if (blockRedirect(url, 'location.href')) return;
+                        originalHrefSet.call(this, url);
+                    }
+                });
+            }
+
+            var originalAssign = locationProto.assign;
+            if (originalAssign) {
+                locationProto.assign = function (url) {
+                    if (blockRedirect(url, 'location.assign')) return;
+                    return originalAssign.call(this, url);
+                };
+            }
+
+            var originalReplace = locationProto.replace;
+            if (originalReplace) {
+                locationProto.replace = function (url) {
+                    if (blockRedirect(url, 'location.replace')) return;
+                    return originalReplace.call(this, url);
+                };
+            }
+        }
+
+        var originalOpen = window.open;
+        window.open = function (url) {
+            if (blockRedirect(url, 'window.open')) return null;
+            return originalOpen.apply(window, arguments);
+        };
+
+        if (window.navigation && window.navigation.addEventListener) {
+            window.navigation.addEventListener('navigate', function (event) {
+                var nextUrl = event.destination && event.destination.url;
+                if (nextUrl && blockRedirect(nextUrl, 'navigation-api')) {
+                    event.preventDefault();
+                }
+            });
+        }
+
+        document.addEventListener('submit', function (event) {
+            var form = event.target;
+            if (form && form.action && blockRedirect(form.action, 'form.submit')) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
+
+        document.addEventListener('click', function (event) {
+            var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+            if (link && blockRedirect(link.href, 'link.click')) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
+
+        var originalCreateElement = document.createElement.bind(document);
+        document.createElement = function (tagName, options) {
+            var el = originalCreateElement(tagName, options);
+            if (String(tagName).toLowerCase() === 'iframe') {
+                lockNopaperformsIframe(el);
+            }
+            return el;
+        };
+
+        var originalSetAttribute = Element.prototype.setAttribute;
+        Element.prototype.setAttribute = function (name, value) {
+            var result = originalSetAttribute.call(this, name, value);
+            if (this.tagName === 'IFRAME' && (name === 'src' || name === 'sandbox')) {
+                lockNopaperformsIframe(this);
+            }
+            return result;
+        };
+
+        ['appendChild', 'insertBefore', 'replaceChild'].forEach(function (method) {
+            var original = Node.prototype[method];
+            Node.prototype[method] = function (node) {
+                if (node && node.nodeType === 1) {
+                    if (node.tagName === 'IFRAME') lockNopaperformsIframe(node);
+                    if (node.querySelectorAll) scanForNopaperformsIframes(node);
+                }
+                return original.apply(this, arguments);
+            };
+        });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                scanForNopaperformsIframes();
+            });
+        } else {
+            scanForNopaperformsIframes();
+        }
+
+        new MutationObserver(function () {
+            scanForNopaperformsIframes();
+        }).observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['sandbox', 'src']
+        });
+        setInterval(function () {
+            scanForNopaperformsIframes();
+        }, 300);
+
+        window.addEventListener('message', function (event) {
+            if (!event || !event.origin || !/nopaperforms|meritto/i.test(event.origin)) return;
+            var payload = event.data;
+            var text = typeof payload === 'string' ? payload : JSON.stringify(payload || {});
+            if (/success|submit|thank|complete|lead/i.test(text)) {
+                console.info('[T.I.M.E. Kids form] Meritto message:', payload);
+                showFormSubmittedMessage();
+            }
+        });
+    })();
+    </script>
     <title>Preschool Franchise | Start Your Own T.I.M.E. Kids Preschool</title>
     <meta name="description" content="Start your own preschool franchise with T.I.M.E. Kids. Join a trusted preschool franchise brand with training, marketing support, and a proven business model across India.">
     <meta name="keywords" content="preschool franchise, preschool franchise India, start preschool franchise, T.I.M.E. Kids franchise, franchise preschool, preschool franchise opportunity">
@@ -1458,9 +1660,9 @@ gtag('config', 'G-8T7M9HB21X');
 <script>
 function gtag_report_conversion(url) {
 var callback = function () {
-if (typeof(url) != 'undefined') {
-window.location = url;
-}
+// Keep users on the same page after form submit.
+// External form providers may pass a thank-you URL here.
+return;
 };
 gtag('event', 'conversion', {
 'send_to': 'AW-16647692020/pFo8CISm6cgZEPS9noI-',
