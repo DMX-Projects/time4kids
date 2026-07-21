@@ -45,6 +45,7 @@ const getTemplatesForLead = (lead: any): LeadTemplate => {
   const isAdmission = lead.leadKind === 'enquiry' && lead.enquiryType === 'ADMISSION';
   const isCenterPage = lead.leadKind === 'enquiry' && lead.enquiryType === 'CONTACT';
   
+  // Franchise opportunity leads (including July campaign LP/Meta forms)
   if (isFranchise) {
     return {
       whatsapp: "Hi! I am from T.I.M.E. Kids. We received your franchise enquiry and would like to connect with you. When would be a good time to talk?",
@@ -197,6 +198,9 @@ const SOURCE_LABELS: Record<string, string> = {
   website: 'Website',
   facebook: 'Facebook',
   instagram: 'Instagram',
+  july_lp: 'Landingpage July',
+  july_meta: 'Meta July',
+  lp_wb: 'Landingpage-WB',
 }
 
 function sourceLabel(source?: string) {
@@ -470,6 +474,20 @@ export default function LeadDetailPage() {
                     <p className="text-gray-700">
                       {[lead.franchiseType, lead.investmentRange, lead.expectedStartDate].filter(Boolean).join(' · ') || '—'}
                     </p>
+                  </div>
+                )}
+                {(lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign || lead.landingPageUrl) && (
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Page type &amp; campaign</label>
+                    <p className="text-gray-700">
+                      {[
+                        lead.pageType ? `Type: ${lead.pageType}` : '',
+                        lead.campaign || lead.utmCampaign ? `Campaign: ${lead.campaign || lead.utmCampaign}` : '',
+                      ].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                    {lead.landingPageUrl ? (
+                      <p className="text-xs text-gray-500 break-all mt-1">{lead.landingPageUrl}</p>
+                    ) : null}
                   </div>
                 )}
                 {(lead.childAge || lead.enquiryType) && (

@@ -38,7 +38,12 @@ const FRANCHISE_COLUMNS = [
     { label: "Not Answering Calls", keys: ["not_answering_calls"] },
 ];
 
-const getCategoryColumns = (categoryId: string) => {
+const FRANCHISE_CAMPAIGN_SOURCES = new Set(["july_lp", "july_meta", "lp_wb"]);
+
+const getCategoryColumns = (categoryId: string, source?: string) => {
+    if (categoryId === "franchise" || (categoryId === "campaign" && source && FRANCHISE_CAMPAIGN_SOURCES.has(source))) {
+        return FRANCHISE_COLUMNS;
+    }
     return categoryId === "franchise" ? FRANCHISE_COLUMNS : NON_FRANCHISE_COLUMNS;
 };
 
@@ -49,13 +54,32 @@ const CATEGORIES = [
     { id: "franchise", label: "Franchise Leads", bg: "bg-orange-50 text-orange-800", subkey: "fra" },
 ];
 
+const CAMPAIGN_CHANNEL_CATEGORIES = [
+    { id: "website", label: "Website", bg: "bg-violet-50 text-violet-800", subkey: "web" },
+    { id: "facebook", label: "Facebook", bg: "bg-blue-50 text-blue-800", subkey: "fb" },
+    { id: "instagram", label: "Instagram", bg: "bg-pink-50 text-pink-800", subkey: "ig" },
+    { id: "july_lp", label: "Landingpage July", bg: "bg-amber-50 text-amber-800", subkey: "lp" },
+    { id: "july_meta", label: "Meta July", bg: "bg-fuchsia-50 text-fuchsia-800", subkey: "meta" },
+    { id: "lp_wb", label: "Landingpage-WB", bg: "bg-lime-50 text-lime-800", subkey: "lpwb" },
+];
+
+const CHANNEL_LABELS: Record<string, string> = {
+    website: "Website",
+    facebook: "Facebook",
+    instagram: "Instagram",
+    july_lp: "Landingpage July",
+    july_meta: "Meta July",
+    lp_wb: "Landingpage-WB",
+};
+
 function cityRowTotal(
     cityName: string,
     reportData: Record<string, any>,
     activeCategories: typeof CATEGORIES,
+    source?: string,
 ): number {
     return activeCategories.reduce((sum, cat) => {
-        const cols = getCategoryColumns(cat.id);
+        const cols = getCategoryColumns(cat.id, source);
         return (
             sum +
             cols.reduce((cSum, col) => {
@@ -85,9 +109,8 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
     const getSourceLabel = () => {
         if (source === "admission") return "Admission";
         if (source === "contact") return "CenterPage";
-        if (source === "campaign" || source === "website" || source === "facebook" || source === "instagram") {
-            return "Campaign";
-        }
+        if (source && CHANNEL_LABELS[source]) return CHANNEL_LABELS[source];
+        if (source === "campaign") return "Campaign";
         if (source === "franchise") return "Franchise";
         if (source === "landing") return "Landing";
         return "All Leads";
@@ -105,8 +128,18 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
 
     const activeCategories = useMemo(() => {
         if (!source || source === "all") return CATEGORIES;
-        if (source === "website" || source === "facebook" || source === "instagram" || source === "campaign") {
-            return CATEGORIES.filter((c) => c.id === "campaign");
+        if (source === "campaign") return CAMPAIGN_CHANNEL_CATEGORIES;
+        if (CHANNEL_LABELS[source]) {
+            return [
+                {
+                    id: "campaign",
+                    label: `${CHANNEL_LABELS[source]} Leads`,
+                    bg:
+                        CAMPAIGN_CHANNEL_CATEGORIES.find((c) => c.id === source)?.bg ||
+                        "bg-violet-50 text-violet-800",
+                    subkey: CAMPAIGN_CHANNEL_CATEGORIES.find((c) => c.id === source)?.subkey || "cam",
+                },
+            ];
         }
         return CATEGORIES.filter((c) => c.id === source);
     }, [source]);
@@ -166,7 +199,7 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
         const search = citySearch.trim().toLowerCase();
         let rows = cities.map((c) => ({
             name: c.name,
-            total: cityRowTotal(c.name, reportData, activeCategories),
+            total: cityRowTotal(c.name, reportData, activeCategories, source),
         }));
 
         if (search) {
@@ -205,7 +238,7 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
         return sortDir === "asc" ? "Ascending" : "Descending";
     };
 
-    const totalColumns = activeCategories.reduce((acc, cat) => acc + getCategoryColumns(cat.id).length, 0) + 2;
+    const totalColumns = activeCategories.reduce((acc, cat) => acc + getCategoryColumns(cat.id, source).length, 0) + 2;
 
     return (
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden p-4">
@@ -302,7 +335,7 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
                             {activeCategories.map((cat) => (
                                 <th
                                     key={cat.id}
-                                    colSpan={getCategoryColumns(cat.id).length}
+                                    colSpan={getCategoryColumns(cat.id, source).length}
                                     className={`border border-gray-200 p-3 ${cat.bg} text-center font-bold text-lg`}
                                 >
                                     {cat.label}
@@ -324,7 +357,7 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
                         </tr>
                         <tr>
                             {activeCategories.map((cat) =>
-                                getCategoryColumns(cat.id).map((col) => (
+                                getCategoryColumns(cat.id, source).map((col) => (
                                     <th
                                         key={`${cat.subkey}-${col.label}`}
                                         className="border border-gray-200 p-3 bg-gray-50 text-sm font-semibold text-gray-600 text-center whitespace-nowrap"
@@ -357,7 +390,7 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
                                         {row.name}
                                     </td>
                                     {activeCategories.map((cat) =>
-                                        getCategoryColumns(cat.id).map((col) => {
+                                        getCategoryColumns(cat.id, source).map((col) => {
                                             const sum = col.keys.reduce(
                                                 (acc, k) =>
                                                     acc + (reportData[row.name.toLowerCase()]?.[cat.id]?.[k] || 0),
@@ -385,7 +418,7 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
                                     Total
                                 </td>
                                 {activeCategories.map((cat) =>
-                                    getCategoryColumns(cat.id).map((col) => {
+                                    getCategoryColumns(cat.id, source).map((col) => {
                                         const colTotal = filteredSortedCities.reduce(
                                             (sum, row) =>
                                                 sum +

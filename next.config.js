@@ -79,6 +79,8 @@ const nextConfig = {
             /** July LPs — no thank-you page; Meritto may still post to thank-you.html */
             { source: '/Timekids-meta-july/thank-you.html', destination: '/Timekids-meta-july/', permanent: false },
             { source: '/Timekids-lp-july/thank-you.html', destination: '/Timekids-lp-july/', permanent: false },
+            /** WB LP alias uses the same page behavior as July LP. */
+            { source: '/Timekids-lp-WB/thank-you.html', destination: '/Timekids-lp-WB/', permanent: false },
         ];
     },
     async rewrites() {
@@ -91,6 +93,8 @@ const nextConfig = {
             { source: '/Timekids-meta-july/', destination: '/Timekids-meta-july/index.html' },
             { source: '/Timekids-lp-july', destination: '/Timekids-lp-july/index.html' },
             { source: '/Timekids-lp-july/', destination: '/Timekids-lp-july/index.html' },
+            { source: '/Timekids-lp-WB', destination: '/Timekids-lp-WB/index.html' },
+            { source: '/Timekids-lp-WB/', destination: '/Timekids-lp-WB/index.html' },
         ];
         const isDev = process.env.NODE_ENV === 'development';
         const djangoBase = isDev

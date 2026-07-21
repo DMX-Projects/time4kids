@@ -4,208 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <script>
-    (function () {
-        var IS_DEV_HOST = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
-        var BANNER_ID = 'tk-form-submit-status';
-        var IFRAME_SANDBOX = 'allow-scripts allow-same-origin allow-forms';
-
-        function isBlockedRedirect(url) {
-            var value = String(url || '');
-            if (!value || value === '#' || /^javascript:/i.test(value)) return false;
-            return /thank[-_ ]?you|thankyou|\/thank\b|\/thank-you/i.test(value);
-        }
-
-        function isExternalHostUrl(url) {
-            try {
-                var parsed = new URL(String(url || ''), window.location.href);
-                if (!/^https?:$/i.test(parsed.protocol)) return false;
-                return parsed.origin !== window.location.origin;
-            } catch (e) {
-                return false;
-            }
-        }
-
-        function showSubmitStatus(message, type) {
-            var banner = document.getElementById(BANNER_ID);
-            if (!banner) {
-                banner = document.createElement('div');
-                banner.id = BANNER_ID;
-                banner.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:99999;max-width:92vw;padding:14px 18px;border-radius:10px;color:#fff;font:600 15px/1.4 Overpass,Arial,sans-serif;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.2);display:none;';
-                document.addEventListener('DOMContentLoaded', function () {
-                    if (!document.getElementById(BANNER_ID) && document.body) {
-                        document.body.appendChild(banner);
-                    }
-                });
-            }
-            if (document.body && !banner.parentNode) document.body.appendChild(banner);
-            banner.style.background = type === 'error' ? '#c0392b' : '#1f8a4c';
-            banner.textContent = message;
-            banner.style.display = 'block';
-            clearTimeout(showSubmitStatus._timer);
-            showSubmitStatus._timer = setTimeout(function () {
-                banner.style.display = 'none';
-            }, 12000);
-        }
-
-        function showFormSubmittedMessage() {
-            showSubmitStatus(
-                IS_DEV_HOST
-                    ? 'Form submitted. Stayed on this page — open DevTools > Network and filter: nopaperforms'
-                    : 'Thank you! Your enquiry has been submitted successfully. Our team will contact you shortly.'
-            );
-        }
-
-        function blockRedirect(url, source) {
-            if (!isBlockedRedirect(url) && !(IS_DEV_HOST && isExternalHostUrl(url))) return false;
-            console.info('[T.I.M.E. Kids form] Blocked redirect:', url, 'via', source);
-            showFormSubmittedMessage();
-            return true;
-        }
-
-        function lockNopaperformsIframe(iframe) {
-            if (!iframe || iframe.tagName !== 'IFRAME') return;
-            if (iframe.getAttribute('sandbox') !== IFRAME_SANDBOX) {
-                iframe.setAttribute('sandbox', IFRAME_SANDBOX);
-            }
-        }
-
-        function shouldLockIframe(iframe) {
-            if (!iframe) return false;
-            var src = iframe.getAttribute('src') || '';
-            return /nopaperforms|timekidspreschools|meritto/i.test(src) || !!(iframe.closest && iframe.closest('.npf_wgts'));
-        }
-
-        function scanForNopaperformsIframes(root) {
-            (root || document).querySelectorAll('iframe').forEach(function (iframe) {
-                if (shouldLockIframe(iframe)) lockNopaperformsIframe(iframe);
-            });
-        }
-
-        var locationProto = window.Location && window.Location.prototype;
-        if (locationProto) {
-            var hrefDesc = Object.getOwnPropertyDescriptor(locationProto, 'href');
-            if (hrefDesc && hrefDesc.set) {
-                var originalHrefSet = hrefDesc.set;
-                Object.defineProperty(locationProto, 'href', {
-                    configurable: true,
-                    enumerable: hrefDesc.enumerable,
-                    get: hrefDesc.get,
-                    set: function (url) {
-                        if (blockRedirect(url, 'location.href')) return;
-                        originalHrefSet.call(this, url);
-                    }
-                });
-            }
-
-            var originalAssign = locationProto.assign;
-            if (originalAssign) {
-                locationProto.assign = function (url) {
-                    if (blockRedirect(url, 'location.assign')) return;
-                    return originalAssign.call(this, url);
-                };
-            }
-
-            var originalReplace = locationProto.replace;
-            if (originalReplace) {
-                locationProto.replace = function (url) {
-                    if (blockRedirect(url, 'location.replace')) return;
-                    return originalReplace.call(this, url);
-                };
-            }
-        }
-
-        var originalOpen = window.open;
-        window.open = function (url) {
-            if (blockRedirect(url, 'window.open')) return null;
-            return originalOpen.apply(window, arguments);
-        };
-
-        if (window.navigation && window.navigation.addEventListener) {
-            window.navigation.addEventListener('navigate', function (event) {
-                var nextUrl = event.destination && event.destination.url;
-                if (nextUrl && blockRedirect(nextUrl, 'navigation-api')) {
-                    event.preventDefault();
-                }
-            });
-        }
-
-        document.addEventListener('submit', function (event) {
-            var form = event.target;
-            if (form && form.action && blockRedirect(form.action, 'form.submit')) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-            }
-        }, true);
-
-        document.addEventListener('click', function (event) {
-            var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
-            if (link && blockRedirect(link.href, 'link.click')) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-            }
-        }, true);
-
-        var originalCreateElement = document.createElement.bind(document);
-        document.createElement = function (tagName, options) {
-            var el = originalCreateElement(tagName, options);
-            if (String(tagName).toLowerCase() === 'iframe') {
-                lockNopaperformsIframe(el);
-            }
-            return el;
-        };
-
-        var originalSetAttribute = Element.prototype.setAttribute;
-        Element.prototype.setAttribute = function (name, value) {
-            var result = originalSetAttribute.call(this, name, value);
-            if (this.tagName === 'IFRAME' && (name === 'src' || name === 'sandbox')) {
-                lockNopaperformsIframe(this);
-            }
-            return result;
-        };
-
-        ['appendChild', 'insertBefore', 'replaceChild'].forEach(function (method) {
-            var original = Node.prototype[method];
-            Node.prototype[method] = function (node) {
-                if (node && node.nodeType === 1) {
-                    if (node.tagName === 'IFRAME') lockNopaperformsIframe(node);
-                    if (node.querySelectorAll) scanForNopaperformsIframes(node);
-                }
-                return original.apply(this, arguments);
-            };
-        });
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function () {
-                scanForNopaperformsIframes();
-            });
-        } else {
-            scanForNopaperformsIframes();
-        }
-
-        new MutationObserver(function () {
-            scanForNopaperformsIframes();
-        }).observe(document.documentElement, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['sandbox', 'src']
-        });
-        setInterval(function () {
-            scanForNopaperformsIframes();
-        }, 300);
-
-        window.addEventListener('message', function (event) {
-            if (!event || !event.origin || !/nopaperforms|meritto/i.test(event.origin)) return;
-            var payload = event.data;
-            var text = typeof payload === 'string' ? payload : JSON.stringify(payload || {});
-            if (/success|submit|thank|complete|lead/i.test(text)) {
-                console.info('[T.I.M.E. Kids form] Meritto message:', payload);
-                showFormSubmittedMessage();
-            }
-        });
-    })();
-    </script>
     <title>Preschool Franchise | Start Your Own T.I.M.E. Kids Preschool</title>
     <meta name="description" content="Start your own preschool franchise with T.I.M.E. Kids. Join a trusted preschool franchise brand with training, marketing support, and a proven business model across India.">
     <meta name="keywords" content="preschool franchise, preschool franchise India, start preschool franchise, T.I.M.E. Kids franchise, franchise preschool, preschool franchise opportunity">
@@ -218,17 +16,16 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Preschool Franchise | Start Your Own T.I.M.E. Kids Preschool">
     <meta name="twitter:description" content="Start your own preschool franchise with T.I.M.E. Kids. Trusted brand, training support, and a proven preschool franchise model.">
-    <link rel="preconnect" href="https://widgets.in6.nopaperforms.com" crossorigin>
-    <link rel="preconnect" href="https://timekidspreschools.in6.nopaperforms.com" crossorigin>
     <link rel="preconnect" href="https://www.googletagmanager.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@100;200;300;400;500;600;700;800;900&family=Red+Hat+Display:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600;700&family=Overpass:wght@400;600;700;800;900&family=Red+Hat+Display:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="images/Women-1.webp" type="image/webp" fetchpriority="high">
 
     <link rel="shortcut icon" href="images/time-logo.jpg" />
     <link href="css/main-min.css" rel="stylesheet" type="text/css">
+    <link href="css/audit-modifications.css?v=20260721f" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     
 <style>
@@ -320,8 +117,9 @@ header{
             margin:75px 0 0px ;
        }
        .leading-section {
-            max-width:850px;
-            padding: 26px;
+            max-width: 100%;
+            width: 100%;
+            padding: 26px 0;
             
         }
       .leading-section h2{
@@ -1170,6 +968,10 @@ iframe {
         max-width: 30% !important;
         width: 30% !important;
         transform: translateX(-60px);
+        display: flex !important;
+        flex-direction: column;
+        justify-content: space-between;
+        align-self: stretch;
     }
 
     #banner .banner_right > * {
@@ -1180,14 +982,15 @@ iframe {
         flex: 0 0 70% !important;
         max-width: 70% !important;
         width: 70% !important;
+        align-self: stretch;
     }
 
     #banner .banner_left {
         min-height: 0 !important;
         display: grid !important;
-        grid-template-columns: minmax(0, 1.05fr) minmax(320px, 1fr);
+        grid-template-columns: minmax(0, 1fr) minmax(380px, 1.05fr);
         align-items: stretch;
-        column-gap: 10px;
+        column-gap: 14px;
     }
 
     #banner .banner_left > .your_needs.for_mob {
@@ -1202,6 +1005,37 @@ iframe {
         transform: none !important;
         z-index: 2;
         align-self: stretch;
+        height: auto;
+        min-height: 100%;
+    }
+
+    #banner .form_hld.tk-enquiry-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 100%;
+        box-sizing: border-box;
+    }
+
+    #banner .form_hld .tk-enquiry-header {
+        flex: 0 0 auto;
+    }
+
+    #banner .tk-enquiry-form {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 8px;
+        min-height: 0;
+    }
+
+    #banner .tk-enquiry-form .tk-form-terms {
+        margin-top: auto;
+    }
+
+    #banner .tk-enquiry-form .form_field:last-child {
+        margin-top: 0;
     }
 
     #banner .chalk_box {
@@ -1211,20 +1045,22 @@ iframe {
         bottom: auto !important;
         width: 100% !important;
         height: auto !important;
-        min-height: 100%;
-        display: flex !important;
-        align-items: flex-end;
-        justify-content: flex-end;
+        min-height: 0;
+        display: block !important;
         overflow: hidden;
         z-index: 1;
+        align-self: stretch;
     }
 
     #banner .chalk_box img {
+        position: absolute;
+        right: 0;
+        bottom: 0;
         display: block;
         width: auto;
         max-width: 100%;
-        height: 100%;
-        max-height: none !important;
+        height: auto;
+        max-height: 100%;
         margin: 0;
         transform: none !important;
         object-fit: contain;
@@ -1281,7 +1117,7 @@ iframe {
     }
 
     #banner .banner_left {
-        grid-template-columns: minmax(0, 1.05fr) minmax(320px, 1fr);
+        grid-template-columns: minmax(0, 1fr) minmax(360px, 1.05fr);
     }
 
     #banner .form_hld {
@@ -1410,12 +1246,331 @@ iframe {
         grid-column: 1 / -1;
         grid-row: 3;
     }
+}
 
-    #banner .npf_wgts,
-    #banner .npf_wgts iframe {
-        width: 100% !important;
+/* Enquiry form — must stay outside media queries so desktop is not stuck with legacy red labels */
+#banner .form_hld select.textBox,
+#banner .form_hld input.textBox {
+    width: 100%;
+}
+
+#banner .form_hld.tk-enquiry-card {
+    padding: 28px 28px 24px;
+    box-shadow: 0 14px 36px rgba(9, 13, 145, 0.14);
+    border: 1px solid rgba(9, 13, 145, 0.08);
+    font-family: "IBM Plex Sans", "Overpass", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    box-sizing: border-box;
+    height: auto;
+    min-width: 0;
+    width: 100%;
+}
+
+#banner .form_hld .tk-enquiry-title {
+    font-family: "IBM Plex Serif", "Red Hat Display", Georgia, serif;
+    font-size: 28px;
+    font-weight: 700;
+    font-style: normal;
+    letter-spacing: -0.02em;
+    color: #090d91;
+    line-height: 1.2;
+    margin: 0 0 10px;
+    padding: 0;
+}
+
+#banner .form_hld .tk-enquiry-subtitle {
+    font-family: "IBM Plex Sans", "Overpass", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.45;
+    color: #64748b;
+    margin: 0 0 10px;
+}
+
+#banner .tk-enquiry-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#banner .tk-enquiry-form .form_field {
+    margin-bottom: 0;
+}
+
+#banner .form_hld.tk-enquiry-card label:not(.error),
+#banner .tk-enquiry-form .form_field label.field-label {
+    display: block;
+    font-family: "IBM Plex Sans", "Overpass", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #334155 !important;
+    margin-bottom: 4px;
+    padding: 0;
+}
+
+#banner .tk-enquiry-form .tk-input,
+#banner .tk-enquiry-form select.tk-input {
+    width: 100%;
+    font-family: "IBM Plex Sans", "Overpass", sans-serif;
+    font-size: 15px;
+    color: #1e293b;
+    line-height: 1.35;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #dbe3ee;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+#banner .tk-enquiry-form select.tk-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+}
+
+#banner .tk-enquiry-form .tk-input:focus,
+#banner .tk-enquiry-form select.tk-input:focus {
+    border-color: #090d91;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(9, 13, 145, 0.12);
+}
+
+#banner .tk-enquiry-form .tk-input::placeholder {
+    color: #94a3b8;
+}
+
+#banner .tk-enquiry-form .tk-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+#banner .tk-enquiry-form .tk-phone-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+#banner .tk-enquiry-form .tk-phone-row .tk-input {
+    flex: 1;
+    min-width: 0;
+}
+
+#banner .tk-enquiry-form .tk-send-otp-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    border: none;
+    border-radius: 10px;
+    padding: 0 14px;
+    font-family: "IBM Plex Sans", "Overpass", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #fff;
+    background: #090d91;
+    cursor: pointer;
+}
+
+#banner .tk-enquiry-form .tk-send-otp-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+#banner .tk-enquiry-form .tk-otp-status {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #64748b;
+}
+
+#banner .tk-enquiry-form .tk-otp-status.is-ok {
+    color: #047857;
+}
+
+#banner .tk-enquiry-form .tk-otp-status.is-err {
+    color: #dc2626;
+}
+
+#banner .tk-enquiry-form .tk-form-grid .form_field {
+    margin-bottom: 0;
+}
+
+#banner .tk-enquiry-form .tk-form-terms {
+    margin: 0;
+}
+
+#banner .form_hld.tk-enquiry-card .tk-form-terms label,
+#banner .tk-enquiry-form .tk-form-terms label {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-family: "IBM Plex Sans", "Overpass", sans-serif;
+    font-size: 12.5px;
+    line-height: 1.65;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    word-spacing: 0.12em;
+    color: #334155 !important;
+    margin-bottom: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+#banner .tk-enquiry-form .tk-form-terms label span {
+    color: #334155;
+    font-weight: 500;
+}
+
+#banner .tk-enquiry-form .tk-form-terms input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    accent-color: #090d91;
+}
+
+#banner .tk-enquiry-form label.error {
+    display: block;
+    color: #dc2626 !important;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 5px;
+    padding: 0;
+}
+
+#banner .tk-enquiry-form .tk-submit-btn {
+    width: 100%;
+    min-width: 0;
+    margin-top: 4px;
+    padding: 14px 18px;
+    border: none;
+    border-radius: 10px;
+    font-family: "IBM Plex Sans", "Overpass", sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #1a1a1a;
+    background: linear-gradient(135deg, #ffc926 0%, #ffae00 100%);
+    box-shadow: 0 8px 18px rgba(255, 174, 0, 0.35);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#banner .tk-enquiry-form .tk-submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(255, 174, 0, 0.42);
+}
+
+#banner .tk-enquiry-form .tk-submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+#form-success-message.tk-form-success {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    flex: 1 1 auto;
+    min-height: 280px;
+    padding: 28px 16px;
+    box-sizing: border-box;
+}
+
+#form-success-message.tk-form-success.is-visible {
+    display: flex;
+}
+
+.tk-form-success__tick {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #16a34a;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+    margin: 0 auto 16px;
+    box-shadow: 0 10px 24px rgba(22, 163, 74, 0.35);
+    animation: tkTickPop 0.35s ease-out;
+}
+
+@keyframes tkTickPop {
+    from {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.tk-form-success__title {
+    margin: 0 0 8px;
+    font-family: "IBM Plex Serif", "Red Hat Display", Georgia, serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #166534;
+    line-height: 1.2;
+}
+
+.tk-form-success__text {
+    margin: 0;
+    font-family: "IBM Plex Sans", "Overpass", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #475569;
+    max-width: 280px;
+}
+
+#form-error {
+    color: #dc2626;
+    font-size: 13px;
+    margin-top: 8px;
+    text-align: center;
+}
+
+@media screen and (max-width: 575px) {
+    #banner .form_hld.tk-enquiry-card {
+        padding: 22px 18px 20px;
     }
 
+    #banner .form_hld .tk-enquiry-title {
+        font-size: 24px;
+        margin-bottom: 14px;
+    }
+
+    #banner .tk-enquiry-form {
+        gap: 8px;
+    }
+
+    #banner .tk-enquiry-form .tk-form-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    #banner .tk-enquiry-form .tk-form-grid .form_field {
+        margin-bottom: 0;
+    }
+}
+
+
+@media screen and (max-width: 1023px) {
     #about_us {
         margin-top: 0 !important;
     }
@@ -1693,6 +1848,7 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
 
 
 
+
 </head>
 <body>
     <div id="wrapper">
@@ -1718,7 +1874,7 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
                     <div class="col-lg-6 banner_right">
                         <div class="banner_typo">
                             <h1>
-                                START YOUR OWN PRESCHOOL WITH T.I.M.E. KIDS
+                                Own India's Fastest Growing Preschool in ₹12–15L
                             </h1>
                             <!-- <img src="assets/images/banner-typo.png" alt=""> -->
                         </div>
@@ -1751,28 +1907,76 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
                         <div class="chalk_box">
                             <img src="images/Women-1.webp" alt="T.I.M.E. Kids" width="450" height="786" fetchpriority="high" decoding="async">
                         </div>
-                        <div class="form_hld">
-                            <p id="timekidsForm">Enquire Now</p>
-                            <div class="npf_wgts" data-height="562px" data-w="0d11ace91eda0a504dbaeba8e27fcf83"></div>
-							<!--<form id="timekidsForm" action="mail.php" method="post">
+                        <div class="form_hld tk-enquiry-card">
+                            <div class="tk-enquiry-header">
+                                <h3 id="timekidsForm" class="tk-enquiry-title">Enquire Now</h3>
+                            </div>
+                            <div id="form-success-message" class="tk-form-success" style="display:none;" aria-live="polite">
+                                <div class="tk-form-success__tick" aria-hidden="true">✓</div>
+                                <h3 class="tk-form-success__title">Submitted</h3>
+                                <p class="tk-form-success__text">Thank you! Your enquiry has been submitted successfully. Our team will contact you shortly.</p>
+                            </div>
+                            <form id="timekidsEnquiryForm" class="tk-enquiry-form" novalidate
+                                data-source="july_lp"
+                                data-page-type="lp"
+                                data-campaign="lp"
+                                data-comments="July LP campaign form"
+                                data-geo-mode="state-city">
                                 <div class="form_field">
-                                    <input type="text" class="textBox" placeholder="Name *" name="name" maxlength="75" />
+                                    <label class="field-label" for="tk-name">Full Name *</label>
+                                    <input id="tk-name" type="text" class="textBox tk-input" placeholder="Enter your full name" name="name" maxlength="75" />
                                 </div>
                                 <div class="form_field">
-                                    <input type="text" class="textBox" placeholder="E-mail *" name="email" />
+                                    <label class="field-label" for="tk-email">Email *</label>
+                                    <input id="tk-email" type="email" class="textBox tk-input" placeholder="your@email.com" name="email" />
                                 </div>
                                 <div class="form_field">
-                                    <input type="tel" class="textBox" placeholder="Phone Number *" maxlength="10" name="phone" />
+                                    <label class="field-label" for="tk-phone">Phone Number *</label>
+                                    <div class="tk-phone-row">
+                                        <input id="tk-phone" type="tel" class="textBox tk-input" placeholder="10-digit mobile number" maxlength="10" name="phone" />
+                                        <button type="button" id="tk-send-otp" class="tk-send-otp-btn" disabled>Generate OTP</button>
+                                    </div>
+                                    <div id="tk-otp-status" class="tk-otp-status" aria-live="polite"></div>
+                                </div>
+                                <div class="form_field tk-otp-row" style="display:none;">
+                                    <label class="field-label" for="tk-otp">Enter OTP *</label>
+                                    <input id="tk-otp" type="tel" class="textBox tk-input" placeholder="4-digit OTP" maxlength="4" name="otp" inputmode="numeric" autocomplete="one-time-code" />
+                                </div>
+                                <div class="tk-form-grid tk-geo-state-city">
+                                    <div class="form_field">
+                                        <label class="field-label" for="tk-state">State *</label>
+                                        <select id="tk-state" class="textBox tk-input stateDropDown" name="state">
+                                            <option value="">Select state</option>
+                                        </select>
+                                    </div>
+                                    <div class="form_field">
+                                        <label class="field-label" for="tk-city">City *</label>
+                                        <select id="tk-city" class="textBox tk-input cityDropDown" name="city">
+                                            <option value="">Select city</option>
+                                        </select>
+                                        <input type="text" class="textBox tk-input cityInput" style="display:none;" disabled aria-label="City" />
+                                    </div>
+                                </div>
+                                <div class="form_field tk-investment-field">
+                                    <label class="field-label">Investment Capacity *</label>
+                                    <div class="tk-investment-chips" role="group" aria-label="Investment capacity">
+                                        <button type="button" class="tk-chip" data-value="₹5–10L">₹5–10L</button>
+                                        <button type="button" class="tk-chip" data-value="₹10–15L">₹10–15L</button>
+                                        <button type="button" class="tk-chip" data-value="₹15L+">₹15L+</button>
+                                    </div>
+                                    <input type="hidden" name="investmentRange" id="tk-investment-range" value="" />
+                                </div>
+                                <div class="form_field tk-form-terms">
+                                    <label>
+                                        <input type="checkbox" name="acknowledge" checked />
+                                        <span>By ticking this box, I acknowledge a minimum investment of ₹10–15 lacs* is required. I have read and accepted the TKPL privacy policy and terms &amp; conditions.</span>
+                                    </label>
                                 </div>
                                 <div class="form_field">
-                                    <textarea class="textBox" placeholder="Message" name="message" ></textarea>
+                                    <input id="form-submit-button" class="button tk-submit-btn" type="submit" value="Submit">
+                                    <div id="form-error"></div>
                                 </div>
-                                <div class="form_field">
-                                    <input id="form-submit-button" class="button" type="submit" value="Submit">
-                                    <div id="proccessbtn" style="display: none;"></div>
-                                </div>
-                            </form>-->
-
+                            </form>
                         </div>
                         <div class="your_needs for_mob">
                             <div class="row need_list_con">
@@ -1885,35 +2089,13 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
                         </div>
                     </div>
                     <div class="col-md-7 blurb">
-                      
-                        <div class="tab-content" id="myTabContent">
-                            <div class="tab-pane fade show active" id="2022" role="tabpanel" aria-labelledby="2022-tab">
-                                <ul class="tab_data">
-                                    <li class="nav-item" role="presentation">
-                                        <h2>How to start a T.I.M.E. Kids Preschool...</h2>
-                                    </li>
-                                    <li><strong>Say Hi!</strong> – Fill out the form to show your interest.
-                                    </li>
-                                    <li><strong>Let’s Chat</strong> – Our team will call and help you get started.
-                                    </li>
-                                    <li><strong>Get Ready</strong> – We'll train you and help you set up the preschool.
-                                    </li>
-                                    <li><strong>Welcome Kids</strong> – Launch your preschool and watch it grow.
-                                    </li>
-                                </ul>
-                            </div>
-                            <div class="tab-pane fade" id="2021" role="tabpanel" aria-labelledby="2021-tab">
-                                <ul class="tab_data">
-                                    <li>India's Most Trusted Preschool: TRA's Brand Trust Report, 2021</li>
-                                </ul>
-                            </div>
-                            <div class="tab-pane fade" id="2020" role="tabpanel" aria-labelledby="2020-tab">
-                                <ul class="tab_data">
-                                    <li>Leading Preschool Chain: 17th World Education Summit 2020</li>
-                                    <li>National Early Child Preschool chain of the year: 10th Annual Indian
-                                        Education Award 2020</li>
-                                </ul>
-                            </div>
+                        <div class="tk-acquisition-path">
+                            <div class="tk-acquisition-step"><strong>Step 1 · Submit</strong><span>Fill out the form to express your interest.</span></div>
+                            <div class="tk-acquisition-step"><strong>Step 2 · Discovery</strong><span>Our team connects with you for a detailed discussion.</span></div>
+                            <div class="tk-acquisition-step"><strong>Step 3 · Site</strong><span>We help you identify and evaluate the right location.</span></div>
+                            <div class="tk-acquisition-step"><strong>Step 4 · Sign</strong><span>Complete documentation and franchise agreement.</span></div>
+                            <div class="tk-acquisition-step"><strong>Step 5 · Setup</strong><span>Training, infrastructure and launch support.</span></div>
+                            <div class="tk-acquisition-step"><strong>Step 6 · Own</strong><span>Open your preschool and start your journey.</span></div>
                         </div>
                     </div>
                 </div>
@@ -1923,119 +2105,24 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
 
         <section class="leading-box mt-5" >
             <div class="leading-section">
-                <h2 class="pb-3">Even More Reasons To Consider Partnering With T.I.M.E. Kids
-                </h2>
-              <table class="my_table">
-                <tbody><tr>
-                  <th>Support</th>
-                  <th>T.I.M.E. Kids</th>
-                </tr>
-                <tr>
-                  <td>Infrastructure Development Support</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Proven Business Model </td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Project Setup Support </td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Play - Based Learning Activities </td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Recruitment Support</td>
-                  <td>✅</td>
-                </tr> <tr>
-                  <td>An Investment Up To ₹15 lakhs</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Regularly Updated Curriculum</td>
-                  <td>✅</td>
-                </tr>
-                <!-- <tr>
-                  <td>No Additional Royalty</td>
-                  <td>✅</td>
-                </tr> -->
-                <tr>
-                  <td>Cost Effective Toys &amp; Equipment</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Student Kit Provided</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Free Skill Training</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>No Additional Upsell Costs  </td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Programs Support</td>
-                  <td>✅</td>
-                </tr>
-                <!-- <tr>
-                  <td>Partners Network</td>
-                  <td>✅</td>
-                </tr> -->
-                <tr>
-                  <td>Network Connect</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Mentorship Support</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Franchise Partner Marketing Support</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>No Internal Competition</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Trusted Guidance</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Brand Existence Over 35+ Years</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Result Oriented Support</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>No-Hidden Costs</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>Long Haul Franchise Partner(Over 5 yrs)</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>One Franchise with Multiple Centres</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                  <td>CRM Support</td>
-                  <td>✅</td>
-                </tr>
-                <tr>
-                    <td>Branding Support</td>
-                    <td>✅</td>
-                  </tr>
-              </tbody></table>
-          </div>
-          </section>
+                <h2 class="pb-3">The T.I.M.E. Kids Advantage</h2>
+                <p class="tk-usp-subtitle">At a glance — everything franchise partners gain with T.I.M.E. Kids</p>
+                <div class="tk-usp-grid">
+                    <div class="tk-usp-card tk-usp-green"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>250+ Centres Across India</h4></div>
+                    <div class="tk-usp-card tk-usp-green"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>34+ Years of Educational Excellence</h4></div>
+                    <div class="tk-usp-card tk-usp-green"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Child-Safe and Non-Toxic Infra</h4></div>
+                    <div class="tk-usp-card tk-usp-orange"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Low Investment with Strong Growth Potential</h4></div>
+                    <div class="tk-usp-card tk-usp-orange"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>High Social-Impact Business Opportunity</h4></div>
+                    <div class="tk-usp-card tk-usp-orange"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>End-to-End Academic and Ops Support</h4></div>
+                    <div class="tk-usp-card tk-usp-blue"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Proven Systems and Structured Processes</h4></div>
+                    <div class="tk-usp-card tk-usp-blue"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Trusted Brand with Nationwide Recognition</h4></div>
+                    <div class="tk-usp-card tk-usp-blue"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>NEP 2020 Updated Curriculum</h4></div>
+                    <div class="tk-usp-card tk-usp-red"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Complete Staff Training and Development</h4></div>
+                    <div class="tk-usp-card tk-usp-red"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>National + Local Marketing Assistance</h4></div>
+                    <div class="tk-usp-card tk-usp-red"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Parent Engagement Programs</h4></div>
+                </div>
+            </div>
+        </section>
 
 
           <section class="faq mt-5 mb-5" >
@@ -2157,12 +2244,14 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
             <div class="ready-timeskids">
                 <h2>Ready to Begin Your <br> T.I.M.E. Kids Preschool?</h2>
                 <p>Your dream preschool business is just a click away. Let’s build something special together!</p>
-                <img src="images/Click here.png" class="ready-img">
+                <img src="images/Click here.png" class="ready-img" alt="Book consultation">
             </div>
             <div class="cta-button-container">
                 <a href="#timekidsForm"><button class="cta-button">Get Started</button></a>
             </div>
         </section>
+
+
 
         <footer>
             <div class="container_sm">
@@ -2232,37 +2321,9 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
     <script src="js/bootstrap.js"></script>
     <script src="js/gsap.min.js"></script>
     <script src="js/main.js"></script>
-    <script src="js/form.js"></script>
-	
-	  <script type="text/javascript"> var s=document.createElement("script"); s.type="text/javascript"; s.async=true; s.src="https://widgets.in6.nopaperforms.com/emwgts.js"; document.body.appendChild(s); </script>
- <script type="text/javascript">
-                    var npf_d='https://timekidspreschools.in6.nopaperforms.com';
-                    var npf_c='6340';
-                    var npf_m='1';
-                    var s=document.createElement("script");
-                    s.type="text/javascript";
-                    s.async=true;
-                    s.src="https://track.nopaperforms.com/js/track.js";
-                    document.body.appendChild(s);
-                </script>
-				
- 	
+    <script src="js/form.js?v=20260721g"></script>
+    <script src="js/audit-modifications.js?v=20260721e"></script>
 
-
-<!-- Google tag (gtag.js) -->
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'AW-875207195');
-</script>
-
- 
-<!-- Event snippet for TIME-MCC-Updated Lead Form - Oct 2025 conversion page -->
-<script>
-  gtag('event', 'conversion', {'send_to': 'AW-875207195/ELNPCILvwLEbEJu0qqED'});
-</script>
-	
 </body>
 
 </html>

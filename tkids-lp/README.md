@@ -8,6 +8,7 @@ Static HTML landings for franchise lead ads. **Published copies** live under `pu
 | `/Timekids-lp-feb/` | `public/Timekids-lp-feb/` |
 | `/Timekids-meta-july/` | `public/Timekids-meta-july/` |
 | `/Timekids-lp-july/` | `public/Timekids-lp-july/` |
+| `/Timekids-lp-WB/` | `public/Timekids-lp-WB/` |
 
 ## Edit workflow
 
@@ -20,6 +21,7 @@ robocopy "$base\tkids-lp\Timekids-meta-feb" "$base\public\Timekids-meta-feb" /E
 robocopy "$base\tkids-lp\Timekids-lp-feb" "$base\public\Timekids-lp-feb" /E
 robocopy "$base\tkids-lp\Timekids-meta-july" "$base\public\Timekids-meta-july" /E
 robocopy "$base\tkids-lp\Timekids-lp-july" "$base\public\Timekids-lp-july" /E
+robocopy "$base\tkids-lp\Timekids-lp-WB" "$base\public\Timekids-lp-WB" /E
 ```
 
 3. Test locally: `npm run dev` → open `http://localhost:3000/Timekids-meta-feb/`
