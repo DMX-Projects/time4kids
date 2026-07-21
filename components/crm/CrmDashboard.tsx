@@ -31,7 +31,7 @@ const LeadSourceChart = lazy(() => import("@/components/crm/admin/LeadSourceChar
 const ConversionFunnel = lazy(() => import("@/components/crm/admin/ConversionFunnel"));
 
 type SourceFilter = "" | "admission" | "contact" | "landing" | "campaign" | "franchise" | "all";
-type CampaignChannelFilter = "" | "website" | "facebook" | "instagram";
+type CampaignChannelFilter = "" | "website" | "facebook" | "instagram" | "july_lp" | "july_meta" | "lp_wb";
 type StatusFilter =
     | "all"
     | "untouched"
@@ -84,7 +84,16 @@ const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] =
     { id: "website", label: "Website" },
     { id: "facebook", label: "Facebook" },
     { id: "instagram", label: "Instagram" },
+    { id: "july_lp", label: "Landingpage July" },
+    { id: "july_meta", label: "Meta July" },
+    { id: "lp_wb", label: "Landingpage-WB" },
 ];
+
+const FRANCHISE_CAMPAIGN_CHANNELS: CampaignChannelFilter[] = ["july_lp", "july_meta", "lp_wb"];
+
+function isFranchiseCampaignChannel(channel: CampaignChannelFilter): boolean {
+    return FRANCHISE_CAMPAIGN_CHANNELS.includes(channel);
+}
 
 const NON_FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "all", label: "All Status" },
@@ -246,9 +255,13 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
     const isLandingView = selectedSource === "landing";
     const isCampaignView = selectedSource === "campaign";
-    const isFranchise = selectedSource === "franchise";
+    const isFranchiseCampaignView = isFranchiseCampaignChannel(selectedCampaignChannel);
+    const isFranchise = selectedSource === "franchise" || isFranchiseCampaignView;
     const apiSource = apiSourceParam(selectedSource, selectedCampaignChannel);
     const apiStatus = apiStatusParam(selectedStatus);
+    const usesFranchiseLpGeo = isFranchiseCampaignView;
+    const hidesCentreForCampaignChannel = isFranchiseCampaignView;
+    const geoScope = usesFranchiseLpGeo ? "franchise-lp" : "default";
     const currentStatusFilters = isFranchise ? FRANCHISE_FILTERS : NON_FRANCHISE_FILTERS;
 
     const handleSourceChange = (source: SourceFilter) => {
@@ -541,7 +554,15 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     <SearchableSelect
                                         value={selectedCampaignChannel}
                                         onChange={(val) => {
-                                            setSelectedCampaignChannel(val as any);
+                                            const next = val as CampaignChannelFilter;
+                                            const wasFranchiseLpGeo = isFranchiseCampaignChannel(selectedCampaignChannel);
+                                            const nextFranchiseLpGeo = isFranchiseCampaignChannel(next);
+                                            setSelectedCampaignChannel(next);
+                                            if (wasFranchiseLpGeo !== nextFranchiseLpGeo) {
+                                                setSelectedState([]);
+                                                setSelectedCity([]);
+                                                setSelectedCentre([]);
+                                            }
                                             if (view === "reports") setReportsFiltersApplied(false);
                                         }}
                                         options={CAMPAIGN_CHANNEL_FILTERS.map(f => ({ value: f.id, label: f.label }))}
@@ -565,9 +586,20 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
                             {!isLandingView && (
                                 <>
-                                    <StateSelector value={selectedState} onChange={handleStateChange} />
-                                    <CitySelector value={selectedCity} onChange={handleCityChange} state={selectedState.join(",")} />
-                                    {view !== 'reports' && selectedSource !== "franchise" && (
+                                    <StateSelector
+                                        key={`states-${geoScope}`}
+                                        value={selectedState}
+                                        onChange={handleStateChange}
+                                        scope={geoScope}
+                                    />
+                                    <CitySelector
+                                        key={`cities-${geoScope}-${selectedState.join("|")}`}
+                                        value={selectedCity}
+                                        onChange={handleCityChange}
+                                        state={selectedState.join(",")}
+                                        scope={geoScope}
+                                    />
+                                    {view !== 'reports' && selectedSource !== "franchise" && !hidesCentreForCampaignChannel && (
                                         <CentreSelector
                                             key={`centres-${selectedCity.join('|')}-${selectedState.join('|')}`}
                                             cities={selectedCity}
@@ -662,7 +694,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     }
                                 >
                                     <LeadSourceChart data={stats.sourceBreakdown} />
-                                    <ConversionFunnel data={stats.statusBreakdown} isFranchise={apiSource === 'franchise'} />
+                                    <ConversionFunnel data={stats.statusBreakdown} isFranchise={isFranchise} />
                                 </Suspense>
                             ) : null}
                         </div>

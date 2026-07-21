@@ -1,505 +1,521 @@
 $(document).ready(function () {
-   var formURL = 'https://globalapi.zeelearn.com/Kidzeewebapi/V1/KidzeeEnquiry';
-   var smsURL = 'https://globalapi.zeelearn.com/Kidzeewebapi/V1/SendSms_Clientbcbc';
-  /*  if(location.hostname.indexOf('kidzee')>=0){
-      smsURL = '/WebRoute/SendSms_Clientbcbc';
-      formURL = '/WebRoute/KidzeeEnquiry';
-   } */
-   var submitInterval;
-   var statesArray;
-   var cityArray;
-   var randomSMS = '';
-   function commonForKeypressAndChange(props) {
-      let input = props.input;
-      let strForBind = props.strForBind;
-      //-------------------
-      if (input.data()[strForBind + '_onKeypress']) {
-         input.unbind("keypress", input.data()[strForBind + '_onKeypress']);
-      }
-      input.data()[strForBind + '_onKeypress'] = (e) => {
-         if (props.onKeypress && typeof props.onKeypress == 'function') {
-            props.onKeypress(e);
-         }
-      };
-      input.bind("keypress", input.data()[strForBind + '_onKeypress']);
-      //---------------
-      if (input.data()[strForBind + '_onChange']) {
-         input.unbind("input chnage", input.data()[strForBind + '_onChange']);
-      }
-      input.data()[strForBind + '_onChange'] = (e) => {
-         if (props.onChange && typeof props.onKeypress == 'function') {
-            props.onChange(e);
-         }
-      };
-      input.bind("input chnage", input.data()[strForBind + '_onChange']);
-   }
-   function checkMaxLength(input) {
-      var maxlength = input.attr("maxlength");
-      if (maxlength != undefined && input.val().length > maxlength) {
-         input.val(input.val().substring(0, maxlength));
-      };
-   }
-   function bindRestrict_MaxLength(inputArray) {
-      inputArray.forEach((inputInArray) => {
-         inputInArray.each((i, ele) => {
-            var input = $(ele);
-            commonForKeypressAndChange({
-               input: input,
-               strForBind: 'bindRestrict_MaxLength',
-               onKeypress: (e) => {
-                  checkMaxLength(input);
-               },
-               onChange: (e) => {
-                  checkMaxLength(input);
-               }
+    var $form = $('#timekidsEnquiryForm');
+    if (!$form.length) return;
+
+    var campaignSource = $form.data('source') || 'july_meta';
+    var pageType = $form.data('page-type') || campaignSource;
+    var campaignName = $form.data('campaign') || campaignSource;
+    var campaignComments = $form.data('comments') || 'July campaign form';
+    var geoMode = $form.data('geo-mode') || 'state-city';
+    var defaultState = $form.data('default-state') || '';
+    var isWbCitiesOnly = geoMode === 'wb-cities';
+
+    function getUrlUtmParams() {
+        var params = {};
+        try {
+            var search = new URLSearchParams(window.location.search || '');
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(function (key) {
+                var value = $.trim(search.get(key) || '');
+                if (value) params[key] = value;
             });
-         });
-      });
-   }
-   bindRestrict_MaxLength([
-      $('#kidzeeForm [name="name"]'),
-      $('#kidzeeForm [name="mobile"]'),
-      $('#kidzeeForm [name="pincode"]'),
-      $('#kidzeeForm [name="otp"]'),
-   ])
-   $.validator.methods.email = function (value, element) {
-      return this.optional(element) || /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/.test(value);
-   }
-   $.validator.addMethod("noBlank", function (value, element) {
-      if (value.length > 0 && value.trim().length == 0) {
-         return false;
-      }
-      return true;
-   }, "Don't leave it empty");
+        } catch (e) {}
+        return params;
+    }
 
-   $.validator.addMethod("mobileVerifyIndia", function (value, element, param) {
-      return verifyMobileLength();
-   }, "Please enter 10 digit mobile number");
-   function verifyMobileLength() {
-      mobileVerifyBtn.html(OTPButtonLastHTML);
-      if ($('#kidzeeForm [name="mobile"]').val().length == 10) {
-         mobileVerifyBtn.fadeIn();
-         return true;
-      } else {
-         mobileVerifyBtn.fadeOut();
-         return false;
-      }
-   }
-   commonForKeypressAndChange({
-      input: $('#kidzeeForm [name="mobile"]'),
-      strForBind: 'mobile_onChange_verify',
-      onKeypress: (e) => {
-         verifyMobileLength();
-         return true;
-      },
-      onChange: (e) => {
-         verifyMobileLength();
-      }
-   })
+    var $submitBtn = $('#form-submit-button');
+    var $error = $('#form-error');
+    var $success = $('#form-success-message');
+    var $name = $form.find('[name="name"]');
+    var $phone = $form.find('[name="phone"]');
+    var $email = $form.find('[name="email"]');
+    var $state = $form.find('[name="state"]');
+    var $citySelect = $form.find('select.cityDropDown');
+    var $cityInput = $form.find('input.cityInput');
+    var $investment = $('#tk-investment-range');
+    var $otp = $form.find('[name="otp"]');
+    var $otpRow = $form.find('.tk-otp-row');
+    var $sendOtpBtn = $('#tk-send-otp');
+    var $otpStatus = $('#tk-otp-status');
+    var otpSending = false;
+    var otpSentForPhone = '';
 
-   $.validator.addMethod("otpVerify", function (value, element, param) {
-      if (value.length == 4) {
-         if (value == randomSMS) {
-            return true;
-         } else {
-            return false;
-         }
+    function getCityValue() {
+        if ($citySelect.is(':visible') && !$citySelect.prop('disabled')) {
+            return $.trim($citySelect.val() || '');
+        }
+        if ($cityInput.is(':visible') && !$cityInput.prop('disabled')) {
+            return $.trim($cityInput.val() || '');
+        }
+        return $.trim($form.find('[name="city"]').val() || '');
+    }
 
-      } else {
-         return false;
-      }
-   }, "Invalid OTP number");
+    function getStateValue() {
+        if (isWbCitiesOnly) {
+            return defaultState || 'West Bengal';
+        }
+        return $.trim($state.filter('select, input').val() || '');
+    }
 
-   $.validator.addMethod("pincode", function (value, element, param) {
-      if (value.length == 6) {
-         return true;
-      } else {
-         return false;
-      }
-   }, "Please enter 6 digit pincode number");
+    function clearFieldError(fieldName) {
+        if (!$form.data('validator')) return;
+        var validator = $form.validate();
+        var $el = $form.find('[name="' + fieldName + '"]').filter(':enabled').first();
+        if ($el.length) {
+            validator.successList.push($el[0]);
+            validator.showErrors();
+            $el.removeClass('error');
+            validator.errorsFor($el[0]).hide();
+            delete validator.invalid[fieldName];
+            delete validator.submitted[fieldName];
+        }
+    }
 
-   function bindRestrict_AlphabetOnly(inputArray) {
-      inputArray.forEach((inputInArray) => {
-         inputInArray.each((i, ele) => {
-            let input = $(ele);
-            commonForKeypressAndChange({
-               input: input,
-               strForBind: 'bindRestrict_AlphabetOnly',
-               onKeypress: (e) => {
-                  return /[a-z A-Z]/g.test(e.key);
-               },
-               onChange: (e) => {
-                  input.val(input.val().replace(/[^a-zA-Z ]/g, ''));
-               }
-            })
-         });
-      });
-   }
+    function setCityLoading() {
+        $citySelect.empty().append('<option value="">Loading cities...</option>').show().prop('disabled', true);
+        $cityInput.hide().prop('disabled', true).removeAttr('name').val('');
+        $citySelect.attr('name', 'city');
+    }
 
-   function bindRestrict_TextArea(inputArray) {
-      inputArray.forEach((inputInArray) => {
-         inputInArray.each((i, ele) => {
-            let input = $(ele);
-            commonForKeypressAndChange({
-               input: input,
-               strForBind: 'bindRestrict_TextArea',
-               onKeypress: (e) => {
-                  return /[a-zA-Z0-9 &()+,-./:;?]/g.test(e.key);
-               },
-               onChange: (e) => {
-                  input.val(input.val().replace(/[^a-zA-Z0-9 &()+,-./:;?]/g, ''));
-               }
-            })
-         });
-      });
+    function showCitySelect(cities) {
+        $citySelect.empty().append('<option value="">Select city</option>');
+        (cities || []).forEach(function (city) {
+            var name = typeof city === 'string' ? city : city.name;
+            if (name) {
+                $citySelect.append($('<option></option>').attr('value', name).text(name));
+            }
+        });
+        $citySelect.attr('name', 'city').show().prop('disabled', false);
+        $cityInput.removeAttr('name').hide().prop('disabled', true).val('');
+        clearFieldError('city');
+    }
 
-   }
+    function showCityTextInput(hasState) {
+        $citySelect.removeAttr('name').hide().prop('disabled', true).empty();
+        $cityInput.attr('name', 'city').show().prop('disabled', !hasState).val('');
+        $cityInput.attr('placeholder', hasState ? 'Enter your city *' : 'Select a state first');
+        clearFieldError('city');
+    }
 
-   function bindRestrict_AlphabetNumberOnly(inputArray) {
-      inputArray.forEach((inputInArray) => {
-         inputInArray.each((i, ele) => {
-            let input = $(ele);
-            this.commonForKeypressAndChange({
-               input: input,
-               strForBind: 'bindRestrict_AlphabetNumberOnly',
-               onKeypress: (e) => {
-                  return /[a-z A-Z0-9]/g.test(e.key);
-               },
-               onChange: (e) => {
-                  input.val(input.val().replace(/[^a-z A-Z0-9]/g, ''));
-               }
-            })
-         });
-      });
-      inputArray.forEach((input) => {
-
-      });
-   }
-
-   function bindRestrict_NumberOnly(inputArray) {
-      inputArray.forEach((inputInArray) => {
-         inputInArray.each((i, ele) => {
-            let input = $(ele);
-            commonForKeypressAndChange({
-               input: input,
-               strForBind: 'bindRestrict_NumberOnly',
-               onKeypress: (e) => {
-                  return /[0-9]/g.test(e.key);
-               },
-               onChange: (e) => {
-                  input.val(input.val().replace(/[^0-9]/g, ''));
-               }
-            })
-         });
-      });
-   }
-
-   function bindRestrict_CompanyName(inputArray) {
-      inputArray.forEach((inputInArray) => {
-         inputInArray.each((i, ele) => {
-            let input = $(ele);
-            commonForKeypressAndChange({
-               input: input,
-               strForBind: 'bindRestrict_CompanyName',
-               onKeypress: (e) => {
-                  return /[a-zA-Z0-9 ,.-]/g.test(e.key);
-               },
-               onChange: (e) => {
-                  input.val(input.val().replace(/[^a-zA-Z0-9 ,.-]/g, ''));
-               }
-            })
-         });
-      });
-   }
-   bindRestrict_AlphabetOnly([
-      $('#kidzeeForm [name="name"]')
-   ]);
-   bindRestrict_NumberOnly([
-      $('#kidzeeForm [name="mobile"]'),
-      $('#kidzeeForm [name="pincode"]'),
-   ]);
-
-   function selectOnChangeAndValid(props) {
-      let input = $(props.str);
-      if (input.data().customEventFun) {
-         input.unbind('change select', input.data().customEventFun);
-      }
-      input.data().customEventFun = (e) => {
-         if (input.valid) {
-            input.valid();
-         }
-         if (typeof props.onChange == 'function') {
-            props.onChange(e);
-         }
-      }
-      input.bind('change select', input.data().customEventFun);
-
-   }
-
-
-
-   selectOnChangeAndValid({
-      str: ('.stateDropDown'),
-      onChange: (e) => {
-         $('.cityDropDown').empty();
-         $('.cityDropDown').append('<option value="" data-stateIndex="">City *</option>');
-         var stateIndex = $(e.target).find(':selected').data().stateindex;
-         if (stateIndex === '') {
+    function loadStates() {
+        if (isWbCitiesOnly) {
+            loadCitiesForState(defaultState || 'West Bengal');
             return;
-         }
-         cityArray = statesArray[stateIndex].City;
-         for (var index = 0; index < cityArray.length; index++) {
-            var element = cityArray[index];
-            $('.cityDropDown').append('<option value="' + element.City_Name + '" data-stateIndex="' + (index) + '">' + element.City_Name + '</option>');
-         }
-         $('.cityDropDown').valid();
-      }
-   })
-   selectOnChangeAndValid({
-      str: ('.cityDropDown'),
-      onChange: (e) => {
-      }
-   })
-   function getRandomNumber() {
-      return Math.floor(Math.random() * (9999 - 1000 + 1) + 1000);
-   }
-   var isOTPSending = false;
-   var mobileVerifyBtn = $('.mobileVerifyBtn');
-   var OTPButtonLastHTML = mobileVerifyBtn.html();
-   mobileVerifyBtn.css({ cursor: 'pointer' });
-   mobileVerifyBtn.bind('click', function () {
-      if (isOTPSending == true) {
-         return;
-      }
-      console.log('Sending ...');
-      isOTPSending = true;
-      var mobile = $('#kidzeeForm [name="mobile"]').val();
-      mobileVerifyBtn.html('Sending ...');
-      mobileVerifyBtn.css({ cursor: 'default' });
-      randomSMS = getRandomNumber();
-      //console.log(randomSMS);
-      jQuery.ajax({
-         type: "POST",
-         data: {
-            MobileNo: mobile,
-            smstext: "Your Kidzee Verification code is : " + randomSMS,
-            sResponse: ""
-         },
-         crossDomain: false,
-         url: smsURL,
-         success: function (response) {
-            mobileVerifyBtn.html('OTP Sent');
-            var opacity = 0;
-            var count = 0;
-            var tempId = setInterval(() => {
-               count++;
-               mobileVerifyBtn.css({ opacity: opacity })
-               opacity = opacity == 0 ? 100 : 0;
-               if (count > 7) {
-                  clearInterval(tempId);
-                  setTimeout(() => {
-                     isOTPSending = false;
-                     mobileVerifyBtn.html('Resend OTP');
-                     mobileVerifyBtn.css({ cursor: 'pointer' });
-                  }, 3000);
-               }
-            }, 200);
+        }
 
-         }
+        $state.prop('disabled', true);
+        $state.find('option:not(:first)').remove();
+        $state.find('option:first').text('Loading states...');
 
-      });
-   });
-
-   $("#kidzeeForm").validate({
-
-      rules: {
-         name: {
-            required: true,
-            noBlank: true
-         },
-         email: {
-            required: true,
-            email: true
-         },
-
-         mobile: {
-            required: true,
-            noBlank: true,
-            mobileVerifyIndia: {
-               param: true
-            }
-         },
-         otp: {
-            required: {
-               param: true,
-               depends: (e) => {
-                  return ($('#kidzeeForm [name="mobile"]').val().length == 10);
-               }
-            },
-            minlength: 4,
-            otpVerify: {
-               param: true,
-               depends: (e) => {
-                  return ($('#kidzeeForm [name="mobile"]').val().length == 10);
-               }
-            }
-         },
-         pincode: {
-            required: true,
-            noBlank: true,
-            pincode: true,
-         },
-         stateDropDown: {
-            required: true,
-         },
-         cityDropDown: {
-            required: {
-               param: true,
-               depends: (e) => {
-                  console.log()
-                  return ($('.stateDropDown').find(':selected').data().stateindex !== '');
-               }
-            },
-         },
-         checkIAgree:{
-            required: true,
-         }
-      },
-      messages: {
-         name: "Please enter your name",
-         email: {
-            required: "Please enter a email"
-
-         },
-         mobile: {
-            required: "Please enter a mobile no.",
-         },
-         otp: {
-            required: "Please enter a OTP no.",
-            minlength: "Minimum length would be 4"
-         },
-         pincode: {
-            required: "Please enter a pincode",
-            maxlength: "Max length would be 14"
-         },
-         stateDropDown: {
-            required: "Please select state",
-         },
-         cityDropDown: {
-            required: "Please select city",
-         },
-         checkIAgree:{
-            required:'Please select a checkbox before proceeding.'
-         }
-
-      },
-      submitHandler: (form) => {
-         var pp = 0;
-         $('#form-submit-button').prop('disabled', true);
-         $('#form-submit-button').val('Processing      ');
-         clearInterval(submitInterval);
-         submitInterval = setInterval(function () {
-            if (pp == 0) {
-               $('#form-submit-button').val('Processing      ');
-            } else if (pp == 1) {
-               $('#form-submit-button').val('Processing .    ');
-            } else if (pp == 2) {
-               $('#form-submit-button').val('Processing . .  ');
-            } else if (pp == 3) {
-               $('#form-submit-button').val('Processing . . .');
-            }
-            pp++;
-            if (pp == 4) {
-               pp = 0;
-            }
-         }, 300);
-         $('#error').html('');
-         var name = $('#kidzeeForm [name="name"]').val();
-         var email = $('#kidzeeForm [name="email"]').val();
-         var mobile = $('#kidzeeForm [name="mobile"]').val();
-         var pincode = $('#kidzeeForm [name="pincode"]').val();
-         var stateDropDown = $('#kidzeeForm [name="stateDropDown"]').val();
-         var cityDropDown = $('#kidzeeForm [name="cityDropDown"]').val();
-         var urlParams = new URLSearchParams(location.search)
-
-         var utm_source = urlParams.get('utm_source');//"Website"
-         utm_source = utm_source == null ? 'Website' : utm_source;
-
-         var utm_medium = urlParams.get('utm_medium'); //"Print-Advertisement"
-         utm_medium = utm_medium == null ? '' : utm_medium;
-
-         var utm_compaign = urlParams.get('utm_campaign');
-         utm_compaign = utm_compaign == null ? '' : utm_compaign;
-
-         var gclid = urlParams.get('gclid');
-         gclid = gclid == null ? '' : gclid;
-
-
-
-         var utm_content = urlParams.get('utm_content'); //"Print-Advertisement"
-         utm_content = utm_content == null ? '' : utm_content;
-
-         var utm_term = urlParams.get('utm_term'); //"Print-Advertisement"
-         utm_term = utm_term == null ? '' : utm_term;
-
-         var formData = {
-            "City": cityDropDown,
-            "Country": "India",
-            "Email": email,
-            "FirstName": name,
-            "HaveSpace": "",
-            "LastName": ".",
-            "Location": "",
-            "Mobile": mobile,
-            "PinCode": pincode,
-            "Product": "259262000001186013",
-            "ProjectId": "1",
-            "SoonStartsIn": "",
-            "Source": gclid,
-            "gclid": gclid,
-            "State": stateDropDown,
-            "Type": "F",
-            "WillingToInvest": "",
-            "utm_compaign": utm_compaign,
-            "utm_medium": utm_medium,
-            "utm_source": utm_source,
-            "utm_content": utm_content,
-            "utm_term": utm_term
-         }
-
-         //console.log(formData);
-
-         jQuery.ajax({
-            type: "POST",
-            data: formData,
-            url: formURL,
+        $.ajax({
+            type: 'GET',
+            url: '/api/common/states/?scope=franchise-lp',
             success: function (response) {
-               console.log('response', response);
-               console.log(response[0].Id)
-               if (response[0].Id != undefined) {
-                  // Stay on page after submit (no thank-you redirect)
-                  $('#form-submit-button').prop('disabled', false);
-                  $('#form-submit-button').val('Submit');
-                  clearInterval(submitInterval);
-               }
+                var results = (response && response.results) || response || [];
+                $state.find('option:first').text('Select state');
+                results.forEach(function (item) {
+                    var name = typeof item === 'string' ? item : item.name;
+                    if (name) {
+                        $state.append($('<option></option>').attr('value', name).text(name));
+                    }
+                });
+                $state.prop('disabled', false);
+            },
+            error: function () {
+                $state.find('option:first').text('Failed to load states');
+                $state.prop('disabled', false);
+                $error.text('Could not load states. Please refresh and try again.');
             }
-         });
+        });
+    }
 
-      }
-   });
-   //----------------------------------------------------------------
-   //----------------------------------------------------------------
-   jQuery.ajax({
-      type: "GET",
-      url: 'json/GetFranchiseeDetailsCity.json',
-      success: function (response) {
-         statesArray = response.root.subroot[0].State;
-         for (var index = 0; index < statesArray.length; index++) {
-            var element = statesArray[index];
-            $('.stateDropDown').append('<option value="' + element.State_Name + '" data-stateIndex="' + (index) + '">' + element.State_Name + '</option>');
-         }
+    function loadCitiesForState(stateName) {
+        if (!stateName) {
+            showCityTextInput(false);
+            return;
+        }
 
-      }
+        setCityLoading();
+        $.ajax({
+            type: 'GET',
+            url: '/api/common/cities/',
+            data: { state: stateName, scope: isWbCitiesOnly ? undefined : 'franchise-lp' },
+            success: function (response) {
+                var results = (response && response.results) || response || [];
+                if (results.length) {
+                    showCitySelect(results);
+                } else {
+                    showCityTextInput(true);
+                }
+            },
+            error: function () {
+                showCityTextInput(true);
+            }
+        });
+    }
 
-   });
-})
+    function recheckField($el) {
+        var validator = $form.data('validator');
+        if (!validator || !$el || !$el.length) return;
+        var name = $el.attr('name');
+        if (name && (name in validator.submitted || name in validator.invalid)) {
+            validator.element($el[0]);
+        }
+    }
+
+    function normalizePhone(raw) {
+        var digits = String(raw || '').replace(/\D/g, '');
+        if (digits.length === 12 && digits.indexOf('91') === 0) {
+            digits = digits.slice(2);
+        } else if (digits.length === 11 && digits.charAt(0) === '0') {
+            digits = digits.slice(1);
+        }
+        return digits.slice(0, 10);
+    }
+
+    function hideOtpRow() {
+        $otpRow.hide().removeClass('is-visible');
+        $otp.val('');
+    }
+
+    function showOtpRow() {
+        $otpRow.show().addClass('is-visible');
+        if (typeof queueBannerSync === 'function') {
+            queueBannerSync();
+        }
+    }
+
+    function updateSendOtpVisibility() {
+        var phone = normalizePhone($phone.val());
+        if (/^[6-9]\d{9}$/.test(phone)) {
+            $sendOtpBtn.prop('disabled', false);
+        } else {
+            $sendOtpBtn.prop('disabled', true);
+        }
+        if (otpSentForPhone && otpSentForPhone !== phone) {
+            otpSentForPhone = '';
+            hideOtpRow();
+            $otpStatus.text('').removeClass('is-ok is-err');
+        }
+    }
+
+    function sendOtp() {
+        var phone = normalizePhone($phone.val());
+        if (!/^[6-9]\d{9}$/.test(phone)) {
+            $otpStatus.text('Enter a valid 10-digit mobile number first.').removeClass('is-ok').addClass('is-err');
+            return;
+        }
+        if (otpSending) return;
+
+        otpSending = true;
+        $sendOtpBtn.prop('disabled', true).text('Sending...');
+        $otpStatus.text('').removeClass('is-ok is-err');
+
+        $.ajax({
+            type: 'POST',
+            url: '/api/enquiries/send-otp/',
+            contentType: 'application/json',
+            data: JSON.stringify({ phone: phone }),
+            success: function (res) {
+                if (res && res.success === false) {
+                    $otpStatus.text(res.detail || res.error || 'Failed to send OTP. Please try again.')
+                        .removeClass('is-ok').addClass('is-err');
+                    $sendOtpBtn.text('Generate OTP');
+                    return;
+                }
+                otpSentForPhone = phone;
+                showOtpRow();
+                $otp.focus();
+                var masked = '+91 ******' + phone.slice(-4);
+                var msg = (res && res.detail) || ('OTP sent to ' + masked + '.');
+                $otpStatus.text(msg).removeClass('is-err').addClass('is-ok');
+                $sendOtpBtn.text('Resend OTP');
+            },
+            error: function (xhr) {
+                var msg = 'Failed to send OTP. Please try again.';
+                try {
+                    var res = xhr.responseJSON || JSON.parse(xhr.responseText || '');
+                    msg = res.detail || res.error || msg;
+                } catch (e) {}
+                $otpStatus.text(msg).removeClass('is-ok').addClass('is-err');
+                $sendOtpBtn.text('Generate OTP');
+            },
+            complete: function () {
+                otpSending = false;
+                updateSendOtpVisibility();
+            }
+        });
+    }
+
+    if (!isWbCitiesOnly) {
+        $state.on('change', function () {
+            loadCitiesForState($state.val());
+            recheckField($state);
+        });
+    }
+
+    $citySelect.on('change', function () {
+        recheckField($citySelect);
+    });
+
+    $cityInput.on('input', function () {
+        recheckField($cityInput);
+    });
+
+    if (!isWbCitiesOnly) {
+        showCityTextInput(false);
+    }
+    loadStates();
+    hideOtpRow();
+    updateSendOtpVisibility();
+
+    $name.on('input', function () {
+        this.value = this.value.replace(/[^a-zA-Z\s.'-]/g, '').replace(/\s{2,}/g, ' ').slice(0, 75);
+        recheckField($name);
+    });
+
+    $phone.on('input', function () {
+        this.value = normalizePhone(this.value);
+        updateSendOtpVisibility();
+        recheckField($phone);
+    });
+
+    $email.on('input', function () {
+        this.value = this.value.replace(/\s/g, '').slice(0, 100);
+        recheckField($email);
+    });
+
+    $otp.on('input', function () {
+        this.value = String(this.value || '').replace(/\D/g, '').slice(0, 4);
+        recheckField($otp);
+    });
+
+    $sendOtpBtn.on('click', function (e) {
+        e.preventDefault();
+        sendOtp();
+    });
+
+    var $ack = $form.find('[name="acknowledge"]');
+    $ack.prop('checked', true);
+    $ack.on('click change', function () {
+        $ack.prop('checked', true);
+        recheckField($ack);
+    });
+
+    $.validator.addMethod('validName', function (value) {
+        var name = String(value || '').trim();
+        if (name.length < 3 || name.length > 75) return false;
+        return /^[A-Za-z][A-Za-z\s.'-]*[A-Za-z]$|^[A-Za-z]{3,}$/.test(name);
+    }, 'Please enter a valid full name (letters only, min 3 characters)');
+
+    $.validator.addMethod('strictEmail', function (value) {
+        var email = String(value || '').trim();
+        if (!email) return false;
+        return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)
+            && email.indexOf('..') === -1
+            && email.indexOf('.') !== 0
+            && email.lastIndexOf('.') !== email.length - 1
+            && email.split('@').length === 2;
+    }, 'Please enter a valid email address');
+
+    $.validator.addMethod('phoneIndia', function (value) {
+        return /^[6-9]\d{9}$/.test(normalizePhone(value));
+    }, 'Please enter a valid 10-digit Indian mobile number');
+
+    $.validator.addMethod('investmentRequired', function () {
+        return !!$.trim($investment.val() || '');
+    }, 'Please select your investment capacity');
+
+    $.validator.addMethod('cityRequired', function () {
+        return !!getCityValue();
+    }, 'Please select or enter your city');
+
+    $.validator.addMethod('otpRequired', function (value) {
+        return /^\d{4}$/.test(String(value || '').trim());
+    }, 'Please enter the 4-digit OTP');
+
+    var validationRules = {
+        name: { required: true, validName: true },
+        email: { required: true, strictEmail: true },
+        phone: { required: true, phoneIndia: true, minlength: 10, maxlength: 10 },
+        city: { cityRequired: true },
+        investmentRange: { investmentRequired: true },
+        otp: { otpRequired: true },
+        acknowledge: { required: true }
+    };
+    var validationMessages = {
+        name: {
+            required: 'Please enter your full name',
+            validName: 'Please enter a valid full name (letters only, min 3 characters)'
+        },
+        email: {
+            required: 'Please enter your email address',
+            strictEmail: 'Please enter a valid email address (e.g. name@example.com)'
+        },
+        phone: {
+            required: 'Please enter your mobile number',
+            phoneIndia: 'Please enter a valid 10-digit Indian mobile number (starts with 6-9)',
+            minlength: 'Mobile number must be exactly 10 digits',
+            maxlength: 'Mobile number must be exactly 10 digits'
+        },
+        city: 'Please select or enter your city',
+        investmentRange: 'Please select your investment capacity',
+        otp: { otpRequired: 'Please enter the 4-digit OTP sent to your mobile' },
+        acknowledge: 'Please acknowledge the terms to proceed'
+    };
+
+    if (!isWbCitiesOnly) {
+        validationRules.state = { required: true };
+        validationMessages.state = 'Please select your state';
+    }
+
+    $form.validate({
+        ignore: ':hidden:not(select.cityDropDown):not(#tk-investment-range):not(.tk-otp-row input)',
+        onkeyup: function (element) {
+            if (element.name in this.submitted || element.name in this.invalid) {
+                this.element(element);
+            }
+        },
+        onfocusout: function (element) {
+            if (element.name in this.submitted || element.name in this.invalid) {
+                this.element(element);
+            }
+        },
+        onclick: function (element) {
+            if (element.name in this.submitted || element.name in this.invalid) {
+                this.element(element);
+            }
+        },
+        rules: validationRules,
+        messages: validationMessages,
+        errorPlacement: function (error, element) {
+            if (element.attr('name') === 'acknowledge') {
+                error.appendTo(element.closest('.tk-form-terms'));
+            } else if (element.attr('name') === 'investmentRange') {
+                error.appendTo(element.closest('.tk-investment-field'));
+            } else if (element.hasClass('cityDropDown') || element.hasClass('cityInput')) {
+                error.appendTo(element.closest('.form_field'));
+            } else if (element.attr('name') === 'otp' || element.attr('name') === 'phone') {
+                error.appendTo(element.closest('.form_field'));
+            } else {
+                error.insertAfter(element);
+            }
+        },
+        submitHandler: function () {
+            var phone = normalizePhone($phone.val());
+            var otp = $.trim($otp.val());
+            var cityValue = getCityValue();
+            var stateValue = getStateValue();
+
+            if (!cityValue) {
+                $error.text('Please select or enter your city');
+                return;
+            }
+
+            if (!otpSentForPhone || otpSentForPhone !== phone) {
+                $error.text('Please click Generate OTP and enter the code sent to your mobile.');
+                return;
+            }
+            if (!$otpRow.is(':visible')) {
+                showOtpRow();
+            }
+
+            var utm = getUrlUtmParams();
+            // Page type = which LP form (meta / lp / wb).
+            // Campaign = ad channel from URL when present (meta / google / fb / …).
+            var resolvedCampaign = utm.utm_campaign || utm.utm_source || campaignName;
+            var payload = {
+                fullName: $.trim($name.val()),
+                email: $.trim($email.val()).toLowerCase(),
+                mobile: phone,
+                otp: otp,
+                state: stateValue,
+                city: cityValue,
+                preferredCentreLocation: cityValue,
+                investmentRange: $.trim($investment.val()),
+                source: campaignSource,
+                comments: campaignComments,
+                landingPageUrl: window.location.href.split('#')[0],
+                utmSource: utm.utm_source || pageType,
+                utmMedium: utm.utm_medium || '',
+                utmCampaign: resolvedCampaign,
+                pageType: pageType,
+                campaign: resolvedCampaign
+            };
+
+            $submitBtn.prop('disabled', true).val('Submitting...');
+            $error.text('');
+
+            $.ajax({
+                type: 'POST',
+                url: '/api/enquiries/crm-leads/',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    $form.hide();
+                    $('.tk-enquiry-header').hide();
+                    $success.addClass('is-visible').css('display', 'flex').show();
+                    if (typeof queueBannerSync === 'function') {
+                        queueBannerSync();
+                    }
+                    if (typeof gtag_report_conversion === 'function') {
+                        gtag_report_conversion();
+                    }
+                    if (typeof fbq === 'function') {
+                        fbq('track', 'Lead');
+                    }
+                },
+                error: function (xhr) {
+                    var msg = 'Something went wrong. Please try again.';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        msg = xhr.responseJSON.error;
+                    } else if (xhr.responseJSON && xhr.responseJSON.detail) {
+                        msg = xhr.responseJSON.detail;
+                    }
+                    $error.text(msg);
+                    $submitBtn.prop('disabled', false).val('Submit');
+                }
+            });
+        }
+    });
+
+    function syncBannerHeights() {
+        var $card = $('#banner .form_hld.tk-enquiry-card');
+        var $chalk = $('#banner .chalk_box');
+        var $right = $('#banner .banner_right');
+        if (!$card.length || !$chalk.length) return;
+
+        if (window.matchMedia('(max-width: 1023px)').matches) {
+            $card.css({ height: '', minHeight: '' });
+            $chalk.css({ height: '', minHeight: '' });
+            $right.css({ minHeight: '' });
+            return;
+        }
+
+        $card.css({ height: '', minHeight: '' });
+        $chalk.css({ height: '', minHeight: '' });
+        $right.css({ minHeight: '' });
+
+        var formH = $card.outerHeight() || 0;
+        var rightH = $right.outerHeight() || 0;
+        var target = Math.max(formH, rightH);
+        if (target < 1) return;
+
+        $card.css({ minHeight: target + 'px', height: target + 'px' });
+        $chalk.css({ height: target + 'px', minHeight: target + 'px' });
+        $right.css({ minHeight: target + 'px' });
+    }
+
+    var syncTimer = null;
+    function queueBannerSync() {
+        window.clearTimeout(syncTimer);
+        syncTimer = window.setTimeout(syncBannerHeights, 50);
+    }
+
+    syncBannerHeights();
+    $(window).on('load resize', queueBannerSync);
+    $('#banner .chalk_box img').on('load', queueBannerSync);
+    $otpRow.on('transitionend', queueBannerSync);
+    $sendOtpBtn.on('click', function () {
+        window.setTimeout(queueBannerSync, 100);
+    });
+});

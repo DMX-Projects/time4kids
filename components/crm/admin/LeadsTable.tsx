@@ -45,10 +45,14 @@ const SOURCE_LABELS: Record<string, string> = {
   website: 'Website',
   facebook: 'Facebook',
   instagram: 'Instagram',
+  july_lp: 'Landingpage July',
+  july_meta: 'Meta July',
+  lp_wb: 'Landingpage-WB',
   admission: 'Admission',
   contact: 'Centers Enquiry',
   campaign: 'Campaign Enquiry',
   landing: 'Landing Lead',
+  franchise: 'Franchise',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -110,6 +114,10 @@ const statusColors: { [key: string]: string } = {
 }
 
 export default function LeadsTable({ dateRange, city, state, centreId, status, source, search, title, returnHref, onBeforeNavigate, onLeadUpdated }: LeadsTableProps) {
+  const hideCentreColumn =
+    source === 'franchise' || source === 'july_lp' || source === 'july_meta' || source === 'lp_wb'
+  const isFranchiseCampaignLead = (leadSource: string) =>
+    leadSource === 'july_lp' || leadSource === 'july_meta' || leadSource === 'lp_wb'
   const router = useRouter()
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const [leads, setLeads] = useState<any[]>([])
@@ -293,7 +301,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Contact</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">State</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">City</th>
-                  {source !== 'franchise' && (
+                  {!hideCentreColumn && (
                     <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Centre</th>
                   )}
                   {source === 'admission' && (
@@ -329,9 +337,13 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     <td className="px-4 py-4 text-gray-600 text-sm">
                       <HighlightText text={lead.city || '-'} highlight={debouncedSearch} />
                     </td>
-                    {source !== 'franchise' && (
+                    {!hideCentreColumn && (
                       <td className="px-4 py-4 text-gray-600 text-sm">
-                        <HighlightText text={lead.preferredCentreLocation || '-'} highlight={debouncedSearch} />
+                        {isFranchiseCampaignLead(lead.source) ? (
+                          '—'
+                        ) : (
+                          <HighlightText text={lead.preferredCentreLocation || '-'} highlight={debouncedSearch} />
+                        )}
                       </td>
                     )}
                     {source === 'admission' && (() => {
