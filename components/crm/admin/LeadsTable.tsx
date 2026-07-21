@@ -13,6 +13,7 @@ interface LeadsTableProps {
   centreId?: string
   status?: string
   source?: string
+  userId?: string
   search?: string
   title?: string
   returnHref?: string
@@ -113,7 +114,7 @@ const statusColors: { [key: string]: string } = {
   meeting_scheduled: 'bg-teal-100 text-teal-700 border border-teal-200',
 }
 
-export default function LeadsTable({ dateRange, city, state, centreId, status, source, search, title, returnHref, onBeforeNavigate, onLeadUpdated }: LeadsTableProps) {
+export default function LeadsTable({ dateRange, city, state, centreId, status, source, userId, search, title, returnHref, onBeforeNavigate, onLeadUpdated }: LeadsTableProps) {
   const hideCentreColumn =
     source === 'franchise' || source === 'july_lp' || source === 'july_meta' || source === 'lp_wb'
   const isFranchiseCampaignLead = (leadSource: string) =>
@@ -160,7 +161,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
 
   useEffect(() => {
     loadLeads()
-  }, [page, pageSize, dateRange, city, state, centreId, status, source, debouncedSearch])
+  }, [page, pageSize, dateRange, city, state, centreId, status, source, userId, debouncedSearch])
 
   const loadLeads = async (silent = false) => {
     if (!silent) setLoading(true)
@@ -184,6 +185,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
       if (centreId) params.append('centreId', centreId)
       if (status) params.append('status', status)
       if (source) params.append('source', source)
+      if (userId) params.append('userId', userId)
       if (debouncedSearch) params.append('search', debouncedSearch)
 
       const response = await api.get(`/leads?${params.toString()}`)

@@ -52,6 +52,9 @@ function resolveCrmUrl(path: string): string {
     if (pathname === "/states") {
         return apiUrl(`/enquiries/admin/crm-states/${qs ? `?${qs}` : ""}`);
     }
+    if (pathname === "/users" || pathname.startsWith("/users?")) {
+        return apiUrl(`/enquiries/admin/crm-users/${qs ? `?${qs}` : ""}`);
+    }
 
     const leadMatch = pathname.match(/^\/leads\/([^/?]+)$/);
     if (leadMatch) {

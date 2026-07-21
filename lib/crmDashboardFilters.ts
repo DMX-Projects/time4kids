@@ -8,6 +8,7 @@ export type CrmDashboardFiltersSnapshot = {
   selectedSource: string;
   selectedCampaignChannel: string;
   selectedStatus: string;
+  selectedUserId: string;
   filterStart: string | null;
   filterEnd: string | null;
   appliedStart: string | null;
@@ -39,8 +40,11 @@ export function loadCrmDashboardFilters(): CrmDashboardFiltersSnapshot | null {
     // Migrate older single-centre snapshots
     if (typeof data.selectedCentre === "string") {
       data.selectedCentre = data.selectedCentre ? [data.selectedCentre] : [];
-    } else if (!Array.isArray(data.selectedCentre)) {
+    } else     if (!Array.isArray(data.selectedCentre)) {
       data.selectedCentre = [];
+    }
+    if (typeof (data as CrmDashboardFiltersSnapshot).selectedUserId !== "string") {
+      (data as CrmDashboardFiltersSnapshot).selectedUserId = "";
     }
     return data as CrmDashboardFiltersSnapshot;
   } catch {
@@ -62,6 +66,7 @@ export function snapshotToSearchParams(snapshot: CrmDashboardFiltersSnapshot): U
   if (snapshot.selectedSource) params.set("source", snapshot.selectedSource);
   if (snapshot.selectedCampaignChannel) params.set("channel", snapshot.selectedCampaignChannel);
   if (snapshot.selectedStatus) params.set("status", snapshot.selectedStatus);
+  if (snapshot.selectedUserId) params.set("userId", snapshot.selectedUserId);
   if (snapshot.selectedState.length) params.set("state", snapshot.selectedState.join(","));
   if (snapshot.selectedCity.length) params.set("city", snapshot.selectedCity.join(","));
   if (snapshot.selectedCentre.length) params.set("centreId", snapshot.selectedCentre.join(","));
@@ -79,6 +84,7 @@ export function snapshotFromSearchParams(
   const source = searchParams.get("source") || "";
   const channel = searchParams.get("channel") || "";
   const status = searchParams.get("status") || "";
+  const userId = searchParams.get("userId") || "";
   const state = splitCsv(searchParams.get("state"));
   const city = splitCsv(searchParams.get("city"));
   const centreId = splitCsv(searchParams.get("centreId"));
@@ -92,6 +98,7 @@ export function snapshotFromSearchParams(
     source ||
     channel ||
     status ||
+    userId ||
     state.length ||
     city.length ||
     centreId.length ||
@@ -108,6 +115,7 @@ export function snapshotFromSearchParams(
     selectedSource: source,
     selectedCampaignChannel: channel,
     selectedStatus: !status || status === "all" ? "all" : status,
+    selectedUserId: userId,
     selectedState: state,
     selectedCity: city,
     selectedCentre: centreId,

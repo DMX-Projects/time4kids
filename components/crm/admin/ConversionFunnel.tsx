@@ -1,9 +1,6 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
-
 const STATUS_LABELS: Record<string, string> = {
-  // Non-franchise specific
   untouched: 'Untouched',
   not_answering: 'Not answering',
   follow_up: 'Follow-up',
@@ -13,7 +10,6 @@ const STATUS_LABELS: Record<string, string> = {
   not_interested: 'Not Interested',
   wrong_enquiry: 'Wrong enquiry',
 
-  // Franchise specific
   hot: 'Hot',
   warm: 'Warm',
   cold: 'Cold',
@@ -44,10 +40,10 @@ const NON_FRANCHISE_STATUS_ORDER = [
   'joined_competition',
   'converted_admission',
   'not_interested',
-  'wrong_enquiry'
+  'wrong_enquiry',
 ]
 
-const statusColors: { [key: string]: string } = {
+const statusColors: Record<string, string> = {
   untouched: '#9CA3AF',
   not_answering: '#F59E0B',
   follow_up: '#3B82F6',
@@ -92,50 +88,79 @@ interface ConversionFunnelProps {
 
 export default function ConversionFunnel({ data, isFranchise = false }: ConversionFunnelProps) {
   const statusOrder = isFranchise ? FRANCHISE_STATUS_ORDER : NON_FRANCHISE_STATUS_ORDER
-  const chartData = statusOrder.map((status) => {
+  const stages = statusOrder.map((status) => {
     const keys = legacyMap[status] || [status]
     let count = 0
     keys.forEach((k) => {
-      const item = data.find((d) => d.status === k)
-      if (item) {
-        count += parseInt(item.count) || 0
-      }
+      const item = data?.find((d) => d.status === k)
+      if (item) count += parseInt(item.count, 10) || 0
     })
 
     return {
-      status: STATUS_LABELS[status] || status,
-      count: count,
+      id: status,
+      label: STATUS_LABELS[status] || status,
+      count,
       color: statusColors[status] || '#6B7280',
     }
   })
 
+  const total = stages.reduce((sum, s) => sum + s.count, 0)
+  const stageCount = Math.max(stages.length, 1)
+  /** Top of pyramid ≈ full width; tip stays readable */
+  const topWidth = 100
+  const bottomWidth = 28
+  const step = (topWidth - bottomWidth) / Math.max(stageCount - 1, 1)
+
   return (
     <div className="card">
-      <h3 className="text-xl font-bold text-gray-800 mb-4">Conversion Funnel</h3>
-      <ResponsiveContainer width="100%" height={320}>
-        <BarChart data={chartData} layout="vertical" margin={{ left: -10, right: 10, top: 5, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-          <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#9CA3AF' }} />
-          <YAxis
-            dataKey="status"
-            type="category"
-            width={185}
-            interval={0}
-            tickLine={false}
-            axisLine={false}
-            tick={{ fontSize: 9, fill: '#4B5563', fontWeight: 600 }}
-          />
-          <Tooltip
-            contentStyle={{ backgroundColor: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-            cursor={{ fill: 'rgba(0, 0, 0, 0.04)' }}
-          />
-          <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={16}>
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="mb-5 flex items-baseline justify-between gap-2">
+        <h3 className="text-xl font-bold text-gray-800">Lead Funnel</h3>
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+          {total.toLocaleString()} total
+        </span>
+      </div>
+
+      {total === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-400">No leads in this funnel yet.</p>
+      ) : (
+        <div className="mx-auto w-full max-w-xl space-y-[3px]">
+          {stages.map((stage, index) => {
+            const widthPct = topWidth - step * index
+            const nextWidthPct =
+              index === stageCount - 1 ? Math.max(widthPct - 10, 18) : topWidth - step * (index + 1)
+            const insetTop = (100 - widthPct) / 2
+            const insetBottom = (100 - nextWidthPct) / 2
+            const pctOfTotal = Math.round((stage.count / total) * 100)
+
+            return (
+              <div
+                key={stage.id}
+                className="grid grid-cols-[minmax(0,42%)_minmax(0,58%)] items-center gap-3 sm:grid-cols-[minmax(0,38%)_minmax(0,62%)] sm:gap-4"
+                title={`${stage.label}: ${stage.count.toLocaleString()} (${pctOfTotal}%)`}
+              >
+                {/* Name outside clip-path so it always shows */}
+                <p className="text-right text-xs font-semibold leading-snug text-gray-700 sm:text-sm">
+                  {stage.label}
+                </p>
+
+                <div
+                  className="group relative flex h-11 w-full items-center justify-center transition-[filter] duration-200 group-hover:brightness-105 sm:h-12"
+                  style={{
+                    backgroundColor: stage.color,
+                    clipPath: `polygon(${insetTop}% 0%, ${100 - insetTop}% 0%, ${100 - insetBottom}% 100%, ${insetBottom}% 100%)`,
+                    boxShadow: 'inset 0 -1px 0 rgba(0,0,0,0.08)',
+                  }}
+                >
+                  <span className="px-2 text-center text-sm font-extrabold tabular-nums text-white drop-shadow-sm">
+                    {stage.count.toLocaleString()}
+                    <span className="ml-1 text-[10px] font-semibold opacity-90">({pctOfTotal}%)</span>
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
