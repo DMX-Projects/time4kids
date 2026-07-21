@@ -6,6 +6,7 @@ import api from '@/lib/crmApi'
 import { Toaster, toast } from 'react-hot-toast'
 import { getWhatsAppUrl } from '@/lib/crmContactHelpers'
 import { getCrmDashboardReturnHref, isSafeCrmReturnHref } from '@/lib/crmDashboardFilters'
+import { isFranchiseLead, isFranchiseLpGeoSource } from '@/lib/crmLeadKind'
 import { Clock } from 'lucide-react'
 
 const toLocalDatetimeString = (dateStr: string | undefined | null) => {
@@ -41,11 +42,11 @@ interface LeadTemplate {
 }
 
 const getTemplatesForLead = (lead: any): LeadTemplate => {
-  const isFranchise = lead.leadKind === 'franchiseenquiry' || lead.enquiryType === 'FRANCHISE' || lead.source === 'franchise';
+  const isFranchise = isFranchiseLead(lead)
   const isAdmission = lead.leadKind === 'enquiry' && lead.enquiryType === 'ADMISSION';
   const isCenterPage = lead.leadKind === 'enquiry' && lead.enquiryType === 'CONTACT';
   
-  // Franchise opportunity leads (including July campaign LP/Meta forms)
+  // Franchise opportunity leads (including campaign Web/FB/Insta + LP forms)
   if (isFranchise) {
     return {
       whatsapp: "Hi! I am from T.I.M.E. Kids. We received your franchise enquiry and would like to connect with you. When would be a good time to talk?",
@@ -217,6 +218,7 @@ export default function LeadDetailPage() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [sendingReminder, setSendingReminder] = useState(false)
+  const [crmUsers, setCrmUsers] = useState<{ id: number; label: string }[]>([])
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false)
   const [sendingDirectEmail, setSendingDirectEmail] = useState(false)
   const [emailComposeOpen, setEmailComposeOpen] = useState(false)
@@ -229,6 +231,28 @@ export default function LeadDetailPage() {
   useEffect(() => {
     loadLead()
   }, [params.id])
+
+  useEffect(() => {
+    let cancelled = false
+    api
+      .get('/users')
+      .then((res) => {
+        if (cancelled) return
+        const list = Array.isArray(res.data?.users) ? res.data.users : []
+        setCrmUsers(
+          list.map((u: { id: number; label: string; fullName?: string }) => ({
+            id: u.id,
+            label: u.label || u.fullName || `User ${u.id}`,
+          })),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setCrmUsers([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (lead) {
@@ -247,6 +271,7 @@ export default function LeadDetailPage() {
         sourceOther: lead.sourceOther ?? '',
         newNote: '',
         status: lead.status ?? 'new',
+        assignedUserId: lead.assignedUserId != null ? String(lead.assignedUserId) : '',
         meetingDate: toLocalDatetimeString(lead.meetingDate),
         nextFollowUpDate: toLocalDatetimeString(lead.nextFollowUpDate),
       })
@@ -293,6 +318,10 @@ export default function LeadDetailPage() {
         meetingDate: editForm.meetingDate ? new Date(editForm.meetingDate).toISOString() : null,
         nextFollowUpDate: editForm.nextFollowUpDate ? new Date(editForm.nextFollowUpDate).toISOString() : null,
         status: editForm.status,
+      }
+      const prevUser = lead.assignedUserId != null ? String(lead.assignedUserId) : ''
+      if ((editForm.assignedUserId || '') !== prevUser) {
+        payload.assignedUserId = editForm.assignedUserId || null
       }
       await api.patch(`/leads/${params.id}`, payload)
       
@@ -429,7 +458,8 @@ export default function LeadDetailPage() {
   }
 
   const isEditable = lead.editable !== false
-  const isFranchiseLead = lead.leadKind === 'franchiseenquiry' || lead.enquiryType === 'FRANCHISE' || lead.source === 'franchise';
+  const isFranchiseLeadFlag = isFranchiseLead(lead)
+  const isLpLead = isFranchiseLpGeoSource(lead.source)
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -465,18 +495,108 @@ export default function LeadDetailPage() {
                   <p className="text-gray-700">{lead.email}</p>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Location</label>
-                  <p className="text-gray-700">{lead.city}, {lead.state}</p>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">State</label>
+                  <p className="text-gray-700">{lead.state || '—'}</p>
                 </div>
-                {(lead.franchiseType || lead.investmentRange || lead.expectedStartDate) && (
-                  <div className="col-span-2 space-y-1">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Franchise details</label>
-                    <p className="text-gray-700">
-                      {[lead.franchiseType, lead.investmentRange, lead.expectedStartDate].filter(Boolean).join(' · ') || '—'}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">City</label>
+                  <p className="text-gray-700">{lead.city || '—'}</p>
+                </div>
+                {!isFranchiseLeadFlag && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Centre</label>
+                    <p className="text-gray-800 font-semibold">
+                      {lead.centreName || lead.preferredCentreLocation || '—'}
                     </p>
                   </div>
                 )}
-                {(lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign || lead.landingPageUrl) && (
+                {isFranchiseLeadFlag && (
+                  <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                    <div className="space-y-3">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
+                        Investment Details
+                      </label>
+                      <div className="space-y-2">
+                        {/* Meta / July LP / WB forms only collect investment capacity */}
+                        {isLpLead ? (
+                          <div className="space-y-0.5">
+                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Investment capacity</p>
+                            <p className="text-gray-700">{lead.investmentRange || '—'}</p>
+                          </div>
+                        ) : (
+                          <>
+                            {lead.franchiseType ? (
+                              <div className="space-y-0.5">
+                                <p className="text-[11px] font-semibold text-gray-400 uppercase">Franchise type</p>
+                                <p className="text-gray-700">{lead.franchiseType}</p>
+                              </div>
+                            ) : null}
+                            <div className="space-y-0.5">
+                              <p className="text-[11px] font-semibold text-gray-400 uppercase">Investment range</p>
+                              <p className="text-gray-700">{lead.investmentRange || '—'}</p>
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-[11px] font-semibold text-gray-400 uppercase">Expected start</p>
+                              <p className="text-gray-700">{lead.expectedStartDate || '—'}</p>
+                            </div>
+                            {lead.preferredCentreLocation ? (
+                              <div className="space-y-0.5">
+                                <p className="text-[11px] font-semibold text-gray-400 uppercase">Preferred location</p>
+                                <p className="text-gray-700">{lead.preferredCentreLocation}</p>
+                              </div>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
+                        Lead Source
+                      </label>
+                      <p className="text-gray-700 font-semibold">{sourceLabel(lead.source)}</p>
+                      {isLpLead && (
+                        <div className="space-y-2 pt-1">
+                          <div className="space-y-0.5">
+                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Page type</p>
+                            <p className="text-gray-700">{lead.pageType || lead.utmSource || '—'}</p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Campaign</p>
+                            <p className="text-gray-700">{lead.campaign || lead.utmCampaign || '—'}</p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Landing page</p>
+                            {lead.landingPageUrl ? (
+                              <p className="text-xs text-gray-500 break-all">{lead.landingPageUrl}</p>
+                            ) : (
+                              <p className="text-gray-700">—</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {!isLpLead &&
+                        (lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign || lead.landingPageUrl) && (
+                        <div className="space-y-1 pt-1">
+                          <p className="text-sm text-gray-600">
+                            {[
+                              lead.pageType ? `Type: ${lead.pageType}` : '',
+                              lead.campaign || lead.utmCampaign
+                                ? `Campaign: ${lead.campaign || lead.utmCampaign}`
+                                : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                          {lead.landingPageUrl ? (
+                            <p className="text-xs text-gray-500 break-all">{lead.landingPageUrl}</p>
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {!isFranchiseLeadFlag &&
+                  (lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign || lead.landingPageUrl) && (
                   <div className="col-span-2 space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Page type &amp; campaign</label>
                     <p className="text-gray-700">
@@ -512,7 +632,7 @@ export default function LeadDetailPage() {
                       }`}
                     >
                       {(() => {
-                        const optionsList = isFranchiseLead ? FRANCHISE_OPTIONS : NON_FRANCHISE_OPTIONS
+                        const optionsList = isFranchiseLeadFlag ? FRANCHISE_OPTIONS : NON_FRANCHISE_OPTIONS
                         return (
                           <>
                             {editForm.status && !optionsList.includes(editForm.status) && (
@@ -538,9 +658,39 @@ export default function LeadDetailPage() {
                       </div>
                     </div>
                 </div>
+                {!isFranchiseLeadFlag && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Enquiry Source</label>
+                    <p className="text-gray-700 font-semibold">{sourceLabel(lead.source)}</p>
+                  </div>
+                )}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Enquiry Source</label>
-                  <p className="text-gray-700 font-semibold">{sourceLabel(lead.source)}</p>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">User</label>
+                  <div className="relative inline-block">
+                    <select
+                      value={editForm.assignedUserId || ''}
+                      onChange={(e) => setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))}
+                      className={`appearance-none pl-3 pr-8 py-1 rounded-full text-xs font-bold uppercase border-0 cursor-pointer focus:ring-2 focus:ring-blue-500/20 ${
+                        editForm.assignedUserId ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      <option value="" className="bg-white text-gray-800 text-xs font-bold">
+                        Unassigned
+                      </option>
+                      {crmUsers.map((u) => (
+                        <option key={u.id} value={String(u.id)} className="bg-white text-gray-800 text-xs font-bold">
+                          {u.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] ${
+                        editForm.assignedUserId ? 'text-blue-700' : 'text-gray-700'
+                      }`}
+                    >
+                      ▼
+                    </div>
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Enquiry Date</label>
@@ -581,8 +731,8 @@ export default function LeadDetailPage() {
                       />
                     </div>
 
-                    <div className={`col-span-2 grid grid-cols-1 ${isFranchiseLead ? 'sm:grid-cols-2' : ''} gap-4 text-sm py-4 border-t border-gray-100 mt-2`}>
-                      {isFranchiseLead && (
+                    <div className={`col-span-2 grid grid-cols-1 ${isFranchiseLeadFlag ? 'sm:grid-cols-2' : ''} gap-4 text-sm py-4 border-t border-gray-100 mt-2`}>
+                      {isFranchiseLeadFlag && (
                         <div className="w-full max-w-[260px]">
                           <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
                           <input
@@ -621,7 +771,7 @@ export default function LeadDetailPage() {
                     </div>
 
                     <div className="col-span-2 flex gap-6 text-sm py-4 border-t border-gray-100 mt-2">
-                      {isFranchiseLead && (
+                      {isFranchiseLeadFlag && (
                         <div>
                           <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
                           <p className="font-medium">{formatLeadDateTime(lead.meetingDate)}</p>

@@ -22271,7 +22271,7 @@ header {
 }
 header .logo {
   width: 100%;
-  max-width: 515px;
+  max-width: 300px;
 }
 header nav {
   position: relative;
@@ -23558,7 +23558,7 @@ ul.slimmenu > li.has-submenu + li {
     border: #ffba26 1.6vw solid;
   }
   header .logo {
-    max-width: 310px;
+    max-width: 250px;
   }
   #banner {
     padding-top: 70px;

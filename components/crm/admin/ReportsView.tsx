@@ -9,6 +9,8 @@ interface ReportsViewProps {
     city: string[];
     state: string[];
     source?: string;
+    userId?: string;
+    centreId?: string;
 }
 
 type SortKey = "city" | "total";
@@ -38,13 +40,26 @@ const FRANCHISE_COLUMNS = [
     { label: "Not Answering Calls", keys: ["not_answering_calls"] },
 ];
 
-const FRANCHISE_CAMPAIGN_SOURCES = new Set(["july_lp", "july_meta", "lp_wb"]);
+const FRANCHISE_CAMPAIGN_SOURCES = new Set([
+    "website",
+    "facebook",
+    "instagram",
+    "web",
+    "fb",
+    "insta",
+    "july_lp",
+    "july_meta",
+    "lp_wb",
+]);
 
 const getCategoryColumns = (categoryId: string, source?: string) => {
-    if (categoryId === "franchise" || (categoryId === "campaign" && source && FRANCHISE_CAMPAIGN_SOURCES.has(source))) {
+    if (categoryId === "franchise" || categoryId === "campaign") {
         return FRANCHISE_COLUMNS;
     }
-    return categoryId === "franchise" ? FRANCHISE_COLUMNS : NON_FRANCHISE_COLUMNS;
+    if (source && FRANCHISE_CAMPAIGN_SOURCES.has(source)) {
+        return FRANCHISE_COLUMNS;
+    }
+    return NON_FRANCHISE_COLUMNS;
 };
 
 const CATEGORIES = [
@@ -94,13 +109,13 @@ function cityRowTotal(
     }, 0);
 }
 
-export default function ReportsView({ dateRange, city, state, source }: ReportsViewProps) {
+export default function ReportsView({ dateRange, city, state, source, userId, centreId }: ReportsViewProps) {
     const tableContainerRef = useRef<HTMLDivElement>(null);
     const [cities, setCities] = useState<{ name: string }[]>([]);
     const [reportData, setReportData] = useState<any>({});
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(50);
     const [citySearch, setCitySearch] = useState("");
     const [sortKey, setSortKey] = useState<SortKey>("city");
     const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -146,11 +161,11 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
 
     useEffect(() => {
         loadReportData();
-    }, [dateRange, city, state, source]);
+    }, [dateRange, city, state, source, userId, centreId]);
 
     useEffect(() => {
         setPage(1);
-    }, [city, pageSize, citySearch, sortKey, sortDir, hideEmptyCities]);
+    }, [city, pageSize, citySearch, sortKey, sortDir, hideEmptyCities, centreId]);
 
     const loadReportData = async () => {
         setLoading(true);
@@ -169,6 +184,8 @@ export default function ReportsView({ dateRange, city, state, source }: ReportsV
             if (state && state.length > 0) params.append("state", state.join(","));
             if (city.length > 0) params.append("city", city.join(","));
             if (source && source !== "all") params.append("source", source);
+            if (userId) params.append("userId", userId);
+            if (centreId) params.append("centreId", centreId);
 
             const response = await api.get(`/leads/reports?${params.toString()}`);
             const data = response.data?.cities || {};

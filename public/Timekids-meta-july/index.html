@@ -116,6 +116,257 @@ header{
             text-align: center;
             margin:75px 0 0px ;
        }
+       .leading-section { max-width: 100%; width: 100%; padding: 26px 0; }
+      .leading-section h2{
+         text-align: center;
+         font-size: 45px;
+         color: #ff7600;
+      }
+
+        .leading-box p {
+          text-align: center;
+          font-size: 20px;
+          font-weight: 400 !important;
+          margin-bottom: 1rem;
+          color: #000;
+        }
+
+        @media screen and (max-width:768px) {
+            .leading-section h2{
+                font-size: 34px;
+                line-height:45px;
+            }
+        }
+        /*  */
+        table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+}
+tbody,
+tfoot,
+thead {
+    border: 1px solid #f2f2f2;
+    background-color: #fff;
+}
+caption {
+    padding: 0.5rem 0.625rem 0.625rem;
+    font-weight: 800;
+}
+thead {
+    background: #f9f9f9;
+    color: #999;
+}
+tfoot {
+    background: #f2f2f2;
+    color: #999;
+}
+tfoot tr,
+thead tr {
+    background: 0 0;
+}
+tfoot td,
+tfoot th,
+thead td,
+thead th {
+    padding: 0.5rem 0.625rem 0.625rem;
+    font-weight: 800;
+    text-align: left;
+}
+tbody td,
+tbody th {
+    padding: 1.5rem 0.625rem 1.5rem;
+}
+tbody tr:nth-child(even) {
+    border-bottom: 0;
+    background-color: #f2f2f2;
+}
+table.unstriped tbody {
+    background-color: #fff;
+}
+table.unstriped tbody tr {
+    border-bottom: 0;
+    border-bottom: 1px solid #f2f2f2;
+    background-color: #fff;
+}
+@media screen and (max-width: 63.99875em) {
+    table.stack thead {
+        display: none;
+    }
+    table.stack tfoot {
+        display: none;
+    }
+    table.stack td,
+    table.stack th,
+    table.stack tr {
+        display: block;
+    }
+    table.stack td {
+        border-top: 0;
+    }
+}
+table.scroll {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+}
+table.hover thead tr:hover {
+    background-color: #f4f4f4;
+}
+table.hover tfoot tr:hover {
+    background-color: #ededed;
+}
+table.hover tbody tr:hover {
+    background-color: #fafafa;
+}
+table.hover:not(.unstriped) tr:nth-of-type(even):hover {
+    background-color: #ededed;
+}
+.table-scroll {
+    overflow-x: auto;
+}
+table {
+  border-collapse: collapse;
+}
+ th {
+  background: #00adef;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  font-size: 20px;
+  color: #000;
+}
+@media screen and (max-width:768px) {
+    th, td {
+        font-size: 15px;
+    }
+}
+th{
+  color: #ffffff;
+  border: 1px solid #ccc;
+
+}
+tr:nth-child(even) {
+  background: #efefef;
+}
+
+tr:hover {
+  background: #00abef41;
+}
+/*  */
+.times-kids-bannerbtn {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        background-color: #f00000; /* Customize button color */
+        color: white;
+        border: none;
+        padding:20px 25px;
+        font-size: 22px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    .times-kids-bannerbtn:hover {
+        background-color: #ffae00;
+    }
+/* Mobile Media Query */
+@media screen and (max-width: 768px) {
+    header .logo {
+        max-width: 100%;
+    }
+    .times-kids-bannerbtn {
+        position: relative; /* Change position to relative */
+        top: auto; /* Remove vertical position */
+        left: 50%; /* Center horizontally */
+        transform: translateX(-50%); /* Offset by 50% to center */
+        margin-top: 20px; /* Optional: Add margin to adjust the button's vertical position */
+    }
+    .button-container {
+        display: none;
+        position: relative;
+        width: 100%;
+        height: 100px; /* Adjust this based on your layout */
+    }
+    
+}
+    .button-container {
+        position: relative;
+        width: 100%;
+        height: 100px; /* Adjust this based on your layout */
+    }
+    /*  */
+    #kidzee_advantages .adv_blurb_con .blurb h4{
+        font-size: 30px;
+        color: #000;
+        font-weight: bold;
+    }
+    #kidzee_advantages .adv_blurb_con p{
+        color: #525252;
+    }
+/*  */
+footer .footer_blurbs {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: flex
+;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: row;
+    -moz-box-orient: horizontal;
+    -moz-box-direction: normal;
+    -ms-flex-direction: row;
+    flex-direction: row;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -moz-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: justify;
+    -webkit-justify-content: center;
+    -moz-box-pack: justify;
+    -ms-flex-pack: justify;
+    justify-content: center;
+}
+
+/*  */
+.times-why-now {
+            background-color: #f9f9f9;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 20px auto;
+            font-family: Arial, sans-serif;
+        }
+#about_us {
+    position: relative;
+    margin-top: 0;
+}
+.your_needs .need_list_con {
+    background: #e2070e !important;
+}
+#banner .chalk_box {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: min(70%, 280px);
+}
+}
+/*  */
+     .leading-box{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            margin:75px 0 0px ;
+       }
        .leading-section {
             max-width: 100%;
             width: 100%;
@@ -350,45 +601,159 @@ footer .footer_blurbs {
             margin: 20px auto;
             font-family: Arial, sans-serif;
         }
-#about_us .about-title {
-    color: #ff7600;
-    margin: 0 0 16px;
-    text-align: center;
-}
-#about_us .about-title-desktop {
-    display: none;
+#about_us {
+    position: relative;
+    background: linear-gradient(180deg, #ffffff 0%, #fffbf5 50%, #fef5ea 100%);
+    padding: 60px 0;
+    overflow: hidden;
 }
 #about_us .about-left {
+    position: relative;
     text-align: center;
+}
+#about_us .about_thumb {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#about_us .about_thumb_glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(255, 118, 0, 0.18) 0%, rgba(255, 118, 0, 0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+}
+#about_us .about_thumb img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: auto !important;
+    max-width: 100%;
+    height: auto !important;
+    max-height: 600px !important;
+    margin: 0 auto;
+    filter: drop-shadow(0px 14px 28px rgba(0, 0, 0, 0.08));
+    object-fit: contain;
+}
+#about_us .tk-partner-badge {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 118, 0, 0.25);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+}
+#about_us .tk-badge-star {
+    font-size: 16px;
+}
+#about_us .about-header-desktop,
+#about_us .about-header-mobile {
+    margin-bottom: 24px;
+}
+#about_us .tk-eligibility-badge {
+    display: inline-block;
+    background: #fff3e6;
+    color: #ff7600;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    border: 1px solid #ffd8b3;
+}
+#about_us .about-title {
+    color: #0f172a;
+    font-size: 32px !important;
+    font-weight: 800 !important;
+    line-height: 38px !important;
+    margin: 0;
+    text-align: left;
+}
+#about_us .about-title-desktop {
+    display: block;
+}
+#about_us .about-title-mobile {
+    display: none;
 }
 #about_us .eligibility_blurb_con {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     width: 100%;
-    text-align: center;
 }
 #about_us .eligibility_blurb_con .blurb {
-    padding: 20px;
-    border-bottom: 2px solid #e8c690;
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 22px 24px;
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    text-align: left;
+    margin-bottom: 0;
+    border-bottom: 1px solid #f1f5f9;
 }
-#about_us .eligibility_blurb_con .blurb:last-child {
-    border-bottom: 0;
+#about_us .eligibility_blurb_con .blurb:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 36px rgba(255, 118, 0, 0.12);
+    border-color: #ffd8b3;
+}
+#about_us .eligibility_blurb_con .blurb .icon_wrap {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #fff5eb 0%, #ffe8d6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffd4b8;
 }
 #about_us .eligibility_blurb_con .blurb img {
-    display: block;
-    width: 70px;
-    height: 70px;
+    width: 30px;
+    height: 30px;
+    margin: 0;
     object-fit: contain;
-    margin: 0 auto 10px;
+}
+#about_us .eligibility_blurb_con .blurb .blurb_content {
+    flex: 1;
 }
 #about_us .eligibility_blurb_con .blurb h4 {
-    color: #000;
-    font-size: 30px;
-    font-weight: bold;
-    margin-bottom: 8px;
+    color: #0f172a;
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    line-height: 1.3;
 }
 #about_us .eligibility_blurb_con .blurb p {
-    color: #525252;
-    font-size: 18px;
-    line-height: 24px;
+    color: #475569;
+    font-size: 14px;
+    line-height: 1.5;
     margin: 0;
     padding: 0;
 }
@@ -416,13 +781,142 @@ footer .footer_blurbs {
 /*  */
 #kidzee_advantages {
     position: relative;
-    background: #fff;
+    background: linear-gradient(180deg, #fef8f0 0%, #ffffff 50%, #faf8f5 100%);
+    padding: 70px 0;
+    overflow: hidden;
+}
+#kidzee_advantages .tk-adv-header {
+    margin-bottom: 50px;
+}
+#kidzee_advantages .tk-adv-badge {
+    display: inline-block;
+    background: #ffebe6;
+    color: #e60000;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    border: 1px solid #ffccd0;
+}
+#kidzee_advantages .tk-adv-title {
+    color: #e60000;
+    font-family: "Overpass", "IBM Plex Sans", sans-serif;
+    font-size: 36px !important;
+    font-weight: 800 !important;
+    line-height: 42px !important;
+    margin: 0 0 10px 0;
+    text-align: center;
+}
+#kidzee_advantages .tk-adv-subtitle {
+    color: #475569;
+    font-size: 16px;
+    max-width: 620px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+#kidzee_advantages .tk-adv-center-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px 0;
+}
+#kidzee_advantages .tk-adv-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 340px;
+    height: 340px;
+    background: radial-gradient(circle, rgba(230, 0, 0, 0.14) 0%, rgba(230, 0, 0, 0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+}
+#kidzee_advantages .tk-adv-hero-img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: auto !important;
+    max-width: 100%;
+    height: auto !important;
+    max-height: 520px !important;
+    margin: 0 auto;
+    filter: drop-shadow(0px 14px 28px rgba(0, 0, 0, 0.08));
+    object-fit: contain;
+}
+#kidzee_advantages .tk-adv-col {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+#kidzee_advantages .tk-adv-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 24px;
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    text-align: left;
+}
+#kidzee_advantages .tk-adv-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(230, 0, 0, 0.12);
+    border-color: #ffccd0;
+}
+#kidzee_advantages .tk-adv-icon-wrap {
+    flex-shrink: 0;
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #fff0f0 0%, #ffe0e0 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ffccd0;
+}
+#kidzee_advantages .tk-adv-icon-wrap img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+#kidzee_advantages .tk-adv-card-body h4 {
+    color: #0f172a;
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    line-height: 1.3;
+}
+#kidzee_advantages .tk-adv-card-body p {
+    color: #475569;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+}
+@media screen and (max-width: 991px) {
+    #kidzee_advantages .tk-adv-col {
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    #kidzee_advantages .tk-adv-hero-img {
+        max-height: 380px !important;
+    }
+    #kidzee_advantages .tk-adv-title {
+        font-size: 28px !important;
+        line-height: 34px !important;
+    }
 }
 @media screen and (max-width:768px) {
     #kidzee_advantages {
-        background: #ffb400 !important;
+        background: linear-gradient(180deg, #fef8f0 0%, #ffffff 100%) !important;
         margin-top: 0 !important;
-        padding-top: 12px !important;
+        padding-top: 36px !important;
     }
     #kidzee_advantages .adv_panel {
         padding-top: 0 !important;
@@ -465,7 +959,121 @@ footer .footer_blurbs {
     }
 }
 #awards {
-    background: #ec1f25;
+    position: relative;
+    background: linear-gradient(135deg, #b91c1c 0%, #dc2626 40%, #7f1d1d 100%);
+    padding: 70px 0;
+    color: #ffffff;
+    overflow: hidden;
+}
+#awards .tk-step-header {
+    margin-bottom: 50px;
+}
+#awards .tk-step-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    color: #fbbf24;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+}
+#awards .tk-step-title {
+    color: #ffffff;
+    font-family: "Overpass", "IBM Plex Sans", sans-serif;
+    font-size: 36px !important;
+    font-weight: 800 !important;
+    line-height: 42px !important;
+    margin: 0 0 10px 0;
+    text-align: center;
+}
+#awards .tk-step-subtitle {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 16px;
+    max-width: 620px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+#awards .tk-step-image-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#awards .tk-step-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(251, 191, 36, 0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+}
+#awards .tk-step-hero-img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: auto !important;
+    max-width: 100%;
+    height: auto !important;
+    max-height: 540px !important;
+    margin: 0 auto;
+    filter: drop-shadow(0px 16px 32px rgba(0, 0, 0, 0.25));
+    object-fit: contain;
+}
+#awards .tk-journey-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 22px 20px;
+    background: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    text-align: left;
+    height: 100%;
+}
+#awards .tk-journey-card:hover {
+    transform: translateY(-4px);
+    background: #ffffff;
+    border-color: #fbbf24;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+#awards .tk-journey-num {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #78350f;
+    font-family: "Overpass", sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+#awards .tk-journey-body h4 {
+    color: #e60000;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    line-height: 1.3;
+}
+#awards .tk-journey-body p {
+    color: #334155;
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin: 0;
 }
 
 
@@ -897,8 +1505,11 @@ iframe {
 
     #about_us .about_thumb {
         width: 100% !important;
-        max-width: 623px !important;
+        max-width: 500px !important;
         margin: 0 auto !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     #about_us .about_thumb img {
@@ -906,11 +1517,11 @@ iframe {
         width: auto !important;
         max-width: 100%;
         height: auto !important;
-        max-height: 684px !important;
+        max-height: 620px !important;
         margin: 0 auto;
+        filter: drop-shadow(0px 10px 20px rgba(0, 0, 0, 0.08));
         object-fit: contain;
     }
-
     #kidzee_advantages {
         padding-top: 15px !important;
         padding-bottom: 20px !important;
@@ -1918,8 +2529,7 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
                             </div>
                             <form id="timekidsEnquiryForm" class="tk-enquiry-form" novalidate
                                 data-source="july_meta"
-                                data-page-type="meta"
-                                data-campaign="meta"
+                                data-page-type="meta" data-campaign="meta"
                                 data-comments="July Meta campaign form"
                                 data-geo-mode="state-city">
                                 <div class="form_field">
@@ -2007,29 +2617,47 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
             <div class="container_sm">
                 <div class="row align-items-md-center about_us">
                     <div class="col-lg-5 about-left">
-                        <h2 class="about-title about-title-mobile">What You Need To Be Eligible…</h2>
+                        <div class="about-header-mobile">
+                            <h2 class="about-title about-title-mobile">What You Need To Be Eligible…</h2>
+                        </div>
                         <div class="about_thumb">
-                            <img src="images/Women-3.webp" alt="About Us T.I.M.E. Kids" width="311" height="635" loading="lazy" decoding="async">
+                            <div class="about_thumb_glow"></div>
+                            <img src="images/indian-couple.png" alt="Eligible Franchise Partners T.I.M.E. Kids" width="429" height="949" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="col-lg-7 about-right">
-                        <h2 class="about-title about-title-desktop">What You Need To Be Eligible…</h2>
+                        <div class="about-header-desktop">
+                            <span class="tk-eligibility-badge">ELIGIBILITY CRITERIA</span>
+                            <h2 class="about-title about-title-desktop">What You Need To Be Eligible…</h2>
+                        </div>
                         <div class="about_det">
                             <div class="eligibility_blurb_con">
                                 <div class="blurb">
-                                    <img src="images/icon-adv-01.png" alt="Space requirement">
-                                    <h4>Space</h4>
-                                    <p>1500–2000 sq. ft. of constructed area, owned or rented, preferably an independent house in a good locality.</p>
+                                    <div class="icon_wrap">
+                                        <img src="images/icon-adv-01.png" alt="Space requirement">
+                                    </div>
+                                    <div class="blurb_content">
+                                        <h4>Space Requirement</h4>
+                                        <p>1500–2000 sq. ft. of constructed area (owned or rented), preferably an independent house in a good locality.</p>
+                                    </div>
                                 </div>
                                 <div class="blurb">
-                                    <img src="images/icon-adv-02.png" alt="Investment requirement">
-                                    <h4>Investment</h4>
-                                    <p>₹10–₹15 lakhs to set up the preschool and run it successfully.</p>
+                                    <div class="icon_wrap">
+                                        <img src="images/icon-adv-02.png" alt="Investment requirement">
+                                    </div>
+                                    <div class="blurb_content">
+                                        <h4>Investment Capacity</h4>
+                                        <p>₹10–₹15 lakhs capital to set up the preschool infrastructure and operate successfully.</p>
+                                    </div>
                                 </div>
                                 <div class="blurb">
-                                    <img src="images/icon-adv-12.png" alt="Passion for education">
-                                    <h4>Passion</h4>
-                                    <p>A deep commitment to nurturing young minds and shaping a brighter future.</p>
+                                    <div class="icon_wrap">
+                                        <img src="images/icon-adv-12.png" alt="Passion for education">
+                                    </div>
+                                    <div class="blurb_content">
+                                        <h4>Passion for Growth</h4>
+                                        <p>A deep commitment to nurturing young minds and building a respected legacy in your community.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2038,36 +2666,66 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
             </div>
         </section>
         <section class="section" id="kidzee_advantages">
-            <div class="container_sm adv_panel">
-                <div class="row">
-                    <!-- Left Column: Content -->
-                    <div class="col-md-6 left-content">
-                        <h2 style="color: #f00000;">Why This Is Perfect for You </h2>
-                        <img src="images/Layer 3 (1).webp" alt="Kidzee Advantage" class="adv-image" width="714" height="785" loading="lazy" decoding="async">
+            <div class="container_lg">
+                <!-- Section Header (Centered Title at Top) -->
+                <div class="tk-adv-header text-center">
+                    <span class="tk-adv-badge">WHY CHOOSE T.I.M.E. KIDS</span>
+                    <h2 class="tk-adv-title">Why This Is Perfect for You</h2>
+                    <p class="tk-adv-subtitle">Everything you need to launch and operate a thriving preschool with total brand backing</p>
+                </div>
 
-                    </div>
-                    <!-- Right Column: Image -->
-                    <div class="col-md-6 right-content">
-                        <div class="adv_blurb_con">
-                            <div class="blurb">
-                                <img src="images/icon-adv-01.png" alt="The T.I.M.E. Kids Advantage">
-                                <h4>Big Name, Big Trust </h4>
-                                <p>Be part of South India’s No.1 education brand.</p>
+                <!-- Central Human Image with Surrounding Advantage Cards -->
+                <div class="row align-items-center tk-adv-hub">
+                    <!-- Left Column: 2 Cards -->
+                    <div class="col-lg-4 col-md-12 tk-adv-col tk-adv-left">
+                        <div class="tk-adv-card">
+                            <div class="tk-adv-icon-wrap">
+                                <img src="images/icon-adv-01.png" alt="Big Name, Big Trust">
                             </div>
-                            <div class="blurb">
-                                <img src="images/icon-adv-02.png" alt="T.I.M.E. Kids">
+                            <div class="tk-adv-card-body">
+                                <h4>Big Name, Big Trust</h4>
+                                <p>Be part of South India’s No.1 trusted education brand with 35+ years of operational excellence.</p>
+                            </div>
+                        </div>
+
+                        <div class="tk-adv-card">
+                            <div class="tk-adv-icon-wrap">
+                                <img src="images/icon-adv-02.png" alt="Start Small, Dream Big">
+                            </div>
+                            <div class="tk-adv-card-body">
                                 <h4>Start Small, Dream Big</h4>
-                                <p>Invest in your preschool with just ₹10 - ₹15 lakhs.</p>
+                                <p>Invest in your preschool with just ₹10–₹15 lakhs and scale your returns rapidly.</p>
                             </div>
-                            <div class="blurb">
-                                <img src="images/icon-adv-12.png" alt="T.I.M.E. Kids">
+                        </div>
+                    </div>
+
+                    <!-- Center Column: Human Cutout Image -->
+                    <div class="col-lg-4 col-md-12 tk-adv-col tk-adv-center text-center">
+                        <div class="tk-adv-center-box">
+                            <div class="tk-adv-glow"></div>
+                            <img src="images/adv-human.png" alt="Why T.I.M.E. Kids Advantage" class="tk-adv-hero-img" width="714" height="785" loading="lazy" decoding="async">
+                        </div>
+                    </div>
+
+                    <!-- Right Column: 2 Cards -->
+                    <div class="col-lg-4 col-md-12 tk-adv-col tk-adv-right">
+                        <div class="tk-adv-card">
+                            <div class="tk-adv-icon-wrap">
+                                <img src="images/icon-adv-12.png" alt="More Me Time">
+                            </div>
+                            <div class="tk-adv-card-body">
                                 <h4>More ‘Me Time’</h4>
-                                <p>Work only 4-5 hours a day and enjoy life.</p>
+                                <p>Work only 4–5 hours a day and enjoy perfect work-life balance while running your business.</p>
                             </div>
-                            <div class="blurb">
-                                <img src="images/icon-adv-05.png" alt="T.I.M.E. Kids">
+                        </div>
+
+                        <div class="tk-adv-card">
+                            <div class="tk-adv-icon-wrap">
+                                <img src="images/icon-adv-05.png" alt="We've Got Your Back">
+                            </div>
+                            <div class="tk-adv-card-body">
                                 <h4>We’ve Got Your Back</h4>
-                                <p>Complete training, Marketing and Operational guidance <br> — You're Never Alone!</p>
+                                <p>Complete teacher training, marketing campaigns, and operational guidance — you’re never alone!</p>
                             </div>
                         </div>
                     </div>
@@ -2077,25 +2735,85 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
     
        
         <section class="section" id="awards">
-            <div class="container_sm awards_con">
-                <div class="tl_hld">
-                    <h2 class="size-done">No Business Experience Needed
-                    </h2>
+            <div class="container_lg">
+                <!-- Section Header (Centered Title at Top) -->
+                <div class="tk-step-header text-center">
+                    <span class="tk-step-badge">ONBOARDING ROADMAP</span>
+                    <h2 class="tk-step-title">No Business Experience Needed</h2>
+                    <p class="tk-step-subtitle">We guide you step-by-step from initial enquiry to your grand preschool launch</p>
                 </div>
-                <div class="row awards_blurb_con">
-                    <div class="col-md-5 blurb">
-                        <div class="award_thumb">
-                            <img src="images/Women-4.webp" alt="T.I.M.E. Kids" width="400" height="755" loading="lazy" decoding="async">
+
+                <div class="row align-items-center tk-step-container">
+                    <!-- Left Column: Cutout Image Showcase -->
+                    <div class="col-lg-4 col-md-12 text-center mb-4 mb-lg-0">
+                        <div class="tk-step-image-box">
+                            <div class="tk-step-glow"></div>
+                            <img src="images/step-woman.png" alt="No Business Experience Needed" class="tk-step-hero-img" width="399" height="755" loading="lazy" decoding="async">
                         </div>
                     </div>
-                    <div class="col-md-7 blurb">
-                        <div class="tk-acquisition-path">
-                            <div class="tk-acquisition-step"><strong>Step 1 · Submit</strong><span>Fill out the form to express your interest.</span></div>
-                            <div class="tk-acquisition-step"><strong>Step 2 · Discovery</strong><span>Our team connects with you for a detailed discussion.</span></div>
-                            <div class="tk-acquisition-step"><strong>Step 3 · Site</strong><span>We help you identify and evaluate the right location.</span></div>
-                            <div class="tk-acquisition-step"><strong>Step 4 · Sign</strong><span>Complete documentation and franchise agreement.</span></div>
-                            <div class="tk-acquisition-step"><strong>Step 5 · Setup</strong><span>Training, infrastructure and launch support.</span></div>
-                            <div class="tk-acquisition-step"><strong>Step 6 · Own</strong><span>Open your preschool and start your journey.</span></div>
+
+                    <!-- Right Column: 6 Interactive Journey Step Cards -->
+                    <div class="col-lg-8 col-md-12">
+                        <div class="row tk-step-grid">
+                            <div class="col-md-6 col-sm-12 mb-4">
+                                <div class="tk-journey-card">
+                                    <div class="tk-journey-num">01</div>
+                                    <div class="tk-journey-body">
+                                        <h4>Submit Interest</h4>
+                                        <p>Fill out the simple enquiry form to express your interest in owning a franchise.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-sm-12 mb-4">
+                                <div class="tk-journey-card">
+                                    <div class="tk-journey-num">02</div>
+                                    <div class="tk-journey-body">
+                                        <h4>Discovery Call</h4>
+                                        <p>Our expert team connects with you for an in-depth discussion and business plan overview.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-sm-12 mb-4">
+                                <div class="tk-journey-card">
+                                    <div class="tk-journey-num">03</div>
+                                    <div class="tk-journey-body">
+                                        <h4>Site Selection</h4>
+                                        <p>We assist you in identifying, surveying, and finalizing the ideal preschool location.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-sm-12 mb-4">
+                                <div class="tk-journey-card">
+                                    <div class="tk-journey-num">04</div>
+                                    <div class="tk-journey-body">
+                                        <h4>Franchise Agreement</h4>
+                                        <p>Complete simple documentation and formalize your official partnership agreement.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-sm-12 mb-4">
+                                <div class="tk-journey-card">
+                                    <div class="tk-journey-num">05</div>
+                                    <div class="tk-journey-body">
+                                        <h4>Setup & Training</h4>
+                                        <p>Receive full interior setup guidelines, NEP 2020 curriculum, and complete staff training.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-sm-12 mb-4">
+                                <div class="tk-journey-card">
+                                    <div class="tk-journey-num">06</div>
+                                    <div class="tk-journey-body">
+                                        <h4>Grand Launch</h4>
+                                        <p>Open your preschool doors with marketing campaign support and start your journey!</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2108,18 +2826,18 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
                 <h2 class="pb-3">The T.I.M.E. Kids Advantage</h2>
                 <p class="tk-usp-subtitle">At a glance — everything franchise partners gain with T.I.M.E. Kids</p>
                 <div class="tk-usp-grid">
-                    <div class="tk-usp-card tk-usp-green"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>250+ Centres Across India</h4></div>
-                    <div class="tk-usp-card tk-usp-green"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>34+ Years of Educational Excellence</h4></div>
-                    <div class="tk-usp-card tk-usp-green"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Child-Safe and Non-Toxic Infra</h4></div>
-                    <div class="tk-usp-card tk-usp-orange"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Low Investment with Strong Growth Potential</h4></div>
-                    <div class="tk-usp-card tk-usp-orange"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>High Social-Impact Business Opportunity</h4></div>
-                    <div class="tk-usp-card tk-usp-orange"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>End-to-End Academic and Ops Support</h4></div>
-                    <div class="tk-usp-card tk-usp-blue"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Proven Systems and Structured Processes</h4></div>
-                    <div class="tk-usp-card tk-usp-blue"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Trusted Brand with Nationwide Recognition</h4></div>
-                    <div class="tk-usp-card tk-usp-blue"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>NEP 2020 Updated Curriculum</h4></div>
-                    <div class="tk-usp-card tk-usp-red"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Complete Staff Training and Development</h4></div>
-                    <div class="tk-usp-card tk-usp-red"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>National + Local Marketing Assistance</h4></div>
-                    <div class="tk-usp-card tk-usp-red"><span class="tk-usp-check" aria-hidden="true">✓</span><h4>Parent Engagement Programs</h4></div>
+                    <div class="tk-usp-card tk-usp-green"><h4>250+ Centres Across India</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-green"><h4>34+ Years of Educational Excellence</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-green"><h4>Child-Safe and Non-Toxic Infra</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-orange"><h4>Low Investment with Strong Growth Potential</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-orange"><h4>High Social-Impact Business Opportunity</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-orange"><h4>End-to-End Academic and Ops Support</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-blue"><h4>Proven Systems and Structured Processes</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-blue"><h4>Trusted Brand with Nationwide Recognition</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-blue"><h4>NEP 2020 Updated Curriculum</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-red"><h4>Complete Staff Training and Development</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-red"><h4>National + Local Marketing Assistance</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-red"><h4>Parent Engagement Programs</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
                 </div>
             </div>
         </section>
@@ -2257,7 +2975,7 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
             <div class="container_sm">
                 <div class="footer_blurbs">
                     <div class="blurb">
-                        <p>©2025 - T.I.M.E. Kids All Rights Reserved</p>
+                        <p>©2026 - T.I.M.E. Kids All Rights Reserved</p>
                     </div>
                 </div>
             </div>
