@@ -9,6 +9,8 @@ interface CentreSelectorProps {
   states?: string[]
   value: string[]
   onChange: (value: string[]) => void
+  /** When set to a CRM user id, limit centres to that user's zone/region. */
+  userId?: string
 }
 
 export default function CentreSelector({
@@ -16,12 +18,15 @@ export default function CentreSelector({
   states = [],
   value,
   onChange,
+  userId = '',
 }: CentreSelectorProps) {
   const [centres, setCentres] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(true)
 
   const citiesKey = cities.join(',')
   const statesKey = states.join(',')
+  const scopeUserId =
+    userId && userId !== 'unassigned' && userId !== 'all' ? userId : ''
 
   useEffect(() => {
     let cancelled = false
@@ -37,6 +42,7 @@ export default function CentreSelector({
         } else if (states.length > 0 && states.length <= 40) {
           params.set('state', statesKey)
         }
+        if (scopeUserId) params.set('userId', scopeUserId)
 
         const qs = params.toString()
         const response = await api.get(`/centres${qs ? `?${qs}` : ''}`)
@@ -57,7 +63,7 @@ export default function CentreSelector({
     return () => {
       cancelled = true
     }
-  }, [cities.length, citiesKey, states.length, statesKey])
+  }, [cities.length, citiesKey, states.length, statesKey, scopeUserId])
 
   const options = useMemo(
     () =>

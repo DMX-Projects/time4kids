@@ -12,15 +12,26 @@ interface CitySelectorProps {
   state?: string
   /** July LP / July Meta campaign forms use franchise-lp city list. */
   scope?: GeoScope
+  /** When set to a CRM user id, limit cities to that user's zone/region. */
+  userId?: string
 }
 
-export default function CitySelector({ value, onChange, state, scope = 'default' }: CitySelectorProps) {
+export default function CitySelector({
+  value,
+  onChange,
+  state,
+  scope = 'default',
+  userId = '',
+}: CitySelectorProps) {
   const [cities, setCities] = useState<{ name: string }[]>([])
   const [loading, setLoading] = useState(true)
 
+  const scopeUserId =
+    userId && userId !== 'unassigned' && userId !== 'all' ? userId : ''
+
   useEffect(() => {
     loadCities()
-  }, [state, scope])
+  }, [state, scope, scopeUserId])
 
   const loadCities = async () => {
     setLoading(true)
@@ -41,6 +52,19 @@ export default function CitySelector({ value, onChange, state, scope = 'default'
             .filter(Boolean)
         }
 
+        // If a CRM user is selected, keep only states in their territory.
+        if (scopeUserId) {
+          const scopedRes = await api.get(`/states?userId=${encodeURIComponent(scopeUserId)}`)
+          const allowed = new Set(
+            (Array.isArray(scopedRes.data) ? scopedRes.data : [])
+              .map((s: { name?: string }) => (s?.name || '').trim().toLowerCase())
+              .filter(Boolean),
+          )
+          if (allowed.size > 0) {
+            statesToLoad = statesToLoad.filter((s) => allowed.has(s.toLowerCase()))
+          }
+        }
+
         const merged = new Map<string, { name: string }>()
         await Promise.all(
           statesToLoad.map(async (stateName: string) => {
@@ -58,6 +82,7 @@ export default function CitySelector({ value, onChange, state, scope = 'default'
       } else {
         const params = new URLSearchParams()
         if (state) params.append('state', state)
+        if (scopeUserId) params.append('userId', scopeUserId)
         const response = await api.get(`/cities?${params.toString()}`)
         setCities(response.data || [])
       }

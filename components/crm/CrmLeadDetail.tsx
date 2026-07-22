@@ -218,7 +218,6 @@ export default function LeadDetailPage() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [sendingReminder, setSendingReminder] = useState(false)
-  const [crmUsers, setCrmUsers] = useState<{ id: number; label: string }[]>([])
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false)
   const [sendingDirectEmail, setSendingDirectEmail] = useState(false)
   const [emailComposeOpen, setEmailComposeOpen] = useState(false)
@@ -233,29 +232,15 @@ export default function LeadDetailPage() {
   }, [params.id])
 
   useEffect(() => {
-    let cancelled = false
-    api
-      .get('/users')
-      .then((res) => {
-        if (cancelled) return
-        const list = Array.isArray(res.data?.users) ? res.data.users : []
-        setCrmUsers(
-          list.map((u: { id: number; label: string; fullName?: string }) => ({
-            id: u.id,
-            label: u.label || u.fullName || `User ${u.id}`,
-          })),
-        )
-      })
-      .catch(() => {
-        if (!cancelled) setCrmUsers([])
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
     if (lead) {
+      const assigned =
+        lead.assignedUserId != null && lead.assignedUserId !== ''
+          ? String(lead.assignedUserId)
+          : ''
+      const suggested =
+        lead.suggestedAssignedUserId != null && lead.suggestedAssignedUserId !== ''
+          ? String(lead.suggestedAssignedUserId)
+          : ''
       setEditForm({
         fullName: lead.fullName ?? '',
         mobile: lead.mobile ?? '',
@@ -271,7 +256,8 @@ export default function LeadDetailPage() {
         sourceOther: lead.sourceOther ?? '',
         newNote: '',
         status: lead.status ?? 'new',
-        assignedUserId: lead.assignedUserId != null ? String(lead.assignedUserId) : '',
+        // Persist geo assignee on save if lead was still unassigned in DB
+        assignedUserId: assigned || suggested || '',
         meetingDate: toLocalDatetimeString(lead.meetingDate),
         nextFollowUpDate: toLocalDatetimeString(lead.nextFollowUpDate),
       })
@@ -564,18 +550,10 @@ export default function LeadDetailPage() {
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Campaign</p>
                             <p className="text-gray-700">{lead.campaign || lead.utmCampaign || '—'}</p>
                           </div>
-                          <div className="space-y-0.5">
-                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Landing page</p>
-                            {lead.landingPageUrl ? (
-                              <p className="text-xs text-gray-500 break-all">{lead.landingPageUrl}</p>
-                            ) : (
-                              <p className="text-gray-700">—</p>
-                            )}
-                          </div>
                         </div>
                       )}
                       {!isLpLead &&
-                        (lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign || lead.landingPageUrl) && (
+                        (lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign) && (
                         <div className="space-y-1 pt-1">
                           <p className="text-sm text-gray-600">
                             {[
@@ -587,16 +565,13 @@ export default function LeadDetailPage() {
                               .filter(Boolean)
                               .join(' · ')}
                           </p>
-                          {lead.landingPageUrl ? (
-                            <p className="text-xs text-gray-500 break-all">{lead.landingPageUrl}</p>
-                          ) : null}
                         </div>
                       )}
                     </div>
                   </div>
                 )}
                 {!isFranchiseLeadFlag &&
-                  (lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign || lead.landingPageUrl) && (
+                  (lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign) && (
                   <div className="col-span-2 space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Page type &amp; campaign</label>
                     <p className="text-gray-700">
@@ -605,9 +580,6 @@ export default function LeadDetailPage() {
                         lead.campaign || lead.utmCampaign ? `Campaign: ${lead.campaign || lead.utmCampaign}` : '',
                       ].filter(Boolean).join(' · ') || '—'}
                     </p>
-                    {lead.landingPageUrl ? (
-                      <p className="text-xs text-gray-500 break-all mt-1">{lead.landingPageUrl}</p>
-                    ) : null}
                   </div>
                 )}
                 {(lead.childAge || lead.enquiryType) && (
@@ -665,32 +637,14 @@ export default function LeadDetailPage() {
                   </div>
                 )}
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">User</label>
-                  <div className="relative inline-block">
-                    <select
-                      value={editForm.assignedUserId || ''}
-                      onChange={(e) => setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))}
-                      className={`appearance-none pl-3 pr-8 py-1 rounded-full text-xs font-bold uppercase border-0 cursor-pointer focus:ring-2 focus:ring-blue-500/20 ${
-                        editForm.assignedUserId ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      <option value="" className="bg-white text-gray-800 text-xs font-bold">
-                        Unassigned
-                      </option>
-                      {crmUsers.map((u) => (
-                        <option key={u.id} value={String(u.id)} className="bg-white text-gray-800 text-xs font-bold">
-                          {u.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] ${
-                        editForm.assignedUserId ? 'text-blue-700' : 'text-gray-700'
-                      }`}
-                    >
-                      ▼
-                    </div>
-                  </div>
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned</label>
+                  {lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
+                    <p className="text-gray-700 font-semibold">
+                      {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
+                    </p>
+                  ) : (
+                    <p className="text-gray-400 text-sm">—</p>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Enquiry Date</label>

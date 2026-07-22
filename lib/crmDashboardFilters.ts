@@ -1,4 +1,4 @@
-export const CRM_DASHBOARD_FILTERS_KEY = "crm-dashboard-filters-v1";
+export const CRM_DASHBOARD_FILTERS_KEY = "crm-dashboard-filters-v3";
 
 export type CrmDashboardFiltersSnapshot = {
   returnPath: string;
