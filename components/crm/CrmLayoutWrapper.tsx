@@ -31,8 +31,8 @@ export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-            <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col shrink-0 z-10">
-                <div className="h-16 flex items-center px-6 border-b border-gray-200 shrink-0">
+            <aside className="w-52 bg-white border-r border-gray-200 hidden md:flex flex-col shrink-0 z-10">
+                <div className="h-16 flex items-center px-4 border-b border-gray-200 shrink-0">
                     <button
                         type="button"
                         onClick={hardRefreshCrmDashboard}

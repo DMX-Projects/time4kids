@@ -106,55 +106,63 @@ export default function ConversionFunnel({ data, isFranchise = false }: Conversi
 
   const total = stages.reduce((sum, s) => sum + s.count, 0)
   const stageCount = Math.max(stages.length, 1)
-  /** Top of pyramid ≈ full width; tip stays readable */
-  const topWidth = 100
-  const bottomWidth = 28
-  const step = (topWidth - bottomWidth) / Math.max(stageCount - 1, 1)
+  const tipWidth = 2
+  const step = (100 - tipWidth) / stageCount
+  const pyramidStages = [...stages].reverse()
+  const rowHeight = stageCount > 8 ? 'h-[1.65rem] sm:h-7' : 'h-7 sm:h-8'
 
   return (
     <div className="card">
-      <div className="mb-5 flex items-baseline justify-between gap-2">
-        <h3 className="text-xl font-bold text-gray-800">Lead Funnel</h3>
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-          {total.toLocaleString()} total
-        </span>
+      <div className="mb-4">
+        <h3 className="text-base font-bold text-slate-800 sm:text-lg">Lead Funnel</h3>
       </div>
 
       {total === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">No leads in this funnel yet.</p>
       ) : (
-        <div className="mx-auto w-full max-w-xl space-y-[3px]">
-          {stages.map((stage, index) => {
-            const widthPct = topWidth - step * index
-            const nextWidthPct =
-              index === stageCount - 1 ? Math.max(widthPct - 10, 18) : topWidth - step * (index + 1)
-            const insetTop = (100 - widthPct) / 2
-            const insetBottom = (100 - nextWidthPct) / 2
+        <div className="w-full">
+          {pyramidStages.map((stage, index) => {
+            const widthTop = tipWidth + step * index
+            const widthBottom = tipWidth + step * (index + 1)
+            const insetTop = (100 - widthTop) / 2
+            const insetBottom = (100 - widthBottom) / 2
             const pctOfTotal = Math.round((stage.count / total) * 100)
+            const showBandValue = widthBottom >= 14
 
             return (
               <div
                 key={stage.id}
-                className="grid grid-cols-[minmax(0,42%)_minmax(0,58%)] items-center gap-3 sm:grid-cols-[minmax(0,38%)_minmax(0,62%)] sm:gap-4"
+                className={`grid grid-cols-[minmax(0,44%)_minmax(0,56%)] items-center ${rowHeight}`}
                 title={`${stage.label}: ${stage.count.toLocaleString()} (${pctOfTotal}%)`}
               >
-                {/* Name outside clip-path so it always shows */}
-                <p className="text-right text-xs font-semibold leading-snug text-gray-700 sm:text-sm">
-                  {stage.label}
-                </p>
+                <div className="flex min-w-0 items-center pr-1">
+                  <p className="min-w-0 truncate text-[10px] font-medium leading-tight text-slate-600 sm:text-[11px]">
+                    {stage.label}
+                  </p>
+                  <span
+                    className="mx-1.5 hidden min-w-[0.75rem] flex-1 border-t border-dotted border-slate-300 sm:block"
+                    aria-hidden
+                  />
+                </div>
 
-                <div
-                  className="group relative flex h-11 w-full items-center justify-center transition-[filter] duration-200 group-hover:brightness-105 sm:h-12"
-                  style={{
-                    backgroundColor: stage.color,
-                    clipPath: `polygon(${insetTop}% 0%, ${100 - insetTop}% 0%, ${100 - insetBottom}% 100%, ${insetBottom}% 100%)`,
-                    boxShadow: 'inset 0 -1px 0 rgba(0,0,0,0.08)',
-                  }}
-                >
-                  <span className="px-2 text-center text-sm font-extrabold tabular-nums text-white drop-shadow-sm">
-                    {stage.count.toLocaleString()}
-                    <span className="ml-1 text-[10px] font-semibold opacity-90">({pctOfTotal}%)</span>
-                  </span>
+                <div className={`${rowHeight} w-full`}>
+                  <div
+                    className="flex h-full w-full items-center justify-center"
+                    style={{
+                      backgroundColor: stage.color,
+                      clipPath: `polygon(${insetTop}% 0%, ${100 - insetTop}% 0%, ${100 - insetBottom}% 100%, ${insetBottom}% 100%)`,
+                    }}
+                  >
+                    {showBandValue ? (
+                      <span className="px-1 text-center text-[10px] font-extrabold tabular-nums text-white drop-shadow-sm sm:text-[11px]">
+                        {stage.count.toLocaleString()} ({pctOfTotal}%)
+                      </span>
+                    ) : (
+                      <span className="sr-only">
+                        {stage.count.toLocaleString()} ({pctOfTotal}%)
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             )

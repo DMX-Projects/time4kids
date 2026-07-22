@@ -63,10 +63,11 @@ const getCategoryColumns = (categoryId: string, source?: string) => {
 };
 
 const CATEGORIES = [
-    { id: "admission", label: "Admission Leads", bg: "bg-blue-50 text-blue-800", subkey: "adm" },
-    { id: "contact", label: "CenterPage Leads", bg: "bg-sky-50 text-sky-800", subkey: "cen" },
-    { id: "campaign", label: "Campaign Leads", bg: "bg-violet-50 text-violet-800", subkey: "cam" },
-    { id: "franchise", label: "Franchise Leads", bg: "bg-orange-50 text-orange-800", subkey: "fra" },
+    { id: "admission", label: "Website", bg: "bg-blue-50 text-blue-800", subkey: "adm" },
+    { id: "landing", label: "Landing", bg: "bg-teal-50 text-teal-800", subkey: "lnd" },
+    { id: "contact", label: "Centerpage", bg: "bg-sky-50 text-sky-800", subkey: "cen" },
+    { id: "campaign", label: "Campaign", bg: "bg-violet-50 text-violet-800", subkey: "cam" },
+    { id: "franchise", label: "Franchise", bg: "bg-orange-50 text-orange-800", subkey: "fra" },
 ];
 
 const CAMPAIGN_CHANNEL_CATEGORIES = [
@@ -122,7 +123,9 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
     const [hideEmptyCities, setHideEmptyCities] = useState(false);
 
     const getSourceLabel = () => {
-        if (source === "admission") return "Admission";
+        if (source === "admission_all") return "Admission";
+        if (source === "franchise_all") return "Franchise";
+        if (source === "admission") return "Website";
         if (source === "contact") return "CenterPage";
         if (source && CHANNEL_LABELS[source]) return CHANNEL_LABELS[source];
         if (source === "campaign") return "Campaign";
@@ -143,6 +146,19 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
 
     const activeCategories = useMemo(() => {
         if (!source || source === "all") return CATEGORIES;
+        if (source === "admission_all") {
+            // Admission All = Website + Landing + Centerpage
+            return CATEGORIES.filter(
+                (c) => c.id === "admission" || c.id === "landing" || c.id === "contact",
+            );
+        }
+        if (source === "franchise_all") {
+            // Franchise All = Franchise Form + Campaign
+            return CATEGORIES.filter((c) => c.id === "franchise" || c.id === "campaign");
+        }
+        if (source === "admission") {
+            return CATEGORIES.filter((c) => c.id === "admission");
+        }
         if (source === "campaign") return CAMPAIGN_CHANNEL_CATEGORIES;
         if (CHANNEL_LABELS[source]) {
             return [
