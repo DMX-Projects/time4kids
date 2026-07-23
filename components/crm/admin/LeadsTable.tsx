@@ -129,6 +129,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
   const [leads, setLeads] = useState<any[]>([])
 
   const openLead = (leadId: string) => {
+    // Save filters before leaving so Back always restores them.
     onBeforeNavigate?.()
     const base = `/crm-admin/leads/${encodeURIComponent(leadId)}`
     const href = returnHref

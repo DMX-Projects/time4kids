@@ -159,7 +159,11 @@ export function isSafeCrmReturnHref(href: string | null | undefined): href is st
     // Relative only — block open redirects
     if (!href.startsWith("/crm-admin")) return false;
     if (href.startsWith("//")) return false;
-    return true;
+    // Allow /crm-admin, /crm-admin/, /crm-admin/reports, and query strings
+    if (href === "/crm-admin" || href.startsWith("/crm-admin?") || href.startsWith("/crm-admin/")) {
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }
