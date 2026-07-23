@@ -266,6 +266,7 @@ export default function LeadDetailPage() {
   }, [lead])
 
   const goBackToDashboard = () => {
+    // Prefer the explicit return URL captured when opening the lead (includes filters).
     if (typeof window !== 'undefined') {
       const from = new URLSearchParams(window.location.search).get('from')
       if (isSafeCrmReturnHref(from)) {
@@ -273,6 +274,7 @@ export default function LeadDetailPage() {
         return
       }
     }
+    // Fallback: last saved dashboard/report filters in sessionStorage.
     router.push(getCrmDashboardReturnHref())
   }
 
@@ -541,20 +543,16 @@ export default function LeadDetailPage() {
                         Lead Source
                       </label>
                       {isLpLead ? (
-                        <div className="space-y-2">
-                          <div className="space-y-0.5">
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                          <div className="space-y-0.5 min-w-0">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Source</p>
-                            <p className="text-gray-700 font-semibold">
+                            <p className="text-gray-700 font-semibold truncate">
                               {lead.utmSource || lead.pageType || sourceLabel(lead.source)}
                             </p>
                           </div>
-                          <div className="space-y-0.5">
+                          <div className="space-y-0.5 min-w-0">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Campaign</p>
-                            <p className="text-gray-700">{lead.campaign || lead.utmCampaign || 'july'}</p>
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Form</p>
-                            <p className="text-gray-700">{sourceLabel(lead.source)}</p>
+                            <p className="text-gray-700 truncate">{lead.campaign || lead.utmCampaign || 'july'}</p>
                           </div>
                         </div>
                       ) : (

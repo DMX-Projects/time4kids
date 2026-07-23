@@ -9,6 +9,7 @@ import { normalizeRole, useAuth } from "@/components/auth/AuthProvider";
 import crmApi from "@/lib/crmApi";
 import {
     buildCrmDashboardHref,
+    clearCrmDashboardFilters,
     datesFromSnapshot,
     hardRefreshCrmDashboard,
     loadCrmDashboardFilters,
@@ -254,16 +255,60 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     };
 
     useEffect(() => {
-        const fromUrl =
-            typeof window !== "undefined"
-                ? snapshotFromSearchParams(new URLSearchParams(window.location.search))
-                : null;
-        const saved = fromUrl || loadCrmDashboardFilters();
-        if (saved) {
-            applySnapshot({ ...saved, returnPath });
+        if (typeof window === "undefined") {
+            setFiltersReady(true);
+            return;
         }
+
+        const isReload = (() => {
+            const nav = performance.getEntriesByType("navigation")[0] as
+                | PerformanceNavigationTiming
+                | undefined;
+            if (nav?.type === "reload") return true;
+            // Older browsers
+            const legacy = (performance as Performance & { navigation?: { type?: number } }).navigation;
+            return legacy?.type === 1; // TYPE_RELOAD
+        })();
+
+        // Browser refresh / hard refresh → reset filters (basic expected behavior).
+        if (isReload) {
+            clearCrmDashboardFilters();
+            setSelectedCity([]);
+            setSelectedState([]);
+            setSelectedCentre([]);
+            setSelectedSource("all");
+            setSelectedCampaignChannel("");
+            setSelectedStatus("all");
+            setSelectedUserId("");
+            setFilterDateRange({ startDate: null, endDate: null });
+            setDateRange({ startDate: null, endDate: null });
+            setReportsFiltersApplied(false);
+            const cleanPath = returnPath.startsWith("/crm-admin/reports")
+                ? "/crm-admin/reports"
+                : "/crm-admin";
+            if (`${window.location.pathname}${window.location.search}` !== cleanPath) {
+                router.replace(cleanPath, { scroll: false });
+            }
+            setFiltersReady(true);
+            return;
+        }
+
+        const restore = () => {
+            const fromUrl = snapshotFromSearchParams(new URLSearchParams(window.location.search));
+            const saved = fromUrl || loadCrmDashboardFilters();
+            if (saved) {
+                applySnapshot({ ...saved, returnPath });
+            }
+        };
+
+        restore();
         setFiltersReady(true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- restore once on mount
+
+        // Client back/forward (e.g. from lead detail) — keep filters.
+        const onPopState = () => restore();
+        window.addEventListener("popstate", onPopState);
+        return () => window.removeEventListener("popstate", onPopState);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + reload detection
     }, []);
 
     const currentSnapshot: CrmDashboardFiltersSnapshot = useMemo(
