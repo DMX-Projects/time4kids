@@ -30,6 +30,30 @@ import ReportsView from "@/components/crm/admin/ReportsView";
 const LeadSourceChart = lazy(() => import("@/components/crm/admin/LeadSourceChart"));
 const ConversionFunnel = lazy(() => import("@/components/crm/admin/ConversionFunnel"));
 
+const CRM_DOC_ID_KEY = "crm-page-doc-id";
+
+function isBrowserReload(): boolean {
+    if (typeof window === "undefined" || typeof performance === "undefined") return false;
+    const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    if (nav?.type === "reload") return true;
+    const legacy = (performance as Performance & { navigation?: { type?: number } }).navigation;
+    return legacy?.type === 1;
+}
+
+/** True only on the first dashboard mount after a full document load (not remount from lead back). */
+function isFirstMountOfThisDocument(): boolean {
+    if (typeof window === "undefined") return true;
+    const docId = String(performance.timeOrigin);
+    try {
+        const prev = sessionStorage.getItem(CRM_DOC_ID_KEY);
+        if (prev === docId) return false;
+        sessionStorage.setItem(CRM_DOC_ID_KEY, docId);
+        return true;
+    } catch {
+        return true;
+    }
+}
+
 type LeadType = "all" | "franchise" | "admission";
 /** Effective API source derived from lead type + sub-filter */
 type SourceFilter =
@@ -260,18 +284,16 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             return;
         }
 
-        const isReload = (() => {
-            const nav = performance.getEntriesByType("navigation")[0] as
-                | PerformanceNavigationTiming
-                | undefined;
-            if (nav?.type === "reload") return true;
-            // Older browsers
-            const legacy = (performance as Performance & { navigation?: { type?: number } }).navigation;
-            return legacy?.type === 1; // TYPE_RELOAD
-        })();
+        const restore = () => {
+            const fromUrl = snapshotFromSearchParams(new URLSearchParams(window.location.search));
+            const saved = fromUrl || loadCrmDashboardFilters();
+            if (saved) {
+                applySnapshot({ ...saved, returnPath });
+            }
+        };
 
-        // Browser refresh / hard refresh → reset filters (basic expected behavior).
-        if (isReload) {
+        // F5 / hard refresh: reset filters once. Back from lead remounts the page but is NOT a new document.
+        if (isBrowserReload() && isFirstMountOfThisDocument()) {
             clearCrmDashboardFilters();
             setSelectedCity([]);
             setSelectedState([]);
@@ -293,22 +315,15 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             return;
         }
 
-        const restore = () => {
-            const fromUrl = snapshotFromSearchParams(new URLSearchParams(window.location.search));
-            const saved = fromUrl || loadCrmDashboardFilters();
-            if (saved) {
-                applySnapshot({ ...saved, returnPath });
-            }
-        };
-
+        // Mark this document seen so remounts (lead → back) restore filters instead of resetting.
+        isFirstMountOfThisDocument();
         restore();
         setFiltersReady(true);
 
-        // Client back/forward (e.g. from lead detail) — keep filters.
         const onPopState = () => restore();
         window.addEventListener("popstate", onPopState);
         return () => window.removeEventListener("popstate", onPopState);
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + reload detection
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + back navigation
     }, []);
 
     const currentSnapshot: CrmDashboardFiltersSnapshot = useMemo(

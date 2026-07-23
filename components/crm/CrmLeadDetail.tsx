@@ -266,15 +266,14 @@ export default function LeadDetailPage() {
   }, [lead])
 
   const goBackToDashboard = () => {
-    // Prefer the explicit return URL captured when opening the lead (includes filters).
     if (typeof window !== 'undefined') {
+      // Ensure we always have something to restore even if `from` is missing.
       const from = new URLSearchParams(window.location.search).get('from')
-      if (isSafeCrmReturnHref(from)) {
-        router.push(from)
-        return
-      }
+      const fallback = getCrmDashboardReturnHref()
+      const target = isSafeCrmReturnHref(from) ? from : fallback
+      router.push(target)
+      return
     }
-    // Fallback: last saved dashboard/report filters in sessionStorage.
     router.push(getCrmDashboardReturnHref())
   }
 
