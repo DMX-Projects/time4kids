@@ -44,7 +44,7 @@ type FranchiseSubFilter = "" | "franchise" | "campaign";
 /** Admission family: Website form, city Landing pages, Centerpage contact */
 type AdmissionSubFilter = "" | "website" | "landing" | "contact";
 type SubFilter = FranchiseSubFilter | AdmissionSubFilter;
-type CampaignChannelFilter = "" | "website" | "facebook" | "instagram" | "july_lp" | "july_meta" | "lp_wb";
+type CampaignChannelFilter = "" | "google" | "july_meta";
 type StatusFilter =
     | "all"
     | "untouched"
@@ -164,17 +164,13 @@ const SOURCE_LABELS: Record<SourceFilter, string> = {
 
 const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] = [
     { id: "", label: "All Channels" },
-    { id: "website", label: "Website" },
-    { id: "facebook", label: "Facebook" },
-    { id: "instagram", label: "Instagram" },
-    { id: "july_lp", label: "Landingpage July" },
-    { id: "july_meta", label: "Meta July" },
-    { id: "lp_wb", label: "Landingpage-WB" },
+    { id: "google", label: "Google" },
+    { id: "july_meta", label: "META" },
 ];
 
-const FRANCHISE_CAMPAIGN_CHANNELS: CampaignChannelFilter[] = ["july_lp", "july_meta", "lp_wb"];
+const FRANCHISE_CAMPAIGN_CHANNELS: CampaignChannelFilter[] = ["google", "july_meta"];
 
-/** LP-only channels that use franchise-lp geo (no centre). */
+/** LP channels that use franchise-lp geo (no centre). */
 function isFranchiseLpGeoChannel(channel: CampaignChannelFilter): boolean {
     return FRANCHISE_CAMPAIGN_CHANNELS.includes(channel);
 }
@@ -244,8 +240,10 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         setSelectedCentre(Array.isArray(saved.selectedCentre) ? saved.selectedCentre : []);
         const migrated = migrateLegacySource(saved.selectedSource || "");
         setSelectedSource(migrated);
+        const savedChannel = (saved.selectedCampaignChannel as CampaignChannelFilter) || "";
+        const validChannels = new Set(CAMPAIGN_CHANNEL_FILTERS.map((f) => f.id));
         setSelectedCampaignChannel(
-            migrated === "campaign" ? ((saved.selectedCampaignChannel as CampaignChannelFilter) || "") : "",
+            migrated === "campaign" && validChannels.has(savedChannel) ? savedChannel : "",
         );
         const restoredStatus = (saved.selectedStatus as StatusFilter) || "all";
         setSelectedStatus(restoredStatus);

@@ -41,22 +41,22 @@ const FRANCHISE_COLUMNS = [
 ];
 
 const FRANCHISE_CAMPAIGN_SOURCES = new Set([
-    "website",
-    "facebook",
-    "instagram",
-    "web",
-    "fb",
-    "insta",
+    "google",
     "july_lp",
     "july_meta",
     "lp_wb",
 ]);
 
 const getCategoryColumns = (categoryId: string, source?: string) => {
-    if (categoryId === "franchise" || categoryId === "campaign") {
+    if (
+        categoryId === "franchise" ||
+        categoryId === "campaign" ||
+        categoryId === "google" ||
+        categoryId === "july_meta"
+    ) {
         return FRANCHISE_COLUMNS;
     }
-    if (source && FRANCHISE_CAMPAIGN_SOURCES.has(source)) {
+    if (source && (source === "campaign" || FRANCHISE_CAMPAIGN_SOURCES.has(source))) {
         return FRANCHISE_COLUMNS;
     }
     return NON_FRANCHISE_COLUMNS;
@@ -71,21 +71,15 @@ const CATEGORIES = [
 ];
 
 const CAMPAIGN_CHANNEL_CATEGORIES = [
-    { id: "website", label: "Website", bg: "bg-violet-50 text-violet-800", subkey: "web" },
-    { id: "facebook", label: "Facebook", bg: "bg-blue-50 text-blue-800", subkey: "fb" },
-    { id: "instagram", label: "Instagram", bg: "bg-pink-50 text-pink-800", subkey: "ig" },
-    { id: "july_lp", label: "Landingpage July", bg: "bg-amber-50 text-amber-800", subkey: "lp" },
-    { id: "july_meta", label: "Meta July", bg: "bg-fuchsia-50 text-fuchsia-800", subkey: "meta" },
-    { id: "lp_wb", label: "Landingpage-WB", bg: "bg-lime-50 text-lime-800", subkey: "lpwb" },
+    { id: "google", label: "Google", bg: "bg-amber-50 text-amber-800", subkey: "lp" },
+    { id: "july_meta", label: "META", bg: "bg-fuchsia-50 text-fuchsia-800", subkey: "meta" },
 ];
 
 const CHANNEL_LABELS: Record<string, string> = {
-    website: "Website",
-    facebook: "Facebook",
-    instagram: "Instagram",
-    july_lp: "Landingpage July",
-    july_meta: "Meta July",
-    lp_wb: "Landingpage-WB",
+    google: "Google",
+    july_lp: "Google",
+    july_meta: "META",
+    lp_wb: "Google",
 };
 
 function cityRowTotal(
@@ -153,13 +147,36 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
             );
         }
         if (source === "franchise_all") {
-            // Franchise All = Franchise Form + Campaign
-            return CATEGORIES.filter((c) => c.id === "franchise" || c.id === "campaign");
+            // Franchise Form + Campaign channels (Google + META)
+            return [
+                ...CATEGORIES.filter((c) => c.id === "franchise"),
+                ...CAMPAIGN_CHANNEL_CATEGORIES,
+            ];
         }
         if (source === "admission") {
             return CATEGORIES.filter((c) => c.id === "admission");
         }
         if (source === "campaign") return CAMPAIGN_CHANNEL_CATEGORIES;
+        if (source === "google" || source === "july_lp" || source === "lp_wb") {
+            return [
+                {
+                    id: "campaign",
+                    label: "Google Leads",
+                    bg: "bg-amber-50 text-amber-800",
+                    subkey: "lp",
+                },
+            ];
+        }
+        if (source === "july_meta") {
+            return [
+                {
+                    id: "campaign",
+                    label: "META Leads",
+                    bg: "bg-fuchsia-50 text-fuchsia-800",
+                    subkey: "meta",
+                },
+            ];
+        }
         if (CHANNEL_LABELS[source]) {
             return [
                 {
@@ -207,7 +224,22 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
             const data = response.data?.cities || {};
             const normalizedData: any = {};
             Object.keys(data).forEach((k) => {
-                normalizedData[k.toLowerCase()] = data[k];
+                const cityData = { ...(data[k] || {}) };
+                // Merge LP TKKTAM + LP WB into one Google bucket (legacy keys).
+                const googleBucket = { ...(cityData.google || {}) };
+                for (const legacy of ["july_lp", "lp_wb"] as const) {
+                    const part = cityData[legacy];
+                    if (part && typeof part === "object") {
+                        Object.entries(part).forEach(([status, count]) => {
+                            googleBucket[status] = (googleBucket[status] || 0) + Number(count || 0);
+                        });
+                        delete cityData[legacy];
+                    }
+                }
+                if (Object.keys(googleBucket).length > 0) {
+                    cityData.google = googleBucket;
+                }
+                normalizedData[k.toLowerCase()] = cityData;
             });
             setReportData(normalizedData);
             // Empty city = All → use cities returned by the API

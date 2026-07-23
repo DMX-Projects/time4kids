@@ -1,18 +1,13 @@
-/** Campaign channels that are franchise-opportunity leads (CRM forms + LP). */
+/** Active franchise campaign channels (META + Google LPs). */
 export const FRANCHISE_CAMPAIGN_SOURCES = [
-  "website",
-  "facebook",
-  "instagram",
-  "web",
-  "fb",
-  "insta",
+  "google",
   "july_lp",
   "july_meta",
   "lp_wb",
 ] as const;
 
 /** July / LP-WB only — state-city from franchise-lp geo, no centre. */
-export const FRANCHISE_LP_GEO_SOURCES = ["july_lp", "july_meta", "lp_wb"] as const;
+export const FRANCHISE_LP_GEO_SOURCES = ["july_lp", "july_meta", "lp_wb", "google"] as const;
 
 export function isFranchiseCampaignSource(source?: string | null): boolean {
   if (!source) return false;

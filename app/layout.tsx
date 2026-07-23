@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
+import Script from "next/script";
 import { Dosis, Schoolbell } from "next/font/google";
 // Rebuild trigger
 import "./globals.css";
@@ -69,14 +70,12 @@ export default function RootLayout({
     return (
         <html lang="en" className={`${fontDosis.variable} ${fontSchoolbell.variable}`}>
             <head>
-                {/* GTM Disabled to reduce cookie bloat and troubleshoot 400 errors */}
-                {/* {GTM_ID ? (
-                    <>
-                        <Script
-                            id="gtm-init"
-                            strategy="afterInteractive"
-                            dangerouslySetInnerHTML={{
-                                __html: `
+                {GTM_ID ? (
+                    <Script
+                        id="gtm-init"
+                        strategy="afterInteractive"
+                        dangerouslySetInnerHTML={{
+                            __html: `
                                     window.dataLayer = window.dataLayer || [];
                                     (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
                                     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -84,13 +83,12 @@ export default function RootLayout({
                                     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
                                     })(window,document,'script','dataLayer','${GTM_ID}');
                                 `,
-                            }}
-                        />
-                    </>
-                ) : null} */}
+                        }}
+                    />
+                ) : null}
             </head>
             <body className="antialiased touch-pan-y">
-                {/* {GTM_ID ? (
+                {GTM_ID ? (
                     <noscript>
                         <iframe
                             src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
@@ -99,7 +97,7 @@ export default function RootLayout({
                             style={{ display: "none", visibility: "hidden" }}
                         />
                     </noscript>
-                ) : null} */}
+                ) : null}
                 <AuthProvider>
                     <ToastProvider>
                         <FooterContentProvider>

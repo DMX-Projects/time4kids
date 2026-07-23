@@ -199,9 +199,10 @@ const SOURCE_LABELS: Record<string, string> = {
   website: 'Website',
   facebook: 'Facebook',
   instagram: 'Instagram',
-  july_lp: 'Landingpage July',
-  july_meta: 'Meta July',
-  lp_wb: 'Landingpage-WB',
+  july_lp: 'Google',
+  july_meta: 'META',
+  lp_wb: 'Google',
+  google: 'Google',
 }
 
 function sourceLabel(source?: string) {
@@ -507,7 +508,7 @@ export default function LeadDetailPage() {
                         {isLpLead ? (
                           <div className="space-y-0.5">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Investment capacity</p>
-                            <p className="text-gray-700">{lead.investmentRange || '—'}</p>
+                            <p className="text-gray-700">{lead.investmentRange || '₹10–15L'}</p>
                           </div>
                         ) : (
                           <>
@@ -539,18 +540,25 @@ export default function LeadDetailPage() {
                       <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
                         Lead Source
                       </label>
-                      <p className="text-gray-700 font-semibold">{sourceLabel(lead.source)}</p>
-                      {isLpLead && (
-                        <div className="space-y-2 pt-1">
+                      {isLpLead ? (
+                        <div className="space-y-2">
                           <div className="space-y-0.5">
-                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Page type</p>
-                            <p className="text-gray-700">{lead.pageType || lead.utmSource || '—'}</p>
+                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Source</p>
+                            <p className="text-gray-700 font-semibold">
+                              {lead.utmSource || lead.pageType || sourceLabel(lead.source)}
+                            </p>
                           </div>
                           <div className="space-y-0.5">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Campaign</p>
-                            <p className="text-gray-700">{lead.campaign || lead.utmCampaign || '—'}</p>
+                            <p className="text-gray-700">{lead.campaign || lead.utmCampaign || 'july'}</p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Form</p>
+                            <p className="text-gray-700">{sourceLabel(lead.source)}</p>
                           </div>
                         </div>
+                      ) : (
+                        <p className="text-gray-700 font-semibold">{sourceLabel(lead.source)}</p>
                       )}
                       {!isLpLead &&
                         (lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign) && (

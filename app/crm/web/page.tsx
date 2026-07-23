@@ -1,11 +1,8 @@
-import FranchiseForm from '@/components/crm/FranchiseForm'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
+/** Legacy form — hidden; no longer used. */
 export default function CrmWebPage() {
-  return (
-    <main className="min-h-screen">
-      <FranchiseForm />
-    </main>
-  )
+  redirect('/')
 }
