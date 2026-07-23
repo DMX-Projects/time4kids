@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-PFTLCHS4');</script>
+    <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
@@ -357,7 +364,6 @@ footer .footer_blurbs {
     top: auto;
     left: auto;
     width: min(70%, 280px);
-}
 }
 /*  */
      .leading-box{
@@ -1308,33 +1314,41 @@ footer {
 /*  */
 .timeskids-sec-new {
             width: 100%;
-            max-width: 750px;
+            max-width: 1100px;
             margin: auto;
-            overflow: hidden;
+            overflow: visible;
             position: relative;
-            background: #f9f9f9;
-            padding: 20px 0 20px;
-            border-radius: 10px;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
             text-align: center;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: none;
         }
 
         .testimonial-wrapper {
-            display: flex;
-            transition: transform 0.5s ease-in-out;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 20px;
+            align-items: stretch;
         }
 
         .testimonial {
-            min-width: 100%;
-            padding: 50px;
+            min-width: 0;
+            width: 100%;
+            padding: 22px 16px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            box-sizing: border-box;
+            background: #fff;
+            border: 1px solid #e8e8e8;
+            border-radius: 14px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
         }
 
         .testimonial img {
-            width: 150px;
-            height: 150px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 10px;
@@ -1342,27 +1356,21 @@ footer {
         }
 
         .testimonial p {
-            font-size: 18px;
+            font-size: 14px;
             color: #333;
-            line-height: 25px;
+            line-height: 21px;
             margin-bottom: 10px;
         }
 
         .author {
             font-weight: bold;
             color: #0073e6;
+            font-size: 13px;
+            margin-top: auto;
         }
 
         .arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 30px;
-            color: #0073e6;
-            cursor: pointer;
-            background-color: transparent;
-            border: none;
-            z-index: 1;
+            display: none !important;
         }
 
         .arrow-left {
@@ -1373,9 +1381,30 @@ footer {
             right: 10px;
         }
 
+        @media screen and (max-width: 991px) {
+    .testimonial-wrapper {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .testimonial {
+        padding: 12px 8px;
+    }
+
+    .testimonial img {
+        width: 90px;
+        height: 90px;
+    }
+
+    .testimonial p {
+        font-size: 15px;
+        line-height: 22px;
+    }
+}
+
         @media screen and (max-width: 480px) {
     .testimonial {
-        padding: 20px;
+        padding: 10px 4px;
     }
 
     .testimonial img {
@@ -1469,6 +1498,42 @@ body {
 img,
 iframe {
     max-width: 100%;
+}
+
+.tk-video-section {
+    width: 100%;
+    max-width: 520px;
+    margin: 28px auto 0;
+    padding: 14px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+}
+
+.tk-video-section h2 {
+    display: none;
+}
+
+.tk-video-frame {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 10px;
+    box-shadow: none;
+    background: #000;
+}
+
+.tk-video-frame iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
 }
 
 @media screen and (min-width: 1024px) {
@@ -1642,7 +1707,8 @@ iframe {
     }
 
     #banner .tk-enquiry-form .tk-form-terms {
-        margin-top: auto;
+        margin-top: 4px;
+        margin-bottom: 0;
     }
 
     #banner .tk-enquiry-form .form_field:last-child {
@@ -2060,7 +2126,7 @@ iframe {
 #banner .tk-enquiry-form .tk-submit-btn {
     width: 100%;
     min-width: 0;
-    margin-top: 4px;
+    margin-top: 2px;
     padding: 14px 18px;
     border: none;
     border-radius: 10px;
@@ -2462,6 +2528,10 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
 
 </head>
 <body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PFTLCHS4"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
     <div id="wrapper">
         <header>
             <div class="logo">
@@ -2485,7 +2555,7 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
                     <div class="col-lg-6 banner_right">
                         <div class="banner_typo">
                             <h1>
-                                Own India's Fastest Growing Preschool in ₹12–15L
+                                Own India's Fastest Growing Preschool in ₹10–15L
                             </h1>
                             <!-- <img src="assets/images/banner-typo.png" alt=""> -->
                         </div>
@@ -2529,10 +2599,13 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
                             </div>
                             <form id="timekidsEnquiryForm" class="tk-enquiry-form" novalidate
                                 data-source="lp_wb"
-                                data-page-type="wb" data-campaign="wb"
+                                data-page-type="Google" data-campaign="july"
                                 data-comments="West Bengal LP campaign form"
                                 data-geo-mode="wb-cities"
                                 data-default-state="West Bengal">
+                                <!-- Edit these anytime: type = campaign, source = ad channel -->
+                                <input type="hidden" name="type" value="july" />
+                                <input type="hidden" name="source" value="Google" />
                                 <div class="form_field">
                                     <label class="field-label" for="tk-name">Full Name *</label>
                                     <input id="tk-name" type="text" class="textBox tk-input" placeholder="Enter your full name" name="name" maxlength="75" />
@@ -2560,15 +2633,6 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
                                     </select>
                                     <input type="text" class="textBox tk-input cityInput" style="display:none;" disabled aria-label="City" />
                                     <input type="hidden" id="tk-state" name="state" value="West Bengal" />
-                                </div>
-                                <div class="form_field tk-investment-field">
-                                    <label class="field-label">Investment Capacity *</label>
-                                    <div class="tk-investment-chips" role="group" aria-label="Investment capacity">
-                                        <button type="button" class="tk-chip" data-value="₹5–10L">₹5–10L</button>
-                                        <button type="button" class="tk-chip" data-value="₹10–15L">₹10–15L</button>
-                                        <button type="button" class="tk-chip" data-value="₹15L+">₹15L+</button>
-                                    </div>
-                                    <input type="hidden" name="investmentRange" id="tk-investment-range" value="" />
                                 </div>
                                 <div class="form_field tk-form-terms">
                                     <label>
@@ -2941,10 +3005,19 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
                                 </span>
                             </div>
                         </div>
-                    
-                        <!-- Left and Right Arrows -->
-                        <button class="arrow arrow-left" onclick="prevTestimonial()">&#8592;</button>
-                        <button class="arrow arrow-right" onclick="nextTestimonial()">&#8594;</button>
+
+                        <div class="tk-video-section">
+                            <div class="tk-video-frame">
+                                <iframe
+                                    src="https://www.youtube.com/embed/Ps3pHGbs7Ek"
+                                    title="T.I.M.E. Kids Preschool Franchise"
+                                    loading="lazy"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    referrerpolicy="strict-origin-when-cross-origin"
+                                    allowfullscreen
+                                ></iframe>
+                            </div>
+                        </div>
                     </div>
            
                 </div>
@@ -3004,27 +3077,7 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
 
 
 <script>
-    let index = 0;
-    const testimonials = document.querySelectorAll(".testimonial");
-    const wrapper = document.querySelector(".testimonial-wrapper");
-    const totalTestimonials = testimonials.length;
-
-    function showTestimonial() {
-        const offset = -index * 100;
-        wrapper.style.transform = `translateX(${offset}%)`;
-    }
-
-    function nextTestimonial() {
-        index = (index + 1) % totalTestimonials;
-        showTestimonial();
-    }
-
-    function prevTestimonial() {
-        index = (index - 1 + totalTestimonials) % totalTestimonials;
-        showTestimonial();
-    }
-
-    setInterval(nextTestimonial, 3000);
+    /* Testimonials: show all 3 cards statically (no carousel) */
 </script>
     <script src="js/jquery-2.1.4.min.js"></script>
     <script src="js/jquery.easing.1.3.js"></script>

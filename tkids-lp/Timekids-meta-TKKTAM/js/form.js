@@ -2,10 +2,10 @@ $(document).ready(function () {
     var $form = $('#timekidsEnquiryForm');
     if (!$form.length) return;
 
-    var campaignSource = $form.data('source') || 'july_lp';
+    var campaignSource = $form.data('source') || 'july_meta';
     var pageType = $form.data('page-type') || campaignSource;
     var campaignName = $form.data('campaign') || campaignSource;
-    var campaignComments = $form.data('comments') || 'July LP campaign form';
+    var campaignComments = $form.data('comments') || 'July campaign form';
     var geoMode = $form.data('geo-mode') || 'state-city';
     var defaultState = $form.data('default-state') || '';
     var isWbCitiesOnly = geoMode === 'wb-cities';
@@ -31,7 +31,6 @@ $(document).ready(function () {
     var $state = $form.find('[name="state"]');
     var $citySelect = $form.find('select.cityDropDown');
     var $cityInput = $form.find('input.cityInput');
-    var $investment = $('#tk-investment-range');
     var $otp = $form.find('[name="otp"]');
     var $otpRow = $form.find('.tk-otp-row');
     var $sendOtpBtn = $('#tk-send-otp');
@@ -321,10 +320,6 @@ $(document).ready(function () {
         return /^[6-9]\d{9}$/.test(normalizePhone(value));
     }, 'Please enter a valid 10-digit Indian mobile number');
 
-    $.validator.addMethod('investmentRequired', function () {
-        return !!$.trim($investment.val() || '');
-    }, 'Please select your investment capacity');
-
     $.validator.addMethod('cityRequired', function () {
         return !!getCityValue();
     }, 'Please select or enter your city');
@@ -338,7 +333,6 @@ $(document).ready(function () {
         email: { required: true, strictEmail: true },
         phone: { required: true, phoneIndia: true, minlength: 10, maxlength: 10 },
         city: { cityRequired: true },
-        investmentRange: { investmentRequired: true },
         otp: { otpRequired: true },
         acknowledge: { required: true }
     };
@@ -358,7 +352,6 @@ $(document).ready(function () {
             maxlength: 'Mobile number must be exactly 10 digits'
         },
         city: 'Please select or enter your city',
-        investmentRange: 'Please select your investment capacity',
         otp: { otpRequired: 'Please enter the 4-digit OTP sent to your mobile' },
         acknowledge: 'Please acknowledge the terms to proceed'
     };
@@ -369,7 +362,7 @@ $(document).ready(function () {
     }
 
     $form.validate({
-        ignore: ':hidden:not(select.cityDropDown):not(#tk-investment-range):not(.tk-otp-row input)',
+        ignore: ':hidden:not(select.cityDropDown):not(.tk-otp-row input)',
         onkeyup: function (element) {
             if (element.name in this.submitted || element.name in this.invalid) {
                 this.element(element);
@@ -390,8 +383,6 @@ $(document).ready(function () {
         errorPlacement: function (error, element) {
             if (element.attr('name') === 'acknowledge') {
                 error.appendTo(element.closest('.tk-form-terms'));
-            } else if (element.attr('name') === 'investmentRange') {
-                error.appendTo(element.closest('.tk-investment-field'));
             } else if (element.hasClass('cityDropDown') || element.hasClass('cityInput')) {
                 error.appendTo(element.closest('.form_field'));
             } else if (element.attr('name') === 'otp' || element.attr('name') === 'phone') {
@@ -420,9 +411,12 @@ $(document).ready(function () {
             }
 
             var utm = getUrlUtmParams();
-            // Page type = which LP form (meta / lp / wb).
-            // Campaign = ad channel from URL when present (meta / google / fb / …).
-            var resolvedCampaign = utm.utm_campaign || utm.utm_source || campaignName;
+            // Hidden fields: name="source" (ad channel), name="type" (campaign).
+            // CRM form key stays in data-source (july_meta / july_lp / lp_wb) for filters.
+            var hiddenSource = $.trim($form.find('input[name="source"]').val() || '');
+            var hiddenType = $.trim($form.find('input[name="type"]').val() || '');
+            var resolvedSource = utm.utm_source || hiddenSource || pageType;
+            var resolvedCampaign = utm.utm_campaign || hiddenType || campaignName;
             var payload = {
                 fullName: $.trim($name.val()),
                 email: $.trim($email.val()).toLowerCase(),
@@ -431,14 +425,15 @@ $(document).ready(function () {
                 state: stateValue,
                 city: cityValue,
                 preferredCentreLocation: cityValue,
-                investmentRange: $.trim($investment.val()),
+                // All 3 campaign LPs acknowledge ₹10–15L only (no capacity picker).
+                investmentRange: '₹10–15L',
                 source: campaignSource,
                 comments: campaignComments,
                 landingPageUrl: window.location.href.split('#')[0],
-                utmSource: utm.utm_source || pageType,
+                utmSource: resolvedSource,
                 utmMedium: utm.utm_medium || '',
                 utmCampaign: resolvedCampaign,
-                pageType: pageType,
+                pageType: resolvedSource,
                 campaign: resolvedCampaign
             };
 

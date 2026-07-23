@@ -46,9 +46,10 @@ const SOURCE_LABELS: Record<string, string> = {
   website: 'Website',
   facebook: 'Facebook',
   instagram: 'Instagram',
-  july_lp: 'Landingpage July',
-  july_meta: 'Meta July',
-  lp_wb: 'Landingpage-WB',
+  july_lp: 'Google',
+  july_meta: 'META',
+  lp_wb: 'Google',
+  google: 'Google',
   admission: 'Admission',
   contact: 'Centers Enquiry',
   campaign: 'Campaign Enquiry',
@@ -116,9 +117,13 @@ const statusColors: { [key: string]: string } = {
 
 export default function LeadsTable({ dateRange, city, state, centreId, status, source, userId, search, title, returnHref, onBeforeNavigate, onLeadUpdated }: LeadsTableProps) {
   const hideCentreColumn =
-    source === 'franchise' || source === 'july_lp' || source === 'july_meta' || source === 'lp_wb'
+    source === 'franchise' ||
+    source === 'google' ||
+    source === 'july_lp' ||
+    source === 'july_meta' ||
+    source === 'lp_wb'
   const isFranchiseCampaignLead = (leadSource: string) =>
-    leadSource === 'july_lp' || leadSource === 'july_meta' || leadSource === 'lp_wb'
+    leadSource === 'july_lp' || leadSource === 'july_meta' || leadSource === 'lp_wb' || leadSource === 'google'
   const router = useRouter()
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const [leads, setLeads] = useState<any[]>([])

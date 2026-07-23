@@ -6,9 +6,10 @@ const SOURCE_LABELS: Record<string, string> = {
   facebook: 'Facebook',
   instagram: 'Instagram',
   website: 'Website',
-  july_lp: 'Landingpage July',
-  july_meta: 'Meta July',
-  lp_wb: 'Landingpage-WB',
+  google: 'Google',
+  july_lp: 'Google',
+  july_meta: 'META',
+  lp_wb: 'Google',
   admission: 'Admission',
   contact: 'Centers Enquiry',
   campaign: 'Campaign Enquiry',
@@ -20,9 +21,10 @@ const COLORS = {
   instagram: '#E4405F',
   campaign: '#8B5CF6',
   website: '#7C3AED',
+  google: '#F59E0B',
   july_lp: '#F59E0B',
   july_meta: '#EC4899',
-  lp_wb: '#84CC16',
+  lp_wb: '#F59E0B',
   admission: '#2563EB',
   contact: '#0EA5E9',
   landing: '#14B8A6',
@@ -33,10 +35,16 @@ const COLORS = {
 }
 
 export default function LeadSourceChart({ data }: { data: any[] }) {
-  const chartData = data.map((item) => ({
-    name: SOURCE_LABELS[item.source] || item.source.charAt(0).toUpperCase() + item.source.slice(1).replace('_', ' '),
-    value: parseInt(item.count),
-    color: COLORS[item.source as keyof typeof COLORS] || COLORS.other,
+  const merged = new Map<string, number>()
+  for (const item of data) {
+    const raw = String(item.source || '')
+    const key = raw === 'july_lp' || raw === 'lp_wb' ? 'google' : raw
+    merged.set(key, (merged.get(key) || 0) + parseInt(item.count, 10))
+  }
+  const chartData = Array.from(merged.entries()).map(([source, count]) => ({
+    name: SOURCE_LABELS[source] || source.charAt(0).toUpperCase() + source.slice(1).replace('_', ' '),
+    value: count,
+    color: COLORS[source as keyof typeof COLORS] || COLORS.other,
   }))
 
   return (

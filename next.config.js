@@ -76,9 +76,16 @@ const nextConfig = {
             { source: '/timekids-2g/pages/thank-you-fb.html', destination: '/thank-you-fb.html', permanent: false },
             { source: '/franchise/thank-you', destination: '/thank-you.html', permanent: false },
             { source: '/franchise/thank-you/', destination: '/thank-you.html', permanent: false },
-            /** July LPs — no thank-you page; Meritto may still post to thank-you.html */
-            { source: '/Timekids-meta-july/thank-you.html', destination: '/Timekids-meta-july/', permanent: false },
-            { source: '/Timekids-lp-july/thank-you.html', destination: '/Timekids-lp-july/', permanent: false },
+            /** TKKTAM LPs — no thank-you page; Meritto may still post to thank-you.html */
+            { source: '/Timekids-meta-TKKTAM/thank-you.html', destination: '/Timekids-meta-TKKTAM/', permanent: false },
+            { source: '/Timekids-lp-TKKTAM/thank-you.html', destination: '/Timekids-lp-TKKTAM/', permanent: false },
+            /** Legacy July URLs → TKKTAM */
+            { source: '/Timekids-meta-july', destination: '/Timekids-meta-TKKTAM/', permanent: true },
+            { source: '/Timekids-meta-july/', destination: '/Timekids-meta-TKKTAM/', permanent: true },
+            { source: '/Timekids-meta-july/:path*', destination: '/Timekids-meta-TKKTAM/:path*', permanent: true },
+            { source: '/Timekids-lp-july', destination: '/Timekids-lp-TKKTAM/', permanent: true },
+            { source: '/Timekids-lp-july/', destination: '/Timekids-lp-TKKTAM/', permanent: true },
+            { source: '/Timekids-lp-july/:path*', destination: '/Timekids-lp-TKKTAM/:path*', permanent: true },
             /** WB LP alias uses the same page behavior as July LP. */
             { source: '/Timekids-lp-WB/thank-you.html', destination: '/Timekids-lp-WB/', permanent: false },
         ];
@@ -89,10 +96,10 @@ const nextConfig = {
             { source: '/Timekids-meta-feb/', destination: '/Timekids-meta-feb/index.html' },
             { source: '/Timekids-lp-feb', destination: '/Timekids-lp-feb/index.html' },
             { source: '/Timekids-lp-feb/', destination: '/Timekids-lp-feb/index.html' },
-            { source: '/Timekids-meta-july', destination: '/Timekids-meta-july/index.html' },
-            { source: '/Timekids-meta-july/', destination: '/Timekids-meta-july/index.html' },
-            { source: '/Timekids-lp-july', destination: '/Timekids-lp-july/index.html' },
-            { source: '/Timekids-lp-july/', destination: '/Timekids-lp-july/index.html' },
+            { source: '/Timekids-meta-TKKTAM', destination: '/Timekids-meta-TKKTAM/index.html' },
+            { source: '/Timekids-meta-TKKTAM/', destination: '/Timekids-meta-TKKTAM/index.html' },
+            { source: '/Timekids-lp-TKKTAM', destination: '/Timekids-lp-TKKTAM/index.html' },
+            { source: '/Timekids-lp-TKKTAM/', destination: '/Timekids-lp-TKKTAM/index.html' },
             { source: '/Timekids-lp-WB', destination: '/Timekids-lp-WB/index.html' },
             { source: '/Timekids-lp-WB/', destination: '/Timekids-lp-WB/index.html' },
         ];
