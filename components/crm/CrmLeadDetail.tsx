@@ -125,6 +125,7 @@ const STATUS_LABELS: Record<string, string> = {
   converted_agreement_signed: 'Converted – Agreement Signed',
   join_later: 'Join Later',
   not_answering_calls: 'Not Answering Calls',
+  interested: 'Interested',
 
   // Legacy mappings for display fallback
   new: 'Untouched',
@@ -132,32 +133,32 @@ const STATUS_LABELS: Record<string, string> = {
   contacted: 'Not answering',
   converted: 'Converted to Admission',
   dropped: 'Not Interested',
-  interested: 'Follow-up',
   meeting_scheduled: 'Visited the school',
 }
 
 const NON_FRANCHISE_OPTIONS = [
   'untouched',
   'not_answering',
+  'wrong_enquiry',
+  'not_interested',
   'follow_up',
+  'joined_competition',
   'visited_school',
   'converted_admission',
-  'joined_competition',
-  'not_interested',
-  'wrong_enquiry',
 ]
 
 const FRANCHISE_OPTIONS = [
   'untouched',
-  'hot',
-  'warm',
+  'not_answering_calls',
+  'interested',
   'follow_up',
+  'join_later',
   'cold',
+  'warm',
+  'hot',
   'converted_mou_signed',
   'converted_agreement_signed',
-  'join_later',
   'not_interested',
-  'not_answering_calls',
 ]
 
 const STATUS_COLORS: Record<string, string> = {
@@ -177,6 +178,7 @@ const STATUS_COLORS: Record<string, string> = {
   converted_agreement_signed: 'bg-green-200 text-green-800 border border-green-300',
   join_later: 'bg-purple-100 text-purple-700 border border-purple-200',
   not_answering_calls: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  interested: 'bg-sky-100 text-sky-800 border border-sky-200',
 
   // Legacy mappings for display fallback
   new: 'bg-gray-100 text-gray-700 border border-gray-200',
@@ -184,7 +186,6 @@ const STATUS_COLORS: Record<string, string> = {
   contacted: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
   converted: 'bg-green-100 text-green-700 border border-green-200',
   dropped: 'bg-red-100 text-red-700 border border-red-200',
-  interested: 'bg-blue-100 text-blue-800 border border-blue-200',
   meeting_scheduled: 'bg-teal-100 text-teal-800 border border-teal-200',
 }
 const SOURCE_OPTIONS = [
@@ -195,7 +196,7 @@ const SOURCE_LABELS: Record<string, string> = {
   contact: 'CenterPage',
   admission: 'Admission',
   landing: 'Landing',
-  campaign: 'Campaign',
+  campaign: 'PaidCampaign',
   website: 'Website',
   facebook: 'Facebook',
   instagram: 'Instagram',
@@ -203,6 +204,7 @@ const SOURCE_LABELS: Record<string, string> = {
   july_meta: 'META',
   lp_wb: 'Google',
   google: 'Google',
+  youtube: 'YouTube',
 }
 
 function sourceLabel(source?: string) {

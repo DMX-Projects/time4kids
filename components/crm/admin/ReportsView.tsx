@@ -19,25 +19,26 @@ type SortDir = "asc" | "desc";
 const NON_FRANCHISE_COLUMNS = [
     { label: "Untouched", keys: ["untouched", "new"] },
     { label: "Not Answering", keys: ["not_answering", "called", "contacted"] },
-    { label: "Follow Up", keys: ["follow_up", "interested"] },
+    { label: "Wrong Enquiry", keys: ["wrong_enquiry"] },
+    { label: "Not Interested", keys: ["not_interested", "dropped"] },
+    { label: "Follow Up", keys: ["follow_up"] },
+    { label: "Joined Competition", keys: ["joined_competition"] },
     { label: "Visited School", keys: ["visited_school", "meeting_scheduled"] },
     { label: "Converted to Admission", keys: ["converted_admission", "converted"] },
-    { label: "Joined Competition", keys: ["joined_competition"] },
-    { label: "Not Interested", keys: ["not_interested", "dropped"] },
-    { label: "Wrong Enquiry", keys: ["wrong_enquiry"] },
 ];
 
 const FRANCHISE_COLUMNS = [
     { label: "Untouched", keys: ["untouched"] },
-    { label: "Hot", keys: ["hot"] },
-    { label: "Warm", keys: ["warm"] },
+    { label: "Not Answering Calls", keys: ["not_answering_calls"] },
+    { label: "Interested", keys: ["interested"] },
     { label: "Follow Up", keys: ["follow_up"] },
+    { label: "Join Later", keys: ["join_later"] },
     { label: "Cold", keys: ["cold"] },
+    { label: "Warm", keys: ["warm"] },
+    { label: "Hot", keys: ["hot"] },
     { label: "MOU Signed", keys: ["converted_mou_signed"] },
     { label: "Agreement Signed", keys: ["converted_agreement_signed"] },
-    { label: "Join Later", keys: ["join_later"] },
     { label: "Not Interested", keys: ["not_interested"] },
-    { label: "Not Answering Calls", keys: ["not_answering_calls"] },
 ];
 
 const FRANCHISE_CAMPAIGN_SOURCES = new Set([
@@ -45,6 +46,7 @@ const FRANCHISE_CAMPAIGN_SOURCES = new Set([
     "july_lp",
     "july_meta",
     "lp_wb",
+    "youtube",
 ]);
 
 const getCategoryColumns = (categoryId: string, source?: string) => {
@@ -52,7 +54,8 @@ const getCategoryColumns = (categoryId: string, source?: string) => {
         categoryId === "franchise" ||
         categoryId === "campaign" ||
         categoryId === "google" ||
-        categoryId === "july_meta"
+        categoryId === "july_meta" ||
+        categoryId === "youtube"
     ) {
         return FRANCHISE_COLUMNS;
     }
@@ -66,13 +69,14 @@ const CATEGORIES = [
     { id: "admission", label: "Website", bg: "bg-blue-50 text-blue-800", subkey: "adm" },
     { id: "landing", label: "Landing", bg: "bg-teal-50 text-teal-800", subkey: "lnd" },
     { id: "contact", label: "Centerpage", bg: "bg-sky-50 text-sky-800", subkey: "cen" },
-    { id: "campaign", label: "Campaign", bg: "bg-violet-50 text-violet-800", subkey: "cam" },
-    { id: "franchise", label: "Franchise", bg: "bg-orange-50 text-orange-800", subkey: "fra" },
+    { id: "campaign", label: "PaidCampaign", bg: "bg-violet-50 text-violet-800", subkey: "cam" },
+    { id: "franchise", label: "WebsiteLeads", bg: "bg-orange-50 text-orange-800", subkey: "fra" },
 ];
 
 const CAMPAIGN_CHANNEL_CATEGORIES = [
     { id: "google", label: "Google", bg: "bg-amber-50 text-amber-800", subkey: "lp" },
     { id: "july_meta", label: "META", bg: "bg-fuchsia-50 text-fuchsia-800", subkey: "meta" },
+    { id: "youtube", label: "YouTube", bg: "bg-red-50 text-red-800", subkey: "yt" },
 ];
 
 const CHANNEL_LABELS: Record<string, string> = {
@@ -80,6 +84,7 @@ const CHANNEL_LABELS: Record<string, string> = {
     july_lp: "Google",
     july_meta: "META",
     lp_wb: "Google",
+    youtube: "YouTube",
 };
 
 function cityRowTotal(
@@ -122,8 +127,8 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
         if (source === "admission") return "Website";
         if (source === "contact") return "CenterPage";
         if (source && CHANNEL_LABELS[source]) return CHANNEL_LABELS[source];
-        if (source === "campaign") return "Campaign";
-        if (source === "franchise") return "Franchise";
+        if (source === "campaign") return "PaidCampaign";
+        if (source === "franchise") return "WebsiteLeads";
         if (source === "landing") return "Landing";
         return "All Leads";
     };
@@ -174,6 +179,16 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
                     label: "META Leads",
                     bg: "bg-fuchsia-50 text-fuchsia-800",
                     subkey: "meta",
+                },
+            ];
+        }
+        if (source === "youtube") {
+            return [
+                {
+                    id: "youtube",
+                    label: "YouTube Leads",
+                    bg: "bg-red-50 text-red-800",
+                    subkey: "yt",
                 },
             ];
         }

@@ -9,6 +9,9 @@ Static HTML landings for franchise lead ads. **Published copies** live under `pu
 | `/Timekids-meta-TKKTAM/` | `public/Timekids-meta-TKKTAM/` |
 | `/Timekids-lp-TKKTAM/` | `public/Timekids-lp-TKKTAM/` |
 | `/Timekids-lp-WB/` | `public/Timekids-lp-WB/` |
+| `/Timekids-meta-TKKTAM-demo/` | `public/Timekids-meta-TKKTAM-demo/` (no OTP, no email) |
+| `/Timekids-lp-TKKTAM-demo/` | `public/Timekids-lp-TKKTAM-demo/` (no OTP, no email) |
+| `/Timekids-lp-WB-demo/` | `public/Timekids-lp-WB-demo/` (no OTP, no email) |
 
 ## Edit workflow
 
@@ -22,6 +25,9 @@ robocopy "$base\tkids-lp\Timekids-lp-feb" "$base\public\Timekids-lp-feb" /E
 robocopy "$base\tkids-lp\Timekids-meta-TKKTAM" "$base\public\Timekids-meta-TKKTAM" /E
 robocopy "$base\tkids-lp\Timekids-lp-TKKTAM" "$base\public\Timekids-lp-TKKTAM" /E
 robocopy "$base\tkids-lp\Timekids-lp-WB" "$base\public\Timekids-lp-WB" /E
+robocopy "$base\tkids-lp\Timekids-meta-TKKTAM-demo" "$base\public\Timekids-meta-TKKTAM-demo" /E
+robocopy "$base\tkids-lp\Timekids-lp-TKKTAM-demo" "$base\public\Timekids-lp-TKKTAM-demo" /E
+robocopy "$base\tkids-lp\Timekids-lp-WB-demo" "$base\public\Timekids-lp-WB-demo" /E
 ```
 
 3. Test locally: `npm run dev` → open `http://localhost:3000/Timekids-meta-feb/`

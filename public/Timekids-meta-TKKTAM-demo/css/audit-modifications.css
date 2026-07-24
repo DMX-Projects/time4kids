@@ -1,0 +1,345 @@
+/* Audit modifications — July 2026 LP updates */
+
+/* All content sections except hero banner (header/footer are not <section>) */
+section:not(#banner) {
+    padding-top: 50px !important;
+    padding-bottom: 50px !important;
+}
+
+#banner .tk-enquiry-form .tk-submit-btn {
+    margin-top: 2px !important;
+    color: #fff !important;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+    box-shadow: 0 8px 18px rgba(22, 163, 74, 0.35) !important;
+}
+
+#banner .tk-enquiry-form .tk-submit-btn:hover {
+    box-shadow: 0 10px 22px rgba(22, 163, 74, 0.42) !important;
+}
+
+#banner .tk-enquiry-form .tk-otp-row {
+    display: none;
+}
+
+#banner .tk-enquiry-form .tk-otp-row.is-visible {
+    display: block;
+}
+
+#banner .tk-enquiry-form .tk-investment-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+#banner .tk-enquiry-form .tk-chip {
+    border: 1px solid #dbe3ee;
+    background: #f8fafc;
+    color: #334155;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#banner .tk-enquiry-form .tk-chip.is-active {
+    border-color: #090d91;
+    background: #eef2ff;
+    color: #090d91;
+}
+
+.tk-acquisition-path {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 24px;
+}
+
+.tk-acquisition-step {
+    background: #fff;
+    border-radius: 16px;
+    padding: 22px 20px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    border-top: 4px solid #e2070e;
+}
+
+.tk-acquisition-step strong {
+    display: block;
+    color: #e2070e;
+    font-size: 18px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 800;
+    line-height: 1.3;
+}
+
+.tk-acquisition-step span {
+    color: #334155;
+    font-size: 16px;
+    line-height: 1.55;
+    font-weight: 500;
+}
+
+.tk-usp-subtitle {
+    text-align: center;
+    color: #64748b;
+    font-size: 15px;
+    margin: -8px 0 8px;
+}
+
+/* Advantage USP section — full page width, centered */
+.leading-box {
+    display: block !important;
+    justify-content: center !important;
+    align-items: stretch !important;
+    text-align: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    max-width: 1240px !important;
+    width: 100% !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+    box-sizing: border-box;
+}
+
+.leading-box .leading-section {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    text-align: center !important;
+    box-sizing: border-box;
+}
+
+.leading-box .leading-section h2,
+.leading-box .tk-usp-subtitle {
+    text-align: center !important;
+}
+
+.tk-usp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 24px;
+    text-align: left;
+    width: 100%;
+}
+
+.tk-usp-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px 18px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    border-left: 4px solid #16a34a;
+    min-height: 88px;
+}
+
+.tk-usp-card.tk-usp-green { border-left-color: #16a34a; }
+.tk-usp-card.tk-usp-orange { border-left-color: #f59e0b; }
+.tk-usp-card.tk-usp-blue { border-left-color: #2563eb; }
+.tk-usp-card.tk-usp-red { border-left-color: #e2070e; }
+
+.tk-usp-check {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #ecfdf5;
+    color: #16a34a;
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+}
+
+.tk-usp-card.tk-usp-orange .tk-usp-check { background: #fffbeb; color: #d97706; }
+.tk-usp-card.tk-usp-blue .tk-usp-check { background: #eff6ff; color: #2563eb; }
+.tk-usp-card.tk-usp-red .tk-usp-check { background: #fef2f2; color: #e2070e; }
+
+.tk-usp-card h4 {
+    font-size: 17px;
+    line-height: 1.45;
+    color: #1e293b;
+    margin: 0;
+    font-weight: 600;
+}
+
+.tk-usp-card p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.45;
+    color: #475569;
+}
+
+.tk-roi-section,
+.tk-comparison-section,
+.tk-success-stories {
+    padding: 60px 0;
+}
+
+.tk-roi-panel,
+.tk-comparison-panel {
+    background: #fff;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.tk-roi-controls {
+    display: grid;
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.tk-roi-control label {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+
+.tk-roi-control input[type="range"] {
+    width: 100%;
+}
+
+.tk-roi-results {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.tk-roi-stat {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+}
+
+.tk-roi-stat strong {
+    display: block;
+    font-size: 24px;
+    color: #e2070e;
+    margin-bottom: 6px;
+}
+
+.tk-roi-stat span {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.tk-comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.tk-comparison-table th,
+.tk-comparison-table td {
+    border: 1px solid #e2e8f0;
+    padding: 12px 10px;
+    text-align: center;
+}
+
+.tk-comparison-table th {
+    background: #fff7ed;
+    color: #9a3412;
+}
+
+.tk-comparison-table td:first-child,
+.tk-comparison-table th:first-child {
+    text-align: left;
+}
+
+.tk-comparison-table .tk-brand-col {
+    background: #fff1f2;
+    font-weight: 700;
+    color: #be123c;
+}
+
+.tk-success-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.tk-success-card {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 18px;
+    padding: 22px;
+    color: #fff;
+}
+
+.tk-success-card img {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 14px;
+}
+
+.tk-success-card p {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.tk-success-card .author {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffd166;
+}
+
+.tk-video-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.tk-video-card {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+    color: #fff;
+}
+
+.tk-video-card .tk-play {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e2070e;
+    font-size: 18px;
+}
+
+
+@media screen and (max-width: 991px) {
+    .tk-acquisition-path,
+    .tk-usp-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    .tk-acquisition-path,
+    .tk-usp-grid {
+        grid-template-columns: 1fr;
+    }
+}
