@@ -17,22 +17,24 @@ const STATUS_LABELS: Record<string, string> = {
   converted_agreement_signed: 'Converted – Agreement Signed',
   join_later: 'Join Later',
   not_answering_calls: 'Not Answering Calls',
+  interested: 'Interested',
 }
 
 const FRANCHISE_STATUS_ORDER = [
   'untouched',
-  'hot',
-  'warm',
+  'not_answering_calls',
+  'interested',
   'follow_up',
+  'join_later',
   'cold',
+  'warm',
+  'hot',
   'converted_mou_signed',
   'converted_agreement_signed',
-  'join_later',
-  'not_interested',
-  'not_answering_calls',
 ]
 
-const NON_FRANCHISE_STATUS_ORDER = [
+/** Used when Select Lead = All — do not change. */
+const ALL_STATUS_ORDER = [
   'untouched',
   'not_answering',
   'follow_up',
@@ -41,6 +43,17 @@ const NON_FRANCHISE_STATUS_ORDER = [
   'converted_admission',
   'not_interested',
   'wrong_enquiry',
+]
+
+const ADMISSION_STATUS_ORDER = [
+  'untouched',
+  'not_answering',
+  'wrong_enquiry',
+  'not_interested',
+  'follow_up',
+  'joined_competition',
+  'visited_school',
+  'converted_admission',
 ]
 
 const statusColors: Record<string, string> = {
@@ -60,9 +73,11 @@ const statusColors: Record<string, string> = {
   converted_agreement_signed: '#059669',
   join_later: '#A78BFA',
   not_answering_calls: '#F59E0B',
+  interested: '#0EA5E9',
 }
 
 const legacyMap: Record<string, string[]> = {
+  // Admission / All funnel aggregations (unchanged)
   untouched: ['untouched', 'new'],
   not_answering: ['not_answering', 'called', 'contacted', 'not_answering_calls'],
   follow_up: ['follow_up', 'hot', 'warm', 'cold', 'interested'],
@@ -72,6 +87,7 @@ const legacyMap: Record<string, string[]> = {
   not_interested: ['not_interested', 'dropped', 'join_later'],
   wrong_enquiry: ['wrong_enquiry'],
 
+  // Franchise stages — one status each (no roll-up double-count)
   hot: ['hot'],
   warm: ['warm'],
   cold: ['cold'],
@@ -79,17 +95,62 @@ const legacyMap: Record<string, string[]> = {
   converted_agreement_signed: ['converted_agreement_signed'],
   join_later: ['join_later'],
   not_answering_calls: ['not_answering_calls'],
+  interested: ['interested'],
 }
+
+const franchiseLegacyMap: Record<string, string[]> = {
+  untouched: ['untouched', 'new'],
+  not_answering_calls: ['not_answering_calls'],
+  interested: ['interested'],
+  follow_up: ['follow_up'],
+  join_later: ['join_later'],
+  cold: ['cold'],
+  warm: ['warm'],
+  hot: ['hot'],
+  converted_mou_signed: ['converted_mou_signed'],
+  converted_agreement_signed: ['converted_agreement_signed'],
+}
+
+const admissionLegacyMap: Record<string, string[]> = {
+  untouched: ['untouched', 'new'],
+  not_answering: ['not_answering', 'called', 'contacted'],
+  wrong_enquiry: ['wrong_enquiry'],
+  not_interested: ['not_interested', 'dropped'],
+  follow_up: ['follow_up'],
+  joined_competition: ['joined_competition'],
+  visited_school: ['visited_school', 'meeting_scheduled'],
+  converted_admission: ['converted_admission', 'converted'],
+}
+
+export type FunnelMode = 'all' | 'franchise' | 'admission'
 
 interface ConversionFunnelProps {
   data: any[]
+  /** @deprecated use funnelMode */
   isFranchise?: boolean
+  funnelMode?: FunnelMode
 }
 
-export default function ConversionFunnel({ data, isFranchise = false }: ConversionFunnelProps) {
-  const statusOrder = isFranchise ? FRANCHISE_STATUS_ORDER : NON_FRANCHISE_STATUS_ORDER
+export default function ConversionFunnel({
+  data,
+  isFranchise = false,
+  funnelMode,
+}: ConversionFunnelProps) {
+  const mode: FunnelMode = funnelMode ?? (isFranchise ? 'franchise' : 'all')
+  const statusOrder =
+    mode === 'franchise'
+      ? FRANCHISE_STATUS_ORDER
+      : mode === 'admission'
+        ? ADMISSION_STATUS_ORDER
+        : ALL_STATUS_ORDER
+  const keyMap =
+    mode === 'franchise'
+      ? franchiseLegacyMap
+      : mode === 'admission'
+        ? admissionLegacyMap
+        : legacyMap
   const stages = statusOrder.map((status) => {
-    const keys = legacyMap[status] || [status]
+    const keys = keyMap[status] || [status]
     let count = 0
     keys.forEach((k) => {
       const item = data?.find((d) => d.status === k)
@@ -106,10 +167,24 @@ export default function ConversionFunnel({ data, isFranchise = false }: Conversi
 
   const total = stages.reduce((sum, s) => sum + s.count, 0)
   const stageCount = Math.max(stages.length, 1)
-  const tipWidth = 2
-  const step = (100 - tipWidth) / stageCount
-  const pyramidStages = [...stages].reverse()
-  const rowHeight = stageCount > 8 ? 'h-[1.65rem] sm:h-7' : 'h-7 sm:h-8'
+
+  // Reference style: tapering body, then a straight spout (last ~2 stages equal width)
+  const spoutCount = Math.min(2, Math.max(1, Math.floor(stageCount / 3)))
+  const bodyCount = Math.max(stageCount - spoutCount, 1)
+  const topWidthPct = 100
+  const spoutWidthPct = 36
+  const bodyStep = (topWidthPct - spoutWidthPct) / bodyCount
+  const bandHeight = stageCount > 9 ? 36 : stageCount > 7 ? 40 : 44
+  const gapPx = 6
+
+  const segmentWidth = (index: number) => {
+    if (index < bodyCount) {
+      const widthTop = topWidthPct - bodyStep * index
+      const widthBottom = topWidthPct - bodyStep * (index + 1)
+      return { widthTop, widthBottom }
+    }
+    return { widthTop: spoutWidthPct, widthBottom: spoutWidthPct }
+  }
 
   return (
     <div className="card">
@@ -120,49 +195,51 @@ export default function ConversionFunnel({ data, isFranchise = false }: Conversi
       {total === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">No leads in this funnel yet.</p>
       ) : (
-        <div className="w-full">
-          {pyramidStages.map((stage, index) => {
-            const widthTop = tipWidth + step * index
-            const widthBottom = tipWidth + step * (index + 1)
+        <div className="mx-auto flex w-full max-w-sm flex-col items-center px-1">
+          {stages.map((stage, index) => {
+            const { widthTop, widthBottom } = segmentWidth(index)
             const insetTop = (100 - widthTop) / 2
             const insetBottom = (100 - widthBottom) / 2
-            const pctOfTotal = Math.round((stage.count / total) * 100)
-            const showBandValue = widthBottom >= 14
+            const pctOfTotal = total > 0 ? Math.round((stage.count / total) * 100) : 0
+            const inSpout = index >= bodyCount
+            const isFirst = index === 0
+            const isLast = index === stageCount - 1
+
+            const radius = inSpout
+              ? isLast
+                ? '0 0 12px 12px'
+                : '10px'
+              : isFirst
+                ? '14px 14px 0 0'
+                : '0'
 
             return (
               <div
                 key={stage.id}
-                className={`grid grid-cols-[minmax(0,44%)_minmax(0,56%)] items-center ${rowHeight}`}
+                className="relative w-full"
+                style={{ height: bandHeight, marginBottom: isLast ? 0 : gapPx }}
                 title={`${stage.label}: ${stage.count.toLocaleString()} (${pctOfTotal}%)`}
               >
-                <div className="flex min-w-0 items-center pr-1">
-                  <p className="min-w-0 truncate text-[10px] font-medium leading-tight text-slate-600 sm:text-[11px]">
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center"
+                  style={{
+                    backgroundColor: stage.color,
+                    clipPath: inSpout
+                      ? undefined
+                      : `polygon(${insetTop}% 0%, ${100 - insetTop}% 0%, ${100 - insetBottom}% 100%, ${insetBottom}% 100%)`,
+                    width: inSpout ? `${spoutWidthPct}%` : '100%',
+                    left: inSpout ? `${(100 - spoutWidthPct) / 2}%` : 0,
+                    borderRadius: radius,
+                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.12)',
+                  }}
+                >
+                  <span className="max-w-full truncate text-[10px] font-semibold leading-tight text-white/95 sm:text-[11px]">
                     {stage.label}
-                  </p>
-                  <span
-                    className="mx-1.5 hidden min-w-[0.75rem] flex-1 border-t border-dotted border-slate-300 sm:block"
-                    aria-hidden
-                  />
-                </div>
-
-                <div className={`${rowHeight} w-full`}>
-                  <div
-                    className="flex h-full w-full items-center justify-center"
-                    style={{
-                      backgroundColor: stage.color,
-                      clipPath: `polygon(${insetTop}% 0%, ${100 - insetTop}% 0%, ${100 - insetBottom}% 100%, ${insetBottom}% 100%)`,
-                    }}
-                  >
-                    {showBandValue ? (
-                      <span className="px-1 text-center text-[10px] font-extrabold tabular-nums text-white drop-shadow-sm sm:text-[11px]">
-                        {stage.count.toLocaleString()} ({pctOfTotal}%)
-                      </span>
-                    ) : (
-                      <span className="sr-only">
-                        {stage.count.toLocaleString()} ({pctOfTotal}%)
-                      </span>
-                    )}
-                  </div>
+                  </span>
+                  <span className="text-[11px] font-extrabold tabular-nums leading-tight text-white sm:text-xs">
+                    {stage.count.toLocaleString()}
+                    <span className="ml-1 text-[10px] font-semibold opacity-90">({pctOfTotal}%)</span>
+                  </span>
                 </div>
               </div>
             )

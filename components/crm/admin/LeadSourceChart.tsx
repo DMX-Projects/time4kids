@@ -10,9 +10,10 @@ const SOURCE_LABELS: Record<string, string> = {
   july_lp: 'Google',
   july_meta: 'META',
   lp_wb: 'Google',
+  youtube: 'YouTube',
   admission: 'Admission',
   contact: 'Centers Enquiry',
-  campaign: 'Campaign Enquiry',
+  campaign: 'PaidCampaign',
   landing: 'Landing',
 }
 
@@ -25,6 +26,7 @@ const COLORS = {
   july_lp: '#F59E0B',
   july_meta: '#EC4899',
   lp_wb: '#F59E0B',
+  youtube: '#FF0000',
   admission: '#2563EB',
   contact: '#0EA5E9',
   landing: '#14B8A6',

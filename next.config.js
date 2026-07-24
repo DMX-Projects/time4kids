@@ -97,6 +97,12 @@ const nextConfig = {
             { source: '/Timekids-lp-TKKTAM/', destination: '/Timekids-lp-TKKTAM/index.html' },
             { source: '/Timekids-lp-WB', destination: '/Timekids-lp-WB/index.html' },
             { source: '/Timekids-lp-WB/', destination: '/Timekids-lp-WB/index.html' },
+            { source: '/Timekids-meta-TKKTAM-demo', destination: '/Timekids-meta-TKKTAM-demo/index.html' },
+            { source: '/Timekids-meta-TKKTAM-demo/', destination: '/Timekids-meta-TKKTAM-demo/index.html' },
+            { source: '/Timekids-lp-TKKTAM-demo', destination: '/Timekids-lp-TKKTAM-demo/index.html' },
+            { source: '/Timekids-lp-TKKTAM-demo/', destination: '/Timekids-lp-TKKTAM-demo/index.html' },
+            { source: '/Timekids-lp-WB-demo', destination: '/Timekids-lp-WB-demo/index.html' },
+            { source: '/Timekids-lp-WB-demo/', destination: '/Timekids-lp-WB-demo/index.html' },
         ];
         const isDev = process.env.NODE_ENV === 'development';
         const djangoBase = isDev

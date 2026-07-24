@@ -64,12 +64,21 @@ type SourceFilter =
     | "contact"
     | "landing"
     | "campaign"
-    | "franchise";
-type FranchiseSubFilter = "" | "franchise" | "campaign";
+    | "franchise"
+    | "others";
+type FranchiseSubFilter = "" | "franchise" | "campaign" | "others";
 /** Admission family: Website form, city Landing pages, Centerpage contact */
 type AdmissionSubFilter = "" | "website" | "landing" | "contact";
 type SubFilter = FranchiseSubFilter | AdmissionSubFilter;
-type CampaignChannelFilter = "" | "google" | "july_meta";
+type CampaignChannelFilter = "" | "google" | "july_meta" | "youtube";
+type OthersChannelFilter =
+    | ""
+    | "whatsapp"
+    | "sms"
+    | "email"
+    | "franchise_referral"
+    | "franchise_friends_family";
+type ChannelFilter = CampaignChannelFilter | OthersChannelFilter;
 type StatusFilter =
     | "all"
     | "untouched"
@@ -99,13 +108,21 @@ type StatusFilter =
 
 function leadTypeFromSource(source: string): LeadType {
     if (!source || source === "all") return "all";
-    if (source === "campaign" || source === "franchise" || source === "franchise_all") return "franchise";
+    if (
+        source === "campaign" ||
+        source === "franchise" ||
+        source === "franchise_all" ||
+        source === "others"
+    ) {
+        return "franchise";
+    }
     return "admission";
 }
 
 function subFilterFromSource(source: string): SubFilter {
     if (source === "campaign") return "campaign";
     if (source === "franchise") return "franchise";
+    if (source === "others") return "others";
     if (source === "franchise_all") return "";
     if (source === "landing") return "landing";
     if (source === "contact") return "contact";
@@ -119,6 +136,7 @@ function sourceFromLeadTypeAndSub(leadType: LeadType, sub: SubFilter): SourceFil
     if (leadType === "franchise") {
         if (sub === "campaign") return "campaign";
         if (sub === "franchise") return "franchise";
+        if (sub === "others") return "others";
         return "franchise_all";
     }
     // Admission family
@@ -138,7 +156,8 @@ function migrateLegacySource(raw: string): SourceFilter {
         raw === "franchise" ||
         raw === "admission" ||
         raw === "landing" ||
-        raw === "contact"
+        raw === "contact" ||
+        raw === "others"
     ) {
         return raw;
     }
@@ -146,9 +165,10 @@ function migrateLegacySource(raw: string): SourceFilter {
     return "all";
 }
 
-function apiSourceParam(source: SourceFilter, channel: CampaignChannelFilter): string {
+function apiSourceParam(source: SourceFilter, channel: ChannelFilter): string {
     if (source === "all") return "";
     if (source === "campaign") return channel || "campaign";
+    if (source === "others") return channel || "others";
     return source;
 }
 
@@ -159,14 +179,15 @@ function apiStatusParam(status: StatusFilter): string {
 
 const LEAD_TYPE_OPTIONS: { id: LeadType; label: string }[] = [
     { id: "all", label: "All" },
-    { id: "franchise", label: "Franchise" },
-    { id: "admission", label: "Admission" },
+    { id: "franchise", label: "Franchise Lead" },
+    { id: "admission", label: "Admission Lead" },
 ];
 
 const FRANCHISE_SUB_FILTERS: { id: FranchiseSubFilter; label: string }[] = [
     { id: "", label: "All" },
-    { id: "franchise", label: "Franchise Form" },
-    { id: "campaign", label: "Campaign" },
+    { id: "franchise", label: "WebsiteLeads" },
+    { id: "campaign", label: "PaidCampaign" },
+    { id: "others", label: "Others" },
 ];
 
 const ADMISSION_SUB_FILTERS: { id: AdmissionSubFilter; label: string }[] = [
@@ -180,50 +201,62 @@ const SOURCE_LABELS: Record<SourceFilter, string> = {
     all: "All",
     admission_all: "Admission",
     franchise_all: "Franchise",
-    franchise: "Franchise Form",
-    campaign: "Campaign",
+    franchise: "WebsiteLeads",
+    campaign: "PaidCampaign",
     admission: "Website",
     landing: "Landing",
     contact: "Centerpage",
+    others: "Others",
 };
 
 const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] = [
     { id: "", label: "All Channels" },
     { id: "google", label: "Google" },
     { id: "july_meta", label: "META" },
+    { id: "youtube", label: "YouTube" },
+];
+
+const OTHERS_CHANNEL_FILTERS: { id: OthersChannelFilter; label: string }[] = [
+    { id: "", label: "All Channels" },
+    { id: "whatsapp", label: "WhatsApp" },
+    { id: "sms", label: "SMS" },
+    { id: "email", label: "Email" },
+    { id: "franchise_referral", label: "Franchise-Referral" },
+    { id: "franchise_friends_family", label: "Friends & Family - Referral" },
 ];
 
 const FRANCHISE_CAMPAIGN_CHANNELS: CampaignChannelFilter[] = ["google", "july_meta"];
 
 /** LP channels that use franchise-lp geo (no centre). */
-function isFranchiseLpGeoChannel(channel: CampaignChannelFilter): boolean {
-    return FRANCHISE_CAMPAIGN_CHANNELS.includes(channel);
+function isFranchiseLpGeoChannel(channel: ChannelFilter): boolean {
+    return (FRANCHISE_CAMPAIGN_CHANNELS as string[]).includes(channel);
 }
 
 const NON_FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "all", label: "All Status" },
     { id: "untouched", label: "Untouched" },
     { id: "not_answering", label: "Not answering" },
+    { id: "wrong_enquiry", label: "Wrong enquiry" },
+    { id: "not_interested", label: "Not Interested" },
     { id: "follow_up", label: "Follow-up" },
+    { id: "joined_competition", label: "Joined competition" },
     { id: "visited_school", label: "Visited the school" },
     { id: "converted_admission", label: "Converted to Admission" },
-    { id: "joined_competition", label: "Joined competition" },
-    { id: "not_interested", label: "Not Interested" },
-    { id: "wrong_enquiry", label: "Wrong enquiry" },
 ];
 
 const FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "all", label: "All Status" },
     { id: "untouched", label: "Untouched" },
-    { id: "hot", label: "Hot" },
-    { id: "warm", label: "Warm" },
+    { id: "not_answering_calls", label: "Not Answering Calls" },
+    { id: "interested", label: "Interested" },
     { id: "follow_up", label: "Follow-up" },
+    { id: "join_later", label: "Join Later" },
     { id: "cold", label: "Cold" },
+    { id: "warm", label: "Warm" },
+    { id: "hot", label: "Hot" },
     { id: "converted_mou_signed", label: "Converted – MOU Signed" },
     { id: "converted_agreement_signed", label: "Converted – Agreement Signed" },
-    { id: "join_later", label: "Join Later" },
     { id: "not_interested", label: "Not Interested" },
-    { id: "not_answering_calls", label: "Not Answering Calls" },
 ];
 
 export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'reports' | 'all' }) {
@@ -244,7 +277,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         endDate: null,
     });
     const [selectedSource, setSelectedSource] = useState<SourceFilter>("all");
-    const [selectedCampaignChannel, setSelectedCampaignChannel] = useState<CampaignChannelFilter>("");
+    const [selectedCampaignChannel, setSelectedCampaignChannel] = useState<ChannelFilter>("");
     const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
     const [selectedUserId, setSelectedUserId] = useState<string>("");
     const [crmUsers, setCrmUsers] = useState<{ id: number; label: string }[]>([]);
@@ -265,11 +298,16 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         setSelectedCentre(Array.isArray(saved.selectedCentre) ? saved.selectedCentre : []);
         const migrated = migrateLegacySource(saved.selectedSource || "");
         setSelectedSource(migrated);
-        const savedChannel = (saved.selectedCampaignChannel as CampaignChannelFilter) || "";
-        const validChannels = new Set(CAMPAIGN_CHANNEL_FILTERS.map((f) => f.id));
-        setSelectedCampaignChannel(
-            migrated === "campaign" && validChannels.has(savedChannel) ? savedChannel : "",
-        );
+        const savedChannel = (saved.selectedCampaignChannel as ChannelFilter) || "";
+        const campaignIds = new Set(CAMPAIGN_CHANNEL_FILTERS.map((f) => f.id));
+        const othersIds = new Set(OTHERS_CHANNEL_FILTERS.map((f) => f.id));
+        if (migrated === "campaign" && campaignIds.has(savedChannel as CampaignChannelFilter)) {
+            setSelectedCampaignChannel(savedChannel);
+        } else if (migrated === "others" && othersIds.has(savedChannel as OthersChannelFilter)) {
+            setSelectedCampaignChannel(savedChannel);
+        } else {
+            setSelectedCampaignChannel("");
+        }
         const restoredStatus = (saved.selectedStatus as StatusFilter) || "all";
         setSelectedStatus(restoredStatus);
         setSelectedUserId(typeof saved.selectedUserId === "string" ? saved.selectedUserId : "");
@@ -416,14 +454,26 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     };
 
     const isCampaignView = selectedSource === "campaign";
+    const isOthersView = selectedSource === "others";
     const isFranchiseLpGeoView = isFranchiseLpGeoChannel(selectedCampaignChannel);
     // All campaign channels (Web/FB/Insta + LP) use franchise status workflow
     const isFranchise =
-        selectedSource === "franchise" || selectedSource === "campaign" || selectedSource === "franchise_all";
+        selectedSource === "franchise" ||
+        selectedSource === "campaign" ||
+        selectedSource === "franchise_all" ||
+        selectedSource === "others";
     const apiSource = apiSourceParam(selectedSource, selectedCampaignChannel);
     const apiStatus = apiStatusParam(selectedStatus);
     const usesFranchiseLpGeo = isFranchiseLpGeoView;
     const hidesCentreForCampaignChannel = isFranchiseLpGeoView;
+    // Select Center only for Admission / Franchise — not when Lead = All or Others
+    const showCentreSelector =
+        (selectedLeadType === "admission" || selectedLeadType === "franchise") &&
+        !hidesCentreForCampaignChannel;
+    const activeCentreIds = useMemo(
+        () => (showCentreSelector ? selectedCentre : []),
+        [showCentreSelector, selectedCentre],
+    );
     const geoScope = usesFranchiseLpGeo ? "franchise-lp" : "default";
     const geoUserId =
         selectedUserId && selectedUserId !== "unassigned" && selectedUserId !== "all"
@@ -476,13 +526,15 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         const next = sourceFromLeadTypeAndSub(selectedLeadType, sub);
         const wasFranchiseLpGeo = isFranchiseLpGeoChannel(selectedCampaignChannel);
         setSelectedSource(next);
-        if (next !== "campaign") {
+        if (next !== "campaign" && next !== "others") {
             setSelectedCampaignChannel("");
             if (wasFranchiseLpGeo) {
                 setSelectedState([]);
                 setSelectedCity([]);
                 setSelectedCentre([]);
             }
+        } else {
+            setSelectedCampaignChannel("");
         }
         resetOnLeadChange();
     };
@@ -535,7 +587,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         }
         if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
         if (selectedState.length > 0) params.append("state", selectedState.join(","));
-        if (selectedCentre.length > 0) params.append("centreId", selectedCentre.join(","));
+        if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
         if (apiSource) params.append("source", apiSource);
         if (apiStatus) params.append("status", apiStatus);
         if (selectedUserId) params.append("userId", selectedUserId);
@@ -553,7 +605,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [filtersReady, isCrmUser, dateRange, selectedCity, selectedState, selectedCentre, apiSource, apiStatus, selectedUserId]);
+    }, [filtersReady, isCrmUser, dateRange, selectedCity, selectedState, activeCentreIds, apiSource, apiStatus, selectedUserId]);
 
     const fetchStats = () => {
         setStatsLoading(true);
@@ -570,7 +622,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         }
         if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
         if (selectedState.length > 0) params.append("state", selectedState.join(","));
-        if (selectedCentre.length > 0) params.append("centreId", selectedCentre.join(","));
+        if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
         if (apiSource) params.append("source", apiSource);
         if (apiStatus) params.append("status", apiStatus);
         if (selectedUserId) params.append("userId", selectedUserId);
@@ -607,7 +659,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         }
         if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
         if (selectedState.length > 0) params.append("state", selectedState.join(","));
-        if (selectedCentre.length > 0) params.append("centreId", selectedCentre.join(","));
+        if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
         if (apiSource) params.append("source", apiSource);
         if (apiStatus) params.append("status", apiStatus);
         if (selectedUserId) params.append("userId", selectedUserId);
@@ -637,7 +689,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                 params.append("endDate", end.toISOString());
             }
             if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
-            if (selectedCentre.length > 0) params.append("centreId", selectedCentre.join(","));
+            if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
             if (apiSource) params.append("source", apiSource);
             if (apiStatus) params.append("status", apiStatus);
             const response = await crmApi.get(`/leads?${params.toString()}`);
@@ -773,7 +825,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 />
                             </div>
 
-                            {selectedLeadType !== "all" && (
+                            {(selectedLeadType === "franchise" || selectedLeadType === "admission") && (
                                 <div className="flex-1 min-w-[140px] w-full">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Select Lead Type</label>
                                     <SearchableSelect
@@ -806,6 +858,21 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                             if (view === "reports") setReportsFiltersApplied(false);
                                         }}
                                         options={CAMPAIGN_CHANNEL_FILTERS.map(f => ({ value: f.id, label: f.label }))}
+                                        placeholder="All Channels"
+                                    />
+                                </div>
+                            )}
+
+                            {isOthersView && (
+                                <div className="flex-1 min-w-[140px]">
+                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Select Channel</label>
+                                    <SearchableSelect
+                                        value={selectedCampaignChannel}
+                                        onChange={(val) => {
+                                            setSelectedCampaignChannel((val || "") as OthersChannelFilter);
+                                            if (view === "reports") setReportsFiltersApplied(false);
+                                        }}
+                                        options={OTHERS_CHANNEL_FILTERS.map((f) => ({ value: f.id, label: f.label }))}
                                         placeholder="All Channels"
                                     />
                                 </div>
@@ -857,7 +924,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         scope={geoScope}
                                         userId={geoUserId}
                                     />
-                                    {selectedSource !== "franchise" && !hidesCentreForCampaignChannel && (
+                                    {showCentreSelector && (
                                         <CentreSelector
                                             key={`centres-${geoUserId}-${selectedCity.join('|')}-${selectedState.join('|')}`}
                                             cities={selectedCity}
@@ -924,7 +991,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 key={refreshKey}
                                 source={apiSource}
                                 city={selectedCity.join(",")}
-                                centreId={selectedCentre.join(",")}
+                                centreId={activeCentreIds.join(",")}
                                 returnHref={returnHref}
                                 onBeforeNavigate={persistFiltersNow}
                             />
@@ -952,7 +1019,16 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     }
                                 >
                                     <LeadSourceChart data={stats.sourceBreakdown} />
-                                    <ConversionFunnel data={stats.statusBreakdown} isFranchise={isFranchise} />
+                                    <ConversionFunnel
+                                        data={stats.statusBreakdown}
+                                        funnelMode={
+                                            isFranchise
+                                                ? "franchise"
+                                                : selectedLeadType === "admission"
+                                                  ? "admission"
+                                                  : "all"
+                                        }
+                                    />
                                 </Suspense>
                             ) : null}
                         </div>
@@ -968,7 +1044,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         state={selectedState}
                                         source={apiSource || selectedSource}
                                         userId={selectedUserId}
-                                        centreId={selectedCentre.join(",")}
+                                        centreId={activeCentreIds.join(",")}
                                     />
                                 ) : (
                                     <div className="rounded-xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center shadow-sm">
@@ -979,11 +1055,11 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 )
                             ) : (
                                 <LeadsTable
-                                    key={`${refreshKey}-${apiSource}-${apiStatus}-${selectedUserId}-${selectedCity}-${selectedCentre.join(",")}-${selectedState.join(",")}`}
+                                    key={`${refreshKey}-${apiSource}-${apiStatus}-${selectedUserId}-${selectedCity}-${activeCentreIds.join(",")}-${selectedState.join(",")}`}
                                     dateRange={dateRange}
                                     city={selectedCity.join(",")}
                                     state={selectedState.join(",")}
-                                    centreId={selectedCentre.join(",")}
+                                    centreId={activeCentreIds.join(",")}
                                     source={apiSource}
                                     status={apiStatus}
                                     userId={selectedUserId}
@@ -995,9 +1071,13 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                             ? "All Leads"
                                             : selectedSource === "campaign"
                                               ? selectedCampaignChannel
-                                                  ? `Campaign Enquiry — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
-                                                  : "Campaign Enquiry"
-                                              : `${SOURCE_LABELS[selectedSource]} Leads`
+                                                  ? `PaidCampaign — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
+                                                  : "PaidCampaign"
+                                              : selectedSource === "others"
+                                                ? selectedCampaignChannel
+                                                    ? `Others — ${OTHERS_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
+                                                    : "Others"
+                                                : `${SOURCE_LABELS[selectedSource]} Leads`
                                     }
                                 />
                             )

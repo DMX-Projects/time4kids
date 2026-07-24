@@ -52,9 +52,15 @@ const SOURCE_LABELS: Record<string, string> = {
   google: 'Google',
   admission: 'Admission',
   contact: 'Centers Enquiry',
-  campaign: 'Campaign Enquiry',
+  campaign: 'PaidCampaign',
   landing: 'Landing Lead',
-  franchise: 'Franchise',
+  franchise: 'WebsiteLeads',
+  youtube: 'YouTube',
+  whatsapp: 'WhatsApp',
+  sms: 'SMS',
+  email: 'Email',
+  franchise_referral: 'Franchise-Referral',
+  franchise_friends_family: 'Friends & Family - Referral',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -76,6 +82,7 @@ const STATUS_LABELS: Record<string, string> = {
   converted_agreement_signed: 'Converted – Agreement Signed',
   join_later: 'Join Later',
   not_answering_calls: 'Not Answering Calls',
+  interested: 'Interested',
 
   // Legacy mappings for display fallback
   new: 'Untouched',
@@ -83,7 +90,6 @@ const STATUS_LABELS: Record<string, string> = {
   contacted: 'Not answering',
   converted: 'Converted to Admission',
   dropped: 'Not Interested',
-  interested: 'Follow-up',
   meeting_scheduled: 'Visited the school',
 }
 
