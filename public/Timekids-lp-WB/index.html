@@ -2492,9 +2492,9 @@ gtag('config', 'G-8T7M9HB21X');
 <script>
 function gtag_report_conversion(url) {
 var callback = function () {
-// Keep users on the same page after form submit.
-// External form providers may pass a thank-you URL here.
-return;
+if (typeof url != 'undefined') {
+window.location = url;
+}
 };
 gtag('event', 'conversion', {
 'send_to': 'AW-16647692020/pFo8CISm6cgZEPS9noI-',

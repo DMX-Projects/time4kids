@@ -446,18 +446,8 @@ $(document).ready(function () {
                 contentType: 'application/json',
                 data: JSON.stringify(payload),
                 success: function (res) {
-                    $form.hide();
-                    $('.tk-enquiry-header').hide();
-                    $success.addClass('is-visible').css('display', 'flex').show();
-                    if (typeof queueBannerSync === 'function') {
-                        queueBannerSync();
-                    }
-                    if (typeof gtag_report_conversion === 'function') {
-                        gtag_report_conversion();
-                    }
-                    if (typeof fbq === 'function') {
-                        fbq('track', 'Lead');
-                    }
+                    // Conversions fire on thank-you.html (PageView + Lead / Ads).
+                    window.location.href = 'thank-you.html';
                 },
                 error: function (xhr) {
                     var msg = 'Something went wrong. Please try again.';
