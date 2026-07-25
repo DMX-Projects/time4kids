@@ -14,7 +14,8 @@ const SOURCE_LABELS: Record<string, string> = {
   admission: 'Admission',
   contact: 'Centers Enquiry',
   campaign: 'PaidCampaign',
-  landing: 'Landing',
+  landing: 'PaidCampaign',
+  franchise: 'Franchise',
 }
 
 const COLORS = {
@@ -30,6 +31,7 @@ const COLORS = {
   admission: '#2563EB',
   contact: '#0EA5E9',
   landing: '#14B8A6',
+  franchise: '#6B7280',
   google_ads: '#EA4335',
   referral: '#10B981',
   walk_in: '#F59E0B',
@@ -48,6 +50,7 @@ export default function LeadSourceChart({ data }: { data: any[] }) {
     value: count,
     color: COLORS[source as keyof typeof COLORS] || COLORS.other,
   }))
+  const total = chartData.reduce((sum, d) => sum + d.value, 0)
 
   return (
     <div className="card">
@@ -57,10 +60,10 @@ export default function LeadSourceChart({ data }: { data: any[] }) {
           <Pie
             data={chartData}
             cx="50%"
-            cy="50%"
-            labelLine={true}
-            label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-            outerRadius={80}
+            cy="45%"
+            labelLine={false}
+            label={false}
+            outerRadius={90}
             fill="#8884d8"
             dataKey="value"
           >
@@ -68,11 +71,22 @@ export default function LeadSourceChart({ data }: { data: any[] }) {
               <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Pie>
-          <Tooltip />
-          <Legend />
+          <Tooltip
+            formatter={(value: number, name: string) => {
+              const pct = total > 0 ? Math.round((value / total) * 100) : 0
+              return [`${value} (${pct}%)`, name]
+            }}
+          />
+          <Legend
+            verticalAlign="bottom"
+            formatter={(value, entry: any) => {
+              const count = entry?.payload?.value ?? 0
+              const pct = total > 0 ? Math.round((count / total) * 100) : 0
+              return `${value} ${pct}%`
+            }}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>
   )
 }
-

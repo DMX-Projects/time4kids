@@ -65,10 +65,11 @@ type SourceFilter =
     | "landing"
     | "campaign"
     | "franchise"
-    | "others";
+    | "others"
+    | "admission_others";
 type FranchiseSubFilter = "" | "franchise" | "campaign" | "others";
-/** Admission family: Website form, city Landing pages, Centerpage contact */
-type AdmissionSubFilter = "" | "website" | "landing" | "contact";
+/** Admission family: Website form, city Landing pages, Centerpage contact, Others */
+type AdmissionSubFilter = "" | "website" | "landing" | "contact" | "others";
 type SubFilter = FranchiseSubFilter | AdmissionSubFilter;
 type CampaignChannelFilter = "" | "google" | "july_meta" | "youtube";
 type OthersChannelFilter =
@@ -77,7 +78,9 @@ type OthersChannelFilter =
     | "sms"
     | "email"
     | "franchise_referral"
-    | "franchise_friends_family";
+    | "franchise_friends_family"
+    | "referral_parents"
+    | "referral_family_friends";
 type ChannelFilter = CampaignChannelFilter | OthersChannelFilter;
 type StatusFilter =
     | "all"
@@ -127,6 +130,7 @@ function subFilterFromSource(source: string): SubFilter {
     if (source === "landing") return "landing";
     if (source === "contact") return "contact";
     if (source === "admission") return "website";
+    if (source === "admission_others") return "others";
     if (source === "admission_all") return "";
     return "";
 }
@@ -143,6 +147,7 @@ function sourceFromLeadTypeAndSub(leadType: LeadType, sub: SubFilter): SourceFil
     if (sub === "landing") return "landing";
     if (sub === "contact") return "contact";
     if (sub === "website") return "admission";
+    if (sub === "others") return "admission_others";
     return "admission_all";
 }
 
@@ -157,7 +162,8 @@ function migrateLegacySource(raw: string): SourceFilter {
         raw === "admission" ||
         raw === "landing" ||
         raw === "contact" ||
-        raw === "others"
+        raw === "others" ||
+        raw === "admission_others"
     ) {
         return raw;
     }
@@ -169,6 +175,14 @@ function apiSourceParam(source: SourceFilter, channel: ChannelFilter): string {
     if (source === "all") return "";
     if (source === "campaign") return channel || "campaign";
     if (source === "others") return channel || "others";
+    if (source === "admission_others") {
+        if (!channel) return "admission_others";
+        // Prefix shared channel ids so reports can tell admission vs franchise Others apart
+        if (channel === "whatsapp" || channel === "sms" || channel === "email") {
+            return `admission_${channel}`;
+        }
+        return channel;
+    }
     return source;
 }
 
@@ -193,8 +207,9 @@ const FRANCHISE_SUB_FILTERS: { id: FranchiseSubFilter; label: string }[] = [
 const ADMISSION_SUB_FILTERS: { id: AdmissionSubFilter; label: string }[] = [
     { id: "", label: "All" },
     { id: "website", label: "Website" },
-    { id: "landing", label: "Landing" },
+    { id: "landing", label: "PaidCampaign" },
     { id: "contact", label: "Centerpage" },
+    { id: "others", label: "Others" },
 ];
 
 const SOURCE_LABELS: Record<SourceFilter, string> = {
@@ -204,9 +219,10 @@ const SOURCE_LABELS: Record<SourceFilter, string> = {
     franchise: "WebsiteLeads",
     campaign: "PaidCampaign",
     admission: "Website",
-    landing: "Landing",
+    landing: "PaidCampaign",
     contact: "Centerpage",
     others: "Others",
+    admission_others: "Others",
 };
 
 const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] = [
@@ -221,8 +237,17 @@ const OTHERS_CHANNEL_FILTERS: { id: OthersChannelFilter; label: string }[] = [
     { id: "whatsapp", label: "WhatsApp" },
     { id: "sms", label: "SMS" },
     { id: "email", label: "Email" },
-    { id: "franchise_referral", label: "Franchise-Referral" },
-    { id: "franchise_friends_family", label: "Friends & Family - Referral" },
+    { id: "franchise_referral", label: "Referral-Franchise" },
+    { id: "franchise_friends_family", label: "Referral - Friends & Family" },
+];
+
+const ADMISSION_OTHERS_CHANNEL_FILTERS: { id: OthersChannelFilter; label: string }[] = [
+    { id: "", label: "All Channels" },
+    { id: "whatsapp", label: "WhatsApp" },
+    { id: "sms", label: "SMS" },
+    { id: "email", label: "Email" },
+    { id: "referral_parents", label: "Referral – Parents" },
+    { id: "referral_family_friends", label: "Referral - Family & Friends" },
 ];
 
 const FRANCHISE_CAMPAIGN_CHANNELS: CampaignChannelFilter[] = ["google", "july_meta"];
@@ -254,9 +279,10 @@ const FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "cold", label: "Cold" },
     { id: "warm", label: "Warm" },
     { id: "hot", label: "Hot" },
-    { id: "converted_mou_signed", label: "Converted – MOU Signed" },
-    { id: "converted_agreement_signed", label: "Converted – Agreement Signed" },
+    { id: "converted_mou_signed", label: "Converted – MOU" },
+    { id: "converted_agreement_signed", label: "Converted – Agreement" },
     { id: "not_interested", label: "Not Interested" },
+    { id: "wrong_enquiry", label: "Wrong enquiry" },
 ];
 
 export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'reports' | 'all' }) {
@@ -300,10 +326,16 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         setSelectedSource(migrated);
         const savedChannel = (saved.selectedCampaignChannel as ChannelFilter) || "";
         const campaignIds = new Set(CAMPAIGN_CHANNEL_FILTERS.map((f) => f.id));
-        const othersIds = new Set(OTHERS_CHANNEL_FILTERS.map((f) => f.id));
+        const franchiseOthersIds = new Set(OTHERS_CHANNEL_FILTERS.map((f) => f.id));
+        const admissionOthersIds = new Set(ADMISSION_OTHERS_CHANNEL_FILTERS.map((f) => f.id));
         if (migrated === "campaign" && campaignIds.has(savedChannel as CampaignChannelFilter)) {
             setSelectedCampaignChannel(savedChannel);
-        } else if (migrated === "others" && othersIds.has(savedChannel as OthersChannelFilter)) {
+        } else if (migrated === "others" && franchiseOthersIds.has(savedChannel as OthersChannelFilter)) {
+            setSelectedCampaignChannel(savedChannel);
+        } else if (
+            migrated === "admission_others" &&
+            admissionOthersIds.has(savedChannel as OthersChannelFilter)
+        ) {
             setSelectedCampaignChannel(savedChannel);
         } else {
             setSelectedCampaignChannel("");
@@ -454,7 +486,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     };
 
     const isCampaignView = selectedSource === "campaign";
-    const isOthersView = selectedSource === "others";
+    const isOthersView = selectedSource === "others" || selectedSource === "admission_others";
+    const othersChannelFilters =
+        selectedSource === "admission_others" ? ADMISSION_OTHERS_CHANNEL_FILTERS : OTHERS_CHANNEL_FILTERS;
     const isFranchiseLpGeoView = isFranchiseLpGeoChannel(selectedCampaignChannel);
     // All campaign channels (Web/FB/Insta + LP) use franchise status workflow
     const isFranchise =
@@ -526,7 +560,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         const next = sourceFromLeadTypeAndSub(selectedLeadType, sub);
         const wasFranchiseLpGeo = isFranchiseLpGeoChannel(selectedCampaignChannel);
         setSelectedSource(next);
-        if (next !== "campaign" && next !== "others") {
+        if (next !== "campaign" && next !== "others" && next !== "admission_others") {
             setSelectedCampaignChannel("");
             if (wasFranchiseLpGeo) {
                 setSelectedState([]);
@@ -816,7 +850,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap items-end gap-3 w-full pb-2">
                             <div className="flex-1 min-w-[140px] w-full">
-                                <label className="mb-2 block text-sm font-semibold text-gray-700">Select Lead</label>
+                                <label className="mb-2 block text-sm font-semibold text-gray-700">Lead Source</label>
                                  <SearchableSelect
                                     value={selectedLeadType}
                                     onChange={(val) => handleLeadTypeChange(val as LeadType)}
@@ -867,12 +901,13 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 <div className="flex-1 min-w-[140px]">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Select Channel</label>
                                     <SearchableSelect
+                                        key={`others-channel-${selectedSource}`}
                                         value={selectedCampaignChannel}
                                         onChange={(val) => {
                                             setSelectedCampaignChannel((val || "") as OthersChannelFilter);
                                             if (view === "reports") setReportsFiltersApplied(false);
                                         }}
-                                        options={OTHERS_CHANNEL_FILTERS.map((f) => ({ value: f.id, label: f.label }))}
+                                        options={othersChannelFilters.map((f) => ({ value: f.id, label: f.label }))}
                                         placeholder="All Channels"
                                     />
                                 </div>
@@ -1073,9 +1108,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                               ? selectedCampaignChannel
                                                   ? `PaidCampaign — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
                                                   : "PaidCampaign"
-                                              : selectedSource === "others"
+                                              : selectedSource === "others" || selectedSource === "admission_others"
                                                 ? selectedCampaignChannel
-                                                    ? `Others — ${OTHERS_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
+                                                    ? `Others — ${othersChannelFilters.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
                                                     : "Others"
                                                 : `${SOURCE_LABELS[selectedSource]} Leads`
                                     }
