@@ -53,14 +53,21 @@ const SOURCE_LABELS: Record<string, string> = {
   admission: 'Admission',
   contact: 'Centers Enquiry',
   campaign: 'PaidCampaign',
-  landing: 'Landing Lead',
+  landing: 'PaidCampaign',
   franchise: 'WebsiteLeads',
   youtube: 'YouTube',
   whatsapp: 'WhatsApp',
   sms: 'SMS',
   email: 'Email',
-  franchise_referral: 'Franchise-Referral',
-  franchise_friends_family: 'Friends & Family - Referral',
+  franchise_referral: 'Referral-Franchise',
+  franchise_friends_family: 'Referral - Friends & Family',
+  referral_parents: 'Referral – Parents',
+  referral_family_friends: 'Referral - Family & Friends',
+  admission_whatsapp: 'WhatsApp',
+  admission_sms: 'SMS',
+  admission_email: 'Email',
+  admission_others: 'Others',
+  others: 'Others',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -78,8 +85,8 @@ const STATUS_LABELS: Record<string, string> = {
   hot: 'Hot',
   warm: 'Warm',
   cold: 'Cold',
-  converted_mou_signed: 'Converted – MOU Signed',
-  converted_agreement_signed: 'Converted – Agreement Signed',
+  converted_mou_signed: 'Converted – MOU',
+  converted_agreement_signed: 'Converted – Agreement',
   join_later: 'Join Later',
   not_answering_calls: 'Not Answering Calls',
   interested: 'Interested',
@@ -230,6 +237,26 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
 
   const sourceLabel = (source?: string) => SOURCE_LABELS[source || ''] || source?.replace('_', ' ') || 'Website'
 
+  /** Shared label for Google + META paid campaigns (july_lp / july_meta / lp_wb). */
+  const campaignMonthLabel = (lead: any) => {
+    const src = String(lead?.source || '').toLowerCase()
+    const campaignText = String(lead?.campaign || lead?.utmCampaign || lead?.utmMedium || '').toLowerCase()
+    const created = lead?.createdAt ? new Date(lead.createdAt) : null
+    const year =
+      created && !Number.isNaN(created.getTime()) ? created.getFullYear() : new Date().getFullYear()
+
+    if (src === 'july_meta' || src === 'july_lp' || src === 'lp_wb' || src.includes('july')) {
+      return `July ${year}`
+    }
+    if (campaignText.includes('july')) {
+      return `July ${year}`
+    }
+    if (created && !Number.isNaN(created.getTime())) {
+      return created.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+    }
+    return '—'
+  }
+
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '—'
     try {
@@ -326,6 +353,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     </>
                   )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Source</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign Month</th>
                   {source === 'franchise' && (
                     <>
                       <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Registration Date</th>
@@ -377,6 +405,9 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                       <span className="capitalize text-sm text-gray-500">
                         <HighlightText text={sourceLabel(lead.source) || ''} highlight={debouncedSearch} />
                       </span>
+                    </td>
+                    <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
+                      {campaignMonthLabel(lead)}
                     </td>
                     {source === 'franchise' && (
                       <>

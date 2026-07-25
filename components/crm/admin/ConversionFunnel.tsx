@@ -13,8 +13,8 @@ const STATUS_LABELS: Record<string, string> = {
   hot: 'Hot',
   warm: 'Warm',
   cold: 'Cold',
-  converted_mou_signed: 'Converted – MOU Signed',
-  converted_agreement_signed: 'Converted – Agreement Signed',
+  converted_mou_signed: 'Converted – MOU',
+  converted_agreement_signed: 'Converted – Agreement',
   join_later: 'Join Later',
   not_answering_calls: 'Not Answering Calls',
   interested: 'Interested',
@@ -31,9 +31,11 @@ const FRANCHISE_STATUS_ORDER = [
   'hot',
   'converted_mou_signed',
   'converted_agreement_signed',
+  'not_interested',
+  'wrong_enquiry',
 ]
 
-/** Used when Select Lead = All — do not change. */
+/** Used when Lead Source = All — do not change. */
 const ALL_STATUS_ORDER = [
   'untouched',
   'not_answering',
@@ -109,6 +111,8 @@ const franchiseLegacyMap: Record<string, string[]> = {
   hot: ['hot'],
   converted_mou_signed: ['converted_mou_signed'],
   converted_agreement_signed: ['converted_agreement_signed'],
+  not_interested: ['not_interested'],
+  wrong_enquiry: ['wrong_enquiry'],
 }
 
 const admissionLegacyMap: Record<string, string[]> = {
@@ -221,7 +225,7 @@ export default function ConversionFunnel({
                 title={`${stage.label}: ${stage.count.toLocaleString()} (${pctOfTotal}%)`}
               >
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center"
+                  className="absolute inset-0 flex items-center justify-center px-3 text-center"
                   style={{
                     backgroundColor: stage.color,
                     clipPath: inSpout
@@ -233,12 +237,12 @@ export default function ConversionFunnel({
                     boxShadow: '0 1px 2px rgba(15, 23, 42, 0.12)',
                   }}
                 >
-                  <span className="max-w-full truncate text-[10px] font-semibold leading-tight text-white/95 sm:text-[11px]">
-                    {stage.label}
-                  </span>
-                  <span className="text-[11px] font-extrabold tabular-nums leading-tight text-white sm:text-xs">
-                    {stage.count.toLocaleString()}
-                    <span className="ml-1 text-[10px] font-semibold opacity-90">({pctOfTotal}%)</span>
+                  <span className="max-w-full truncate text-[10px] font-semibold leading-tight text-white sm:text-[11px]">
+                    {stage.label}{' '}
+                    <span className="text-[13px] font-extrabold tabular-nums">
+                      {stage.count.toLocaleString()}
+                      <span className="ml-1 font-semibold opacity-90">({pctOfTotal}%)</span>
+                    </span>
                   </span>
                 </div>
               </div>

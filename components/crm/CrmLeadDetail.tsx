@@ -121,8 +121,8 @@ const STATUS_LABELS: Record<string, string> = {
   hot: 'Hot',
   warm: 'Warm',
   cold: 'Cold',
-  converted_mou_signed: 'Converted – MOU Signed',
-  converted_agreement_signed: 'Converted – Agreement Signed',
+  converted_mou_signed: 'Converted – MOU',
+  converted_agreement_signed: 'Converted – Agreement',
   join_later: 'Join Later',
   not_answering_calls: 'Not Answering Calls',
   interested: 'Interested',
@@ -159,6 +159,7 @@ const FRANCHISE_OPTIONS = [
   'converted_mou_signed',
   'converted_agreement_signed',
   'not_interested',
+  'wrong_enquiry',
 ]
 
 const STATUS_COLORS: Record<string, string> = {
@@ -195,7 +196,7 @@ const SOURCE_OPTIONS = [
 const SOURCE_LABELS: Record<string, string> = {
   contact: 'CenterPage',
   admission: 'Admission',
-  landing: 'Landing',
+  landing: 'PaidCampaign',
   campaign: 'PaidCampaign',
   website: 'Website',
   facebook: 'Facebook',

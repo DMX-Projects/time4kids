@@ -36,9 +36,10 @@ const FRANCHISE_COLUMNS = [
     { label: "Cold", keys: ["cold"] },
     { label: "Warm", keys: ["warm"] },
     { label: "Hot", keys: ["hot"] },
-    { label: "MOU Signed", keys: ["converted_mou_signed"] },
-    { label: "Agreement Signed", keys: ["converted_agreement_signed"] },
+    { label: "MOU", keys: ["converted_mou_signed"] },
+    { label: "Agreement", keys: ["converted_agreement_signed"] },
     { label: "Not Interested", keys: ["not_interested"] },
+    { label: "Wrong Enquiry", keys: ["wrong_enquiry"] },
 ];
 
 const FRANCHISE_CAMPAIGN_SOURCES = new Set([
@@ -49,17 +50,40 @@ const FRANCHISE_CAMPAIGN_SOURCES = new Set([
     "youtube",
 ]);
 
+const FRANCHISE_OTHERS_SOURCES = new Set([
+    "whatsapp",
+    "sms",
+    "email",
+    "franchise_referral",
+    "franchise_friends_family",
+]);
+
+const ADMISSION_OTHERS_SOURCES = new Set([
+    "admission_whatsapp",
+    "admission_sms",
+    "admission_email",
+    "referral_parents",
+    "referral_family_friends",
+]);
+
 const getCategoryColumns = (categoryId: string, source?: string) => {
     if (
         categoryId === "franchise" ||
         categoryId === "campaign" ||
         categoryId === "google" ||
         categoryId === "july_meta" ||
-        categoryId === "youtube"
+        categoryId === "youtube" ||
+        FRANCHISE_OTHERS_SOURCES.has(categoryId)
     ) {
         return FRANCHISE_COLUMNS;
     }
-    if (source && (source === "campaign" || FRANCHISE_CAMPAIGN_SOURCES.has(source))) {
+    if (
+        source &&
+        (source === "campaign" ||
+            source === "others" ||
+            FRANCHISE_CAMPAIGN_SOURCES.has(source) ||
+            FRANCHISE_OTHERS_SOURCES.has(source))
+    ) {
         return FRANCHISE_COLUMNS;
     }
     return NON_FRANCHISE_COLUMNS;
@@ -67,7 +91,7 @@ const getCategoryColumns = (categoryId: string, source?: string) => {
 
 const CATEGORIES = [
     { id: "admission", label: "Website", bg: "bg-blue-50 text-blue-800", subkey: "adm" },
-    { id: "landing", label: "Landing", bg: "bg-teal-50 text-teal-800", subkey: "lnd" },
+    { id: "landing", label: "PaidCampaign", bg: "bg-teal-50 text-teal-800", subkey: "lnd" },
     { id: "contact", label: "Centerpage", bg: "bg-sky-50 text-sky-800", subkey: "cen" },
     { id: "campaign", label: "PaidCampaign", bg: "bg-violet-50 text-violet-800", subkey: "cam" },
     { id: "franchise", label: "WebsiteLeads", bg: "bg-orange-50 text-orange-800", subkey: "fra" },
@@ -79,12 +103,48 @@ const CAMPAIGN_CHANNEL_CATEGORIES = [
     { id: "youtube", label: "YouTube", bg: "bg-red-50 text-red-800", subkey: "yt" },
 ];
 
+const FRANCHISE_OTHERS_CHANNEL_CATEGORIES = [
+    { id: "whatsapp", label: "WhatsApp", bg: "bg-emerald-50 text-emerald-800", subkey: "wa" },
+    { id: "sms", label: "SMS", bg: "bg-lime-50 text-lime-800", subkey: "sms" },
+    { id: "email", label: "Email", bg: "bg-cyan-50 text-cyan-800", subkey: "em" },
+    { id: "franchise_referral", label: "Referral-Franchise", bg: "bg-rose-50 text-rose-800", subkey: "fr" },
+    {
+        id: "franchise_friends_family",
+        label: "Referral - Friends & Family",
+        bg: "bg-pink-50 text-pink-800",
+        subkey: "ff",
+    },
+];
+
+const ADMISSION_OTHERS_CHANNEL_CATEGORIES = [
+    { id: "admission_whatsapp", label: "WhatsApp", bg: "bg-emerald-50 text-emerald-800", subkey: "awa" },
+    { id: "admission_sms", label: "SMS", bg: "bg-lime-50 text-lime-800", subkey: "asms" },
+    { id: "admission_email", label: "Email", bg: "bg-cyan-50 text-cyan-800", subkey: "aem" },
+    { id: "referral_parents", label: "Referral – Parents", bg: "bg-rose-50 text-rose-800", subkey: "rp" },
+    {
+        id: "referral_family_friends",
+        label: "Referral - Family & Friends",
+        bg: "bg-pink-50 text-pink-800",
+        subkey: "rff",
+    },
+];
+
 const CHANNEL_LABELS: Record<string, string> = {
     google: "Google",
     july_lp: "Google",
     july_meta: "META",
     lp_wb: "Google",
     youtube: "YouTube",
+    whatsapp: "WhatsApp",
+    sms: "SMS",
+    email: "Email",
+    franchise_referral: "Referral-Franchise",
+    franchise_friends_family: "Referral - Friends & Family",
+    admission_whatsapp: "WhatsApp",
+    admission_sms: "SMS",
+    admission_email: "Email",
+    referral_parents: "Referral – Parents",
+    referral_family_friends: "Referral - Family & Friends",
 };
 
 function cityRowTotal(
@@ -126,10 +186,12 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
         if (source === "franchise_all") return "Franchise";
         if (source === "admission") return "Website";
         if (source === "contact") return "CenterPage";
-        if (source && CHANNEL_LABELS[source]) return CHANNEL_LABELS[source];
         if (source === "campaign") return "PaidCampaign";
         if (source === "franchise") return "WebsiteLeads";
-        if (source === "landing") return "Landing";
+        if (source === "landing") return "PaidCampaign";
+        if (source === "others") return "Others";
+        if (source === "admission_others") return "Others";
+        if (source && CHANNEL_LABELS[source]) return CHANNEL_LABELS[source];
         return "All Leads";
     };
 
@@ -162,6 +224,8 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
             return CATEGORIES.filter((c) => c.id === "admission");
         }
         if (source === "campaign") return CAMPAIGN_CHANNEL_CATEGORIES;
+        if (source === "others") return FRANCHISE_OTHERS_CHANNEL_CATEGORIES;
+        if (source === "admission_others") return ADMISSION_OTHERS_CHANNEL_CATEGORIES;
         if (source === "google" || source === "july_lp" || source === "lp_wb") {
             return [
                 {
@@ -189,6 +253,28 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
                     label: "YouTube Leads",
                     bg: "bg-red-50 text-red-800",
                     subkey: "yt",
+                },
+            ];
+        }
+        if (FRANCHISE_OTHERS_SOURCES.has(source)) {
+            const cat = FRANCHISE_OTHERS_CHANNEL_CATEGORIES.find((c) => c.id === source);
+            return [
+                {
+                    id: source,
+                    label: `${CHANNEL_LABELS[source] || cat?.label || source} Leads`,
+                    bg: cat?.bg || "bg-emerald-50 text-emerald-800",
+                    subkey: cat?.subkey || "oth",
+                },
+            ];
+        }
+        if (ADMISSION_OTHERS_SOURCES.has(source)) {
+            const cat = ADMISSION_OTHERS_CHANNEL_CATEGORIES.find((c) => c.id === source);
+            return [
+                {
+                    id: source,
+                    label: `${CHANNEL_LABELS[source] || cat?.label || source} Leads`,
+                    bg: cat?.bg || "bg-emerald-50 text-emerald-800",
+                    subkey: cat?.subkey || "aoth",
                 },
             ];
         }
