@@ -72,9 +72,10 @@ export default function LeadSourceChart({ data }: { data: any[] }) {
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: number, name: string) => {
-              const pct = total > 0 ? Math.round((value / total) * 100) : 0
-              return [`${value} (${pct}%)`, name]
+            formatter={(value, name) => {
+              const count = typeof value === 'number' ? value : Number(value) || 0
+              const pct = total > 0 ? Math.round((count / total) * 100) : 0
+              return [`${count} (${pct}%)`, String(name ?? '')]
             }}
           />
           <Legend
