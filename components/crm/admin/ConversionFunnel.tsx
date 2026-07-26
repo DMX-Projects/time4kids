@@ -23,16 +23,15 @@ const STATUS_LABELS: Record<string, string> = {
 const FRANCHISE_STATUS_ORDER = [
   'untouched',
   'not_answering_calls',
-  'interested',
   'follow_up',
   'join_later',
   'cold',
   'warm',
   'hot',
-  'converted_mou_signed',
-  'converted_agreement_signed',
   'not_interested',
   'wrong_enquiry',
+  'converted_mou_signed',
+  'converted_agreement_signed',
 ]
 
 /** Used when Lead Source = All — do not change. */
@@ -103,16 +102,15 @@ const legacyMap: Record<string, string[]> = {
 const franchiseLegacyMap: Record<string, string[]> = {
   untouched: ['untouched', 'new'],
   not_answering_calls: ['not_answering_calls'],
-  interested: ['interested'],
-  follow_up: ['follow_up'],
+  follow_up: ['follow_up', 'interested'],
   join_later: ['join_later'],
   cold: ['cold'],
   warm: ['warm'],
   hot: ['hot'],
-  converted_mou_signed: ['converted_mou_signed'],
-  converted_agreement_signed: ['converted_agreement_signed'],
   not_interested: ['not_interested'],
   wrong_enquiry: ['wrong_enquiry'],
+  converted_mou_signed: ['converted_mou_signed'],
+  converted_agreement_signed: ['converted_agreement_signed'],
 }
 
 const admissionLegacyMap: Record<string, string[]> = {
@@ -178,7 +176,7 @@ export default function ConversionFunnel({
   const topWidthPct = 100
   const spoutWidthPct = 36
   const bodyStep = (topWidthPct - spoutWidthPct) / bodyCount
-  const bandHeight = stageCount > 9 ? 36 : stageCount > 7 ? 40 : 44
+  const bandHeight = stageCount > 9 ? 44 : stageCount > 7 ? 50 : 56
   const gapPx = 6
 
   const segmentWidth = (index: number) => {
@@ -189,6 +187,9 @@ export default function ConversionFunnel({
     }
     return { widthTop: spoutWidthPct, widthBottom: spoutWidthPct }
   }
+
+  const stageBandHeight = (label: string) =>
+    label.length > 16 ? bandHeight + 10 : bandHeight
 
   return (
     <div className="card">
@@ -208,6 +209,7 @@ export default function ConversionFunnel({
             const inSpout = index >= bodyCount
             const isFirst = index === 0
             const isLast = index === stageCount - 1
+            const height = stageBandHeight(stage.label)
 
             const radius = inSpout
               ? isLast
@@ -221,11 +223,11 @@ export default function ConversionFunnel({
               <div
                 key={stage.id}
                 className="relative w-full"
-                style={{ height: bandHeight, marginBottom: isLast ? 0 : gapPx }}
+                style={{ height, marginBottom: isLast ? 0 : gapPx }}
                 title={`${stage.label}: ${stage.count.toLocaleString()} (${pctOfTotal}%)`}
               >
                 <div
-                  className="absolute inset-0 flex items-center justify-center px-3 text-center"
+                  className="absolute inset-0 flex items-center justify-center px-3 py-1 text-center"
                   style={{
                     backgroundColor: stage.color,
                     clipPath: inSpout
@@ -237,7 +239,7 @@ export default function ConversionFunnel({
                     boxShadow: '0 1px 2px rgba(15, 23, 42, 0.12)',
                   }}
                 >
-                  <span className="max-w-full truncate text-[10px] font-semibold leading-tight text-white sm:text-[11px]">
+                  <span className="max-w-full whitespace-normal break-words text-[10px] font-semibold leading-tight text-white sm:text-[11px]">
                     {stage.label}{' '}
                     <span className="text-[13px] font-extrabold tabular-nums">
                       {stage.count.toLocaleString()}

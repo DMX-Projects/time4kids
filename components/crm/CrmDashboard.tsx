@@ -199,15 +199,15 @@ const LEAD_TYPE_OPTIONS: { id: LeadType; label: string }[] = [
 
 const FRANCHISE_SUB_FILTERS: { id: FranchiseSubFilter; label: string }[] = [
     { id: "", label: "All" },
-    { id: "franchise", label: "WebsiteLeads" },
-    { id: "campaign", label: "PaidCampaign" },
+    { id: "franchise", label: "Website Leads" },
+    { id: "campaign", label: "Paid Campaign" },
     { id: "others", label: "Others" },
 ];
 
 const ADMISSION_SUB_FILTERS: { id: AdmissionSubFilter; label: string }[] = [
     { id: "", label: "All" },
     { id: "website", label: "Website" },
-    { id: "landing", label: "PaidCampaign" },
+    { id: "landing", label: "Paid Campaign" },
     { id: "contact", label: "Centerpage" },
     { id: "others", label: "Others" },
 ];
@@ -216,10 +216,10 @@ const SOURCE_LABELS: Record<SourceFilter, string> = {
     all: "All",
     admission_all: "Admission",
     franchise_all: "Franchise",
-    franchise: "WebsiteLeads",
-    campaign: "PaidCampaign",
+    franchise: "Website Leads",
+    campaign: "Paid Campaign",
     admission: "Website",
-    landing: "PaidCampaign",
+    landing: "Paid Campaign",
     contact: "Centerpage",
     others: "Others",
     admission_others: "Others",
@@ -273,16 +273,15 @@ const FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "all", label: "All Status" },
     { id: "untouched", label: "Untouched" },
     { id: "not_answering_calls", label: "Not Answering Calls" },
-    { id: "interested", label: "Interested" },
     { id: "follow_up", label: "Follow-up" },
     { id: "join_later", label: "Join Later" },
     { id: "cold", label: "Cold" },
     { id: "warm", label: "Warm" },
     { id: "hot", label: "Hot" },
-    { id: "converted_mou_signed", label: "Converted – MOU" },
-    { id: "converted_agreement_signed", label: "Converted – Agreement" },
     { id: "not_interested", label: "Not Interested" },
     { id: "wrong_enquiry", label: "Wrong enquiry" },
+    { id: "converted_mou_signed", label: "Converted – MOU" },
+    { id: "converted_agreement_signed", label: "Converted – Agreement" },
 ];
 
 export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'reports' | 'all' }) {
@@ -500,9 +499,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const apiStatus = apiStatusParam(selectedStatus);
     const usesFranchiseLpGeo = isFranchiseLpGeoView;
     const hidesCentreForCampaignChannel = isFranchiseLpGeoView;
-    // Select Center only for Admission / Franchise — not when Lead = All or Others
+    // Select Centre only for Admission — hidden for Franchise Lead (and when Lead = All)
     const showCentreSelector =
-        (selectedLeadType === "admission" || selectedLeadType === "franchise") &&
+        selectedLeadType === "admission" &&
         !hidesCentreForCampaignChannel;
     const activeCentreIds = useMemo(
         () => (showCentreSelector ? selectedCentre : []),
@@ -861,7 +860,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
                             {(selectedLeadType === "franchise" || selectedLeadType === "admission") && (
                                 <div className="flex-1 min-w-[140px] w-full">
-                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Select Lead Type</label>
+                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Lead Source</label>
                                     <SearchableSelect
                                         key={`sub-${selectedLeadType}`}
                                         value={selectedSubFilter}
@@ -1106,8 +1105,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                             ? "All Leads"
                                             : selectedSource === "campaign"
                                               ? selectedCampaignChannel
-                                                  ? `PaidCampaign — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
-                                                  : "PaidCampaign"
+                                                  ? `Paid Campaign — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
+                                                  : "Paid Campaign"
                                               : selectedSource === "others" || selectedSource === "admission_others"
                                                 ? selectedCampaignChannel
                                                     ? `Others — ${othersChannelFilters.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`

@@ -52,9 +52,9 @@ const SOURCE_LABELS: Record<string, string> = {
   google: 'Google',
   admission: 'Admission',
   contact: 'Centers Enquiry',
-  campaign: 'PaidCampaign',
-  landing: 'PaidCampaign',
-  franchise: 'WebsiteLeads',
+  campaign: 'Paid Campaign',
+  landing: 'Paid Campaign',
+  franchise: 'Website Leads',
   youtube: 'YouTube',
   whatsapp: 'WhatsApp',
   sms: 'SMS',
@@ -338,7 +338,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-100 uppercase tracking-wider">
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 sticky left-0 bg-gray-100 z-20 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 sticky left-0 bg-gray-100 z-20 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-[160px] min-w-[140px] max-w-[180px]">Name</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Contact</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">State</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">City</th>
@@ -353,6 +353,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     </>
                   )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Source</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign Month</th>
                   {source === 'franchise' && (
                     <>
@@ -367,8 +368,13 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
               <tbody className="divide-y divide-gray-100">
                 {leads.map((lead) => (
                   <tr key={lead.id} className={`group hover:bg-gray-50 transition-colors ${updatingId === lead.id ? 'opacity-60' : ''}`}>
-                    <td className="px-4 py-4 font-medium text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                      <HighlightText text={lead.fullName || ''} highlight={debouncedSearch} />
+                    <td
+                      className="px-4 py-4 font-medium text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-[160px] min-w-[140px] max-w-[180px]"
+                      title={lead.fullName || undefined}
+                    >
+                      <div className="truncate">
+                        <HighlightText text={lead.fullName || ''} highlight={debouncedSearch} />
+                      </div>
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm">
                       <HighlightText text={lead.mobile || ''} highlight={debouncedSearch} />
@@ -405,6 +411,17 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                       <span className="capitalize text-sm text-gray-500">
                         <HighlightText text={sourceLabel(lead.source) || ''} highlight={debouncedSearch} />
                       </span>
+                    </td>
+                    <td
+                      className="px-4 py-4 text-gray-600 text-sm max-w-[160px]"
+                      title={String(lead.campaign || lead.utmCampaign || '').trim() || undefined}
+                    >
+                      <div className="truncate">
+                        <HighlightText
+                          text={String(lead.campaign || lead.utmCampaign || '').trim() || '—'}
+                          highlight={debouncedSearch}
+                        />
+                      </div>
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
                       {campaignMonthLabel(lead)}
