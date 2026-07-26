@@ -150,16 +150,15 @@ const NON_FRANCHISE_OPTIONS = [
 const FRANCHISE_OPTIONS = [
   'untouched',
   'not_answering_calls',
-  'interested',
   'follow_up',
   'join_later',
   'cold',
   'warm',
   'hot',
-  'converted_mou_signed',
-  'converted_agreement_signed',
   'not_interested',
   'wrong_enquiry',
+  'converted_mou_signed',
+  'converted_agreement_signed',
 ]
 
 const STATUS_COLORS: Record<string, string> = {
@@ -196,8 +195,8 @@ const SOURCE_OPTIONS = [
 const SOURCE_LABELS: Record<string, string> = {
   contact: 'CenterPage',
   admission: 'Admission',
-  landing: 'PaidCampaign',
-  campaign: 'PaidCampaign',
+  landing: 'Paid Campaign',
+  campaign: 'Paid Campaign',
   website: 'Website',
   facebook: 'Facebook',
   instagram: 'Instagram',

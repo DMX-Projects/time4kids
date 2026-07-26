@@ -30,16 +30,15 @@ const NON_FRANCHISE_COLUMNS = [
 const FRANCHISE_COLUMNS = [
     { label: "Untouched", keys: ["untouched"] },
     { label: "Not Answering Calls", keys: ["not_answering_calls"] },
-    { label: "Interested", keys: ["interested"] },
-    { label: "Follow Up", keys: ["follow_up"] },
+    { label: "Follow Up", keys: ["follow_up", "interested"] },
     { label: "Join Later", keys: ["join_later"] },
     { label: "Cold", keys: ["cold"] },
     { label: "Warm", keys: ["warm"] },
     { label: "Hot", keys: ["hot"] },
-    { label: "MOU", keys: ["converted_mou_signed"] },
-    { label: "Agreement", keys: ["converted_agreement_signed"] },
     { label: "Not Interested", keys: ["not_interested"] },
     { label: "Wrong Enquiry", keys: ["wrong_enquiry"] },
+    { label: "MOU", keys: ["converted_mou_signed"] },
+    { label: "Agreement", keys: ["converted_agreement_signed"] },
 ];
 
 const FRANCHISE_CAMPAIGN_SOURCES = new Set([
@@ -91,10 +90,10 @@ const getCategoryColumns = (categoryId: string, source?: string) => {
 
 const CATEGORIES = [
     { id: "admission", label: "Website", bg: "bg-blue-50 text-blue-800", subkey: "adm" },
-    { id: "landing", label: "PaidCampaign", bg: "bg-teal-50 text-teal-800", subkey: "lnd" },
+    { id: "landing", label: "Paid Campaign", bg: "bg-teal-50 text-teal-800", subkey: "lnd" },
     { id: "contact", label: "Centerpage", bg: "bg-sky-50 text-sky-800", subkey: "cen" },
-    { id: "campaign", label: "PaidCampaign", bg: "bg-violet-50 text-violet-800", subkey: "cam" },
-    { id: "franchise", label: "WebsiteLeads", bg: "bg-orange-50 text-orange-800", subkey: "fra" },
+    { id: "campaign", label: "Paid Campaign", bg: "bg-violet-50 text-violet-800", subkey: "cam" },
+    { id: "franchise", label: "Website Leads", bg: "bg-orange-50 text-orange-800", subkey: "fra" },
 ];
 
 const CAMPAIGN_CHANNEL_CATEGORIES = [
@@ -186,9 +185,9 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
         if (source === "franchise_all") return "Franchise";
         if (source === "admission") return "Website";
         if (source === "contact") return "CenterPage";
-        if (source === "campaign") return "PaidCampaign";
-        if (source === "franchise") return "WebsiteLeads";
-        if (source === "landing") return "PaidCampaign";
+        if (source === "campaign") return "Paid Campaign";
+        if (source === "franchise") return "Website Leads";
+        if (source === "landing") return "Paid Campaign";
         if (source === "others") return "Others";
         if (source === "admission_others") return "Others";
         if (source && CHANNEL_LABELS[source]) return CHANNEL_LABELS[source];

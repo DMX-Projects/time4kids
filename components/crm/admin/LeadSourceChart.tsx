@@ -13,8 +13,8 @@ const SOURCE_LABELS: Record<string, string> = {
   youtube: 'YouTube',
   admission: 'Admission',
   contact: 'Centers Enquiry',
-  campaign: 'PaidCampaign',
-  landing: 'PaidCampaign',
+  campaign: 'Paid Campaign',
+  landing: 'Paid Campaign',
   franchise: 'Franchise',
 }
 

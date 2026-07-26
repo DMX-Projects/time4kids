@@ -303,7 +303,7 @@ export default function AdminFranchiseContentPage() {
                     Franchise page content
                 </h1>
                 <p className="text-sm text-slate-600">
-                    Edit CMS content on <strong>/franchise</strong>. The enquiry form is embedded separately (Nopaper). Use <strong>Save</strong> when finished.
+                    Edit CMS content on <strong>/franchise</strong>. The enquiry form is the custom CRM form (not Nopaper). Use <strong>Save</strong> when finished.
                 </p>
             </div>
 
