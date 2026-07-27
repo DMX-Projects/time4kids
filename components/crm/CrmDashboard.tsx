@@ -366,7 +366,12 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
         const restore = () => {
             const fromUrl = snapshotFromSearchParams(new URLSearchParams(window.location.search));
-            const saved = fromUrl || loadCrmDashboardFilters();
+            // Prefer URL only when it matches this view; otherwise load that view's own saved filters.
+            // Dashboard and Reports use separate storage keys so filters do not cross-contaminate.
+            const fromUrlForView = fromUrl
+                ? { ...fromUrl, returnPath }
+                : null;
+            const saved = fromUrlForView || loadCrmDashboardFilters(returnPath);
             if (saved) {
                 applySnapshot({ ...saved, returnPath });
             }

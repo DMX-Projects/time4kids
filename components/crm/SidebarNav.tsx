@@ -9,7 +9,8 @@ import {
 } from "@/lib/crmDashboardFilters";
 
 function hrefFor(path: "/crm-admin" | "/crm-admin/reports"): string {
-    const saved = loadCrmDashboardFilters();
+    // Dashboard and Reports keep independent filters — never copy one into the other.
+    const saved = loadCrmDashboardFilters(path);
     if (!saved) return path;
     const snapshot: CrmDashboardFiltersSnapshot = {
         ...saved,

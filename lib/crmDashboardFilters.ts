@@ -1,4 +1,7 @@
 export const CRM_DASHBOARD_FILTERS_KEY = "crm-dashboard-filters-v3";
+export const CRM_REPORTS_FILTERS_KEY = "crm-reports-filters-v3";
+/** Tracks which CRM view was last persisted (for lead-detail back fallback). */
+const CRM_LAST_VIEW_KEY = "crm-last-view-path";
 
 export type CrmDashboardFiltersSnapshot = {
   returnPath: string;
@@ -32,35 +35,69 @@ function splitCsv(value: string | null): string[] {
     .filter(Boolean);
 }
 
-export function loadCrmDashboardFilters(): CrmDashboardFiltersSnapshot | null {
+function isReportsPath(returnPath?: string | null): boolean {
+  return Boolean(returnPath && returnPath.includes("/reports"));
+}
+
+export function storageKeyForPath(returnPath?: string | null): string {
+  return isReportsPath(returnPath) ? CRM_REPORTS_FILTERS_KEY : CRM_DASHBOARD_FILTERS_KEY;
+}
+
+function normalizeSnapshot(data: CrmDashboardFiltersSnapshot & { selectedCentre?: string | string[] }): CrmDashboardFiltersSnapshot {
+  if (typeof data.selectedCentre === "string") {
+    data.selectedCentre = data.selectedCentre ? [data.selectedCentre] : [];
+  } else if (!Array.isArray(data.selectedCentre)) {
+    data.selectedCentre = [];
+  }
+  if (typeof data.selectedUserId !== "string") {
+    data.selectedUserId = "";
+  }
+  if (typeof data.selectedUtmMedium !== "string") {
+    data.selectedUtmMedium = "";
+  }
+  return data as CrmDashboardFiltersSnapshot;
+}
+
+function readSnapshot(key: string): CrmDashboardFiltersSnapshot | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = sessionStorage.getItem(CRM_DASHBOARD_FILTERS_KEY);
+    const raw = sessionStorage.getItem(key);
     if (!raw) return null;
     const data = JSON.parse(raw) as CrmDashboardFiltersSnapshot & { selectedCentre?: string | string[] };
     if (!data || typeof data !== "object") return null;
-    // Migrate older single-centre snapshots
-    if (typeof data.selectedCentre === "string") {
-      data.selectedCentre = data.selectedCentre ? [data.selectedCentre] : [];
-    } else     if (!Array.isArray(data.selectedCentre)) {
-      data.selectedCentre = [];
-    }
-    if (typeof (data as CrmDashboardFiltersSnapshot).selectedUserId !== "string") {
-      (data as CrmDashboardFiltersSnapshot).selectedUserId = "";
-    }
-    if (typeof (data as CrmDashboardFiltersSnapshot).selectedUtmMedium !== "string") {
-      (data as CrmDashboardFiltersSnapshot).selectedUtmMedium = "";
-    }
-    return data as CrmDashboardFiltersSnapshot;
+    return normalizeSnapshot(data);
   } catch {
     return null;
   }
 }
 
+/**
+ * Load filters for a specific CRM view (dashboard vs reports).
+ * Pass the target path so Dashboard and Reports stay independent.
+ */
+export function loadCrmDashboardFilters(returnPath?: string | null): CrmDashboardFiltersSnapshot | null {
+  if (typeof window === "undefined") return null;
+  const key = storageKeyForPath(returnPath);
+  const saved = readSnapshot(key);
+  if (saved) return saved;
+
+  // One-time migration: older builds used a single shared key for both views.
+  if (key === CRM_DASHBOARD_FILTERS_KEY) {
+    const legacy = readSnapshot(CRM_DASHBOARD_FILTERS_KEY);
+    if (legacy && !isReportsPath(legacy.returnPath)) return legacy;
+  }
+  return null;
+}
+
 export function saveCrmDashboardFilters(snapshot: CrmDashboardFiltersSnapshot): void {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(CRM_DASHBOARD_FILTERS_KEY, JSON.stringify(snapshot));
+    const key = storageKeyForPath(snapshot.returnPath);
+    sessionStorage.setItem(key, JSON.stringify(snapshot));
+    sessionStorage.setItem(
+      CRM_LAST_VIEW_KEY,
+      isReportsPath(snapshot.returnPath) ? "/crm-admin/reports" : "/crm-admin",
+    );
   } catch {
     // ignore quota / private mode
   }
@@ -148,9 +185,19 @@ export function buildCrmDashboardHref(snapshot: CrmDashboardFiltersSnapshot): st
 }
 
 export function getCrmDashboardReturnHref(fallback = "/crm-admin"): string {
-  const saved = loadCrmDashboardFilters();
-  if (!saved) return fallback;
-  return buildCrmDashboardHref(saved);
+  if (typeof window === "undefined") return fallback;
+  let lastPath = fallback;
+  try {
+    lastPath = sessionStorage.getItem(CRM_LAST_VIEW_KEY) || fallback;
+  } catch {
+    // ignore
+  }
+  const saved = loadCrmDashboardFilters(lastPath);
+  if (!saved) return lastPath.startsWith("/crm-admin") ? lastPath : fallback;
+  return buildCrmDashboardHref({
+    ...saved,
+    returnPath: isReportsPath(lastPath) ? "/crm-admin/reports" : "/crm-admin",
+  });
 }
 
 export function datesFromSnapshot(snapshot: CrmDashboardFiltersSnapshot) {
@@ -182,10 +229,16 @@ export function isSafeCrmReturnHref(href: string | null | undefined): href is st
   }
 }
 
-export function clearCrmDashboardFilters(): void {
+export function clearCrmDashboardFilters(returnPath?: string | null): void {
   if (typeof window === "undefined") return;
   try {
+    if (returnPath) {
+      sessionStorage.removeItem(storageKeyForPath(returnPath));
+      return;
+    }
     sessionStorage.removeItem(CRM_DASHBOARD_FILTERS_KEY);
+    sessionStorage.removeItem(CRM_REPORTS_FILTERS_KEY);
+    sessionStorage.removeItem(CRM_LAST_VIEW_KEY);
   } catch {
     // ignore
   }
