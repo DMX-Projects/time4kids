@@ -284,6 +284,8 @@ const FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "converted_agreement_signed", label: "Converted – Agreement" },
 ];
 
+const CAMPAIGN_ONLY_CRM_EMAILS = new Set(["sachin.dhakate@time4education.com"]);
+
 export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'reports' | 'all' }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -312,6 +314,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const snapshotRef = useRef<CrmDashboardFiltersSnapshot | null>(null);
 
     const isCrmUser = normalizeRole(user?.role) === "crm";
+    const isCampaignOnlyUser = CAMPAIGN_ONLY_CRM_EMAILS.has(String(user?.email || "").toLowerCase());
     const returnPath = view === "reports" ? "/crm-admin/reports" : "/crm-admin";
     const selectedLeadType = leadTypeFromSource(selectedSource);
     const selectedSubFilter = subFilterFromSource(selectedSource);
@@ -448,6 +451,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     }, [filtersReady, currentSnapshot, pathname, router]);
 
     const getHeaderTitle = () => {
+        if (isCampaignOnlyUser) {
+            return view === "reports" ? "Paid Campaign Reports" : "Paid Campaign Dashboard";
+        }
         const leadLabel = LEAD_TYPE_OPTIONS.find((f) => f.id === selectedLeadType)?.label || "";
         const subLabel =
             selectedLeadType === "admission" && selectedSource !== "admission_all"
@@ -497,10 +503,12 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         selectedSource === "others";
     const apiSource = apiSourceParam(selectedSource, selectedCampaignChannel);
     const apiStatus = apiStatusParam(selectedStatus);
-    const usesFranchiseLpGeo = isFranchiseLpGeoView;
-    const hidesCentreForCampaignChannel = isFranchiseLpGeoView;
+    // Paid Campaign leads (LP + Meta inline) use franchise-lp state/city lists — same as the forms.
+    const usesFranchiseLpGeo = isFranchiseLpGeoView || selectedSource === "campaign";
+    const hidesCentreForCampaignChannel = usesFranchiseLpGeo;
     // Select Centre only for Admission — hidden for Franchise Lead (and when Lead = All)
     const showCentreSelector =
+        !isCampaignOnlyUser &&
         selectedLeadType === "admission" &&
         !hidesCentreForCampaignChannel;
     const activeCentreIds = useMemo(
@@ -515,21 +523,34 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const userFilterOptions = useMemo(() => {
         const base = [
             { value: "", label: "All Users" },
-            ...(view === "reports" ? [] : [{ value: "unassigned", label: "Unassigned" }]),
             ...crmUsers.map((u) => ({
                 value: String(u.id),
                 label: u.label,
             })),
         ];
         return base;
-    }, [view, crmUsers]);
+    }, [crmUsers]);
     const currentStatusFilters = isFranchise ? FRANCHISE_FILTERS : NON_FRANCHISE_FILTERS;
 
     useEffect(() => {
-        if (view === "reports" && selectedUserId === "unassigned") {
+        if (selectedUserId === "unassigned") {
             setSelectedUserId("");
         }
-    }, [view, selectedUserId]);
+    }, [selectedUserId]);
+
+    useEffect(() => {
+        if (!isCampaignOnlyUser) return;
+        // Hard lock this login to Paid Campaign only.
+        if (selectedSource !== "campaign") {
+            setSelectedSource("campaign");
+        }
+        if (selectedCampaignChannel !== "") {
+            setSelectedCampaignChannel("");
+        }
+        if (selectedUserId !== "") {
+            setSelectedUserId("");
+        }
+    }, [isCampaignOnlyUser, selectedSource, selectedCampaignChannel, selectedUserId]);
 
     const resetOnLeadChange = () => {
         setSelectedStatus("all");
@@ -848,17 +869,19 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                     <div className="flex flex-col gap-3">
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap items-end gap-3 w-full pb-2">
-                            <div className="flex-1 min-w-[140px] w-full">
-                                <label className="mb-2 block text-sm font-semibold text-gray-700">Lead Source</label>
-                                 <SearchableSelect
-                                    value={selectedLeadType}
-                                    onChange={(val) => handleLeadTypeChange(val as LeadType)}
-                                    options={LEAD_TYPE_OPTIONS.map((f) => ({ value: f.id, label: f.label }))}
-                                    placeholder="Select Type"
-                                />
-                            </div>
+                            {!isCampaignOnlyUser && (
+                                <div className="flex-1 min-w-[140px] w-full">
+                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Lead Source</label>
+                                     <SearchableSelect
+                                        value={selectedLeadType}
+                                        onChange={(val) => handleLeadTypeChange(val as LeadType)}
+                                        options={LEAD_TYPE_OPTIONS.map((f) => ({ value: f.id, label: f.label }))}
+                                        placeholder="Select Type"
+                                    />
+                                </div>
+                            )}
 
-                            {(selectedLeadType === "franchise" || selectedLeadType === "admission") && (
+                            {!isCampaignOnlyUser && (selectedLeadType === "franchise" || selectedLeadType === "admission") && (
                                 <div className="flex-1 min-w-[140px] w-full">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Lead Source</label>
                                     <SearchableSelect
@@ -873,7 +896,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
-                            {isCampaignView && (
+                            {isCampaignView && !isCampaignOnlyUser && (
                                 <div className="flex-1 min-w-[140px]">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Select Channel</label>
                                     <SearchableSelect
@@ -925,22 +948,24 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
-                            <div className="flex-1 min-w-[140px]">
-                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Select User</label>
-                                    <SearchableSelect
-                                        value={selectedUserId}
-                                        onChange={(val) => {
-                                            setSelectedUserId(val || "");
-                                            // User territory drives state/city options — reset geo filters.
-                                            setSelectedState([]);
-                                            setSelectedCity([]);
-                                            setSelectedCentre([]);
-                                            if (view === "reports") setReportsFiltersApplied(false);
-                                        }}
-                                        options={userFilterOptions}
-                                        placeholder="All Users"
-                                    />
-                                </div>
+                            {!isCampaignOnlyUser && (
+                                <div className="flex-1 min-w-[140px]">
+                                        <label className="mb-2 block text-sm font-semibold text-gray-700">Select User</label>
+                                        <SearchableSelect
+                                            value={selectedUserId}
+                                            onChange={(val) => {
+                                                setSelectedUserId(val || "");
+                                                // User territory drives state/city options — reset geo filters.
+                                                setSelectedState([]);
+                                                setSelectedCity([]);
+                                                setSelectedCentre([]);
+                                                if (view === "reports") setReportsFiltersApplied(false);
+                                            }}
+                                            options={userFilterOptions}
+                                            placeholder="All Users"
+                                        />
+                                    </div>
+                            )}
 
                             <>
                                     <StateSelector
@@ -992,7 +1017,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     {view === 'reports' && reportsFiltersApplied && (
                                         <button
                                             type="button"
-                                            onClick={() => alert("CSV Download will be ready once the data is hooked up!")}
+                                            onClick={handleDownload}
                                             className="btn-secondary flex h-[42px] items-center justify-center whitespace-nowrap !py-0 px-6 gap-2 w-full lg:w-auto"
                                         >
                                             <Download className="w-4 h-4" />

@@ -6,7 +6,8 @@ import api from '@/lib/crmApi'
 import { Toaster, toast } from 'react-hot-toast'
 import { getWhatsAppUrl } from '@/lib/crmContactHelpers'
 import { getCrmDashboardReturnHref, isSafeCrmReturnHref } from '@/lib/crmDashboardFilters'
-import { campaignDisplayName, isFranchiseLead, isFranchiseLpGeoSource } from '@/lib/crmLeadKind'
+import { formDisplayName, utmCampaignDisplay, isFranchiseLead, isFranchiseLpGeoSource } from '@/lib/crmLeadKind'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { Clock } from 'lucide-react'
 
 const toLocalDatetimeString = (dateStr: string | undefined | null) => {
@@ -215,6 +216,7 @@ function sourceLabel(source?: string) {
 export default function LeadDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const { user } = useAuth()
   const [lead, setLead] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [note, setNote] = useState('')
@@ -229,6 +231,8 @@ export default function LeadDetailPage() {
   const [whatsappComposeOpen, setWhatsappComposeOpen] = useState(false)
   const [whatsappMessage, setWhatsappMessage] = useState('')
   const [editForm, setEditForm] = useState<Record<string, string>>({})
+  const isCampaignReadonlyUser =
+    String(user?.email || '').trim().toLowerCase() === 'sachin.dhakate@time4education.com'
 
   useEffect(() => {
     loadLead()
@@ -266,6 +270,19 @@ export default function LeadDetailPage() {
       })
     }
   }, [lead])
+
+  useEffect(() => {
+    if (!isCampaignReadonlyUser || !params.id) return
+    const timer = window.setInterval(async () => {
+      try {
+        const response = await api.get(`/leads/${params.id}`)
+        setLead(response.data)
+      } catch {
+        // Keep view-only screen stable; no toasts for background refresh failures.
+      }
+    }, 15000)
+    return () => window.clearInterval(timer)
+  }, [isCampaignReadonlyUser, params.id])
 
   const goBackToDashboard = () => {
     if (typeof window !== 'undefined') {
@@ -447,7 +464,7 @@ export default function LeadDetailPage() {
     return <div className="min-h-screen flex items-center justify-center">Lead not found</div>
   }
 
-  const isEditable = lead.editable !== false
+  const isEditable = (lead.editable !== false) && !isCampaignReadonlyUser
   const isFranchiseLeadFlag = isFranchiseLead(lead)
   const isLpLead = isFranchiseLpGeoSource(lead.source)
 
@@ -544,49 +561,39 @@ export default function LeadDetailPage() {
                         Lead Source
                       </label>
                       {isLpLead ? (
-                        <div className="grid grid-cols-2 gap-3 pt-1">
+                        <div className="grid grid-cols-3 gap-3 pt-1">
                           <div className="space-y-0.5 min-w-0">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Source</p>
                             <p className="text-gray-700 font-semibold truncate">
-                              {lead.utmSource || lead.pageType || sourceLabel(lead.source)}
+                              {sourceLabel(lead.source)}
+                            </p>
+                          </div>
+                          <div className="space-y-0.5 min-w-0">
+                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Form</p>
+                            <p className="text-gray-700 truncate">
+                              {lead.source === 'july_meta' ? '—' : formDisplayName(lead)}
                             </p>
                           </div>
                           <div className="space-y-0.5 min-w-0">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Campaign</p>
-                            <p className="text-gray-700 truncate">{campaignDisplayName(lead)}</p>
+                            <p className="text-gray-700 break-all">{utmCampaignDisplay(lead)}</p>
                           </div>
                         </div>
                       ) : (
-                        <p className="text-gray-700 font-semibold">{sourceLabel(lead.source)}</p>
-                      )}
-                      {!isLpLead &&
-                        (lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign) && (
-                        <div className="space-y-1 pt-1">
-                          <p className="text-sm text-gray-600">
-                            {[
-                              lead.pageType ? `Type: ${lead.pageType}` : '',
-                              campaignDisplayName(lead) !== '—'
-                                ? `Campaign: ${campaignDisplayName(lead)}`
-                                : '',
-                            ]
-                              .filter(Boolean)
-                              .join(' · ')}
-                          </p>
+                        <div className="space-y-1">
+                          <p className="text-gray-700 font-semibold">{sourceLabel(lead.source)}</p>
+                          {utmCampaignDisplay(lead) !== '—' && (
+                            <p className="text-sm text-gray-600">Campaign: {utmCampaignDisplay(lead)}</p>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
                 )}
-                {!isFranchiseLeadFlag &&
-                  (lead.pageType || lead.campaign || lead.utmSource || lead.utmCampaign) && (
+                {!isFranchiseLeadFlag && utmCampaignDisplay(lead) !== '—' && (
                   <div className="col-span-2 space-y-1">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Page type &amp; campaign</label>
-                    <p className="text-gray-700">
-                      {[
-                        lead.pageType ? `Type: ${lead.pageType}` : '',
-                        campaignDisplayName(lead) !== '—' ? `Campaign: ${campaignDisplayName(lead)}` : '',
-                      ].filter(Boolean).join(' · ') || '—'}
-                    </p>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Campaign</label>
+                    <p className="text-gray-700">{utmCampaignDisplay(lead)}</p>
                   </div>
                 )}
                 {(lead.childAge || lead.enquiryType) && (
@@ -599,43 +606,51 @@ export default function LeadDetailPage() {
                 )}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status</label>
-                  <div className="relative inline-block">
-                    <select
-                      value={editForm.status}
-                      onChange={(e) => setEditForm(f => ({ ...f, status: e.target.value }))}
-                      className={`appearance-none pl-3 pr-8 py-1 rounded-full text-xs font-bold uppercase border-0 cursor-pointer focus:ring-2 focus:ring-blue-500/20 ${
-                        editForm.status?.startsWith('converted') ? 'bg-green-100 text-green-700' :
-                        ['dropped', 'not_interested', 'wrong_enquiry'].includes(editForm.status) ? 'bg-red-100 text-red-700' :
-                        editForm.status === 'untouched' ? 'bg-gray-100 text-gray-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}
-                    >
-                      {(() => {
-                        const optionsList = isFranchiseLeadFlag ? FRANCHISE_OPTIONS : NON_FRANCHISE_OPTIONS
-                        return (
-                          <>
-                            {editForm.status && !optionsList.includes(editForm.status) && (
-                              <option value={editForm.status} className="bg-white text-gray-800 text-xs font-bold" disabled>
-                                {STATUS_LABELS[editForm.status] || editForm.status}
-                              </option>
-                            )}
-                            {optionsList.map((s) => (
-                              <option key={s} value={s} className="bg-white text-gray-800 text-xs font-bold">
-                                {STATUS_LABELS[s] || s}
-                              </option>
-                            ))}
-                          </>
-                        )
-                      })()}
-                    </select>
-                    <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] ${
-                      editForm.status?.startsWith('converted') ? 'text-green-700' :
-                      ['dropped', 'not_interested'].includes(editForm.status) ? 'text-red-700' :
-                      'text-blue-700'
+                  {isCampaignReadonlyUser ? (
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      STATUS_COLORS[lead.status] || 'bg-gray-100 text-gray-600'
                     }`}>
-                        ▼
+                      {STATUS_LABELS[lead.status] || (lead.status || '').replace('_', ' ')}
+                    </span>
+                  ) : (
+                    <div className="relative inline-block">
+                      <select
+                        value={editForm.status}
+                        onChange={(e) => setEditForm(f => ({ ...f, status: e.target.value }))}
+                        className={`appearance-none pl-3 pr-8 py-1 rounded-full text-xs font-bold uppercase border-0 cursor-pointer focus:ring-2 focus:ring-blue-500/20 ${
+                          editForm.status?.startsWith('converted') ? 'bg-green-100 text-green-700' :
+                          ['dropped', 'not_interested', 'wrong_enquiry'].includes(editForm.status) ? 'bg-red-100 text-red-700' :
+                          editForm.status === 'untouched' ? 'bg-gray-100 text-gray-700' :
+                          'bg-blue-100 text-blue-700'
+                        }`}
+                      >
+                        {(() => {
+                          const optionsList = isFranchiseLeadFlag ? FRANCHISE_OPTIONS : NON_FRANCHISE_OPTIONS
+                          return (
+                            <>
+                              {editForm.status && !optionsList.includes(editForm.status) && (
+                                <option value={editForm.status} className="bg-white text-gray-800 text-xs font-bold" disabled>
+                                  {STATUS_LABELS[editForm.status] || editForm.status}
+                                </option>
+                              )}
+                              {optionsList.map((s) => (
+                                <option key={s} value={s} className="bg-white text-gray-800 text-xs font-bold">
+                                  {STATUS_LABELS[s] || s}
+                                </option>
+                              ))}
+                            </>
+                          )
+                        })()}
+                      </select>
+                      <div className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] ${
+                        editForm.status?.startsWith('converted') ? 'text-green-700' :
+                        ['dropped', 'not_interested'].includes(editForm.status) ? 'text-red-700' :
+                        'text-blue-700'
+                      }`}>
+                          ▼
+                        </div>
                       </div>
-                    </div>
+                  )}
                 </div>
                 {!isFranchiseLeadFlag && (
                   <div className="space-y-1">
@@ -643,39 +658,45 @@ export default function LeadDetailPage() {
                     <p className="text-gray-700 font-semibold">{sourceLabel(lead.source)}</p>
                   </div>
                 )}
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned</label>
-                  {lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
-                    <p className="text-gray-700 font-semibold">
-                      {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
-                    </p>
-                  ) : (
-                    <p className="text-gray-400 text-sm">—</p>
-                  )}
-                </div>
+                {!isCampaignReadonlyUser && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned</label>
+                    {lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
+                      <p className="text-gray-700 font-semibold">
+                        {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
+                      </p>
+                    ) : (
+                      <p className="text-gray-400 text-sm">—</p>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Enquiry Date</label>
                   <p className="text-gray-700">
                     {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
                   </p>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Last Follow-up Date</label>
-                  <p className="text-gray-700">
-                    {(() => {
-                      const notesDates = (lead.notes || []).map((n: any) => new Date(n.createdAt).getTime());
-                      if (notesDates.length === 0) return '—';
-                      const lastDate = new Date(Math.max(...notesDates));
-                      return lastDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-                    })()}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Next Follow-up Date</label>
-                  <p className="text-gray-700 font-semibold text-blue-600">
-                    {lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
-                  </p>
-                </div>
+                {!isCampaignReadonlyUser && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Last Follow-up Date</label>
+                    <p className="text-gray-700">
+                      {(() => {
+                        const notesDates = (lead.notes || []).map((n: any) => new Date(n.createdAt).getTime());
+                        if (notesDates.length === 0) return '—';
+                        const lastDate = new Date(Math.max(...notesDates));
+                        return lastDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                      })()}
+                    </p>
+                  </div>
+                )}
+                {!isCampaignReadonlyUser && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Next Follow-up Date</label>
+                    <p className="text-gray-700 font-semibold text-blue-600">
+                      {lead.nextFollowUpDate ? new Date(lead.nextFollowUpDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                    </p>
+                  </div>
+                )}
 
                 {isEditable ? (
                   <>
@@ -726,12 +747,15 @@ export default function LeadDetailPage() {
                   </>
                 ) : (
                   <>
-                    <div className="col-span-2 pt-4 border-t border-gray-100 mt-2">
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Original Message</label>
-                      <p className="text-gray-700 mt-1 italic">{lead.comments || 'No original message'}</p>
-                    </div>
+                    {!isCampaignReadonlyUser && (
+                      <div className="col-span-2 pt-4 border-t border-gray-100 mt-2">
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Original Message</label>
+                        <p className="text-gray-700 mt-1 italic">{lead.comments || 'No original message'}</p>
+                      </div>
+                    )}
 
-                    <div className="col-span-2 flex gap-6 text-sm py-4 border-t border-gray-100 mt-2">
+                    {!isCampaignReadonlyUser && (
+                      <div className="col-span-2 flex gap-6 text-sm py-4 border-t border-gray-100 mt-2">
                       {isFranchiseLeadFlag && (
                         <div>
                           <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
@@ -742,7 +766,8 @@ export default function LeadDetailPage() {
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
                         <p className="font-medium text-blue-600">{formatLeadDateTime(lead.nextFollowUpDate)}</p>
                       </div>
-                    </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -753,30 +778,32 @@ export default function LeadDetailPage() {
           <div className="space-y-6">
 
 
-             <div className="card">
-               <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
-               <div className="space-y-3">
-                 <button
-                   type="button"
-                   onClick={openWhatsAppCompose}
-                   disabled={!lead.mobile}
-                   className="block w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-                 >
-                   WhatsApp
-                 </button>
-                 <button
-                   type="button"
-                   onClick={openEmailCompose}
-                   disabled={!lead.email}
-                   className="block w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-                 >
-                   Email
-                 </button>
+             {!isCampaignReadonlyUser && (
+               <div className="card">
+                 <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
+                 <div className="space-y-3">
+                   <button
+                     type="button"
+                     onClick={openWhatsAppCompose}
+                     disabled={!lead.mobile}
+                     className="block w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                   >
+                     WhatsApp
+                   </button>
+                   <button
+                     type="button"
+                     onClick={openEmailCompose}
+                     disabled={!lead.email}
+                     className="block w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                   >
+                     Email
+                   </button>
+                 </div>
                </div>
-             </div>
+             )}
 
             {/* Interaction Timeline */}
-            <div className="card">
+            {!isCampaignReadonlyUser && <div className="card">
               <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                 <span className="text-2xl">⏳</span> History
               </h3>
@@ -869,7 +896,7 @@ export default function LeadDetailPage() {
                   ))}
                 <div className="absolute bottom-0 left-[-9px] w-4 h-4 rounded-full border-4 border-white bg-gray-200 shadow-sm" />
               </div>
-            </div>
+            </div>}
           </div>
         </div>
       </div>
