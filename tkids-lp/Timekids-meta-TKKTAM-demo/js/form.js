@@ -17,7 +17,7 @@ $(document).ready(function () {
         var params = {};
         try {
             var search = new URLSearchParams(window.location.search || '');
-            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(function (key) {
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'form_name', 'ad_name', 'campaign_name'].forEach(function (key) {
                 var value = $.trim(search.get(key) || '');
                 if (value) params[key] = value;
             });
@@ -426,12 +426,14 @@ $(document).ready(function () {
             }
 
             var utm = getUrlUtmParams();
-            // Hidden fields: name="source" (ad channel), name="type" (campaign).
+            // Hidden fields: name="source" (ad channel), name="type" (form page name).
             // CRM form key stays in data-source (july_meta / july_lp / lp_wb) for filters.
+            // UTM Source / Medium / Campaign / Content / Term come dynamically from the ad URL.
             var hiddenSource = $.trim($form.find('input[name="source"]').val() || '');
             var hiddenType = $.trim($form.find('input[name="type"]').val() || '');
+            var formPageName = campaignName || hiddenType || '';
             var resolvedSource = utm.utm_source || hiddenSource || pageType;
-            var resolvedCampaign = campaignName || hiddenType || '';
+            var resolvedCampaign = utm.utm_campaign || utm.form_name || utm.ad_name || utm.campaign_name || '';
             var payload = {
                 fullName: $.trim($name.val()),
                 email: $.trim($email.val()).toLowerCase(),
@@ -447,7 +449,9 @@ $(document).ready(function () {
                 utmSource: resolvedSource,
                 utmMedium: utm.utm_medium || '',
                 utmCampaign: resolvedCampaign,
-                pageType: resolvedSource,
+                utmContent: utm.utm_content || '',
+                utmTerm: utm.utm_term || '',
+                pageType: formPageName,
                 campaign: resolvedCampaign,
                 skipEmails: !!skipEmails
             };

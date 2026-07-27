@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/crmApi'
-import { campaignDisplayName } from '@/lib/crmLeadKind'
+import { formDisplayName, utmCampaignDisplay } from '@/lib/crmLeadKind'
 import { toast } from 'react-hot-toast'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -131,6 +131,7 @@ const statusColors: { [key: string]: string } = {
 
 export default function LeadsTable({ dateRange, city, state, centreId, status, source, userId, search, title, returnHref, onBeforeNavigate, onLeadUpdated }: LeadsTableProps) {
   const hideCentreColumn =
+    source === 'campaign' ||
     source === 'franchise' ||
     source === 'google' ||
     source === 'july_lp' ||
@@ -354,6 +355,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     </>
                   )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Source</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Form</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign Month</th>
@@ -411,15 +413,18 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                         <HighlightText text={sourceLabel(lead.source) || ''} highlight={debouncedSearch} />
                       </span>
                     </td>
+                    <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
+                      <HighlightText
+                        text={lead.source === 'july_meta' ? '—' : formDisplayName(lead)}
+                        highlight={debouncedSearch}
+                      />
+                    </td>
                     <td
                       className="px-4 py-4 text-gray-600 text-sm max-w-[160px]"
-                      title={campaignDisplayName(lead)}
+                      title={utmCampaignDisplay(lead) !== '—' ? utmCampaignDisplay(lead) : undefined}
                     >
                       <div className="truncate">
-                        <HighlightText
-                          text={campaignDisplayName(lead)}
-                          highlight={debouncedSearch}
-                        />
+                        <HighlightText text={utmCampaignDisplay(lead)} highlight={debouncedSearch} />
                       </div>
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">

@@ -19,41 +19,52 @@ export function isFranchiseLpGeoSource(source?: string | null): boolean {
   return (FRANCHISE_LP_GEO_SOURCES as readonly string[]).includes(source);
 }
 
-/** Page-configured campaign names for July LP / Meta forms (`data-campaign`). */
-const LP_PAGE_CAMPAIGN_BY_SOURCE: Record<string, string> = {
+/** Form page names for July LP / Meta forms. */
+const LP_FORM_NAME_BY_SOURCE: Record<string, string> = {
   july_lp: "lp-tkktam",
   july_meta: "meta-tkktam",
   lp_wb: "lp-wb",
 };
 
-/**
- * Campaign column label — form page names only (lp-tkktam / meta-tkktam / lp-wb),
- * never Google Ads UTM slugs like `google_generic_alllocation`.
- */
+/** Which LP form was used (lp-tkktam / meta-tkktam / lp-wb). */
+export function formDisplayName(lead: {
+  source?: string | null;
+  formName?: string | null;
+  pageType?: string | null;
+} | null | undefined): string {
+  if (!lead) return "—";
+  const fromApi = String(lead.formName || "").trim();
+  if (fromApi) return fromApi;
+  const src = String(lead.source || "").toLowerCase();
+  if (LP_FORM_NAME_BY_SOURCE[src]) return LP_FORM_NAME_BY_SOURCE[src];
+  const page = String(lead.pageType || "").trim().toLowerCase();
+  if (page === "lp-tkktam" || page === "meta-tkktam" || page === "lp-wb") return page;
+  return "—";
+}
+
+/** Dynamic ad / Meta form name for Campaign (not the LP page slug). */
+export function utmCampaignDisplay(lead: {
+  campaign?: string | null;
+  utmCampaign?: string | null;
+  formName?: string | null;
+  pageType?: string | null;
+} | null | undefined): string {
+  if (!lead) return "—";
+  const pageSlugs = new Set(["lp-tkktam", "meta-tkktam", "lp-wb", "july"]);
+  const raw = String(lead.utmCampaign || lead.campaign || "").trim();
+  if (raw && !pageSlugs.has(raw.toLowerCase())) return raw;
+  return "—";
+}
+
+/** @deprecated Prefer utmCampaignDisplay for UTM campaign; formDisplayName for form page. */
 export function campaignDisplayName(lead: {
   source?: string | null;
   campaign?: string | null;
   utmCampaign?: string | null;
+  formName?: string | null;
+  pageType?: string | null;
 } | null | undefined): string {
-  if (!lead) return "—";
-  const src = String(lead.source || "").toLowerCase();
-  const pageName = LP_PAGE_CAMPAIGN_BY_SOURCE[src];
-  if (pageName) return pageName;
-
-  const raw = String(lead.campaign || lead.utmCampaign || "").trim().toLowerCase();
-  if (!raw) return "—";
-  // Already a page form name
-  if (raw === "lp-tkktam" || raw === "meta-tkktam" || raw === "lp-wb") return raw;
-  // Hide ad-platform UTM campaign ids / legacy "july" blob if they slipped into older leads.
-  if (
-    raw === "july" ||
-    /^google[_-]/i.test(raw) ||
-    /_alllocation/i.test(raw) ||
-    /_generic_/i.test(raw)
-  ) {
-    return "—";
-  }
-  return String(lead.campaign || lead.utmCampaign || "").trim();
+  return utmCampaignDisplay(lead);
 }
 
 /** True when this lead should use franchise statuses + workflow. */
