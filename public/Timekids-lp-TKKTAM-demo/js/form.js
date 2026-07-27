@@ -13,6 +13,8 @@ $(document).ready(function () {
     var skipOtp = true;
     var skipEmails = true;
 
+    var UTM_STORAGE_KEY = 'tk_lp_utm_v1';
+
     function getUrlUtmParams() {
         var params = {};
         try {
@@ -24,6 +26,39 @@ $(document).ready(function () {
         } catch (e) {}
         return params;
     }
+
+    function readStoredUtmParams() {
+        try {
+            var raw = sessionStorage.getItem(UTM_STORAGE_KEY);
+            if (!raw) return {};
+            var parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    /** Merge URL UTMs over sessionStorage so values survive OTP / URL cleanup. */
+    function resolveUtmParams() {
+        var fromUrl = getUrlUtmParams();
+        var stored = readStoredUtmParams();
+        var merged = {};
+        Object.keys(stored).forEach(function (k) {
+            if (stored[k]) merged[k] = stored[k];
+        });
+        Object.keys(fromUrl).forEach(function (k) {
+            if (fromUrl[k]) merged[k] = fromUrl[k];
+        });
+        if (Object.keys(fromUrl).length) {
+            try {
+                sessionStorage.setItem(UTM_STORAGE_KEY, JSON.stringify(merged));
+            } catch (e) {}
+        }
+        return merged;
+    }
+
+    // Capture UTMs on first page load (before Generate OTP / any redirect).
+    resolveUtmParams();
 
     var $submitBtn = $('#form-submit-button');
     var $error = $('#form-error');
@@ -425,15 +460,24 @@ $(document).ready(function () {
                 }
             }
 
-            var utm = getUrlUtmParams();
+            var utm = resolveUtmParams();
             // Hidden fields: name="source" (ad channel), name="type" (form page name).
-            // CRM form key stays in data-source (july_meta / july_lp / lp_wb) for filters.
-            // UTM Source / Medium / Campaign / Content / Term come dynamically from the ad URL.
-            var hiddenSource = $.trim($form.find('input[name="source"]').val() || '');
+            // CRM channel key stays in data-source (july_meta / july_lp / lp_wb) for filters.
+            // UTM Source / Medium / Campaign come only from the ad URL (e.g. utm_source=bcwebwise_meta).
             var hiddenType = $.trim($form.find('input[name="type"]').val() || '');
             var formPageName = campaignName || hiddenType || '';
-            var resolvedSource = utm.utm_source || hiddenSource || pageType;
             var resolvedCampaign = utm.utm_campaign || '';
+            var landingUrl = window.location.href.split('#')[0];
+            // Prefer full landing URL with UTMs when still present; else rebuild from stored UTMs.
+            if (landingUrl.indexOf('utm_') === -1 && (utm.utm_source || utm.utm_medium || utm.utm_campaign)) {
+                try {
+                    var u = new URL(landingUrl, window.location.origin);
+                    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(function (k) {
+                        if (utm[k]) u.searchParams.set(k, utm[k]);
+                    });
+                    landingUrl = u.toString();
+                } catch (e) {}
+            }
             var payload = {
                 fullName: $.trim($name.val()),
                 email: $.trim($email.val()).toLowerCase(),
@@ -445,8 +489,8 @@ $(document).ready(function () {
                 investmentRange: '₹10–15L',
                 source: campaignSource,
                 comments: campaignComments,
-                landingPageUrl: window.location.href.split('#')[0],
-                utmSource: resolvedSource,
+                landingPageUrl: landingUrl,
+                utmSource: utm.utm_source || '',
                 utmMedium: utm.utm_medium || '',
                 utmCampaign: resolvedCampaign,
                 utmContent: utm.utm_content || '',

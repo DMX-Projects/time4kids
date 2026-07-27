@@ -1,14 +1,24 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import api from '@/lib/crmApi'
 import { Toaster, toast } from 'react-hot-toast'
 import { getWhatsAppUrl } from '@/lib/crmContactHelpers'
 import { getCrmDashboardReturnHref, isSafeCrmReturnHref } from '@/lib/crmDashboardFilters'
-import { formDisplayName, utmCampaignDisplay, isFranchiseLead, isFranchiseLpGeoSource } from '@/lib/crmLeadKind'
+import { formDisplayName, utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay, isFranchiseLead, isFranchiseLpGeoSource, crmPipelineForLead } from '@/lib/crmLeadKind'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { Clock } from 'lucide-react'
+
+/** TKPL Zonal Managers + CRM Super Admins who may reassign leads. */
+const CRM_LEAD_ASSIGNER_EMAILS = new Set([
+  'tejbal@timekidspreschools.com',
+  'gaurav@timekidspreschools.com',
+  'jyoti.mishra@timekidspreschools.com',
+  'admin@timekids.com',
+  'jayesh@time4education.com',
+  'bethleena@timekidspreschools.com',
+])
 
 const toLocalDatetimeString = (dateStr: string | undefined | null) => {
   if (!dateStr) return '';
@@ -231,8 +241,14 @@ export default function LeadDetailPage() {
   const [whatsappComposeOpen, setWhatsappComposeOpen] = useState(false)
   const [whatsappMessage, setWhatsappMessage] = useState('')
   const [editForm, setEditForm] = useState<Record<string, string>>({})
+  const [assignUsers, setAssignUsers] = useState<{ id: number; label: string }[]>([])
   const isCampaignReadonlyUser =
     String(user?.email || '').trim().toLowerCase() === 'sachin.dhakate@time4education.com'
+  const canAssignUsers = Boolean(
+    lead?.canAssignUsers ||
+      user?.canAssignUsers ||
+      CRM_LEAD_ASSIGNER_EMAILS.has(String(user?.email || '').trim().toLowerCase()),
+  ) && !isCampaignReadonlyUser
 
   useEffect(() => {
     loadLead()
@@ -283,6 +299,52 @@ export default function LeadDetailPage() {
     }, 15000)
     return () => window.clearInterval(timer)
   }, [isCampaignReadonlyUser, params.id])
+
+  useEffect(() => {
+    if (!canAssignUsers || !lead) {
+      setAssignUsers([])
+      return
+    }
+    let cancelled = false
+    const paramsQs = new URLSearchParams()
+    paramsQs.set('forAssign', '1')
+    const pipeline = crmPipelineForLead(lead)
+    if (pipeline) paramsQs.set('pipeline', pipeline)
+    if (lead.state) paramsQs.set('state', String(lead.state))
+    if (lead.city) paramsQs.set('city', String(lead.city))
+    const qs = paramsQs.toString()
+    api
+      .get(`/users?${qs}`)
+      .then((res) => {
+        if (cancelled) return
+        const list = Array.isArray(res.data?.users) ? res.data.users : []
+        setAssignUsers(
+          list.map((u: { id: number; label?: string; fullName?: string }) => ({
+            id: u.id,
+            label: u.label || u.fullName || `User ${u.id}`,
+          })),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setAssignUsers([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [canAssignUsers, lead?.id, lead?.state, lead?.city, lead?.leadKind, lead?.enquiryType, lead?.source])
+
+  const assignUserOptions = useMemo(() => {
+    const opts = assignUsers.map((u) => ({ value: String(u.id), label: u.label }))
+    const currentId = editForm.assignedUserId || ''
+    if (currentId && !opts.some((o) => o.value === currentId)) {
+      const label =
+        lead?.assignedUserLabel ||
+        lead?.suggestedAssignedUserLabel ||
+        `User ${currentId}`
+      opts.unshift({ value: currentId, label })
+    }
+    return opts
+  }, [assignUsers, editForm.assignedUserId, lead?.assignedUserLabel, lead?.suggestedAssignedUserLabel])
 
   const goBackToDashboard = () => {
     if (typeof window !== 'undefined') {
@@ -561,12 +623,20 @@ export default function LeadDetailPage() {
                         Lead Source
                       </label>
                       {isLpLead ? (
-                        <div className="grid grid-cols-3 gap-3 pt-1">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
                           <div className="space-y-0.5 min-w-0">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Source</p>
-                            <p className="text-gray-700 font-semibold truncate">
-                              {sourceLabel(lead.source)}
+                            <p className="text-gray-700 font-semibold break-all">
+                              {utmSourceDisplay(lead) !== '—' ? utmSourceDisplay(lead) : sourceLabel(lead.source)}
                             </p>
+                          </div>
+                          <div className="space-y-0.5 min-w-0">
+                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Medium</p>
+                            <p className="text-gray-700 break-all">{utmMediumDisplay(lead)}</p>
+                          </div>
+                          <div className="space-y-0.5 min-w-0">
+                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Campaign</p>
+                            <p className="text-gray-700 break-all">{utmCampaignDisplay(lead)}</p>
                           </div>
                           <div className="space-y-0.5 min-w-0">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Form</p>
@@ -574,14 +644,13 @@ export default function LeadDetailPage() {
                               {lead.source === 'july_meta' ? '—' : formDisplayName(lead)}
                             </p>
                           </div>
-                          <div className="space-y-0.5 min-w-0">
-                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Campaign</p>
-                            <p className="text-gray-700 break-all">{utmCampaignDisplay(lead)}</p>
-                          </div>
                         </div>
                       ) : (
                         <div className="space-y-1">
                           <p className="text-gray-700 font-semibold">{sourceLabel(lead.source)}</p>
+                          {utmMediumDisplay(lead) !== '—' && (
+                            <p className="text-sm text-gray-600">Medium: {utmMediumDisplay(lead)}</p>
+                          )}
                           {utmCampaignDisplay(lead) !== '—' && (
                             <p className="text-sm text-gray-600">Campaign: {utmCampaignDisplay(lead)}</p>
                           )}
@@ -590,10 +659,20 @@ export default function LeadDetailPage() {
                     </div>
                   </div>
                 )}
-                {!isFranchiseLeadFlag && utmCampaignDisplay(lead) !== '—' && (
+                {!isFranchiseLeadFlag && (utmMediumDisplay(lead) !== '—' || utmCampaignDisplay(lead) !== '—') && (
                   <div className="col-span-2 space-y-1">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Campaign</label>
-                    <p className="text-gray-700">{utmCampaignDisplay(lead)}</p>
+                    {utmMediumDisplay(lead) !== '—' && (
+                      <>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Medium</label>
+                        <p className="text-gray-700">{utmMediumDisplay(lead)}</p>
+                      </>
+                    )}
+                    {utmCampaignDisplay(lead) !== '—' && (
+                      <>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Campaign</label>
+                        <p className="text-gray-700">{utmCampaignDisplay(lead)}</p>
+                      </>
+                    )}
                   </div>
                 )}
                 {(lead.childAge || lead.enquiryType) && (
@@ -661,7 +740,23 @@ export default function LeadDetailPage() {
                 {!isCampaignReadonlyUser && (
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned</label>
-                    {lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
+                    {canAssignUsers ? (
+                      <select
+                        value={editForm.assignedUserId || ''}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))
+                        }
+                        className="form-input w-full text-sm font-semibold text-gray-800"
+                        disabled={!isEditable && !canAssignUsers}
+                      >
+                        <option value="">Select user</option>
+                        {assignUserOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
                       <p className="text-gray-700 font-semibold">
                         {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
                       </p>

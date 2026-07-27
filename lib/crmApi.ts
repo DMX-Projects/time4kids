@@ -46,6 +46,12 @@ function resolveCrmUrl(path: string): string {
     if (pathname === "/centres" || pathname.startsWith("/centres?")) {
         return apiUrl(`/enquiries/admin/crm-centres/${qs ? `?${qs}` : ""}`);
     }
+    if (pathname === "/campaigns" || pathname.startsWith("/campaigns?")) {
+        return apiUrl(`/enquiries/admin/crm-campaigns/${qs ? `?${qs}` : ""}`);
+    }
+    if (pathname === "/mediums" || pathname.startsWith("/mediums?")) {
+        return apiUrl(`/enquiries/admin/crm-mediums/${qs ? `?${qs}` : ""}`);
+    }
     if (pathname === "/cities") {
         return apiUrl(`/enquiries/admin/crm-cities/${qs ? `?${qs}` : ""}`);
     }

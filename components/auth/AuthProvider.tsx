@@ -19,6 +19,8 @@ type User = {
     crmZone?: string;
     /** CRM only: NORTH_R1 | SOUTH_R2 | etc. | empty = full zone / national. */
     crmRegion?: string;
+    /** CRM Zonal Managers / Super Admins may reassign leads. */
+    canAssignUsers?: boolean;
     /** Child name from login / me (parent accounts). */
     childName?: string;
     /** Use for greetings in the parent app — child name, not parent full_name. */
@@ -143,6 +145,7 @@ function mapApiUserToSession(data: Record<string, unknown>, fallbackEmail = ""):
         fullName: data.full_name != null ? String(data.full_name) : undefined,
         crmZone: data.crm_zone != null ? String(data.crm_zone).trim().toUpperCase() : undefined,
         crmRegion: data.crm_region != null ? String(data.crm_region).trim().toUpperCase() : undefined,
+        canAssignUsers: Boolean(data.can_assign_users),
         childName,
         displayName,
         gender: normalizeParentGender(genderRaw),

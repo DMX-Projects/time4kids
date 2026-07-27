@@ -61,12 +61,16 @@ const formatReminderDateTime = (dateStr: string | undefined) => {
 export default function RemindersWidget({
   source,
   city,
+  state,
+  userId,
   centreId,
   returnHref,
   onBeforeNavigate,
 }: {
   source?: string
   city?: string
+  state?: string
+  userId?: string
   centreId?: string
   returnHref?: string
   onBeforeNavigate?: () => void
@@ -84,6 +88,8 @@ export default function RemindersWidget({
       const params = new URLSearchParams()
       if (source) params.append('source', source)
       if (city) params.append('city', city)
+      if (state) params.append('state', state)
+      if (userId) params.append('userId', userId)
       if (centreId) params.append('centreId', centreId)
       params.append('_t', Date.now().toString()) // cache bust
 
@@ -100,7 +106,7 @@ export default function RemindersWidget({
 
   useEffect(() => {
     fetchReminders(true)
-  }, [source, city, centreId])
+  }, [source, city, state, userId, centreId])
 
   const handleSendReminder = async (leadId: string, type: 'meeting' | 'follow-up', channel: 'email' | 'whatsapp' = 'email') => {
     setSendingReminder(`${leadId}-${channel}`)

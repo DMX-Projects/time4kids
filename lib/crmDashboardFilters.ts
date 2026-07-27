@@ -7,6 +7,8 @@ export type CrmDashboardFiltersSnapshot = {
   selectedCentre: string[];
   selectedSource: string;
   selectedCampaignChannel: string;
+  selectedUtmCampaign: string;
+  selectedUtmMedium: string;
   selectedStatus: string;
   selectedUserId: string;
   filterStart: string | null;
@@ -46,6 +48,9 @@ export function loadCrmDashboardFilters(): CrmDashboardFiltersSnapshot | null {
     if (typeof (data as CrmDashboardFiltersSnapshot).selectedUserId !== "string") {
       (data as CrmDashboardFiltersSnapshot).selectedUserId = "";
     }
+    if (typeof (data as CrmDashboardFiltersSnapshot).selectedUtmMedium !== "string") {
+      (data as CrmDashboardFiltersSnapshot).selectedUtmMedium = "";
+    }
     return data as CrmDashboardFiltersSnapshot;
   } catch {
     return null;
@@ -65,6 +70,8 @@ export function snapshotToSearchParams(snapshot: CrmDashboardFiltersSnapshot): U
   const params = new URLSearchParams();
   if (snapshot.selectedSource) params.set("source", snapshot.selectedSource);
   if (snapshot.selectedCampaignChannel) params.set("channel", snapshot.selectedCampaignChannel);
+  if (snapshot.selectedUtmCampaign) params.set("campaign", snapshot.selectedUtmCampaign);
+  if (snapshot.selectedUtmMedium) params.set("medium", snapshot.selectedUtmMedium);
   if (snapshot.selectedStatus) params.set("status", snapshot.selectedStatus);
   if (snapshot.selectedUserId) params.set("userId", snapshot.selectedUserId);
   if (snapshot.selectedState.length) params.set("state", snapshot.selectedState.join(","));
@@ -83,6 +90,8 @@ export function snapshotFromSearchParams(
 ): CrmDashboardFiltersSnapshot | null {
   const source = searchParams.get("source") || "";
   const channel = searchParams.get("channel") || "";
+  const campaign = searchParams.get("campaign") || "";
+  const medium = searchParams.get("medium") || "";
   const status = searchParams.get("status") || "";
   const userId = searchParams.get("userId") || "";
   const state = splitCsv(searchParams.get("state"));
@@ -97,6 +106,8 @@ export function snapshotFromSearchParams(
   const hasAny =
     source ||
     channel ||
+    campaign ||
+    medium ||
     status ||
     userId ||
     state.length ||
@@ -114,6 +125,8 @@ export function snapshotFromSearchParams(
     returnPath: "/crm-admin",
     selectedSource: source,
     selectedCampaignChannel: channel,
+    selectedUtmCampaign: campaign,
+    selectedUtmMedium: medium,
     selectedStatus: !status || status === "all" ? "all" : status,
     selectedUserId: userId,
     selectedState: state,
