@@ -422,7 +422,7 @@ $(document).ready(function () {
             var utm = getUrlUtmParams();
             // Page type = which LP form (meta / lp / wb).
             // Campaign = ad channel from URL when present (meta / google / fb / …).
-            var resolvedCampaign = utm.utm_campaign || utm.utm_source || campaignName;
+            var resolvedCampaign = campaignName || '';
             var payload = {
                 fullName: $.trim($name.val()),
                 email: $.trim($email.val()).toLowerCase(),

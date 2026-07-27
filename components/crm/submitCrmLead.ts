@@ -27,10 +27,9 @@ export async function submitCrmLead(source: CrmSource, data: CrmLeadPayload): Pr
     const params = new URLSearchParams(window.location.search)
     const utmSource = params.get('utm_source')
     const utmMedium = params.get('utm_medium')
-    const utmCampaign = params.get('utm_campaign')
+    // Do not save Google Ads utm_campaign into CRM Campaign — page/source names only.
     payload.utmSource = utmSource || (source === 'fb' ? 'facebook' : source === 'insta' ? 'instagram' : 'website')
     if (utmMedium) payload.utmMedium = utmMedium
-    if (utmCampaign) payload.utmCampaign = utmCampaign
   }
 
   const res = await fetch(apiUrl('/enquiries/crm-leads/'), {

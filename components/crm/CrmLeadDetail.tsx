@@ -6,7 +6,7 @@ import api from '@/lib/crmApi'
 import { Toaster, toast } from 'react-hot-toast'
 import { getWhatsAppUrl } from '@/lib/crmContactHelpers'
 import { getCrmDashboardReturnHref, isSafeCrmReturnHref } from '@/lib/crmDashboardFilters'
-import { isFranchiseLead, isFranchiseLpGeoSource } from '@/lib/crmLeadKind'
+import { campaignDisplayName, isFranchiseLead, isFranchiseLpGeoSource } from '@/lib/crmLeadKind'
 import { Clock } from 'lucide-react'
 
 const toLocalDatetimeString = (dateStr: string | undefined | null) => {
@@ -553,7 +553,7 @@ export default function LeadDetailPage() {
                           </div>
                           <div className="space-y-0.5 min-w-0">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Campaign</p>
-                            <p className="text-gray-700 truncate">{lead.campaign || lead.utmCampaign || 'july'}</p>
+                            <p className="text-gray-700 truncate">{campaignDisplayName(lead)}</p>
                           </div>
                         </div>
                       ) : (
@@ -565,8 +565,8 @@ export default function LeadDetailPage() {
                           <p className="text-sm text-gray-600">
                             {[
                               lead.pageType ? `Type: ${lead.pageType}` : '',
-                              lead.campaign || lead.utmCampaign
-                                ? `Campaign: ${lead.campaign || lead.utmCampaign}`
+                              campaignDisplayName(lead) !== '—'
+                                ? `Campaign: ${campaignDisplayName(lead)}`
                                 : '',
                             ]
                               .filter(Boolean)
@@ -584,7 +584,7 @@ export default function LeadDetailPage() {
                     <p className="text-gray-700">
                       {[
                         lead.pageType ? `Type: ${lead.pageType}` : '',
-                        lead.campaign || lead.utmCampaign ? `Campaign: ${lead.campaign || lead.utmCampaign}` : '',
+                        campaignDisplayName(lead) !== '—' ? `Campaign: ${campaignDisplayName(lead)}` : '',
                       ].filter(Boolean).join(' · ') || '—'}
                     </p>
                   </div>

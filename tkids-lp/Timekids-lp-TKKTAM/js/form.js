@@ -416,7 +416,7 @@ $(document).ready(function () {
             var hiddenSource = $.trim($form.find('input[name="source"]').val() || '');
             var hiddenType = $.trim($form.find('input[name="type"]').val() || '');
             var resolvedSource = utm.utm_source || hiddenSource || pageType;
-            var resolvedCampaign = utm.utm_campaign || hiddenType || campaignName;
+            var resolvedCampaign = campaignName || hiddenType || '';
             var payload = {
                 fullName: $.trim($name.val()),
                 email: $.trim($email.val()).toLowerCase(),

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/crmApi'
+import { campaignDisplayName } from '@/lib/crmLeadKind'
 import { toast } from 'react-hot-toast'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -354,12 +355,10 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                   )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Source</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign Month</th>
                   {source === 'franchise' && (
-                    <>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Registration Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Last User Activity</th>
-                    </>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Last User Activity</th>
                   )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Action</th>
@@ -414,27 +413,25 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     </td>
                     <td
                       className="px-4 py-4 text-gray-600 text-sm max-w-[160px]"
-                      title={String(lead.campaign || lead.utmCampaign || '').trim() || undefined}
+                      title={campaignDisplayName(lead)}
                     >
                       <div className="truncate">
                         <HighlightText
-                          text={String(lead.campaign || lead.utmCampaign || '').trim() || '—'}
+                          text={campaignDisplayName(lead)}
                           highlight={debouncedSearch}
                         />
                       </div>
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
+                      {formatDate(lead.createdAt)}
+                    </td>
+                    <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
                       {campaignMonthLabel(lead)}
                     </td>
                     {source === 'franchise' && (
-                      <>
-                        <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
-                          {formatDate(lead.createdAt)}
-                        </td>
-                        <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
-                          {formatDateTime(lead.updatedAt)}
-                        </td>
-                      </>
+                      <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
+                        {formatDateTime(lead.updatedAt)}
+                      </td>
                     )}
                     <td className="px-4 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[lead.status] || 'bg-gray-100 text-gray-600'}`}>
