@@ -170,14 +170,14 @@ export default function ConversionFunnel({
   const total = stages.reduce((sum, s) => sum + s.count, 0)
   const stageCount = Math.max(stages.length, 1)
 
-  // Reference style: tapering body, then a straight spout (last ~2 stages equal width)
+  // Tapering body, then a straight spout for the last 2 stages (matches reference funnel).
   const spoutCount = Math.min(2, Math.max(1, Math.floor(stageCount / 3)))
   const bodyCount = Math.max(stageCount - spoutCount, 1)
   const topWidthPct = 100
-  const spoutWidthPct = 36
+  const spoutWidthPct = 42
   const bodyStep = (topWidthPct - spoutWidthPct) / bodyCount
-  const bandHeight = stageCount > 9 ? 44 : stageCount > 7 ? 50 : 56
-  const gapPx = 6
+  const bandHeight = stageCount > 9 ? 44 : stageCount > 7 ? 48 : 52
+  const gapPx = 4
 
   const segmentWidth = (index: number) => {
     if (index < bodyCount) {
@@ -188,19 +188,16 @@ export default function ConversionFunnel({
     return { widthTop: spoutWidthPct, widthBottom: spoutWidthPct }
   }
 
-  const stageBandHeight = (label: string) =>
-    label.length > 16 ? bandHeight + 10 : bandHeight
-
   return (
     <div className="card">
       <div className="mb-4">
-        <h3 className="text-base font-bold text-slate-800 sm:text-lg">Lead Funnel</h3>
+        <h3 className="text-xl font-bold text-gray-800">Lead Funnel</h3>
       </div>
 
       {total === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">No leads in this funnel yet.</p>
       ) : (
-        <div className="mx-auto flex w-full max-w-sm flex-col items-center px-1">
+        <div className="mx-auto flex w-full max-w-[300px] flex-col items-center">
           {stages.map((stage, index) => {
             const { widthTop, widthBottom } = segmentWidth(index)
             const insetTop = (100 - widthTop) / 2
@@ -209,7 +206,7 @@ export default function ConversionFunnel({
             const inSpout = index >= bodyCount
             const isFirst = index === 0
             const isLast = index === stageCount - 1
-            const height = stageBandHeight(stage.label)
+            const height = bandHeight
 
             const radius = inSpout
               ? isLast
@@ -227,7 +224,7 @@ export default function ConversionFunnel({
                 title={`${stage.label}: ${stage.count.toLocaleString()} (${pctOfTotal}%)`}
               >
                 <div
-                  className="absolute inset-0 flex items-center justify-center px-3 py-1 text-center"
+                  className="absolute inset-0 flex items-center justify-center px-2 text-center text-white"
                   style={{
                     backgroundColor: stage.color,
                     clipPath: inSpout
@@ -236,14 +233,16 @@ export default function ConversionFunnel({
                     width: inSpout ? `${spoutWidthPct}%` : '100%',
                     left: inSpout ? `${(100 - spoutWidthPct) / 2}%` : 0,
                     borderRadius: radius,
-                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.12)',
+                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.08)',
                   }}
                 >
-                  <span className="max-w-full whitespace-normal break-words text-[10px] font-semibold leading-tight text-white sm:text-[11px]">
+                  <span className="max-w-[95%] whitespace-nowrap text-[11px] font-medium leading-none text-white sm:text-xs">
                     {stage.label}{' '}
-                    <span className="text-[13px] font-extrabold tabular-nums">
+                    <span className="text-[17px] font-bold tabular-nums sm:text-[19px]">
                       {stage.count.toLocaleString()}
-                      <span className="ml-1 font-semibold opacity-90">({pctOfTotal}%)</span>
+                    </span>{' '}
+                    <span className="text-[15px] font-semibold tabular-nums text-white/95 sm:text-base">
+                      ({pctOfTotal}%)
                     </span>
                   </span>
                 </div>

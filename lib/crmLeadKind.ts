@@ -42,6 +42,24 @@ export function formDisplayName(lead: {
   return "—";
 }
 
+/** UTM source from ad URL (e.g. bcwebwise_meta). */
+export function utmSourceDisplay(lead: {
+  utmSource?: string | null;
+} | null | undefined): string {
+  if (!lead) return "—";
+  const raw = String(lead.utmSource || "").trim();
+  return raw || "—";
+}
+
+/** UTM medium (e.g. tamil_interest_p1, cpc). */
+export function utmMediumDisplay(lead: {
+  utmMedium?: string | null;
+} | null | undefined): string {
+  if (!lead) return "—";
+  const raw = String(lead.utmMedium || "").trim();
+  return raw || "—";
+}
+
 /** Dynamic ad / Meta form name for Campaign (not the LP page slug). */
 export function utmCampaignDisplay(lead: {
   campaign?: string | null;
@@ -80,4 +98,19 @@ export function isFranchiseLead(lead: {
   if (lead.source === "franchise") return true;
   if (isFranchiseCampaignSource(lead.source)) return true;
   return false;
+}
+
+/** Franchise vs admission TKPL sheet for Select User / assign lists. */
+export function crmPipelineForLead(
+  lead: {
+    leadKind?: string | null;
+    enquiryType?: string | null;
+    source?: string | null;
+  } | null | undefined,
+): "franchise" | "admission" | undefined {
+  if (!lead) return undefined;
+  if (isFranchiseLead(lead)) return "franchise";
+  const kind = String(lead.leadKind || "").toLowerCase();
+  if (kind === "enquiry" || kind === "landing") return "admission";
+  return undefined;
 }

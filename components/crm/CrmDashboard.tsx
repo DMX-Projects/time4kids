@@ -305,6 +305,10 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     });
     const [selectedSource, setSelectedSource] = useState<SourceFilter>("all");
     const [selectedCampaignChannel, setSelectedCampaignChannel] = useState<ChannelFilter>("");
+    const [selectedUtmCampaign, setSelectedUtmCampaign] = useState<string>("");
+    const [campaignOptions, setCampaignOptions] = useState<{ value: string; label: string }[]>([]);
+    const [selectedUtmMedium, setSelectedUtmMedium] = useState<string>("");
+    const [mediumOptions, setMediumOptions] = useState<{ value: string; label: string }[]>([]);
     const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
     const [selectedUserId, setSelectedUserId] = useState<string>("");
     const [crmUsers, setCrmUsers] = useState<{ id: number; label: string }[]>([]);
@@ -341,10 +345,14 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             setSelectedCampaignChannel(savedChannel);
         } else {
             setSelectedCampaignChannel("");
+            setSelectedUtmCampaign("");
+            setSelectedUtmMedium("");
         }
         const restoredStatus = (saved.selectedStatus as StatusFilter) || "all";
         setSelectedStatus(restoredStatus);
         setSelectedUserId(typeof saved.selectedUserId === "string" ? saved.selectedUserId : "");
+        setSelectedUtmCampaign(typeof saved.selectedUtmCampaign === "string" ? saved.selectedUtmCampaign : "");
+        setSelectedUtmMedium(typeof saved.selectedUtmMedium === "string" ? saved.selectedUtmMedium : "");
         setFilterDateRange(savedFilter);
         setDateRange(savedApplied);
         setReportsFiltersApplied(Boolean(saved.reportsFiltersApplied));
@@ -372,6 +380,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             setSelectedCentre([]);
             setSelectedSource("all");
             setSelectedCampaignChannel("");
+        setSelectedUtmCampaign("");
+        setSelectedUtmMedium("");
             setSelectedStatus("all");
             setSelectedUserId("");
             setFilterDateRange({ startDate: null, endDate: null });
@@ -406,6 +416,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             selectedCentre,
             selectedSource,
             selectedCampaignChannel,
+            selectedUtmCampaign,
+            selectedUtmMedium,
             selectedStatus,
             selectedUserId,
             filterStart: filterDateRange.startDate?.toISOString() ?? null,
@@ -421,6 +433,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             selectedCentre,
             selectedSource,
             selectedCampaignChannel,
+            selectedUtmCampaign,
+            selectedUtmMedium,
             selectedStatus,
             selectedUserId,
             filterDateRange,
@@ -476,6 +490,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         setSelectedCity(city);
         // Centre filter only works for a single city
         setSelectedCentre([]);
+        setSelectedUserId("");
         if (view === 'reports') {
             setReportsFiltersApplied(false);
         }
@@ -485,6 +500,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         setSelectedState(state);
         setSelectedCity([]);
         setSelectedCentre([]);
+        setSelectedUserId("");
         if (view === 'reports') {
             setReportsFiltersApplied(false);
         }
@@ -546,6 +562,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         }
         if (selectedCampaignChannel !== "") {
             setSelectedCampaignChannel("");
+        setSelectedUtmCampaign("");
+        setSelectedUtmMedium("");
         }
         if (selectedUserId !== "") {
             setSelectedUserId("");
@@ -570,6 +588,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         const next = sourceFromLeadTypeAndSub(leadType, defaultSub);
         setSelectedSource(next);
         setSelectedCampaignChannel("");
+        setSelectedUtmCampaign("");
+        setSelectedUtmMedium("");
         setSelectedState([]);
         setSelectedCity([]);
         setSelectedCentre([]);
@@ -582,6 +602,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         setSelectedSource(next);
         if (next !== "campaign" && next !== "others" && next !== "admission_others") {
             setSelectedCampaignChannel("");
+            setSelectedUtmCampaign("");
+            setSelectedUtmMedium("");
             if (wasFranchiseLpGeo) {
                 setSelectedState([]);
                 setSelectedCity([]);
@@ -589,15 +611,110 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             }
         } else {
             setSelectedCampaignChannel("");
+            setSelectedUtmCampaign("");
+            setSelectedUtmMedium("");
         }
         resetOnLeadChange();
     };
 
+    const usersApiPipeline =
+        selectedLeadType === "franchise" ? "franchise" : selectedLeadType === "admission" ? "admission" : "";
+
+    const appendLeadQueryParams = (params: URLSearchParams, opts?: { includeDates?: boolean }) => {
+        const includeDates = opts?.includeDates ?? true;
+        if (includeDates && dateRange.startDate) {
+            const start = new Date(dateRange.startDate);
+            start.setHours(0, 0, 0, 0);
+            params.append("startDate", start.toISOString());
+        }
+        if (includeDates && dateRange.endDate) {
+            const end = new Date(dateRange.endDate);
+            end.setHours(23, 59, 59, 999);
+            params.append("endDate", end.toISOString());
+        }
+        if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
+        if (selectedState.length > 0) params.append("state", selectedState.join(","));
+        if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
+        if (apiSource) params.append("source", apiSource);
+        if (apiStatus) params.append("status", apiStatus);
+        if (selectedUtmCampaign) params.append("campaign", selectedUtmCampaign);
+        if (selectedUtmMedium) params.append("medium", selectedUtmMedium);
+        if (selectedUserId) params.append("userId", selectedUserId);
+    };
+
     useEffect(() => {
-        if (!isCrmUser) return;
+        if (!isCampaignView || !filtersReady) {
+            setCampaignOptions([]);
+            return;
+        }
         let cancelled = false;
+        const params = new URLSearchParams();
+        if (apiSource) params.set("source", apiSource);
+        if (selectedState.length > 0) params.set("state", selectedState.join(","));
+        if (selectedCity.length > 0) params.set("city", selectedCity.join(","));
         crmApi
-            .get("/users")
+            .get(`/campaigns?${params.toString()}`)
+            .then((res) => {
+                if (cancelled) return;
+                const list = Array.isArray(res.data?.campaigns) ? res.data.campaigns : [];
+                setCampaignOptions(list.map((name: string) => ({ value: name, label: name })));
+            })
+            .catch(() => {
+                if (!cancelled) setCampaignOptions([]);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [isCampaignView, filtersReady, apiSource, selectedState, selectedCity]);
+
+    useEffect(() => {
+        if (!selectedUtmCampaign) return;
+        const stillValid = campaignOptions.some((o) => o.value === selectedUtmCampaign);
+        if (!stillValid) setSelectedUtmCampaign("");
+    }, [campaignOptions, selectedUtmCampaign]);
+
+    useEffect(() => {
+        if (!isCampaignView || !filtersReady) {
+            setMediumOptions([]);
+            return;
+        }
+        let cancelled = false;
+        const params = new URLSearchParams();
+        if (apiSource) params.set("source", apiSource);
+        if (selectedState.length > 0) params.set("state", selectedState.join(","));
+        if (selectedCity.length > 0) params.set("city", selectedCity.join(","));
+        if (selectedUtmCampaign) params.set("campaign", selectedUtmCampaign);
+        crmApi
+            .get(`/mediums?${params.toString()}`)
+            .then((res) => {
+                if (cancelled) return;
+                const list = Array.isArray(res.data?.mediums) ? res.data.mediums : [];
+                setMediumOptions(list.map((name: string) => ({ value: name, label: name })));
+            })
+            .catch(() => {
+                if (!cancelled) setMediumOptions([]);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [isCampaignView, filtersReady, apiSource, selectedState, selectedCity, selectedUtmCampaign]);
+
+    useEffect(() => {
+        if (!selectedUtmMedium) return;
+        const stillValid = mediumOptions.some((o) => o.value === selectedUtmMedium);
+        if (!stillValid) setSelectedUtmMedium("");
+    }, [mediumOptions, selectedUtmMedium]);
+
+    useEffect(() => {
+        if (!isCrmUser || isCampaignOnlyUser) return;
+        let cancelled = false;
+        const params = new URLSearchParams();
+        params.set("forAssign", "1");
+        if (usersApiPipeline) params.set("pipeline", usersApiPipeline);
+        if (selectedState.length > 0) params.set("state", selectedState.join(","));
+        if (selectedCity.length > 0) params.set("city", selectedCity.join(","));
+        crmApi
+            .get(`/users?${params.toString()}`)
             .then((res) => {
                 if (cancelled) return;
                 const list = Array.isArray(res.data?.users) ? res.data.users : [];
@@ -614,7 +731,15 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [isCrmUser]);
+    }, [isCrmUser, isCampaignOnlyUser, usersApiPipeline, selectedState, selectedCity]);
+
+    useEffect(() => {
+        if (!selectedUserId) return;
+        const stillValid = crmUsers.some((u) => String(u.id) === selectedUserId);
+        if (!stillValid) {
+            setSelectedUserId("");
+        }
+    }, [crmUsers, selectedUserId]);
 
     useEffect(() => {
         if (authLoading) return;
@@ -629,22 +754,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         setStatsLoading(true);
         const params = new URLSearchParams();
         params.append("_t", Date.now().toString());
-        if (dateRange.startDate) {
-            const start = new Date(dateRange.startDate);
-            start.setHours(0, 0, 0, 0);
-            params.append("startDate", start.toISOString());
-        }
-        if (dateRange.endDate) {
-            const end = new Date(dateRange.endDate);
-            end.setHours(23, 59, 59, 999);
-            params.append("endDate", end.toISOString());
-        }
-        if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
-        if (selectedState.length > 0) params.append("state", selectedState.join(","));
-        if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
-        if (apiSource) params.append("source", apiSource);
-        if (apiStatus) params.append("status", apiStatus);
-        if (selectedUserId) params.append("userId", selectedUserId);
+        appendLeadQueryParams(params);
         crmApi
             .get(`/leads/dashboard?${params.toString()}`)
             .then((res) => {
@@ -659,27 +769,12 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [filtersReady, isCrmUser, dateRange, selectedCity, selectedState, activeCentreIds, apiSource, apiStatus, selectedUserId]);
+    }, [filtersReady, isCrmUser, dateRange, selectedCity, selectedState, activeCentreIds, apiSource, apiStatus, selectedUtmCampaign, selectedUtmMedium, selectedUserId]);
 
     const fetchStats = () => {
         setStatsLoading(true);
         const params = new URLSearchParams();
-        if (dateRange.startDate) {
-            const start = new Date(dateRange.startDate);
-            start.setHours(0, 0, 0, 0);
-            params.append("startDate", start.toISOString());
-        }
-        if (dateRange.endDate) {
-            const end = new Date(dateRange.endDate);
-            end.setHours(23, 59, 59, 999);
-            params.append("endDate", end.toISOString());
-        }
-        if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
-        if (selectedState.length > 0) params.append("state", selectedState.join(","));
-        if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
-        if (apiSource) params.append("source", apiSource);
-        if (apiStatus) params.append("status", apiStatus);
-        if (selectedUserId) params.append("userId", selectedUserId);
+        appendLeadQueryParams(params);
         crmApi
             .get(`/leads/dashboard?${params.toString()}`)
             .then((res) => setStats(res.data))
@@ -701,22 +796,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
     const silentRefreshStats = () => {
         const params = new URLSearchParams();
-        if (dateRange.startDate) {
-            const start = new Date(dateRange.startDate);
-            start.setHours(0, 0, 0, 0);
-            params.append("startDate", start.toISOString());
-        }
-        if (dateRange.endDate) {
-            const end = new Date(dateRange.endDate);
-            end.setHours(23, 59, 59, 999);
-            params.append("endDate", end.toISOString());
-        }
-        if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
-        if (selectedState.length > 0) params.append("state", selectedState.join(","));
-        if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
-        if (apiSource) params.append("source", apiSource);
-        if (apiStatus) params.append("status", apiStatus);
-        if (selectedUserId) params.append("userId", selectedUserId);
+        appendLeadQueryParams(params);
         crmApi
             .get(`/leads/dashboard?${params.toString()}`)
             .then((res) => setStats(res.data))
@@ -746,33 +826,46 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
             if (apiSource) params.append("source", apiSource);
             if (apiStatus) params.append("status", apiStatus);
+            if (selectedUtmCampaign) params.append("campaign", selectedUtmCampaign);
+            if (selectedUtmMedium) params.append("medium", selectedUtmMedium);
             const response = await crmApi.get(`/leads?${params.toString()}`);
             const leads = response.data?.leads || [];
             if (leads.length === 0) {
                 alert("No leads to download.");
                 return;
             }
-            const headers = ["Name", "Mobile", "Email", "City", "State", "Preferred Location", "Source", "Status", "Created At"];
+            const headers = [
+                "Name",
+                "Mobile",
+                "Email",
+                "City",
+                "State",
+                "Preferred Location",
+                "Channel",
+                "Source",
+                "Medium",
+                "Campaign",
+                "Status",
+                "Created At",
+            ];
             const escape = (v: string) => `"${String(v || "").replace(/"/g, '""')}"`;
-            const rows = leads.map((l: any) =>
-                headers
-                    .map((h, i) => {
-                        const key = [
-                            "fullName",
-                            "mobile",
-                            "email",
-                            "city",
-                            "state",
-                            "preferredCentreLocation",
-                            "source",
-                            "status",
-                            "createdAt",
-                        ][i];
-                        const val = l[key];
-                        return escape(typeof val === "string" ? val : val ? new Date(val).toLocaleString() : "");
-                    })
-                    .join(","),
-            );
+            const rows = leads.map((l: any) => {
+                const values = [
+                    l.fullName || "",
+                    l.mobile || "",
+                    l.email || "",
+                    l.city || "",
+                    l.state || "",
+                    l.preferredCentreLocation || "",
+                    l.source || "",
+                    l.utmSource || "",
+                    l.utmMedium || "",
+                    l.utmCampaign || l.campaign || "",
+                    l.status || "",
+                    l.createdAt ? new Date(l.createdAt).toLocaleString() : "",
+                ];
+                return values.map((v) => escape(String(v))).join(",");
+            });
             const csv = [headers.map(escape).join(","), ...rows].join("\n");
             const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
             const url = window.URL.createObjectURL(blob);
@@ -906,6 +999,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                             const wasFranchiseLpGeo = isFranchiseLpGeoChannel(selectedCampaignChannel);
                                             const nextFranchiseLpGeo = isFranchiseLpGeoChannel(next);
                                             setSelectedCampaignChannel(next);
+                                            setSelectedUtmCampaign("");
+                                            setSelectedUtmMedium("");
                                             if (wasFranchiseLpGeo !== nextFranchiseLpGeo) {
                                                 setSelectedState([]);
                                                 setSelectedCity([]);
@@ -915,6 +1010,41 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         }}
                                         options={CAMPAIGN_CHANNEL_FILTERS.map(f => ({ value: f.id, label: f.label }))}
                                         placeholder="All Channels"
+                                    />
+                                </div>
+                            )}
+
+                            {isCampaignView && !isCampaignOnlyUser && (
+                                <div className="flex-1 min-w-[160px]">
+                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Select Campaign</label>
+                                    <SearchableSelect
+                                        value={selectedUtmCampaign}
+                                        onChange={(val) => {
+                                            setSelectedUtmCampaign(val || "");
+                                            if (view === "reports") setReportsFiltersApplied(false);
+                                        }}
+                                        options={[
+                                            { value: "", label: "All Campaigns" },
+                                            ...campaignOptions,
+                                        ]}
+                                        placeholder="All Campaigns"
+                                    />
+                                </div>
+                            )}
+
+                            {isCampaignView && !isCampaignOnlyUser && view !== "reports" && (
+                                <div className="flex-1 min-w-[160px]">
+                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Medium</label>
+                                    <SearchableSelect
+                                        value={selectedUtmMedium}
+                                        onChange={(val) => {
+                                            setSelectedUtmMedium(val || "");
+                                        }}
+                                        options={[
+                                            { value: "", label: "All" },
+                                            ...mediumOptions,
+                                        ]}
+                                        placeholder="All"
                                     />
                                 </div>
                             )}
@@ -1050,6 +1180,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 key={refreshKey}
                                 source={apiSource}
                                 city={selectedCity.join(",")}
+                                state={selectedState.join(",")}
+                                userId={selectedUserId}
                                 centreId={activeCentreIds.join(",")}
                                 returnHref={returnHref}
                                 onBeforeNavigate={persistFiltersNow}
@@ -1102,6 +1234,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         city={selectedCity}
                                         state={selectedState}
                                         source={apiSource || selectedSource}
+                                        campaign={selectedUtmCampaign}
                                         userId={selectedUserId}
                                         centreId={activeCentreIds.join(",")}
                                     />
@@ -1114,12 +1247,14 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 )
                             ) : (
                                 <LeadsTable
-                                    key={`${refreshKey}-${apiSource}-${apiStatus}-${selectedUserId}-${selectedCity}-${activeCentreIds.join(",")}-${selectedState.join(",")}`}
+                                    key={`${refreshKey}-${apiSource}-${apiStatus}-${selectedUtmCampaign}-${selectedUtmMedium}-${selectedUserId}-${selectedCity}-${activeCentreIds.join(",")}-${selectedState.join(",")}`}
                                     dateRange={dateRange}
                                     city={selectedCity.join(",")}
                                     state={selectedState.join(",")}
                                     centreId={activeCentreIds.join(",")}
                                     source={apiSource}
+                                    campaign={selectedUtmCampaign}
+                                    medium={selectedUtmMedium}
                                     status={apiStatus}
                                     userId={selectedUserId}
                                     returnHref={returnHref}
@@ -1130,8 +1265,12 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                             ? "All Leads"
                                             : selectedSource === "campaign"
                                               ? selectedCampaignChannel
-                                                  ? `Paid Campaign — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
-                                                  : "Paid Campaign"
+                                                  ? selectedUtmCampaign
+                                                      ? `Paid Campaign — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""} — ${selectedUtmCampaign}`
+                                                      : `Paid Campaign — ${CAMPAIGN_CHANNEL_FILTERS.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`
+                                                  : selectedUtmCampaign
+                                                    ? `Paid Campaign — ${selectedUtmCampaign}`
+                                                    : "Paid Campaign"
                                               : selectedSource === "others" || selectedSource === "admission_others"
                                                 ? selectedCampaignChannel
                                                     ? `Others — ${othersChannelFilters.find((c) => c.id === selectedCampaignChannel)?.label ?? ""}`

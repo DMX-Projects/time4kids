@@ -9,6 +9,8 @@ interface ReportsViewProps {
     city: string[];
     state: string[];
     source?: string;
+    campaign?: string;
+    medium?: string;
     userId?: string;
     centreId?: string;
 }
@@ -152,7 +154,11 @@ function cityRowTotal(
     activeCategories: typeof CATEGORIES,
     source?: string,
 ): number {
-    return activeCategories.reduce((sum, cat) => {
+    const categoriesForTotal =
+        source === "campaign"
+            ? activeCategories.filter((c) => c.id === "campaign")
+            : activeCategories;
+    return categoriesForTotal.reduce((sum, cat) => {
         const cols = getCategoryColumns(cat.id, source);
         return (
             sum +
@@ -168,7 +174,7 @@ function cityRowTotal(
     }, 0);
 }
 
-export default function ReportsView({ dateRange, city, state, source, userId, centreId }: ReportsViewProps) {
+export default function ReportsView({ dateRange, city, state, source, campaign, medium, userId, centreId }: ReportsViewProps) {
     const tableContainerRef = useRef<HTMLDivElement>(null);
     const [cities, setCities] = useState<{ name: string }[]>([]);
     const [reportData, setReportData] = useState<any>({});
@@ -222,7 +228,16 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
         if (source === "admission") {
             return CATEGORIES.filter((c) => c.id === "admission");
         }
-        if (source === "campaign") return CAMPAIGN_CHANNEL_CATEGORIES;
+        if (source === "campaign")
+            return [
+                {
+                    id: "campaign",
+                    label: "Paid Campaign",
+                    bg: "bg-violet-50 text-violet-800",
+                    subkey: "cam",
+                },
+                ...CAMPAIGN_CHANNEL_CATEGORIES,
+            ];
         if (source === "others") return FRANCHISE_OTHERS_CHANNEL_CATEGORIES;
         if (source === "admission_others") return ADMISSION_OTHERS_CHANNEL_CATEGORIES;
         if (source === "google" || source === "july_lp" || source === "lp_wb") {
@@ -294,7 +309,7 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
 
     useEffect(() => {
         loadReportData();
-    }, [dateRange, city, state, source, userId, centreId]);
+    }, [dateRange, city, state, source, campaign, medium, userId, centreId]);
 
     useEffect(() => {
         setPage(1);
@@ -317,6 +332,8 @@ export default function ReportsView({ dateRange, city, state, source, userId, ce
             if (state && state.length > 0) params.append("state", state.join(","));
             if (city.length > 0) params.append("city", city.join(","));
             if (source && source !== "all") params.append("source", source);
+            if (campaign) params.append("campaign", campaign);
+            if (medium) params.append("medium", medium);
             if (userId) params.append("userId", userId);
             if (centreId) params.append("centreId", centreId);
 

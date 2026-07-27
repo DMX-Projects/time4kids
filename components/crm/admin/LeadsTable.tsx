@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/crmApi'
-import { formDisplayName, utmCampaignDisplay } from '@/lib/crmLeadKind'
+import { formDisplayName, utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay } from '@/lib/crmLeadKind'
 import { toast } from 'react-hot-toast'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -14,6 +14,8 @@ interface LeadsTableProps {
   centreId?: string
   status?: string
   source?: string
+  campaign?: string
+  medium?: string
   userId?: string
   search?: string
   title?: string
@@ -129,7 +131,7 @@ const statusColors: { [key: string]: string } = {
   meeting_scheduled: 'bg-teal-100 text-teal-700 border border-teal-200',
 }
 
-export default function LeadsTable({ dateRange, city, state, centreId, status, source, userId, search, title, returnHref, onBeforeNavigate, onLeadUpdated }: LeadsTableProps) {
+export default function LeadsTable({ dateRange, city, state, centreId, status, source, campaign, medium, userId, search, title, returnHref, onBeforeNavigate, onLeadUpdated }: LeadsTableProps) {
   const hideCentreColumn =
     source === 'campaign' ||
     source === 'franchise' ||
@@ -182,7 +184,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
 
   useEffect(() => {
     loadLeads()
-  }, [page, pageSize, dateRange, city, state, centreId, status, source, userId, debouncedSearch])
+  }, [page, pageSize, dateRange, city, state, centreId, status, source, campaign, medium, userId, debouncedSearch])
 
   const loadLeads = async (silent = false) => {
     if (!silent) setLoading(true)
@@ -206,6 +208,8 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
       if (centreId) params.append('centreId', centreId)
       if (status) params.append('status', status)
       if (source) params.append('source', source)
+      if (campaign) params.append('campaign', campaign)
+      if (medium) params.append('medium', medium)
       if (userId) params.append('userId', userId)
       if (debouncedSearch) params.append('search', debouncedSearch)
 
@@ -355,8 +359,9 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     </>
                   )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Source</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Form</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Medium</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Form</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign Month</th>
                   {source === 'franchise' && (
@@ -410,14 +415,23 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     })()}
                     <td className="px-4 py-4">
                       <span className="capitalize text-sm text-gray-500">
-                        <HighlightText text={sourceLabel(lead.source) || ''} highlight={debouncedSearch} />
+                        <HighlightText
+                          text={
+                            utmSourceDisplay(lead) !== '—'
+                              ? utmSourceDisplay(lead)
+                              : sourceLabel(lead.source) || ''
+                          }
+                          highlight={debouncedSearch}
+                        />
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
-                      <HighlightText
-                        text={lead.source === 'july_meta' ? '—' : formDisplayName(lead)}
-                        highlight={debouncedSearch}
-                      />
+                    <td
+                      className="px-4 py-4 text-gray-600 text-sm max-w-[140px]"
+                      title={utmMediumDisplay(lead) !== '—' ? utmMediumDisplay(lead) : undefined}
+                    >
+                      <div className="truncate">
+                        <HighlightText text={utmMediumDisplay(lead)} highlight={debouncedSearch} />
+                      </div>
                     </td>
                     <td
                       className="px-4 py-4 text-gray-600 text-sm max-w-[160px]"
@@ -426,6 +440,12 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                       <div className="truncate">
                         <HighlightText text={utmCampaignDisplay(lead)} highlight={debouncedSearch} />
                       </div>
+                    </td>
+                    <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
+                      <HighlightText
+                        text={lead.source === 'july_meta' ? '—' : formDisplayName(lead)}
+                        highlight={debouncedSearch}
+                      />
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
                       {formatDate(lead.createdAt)}
