@@ -240,6 +240,8 @@ $(document).ready(function () {
         }
         if (otpSending) return;
 
+        // Reveal OTP input immediately after user action so the shift is user-initiated.
+        showOtpRow();
         otpSending = true;
         $sendOtpBtn.prop('disabled', true).text('Sending...');
         $otpStatus.text('').removeClass('is-ok is-err');

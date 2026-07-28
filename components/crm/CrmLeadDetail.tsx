@@ -211,10 +211,11 @@ const SOURCE_LABELS: Record<string, string> = {
   website: 'Website',
   facebook: 'Facebook',
   instagram: 'Instagram',
-  july_lp: 'Google',
-  july_meta: 'META',
-  lp_wb: 'Google',
-  google: 'Google',
+  july_lp: 'BCWW_Google',
+  july_meta: 'BCWW_Meta',
+  lp_wb: 'BCWW_Google',
+  google: 'BCWW_Google',
+  facebook_lead_ads: 'BCWW_Meta',
   youtube: 'YouTube',
 }
 

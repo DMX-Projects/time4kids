@@ -68,7 +68,11 @@ export function utmSourceDisplay(lead: {
 } | null | undefined): string {
   if (!lead) return "—";
   const raw = String(lead.utmSource || "").trim();
-  return raw || "—";
+  if (!raw) return "—";
+  const key = raw.toLowerCase();
+  if (key === "facebook_lead_ads") return "BCWW_Meta";
+  if (key === "google") return "BCWW_Google";
+  return raw;
 }
 
 /** UTM medium (e.g. tamil_interest_p1, cpc). */
