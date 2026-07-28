@@ -60,6 +60,45 @@ const nextConfig = {
     optimizeFonts: true,
     swcMinify: true,
     /**
+     * Cache campaign LPs + assets (helps repeat visits / CDN).
+     * Cold TTFB still needs nginx to serve these folders from disk (bypass Node).
+     */
+    async headers() {
+        const lpHtmlCache = [
+            { key: 'Cache-Control', value: 'public, max-age=300, s-maxage=86400, stale-while-revalidate=604800' },
+        ];
+        const lpAssetCache = [
+            { key: 'Cache-Control', value: 'public, max-age=604800, s-maxage=2592000, stale-while-revalidate=604800' },
+        ];
+        const lpRoots = [
+            'Timekids-lp-WB',
+            'Timekids-lp-WB-demo',
+            'Timekids-lp-TKKTAM',
+            'Timekids-lp-TKKTAM-demo',
+            'Timekids-meta-TKKTAM',
+            'Timekids-meta-TKKTAM-demo',
+            'Timekids-lp-feb',
+            'Timekids-meta-feb',
+            'timekids-2g',
+        ];
+        const routes = [];
+        for (const root of lpRoots) {
+            routes.push(
+                { source: `/${root}`, headers: lpHtmlCache },
+                { source: `/${root}/`, headers: lpHtmlCache },
+                { source: `/${root}/:path*`, headers: lpHtmlCache },
+                { source: `/${root}/:path*\\.webp`, headers: lpAssetCache },
+                { source: `/${root}/:path*\\.css`, headers: lpAssetCache },
+                { source: `/${root}/:path*\\.js`, headers: lpAssetCache },
+                { source: `/${root}/:path*\\.png`, headers: lpAssetCache },
+                { source: `/${root}/:path*\\.jpg`, headers: lpAssetCache },
+                { source: `/${root}/:path*\\.jpeg`, headers: lpAssetCache },
+                { source: `/${root}/:path*\\.woff2`, headers: lpAssetCache },
+            );
+        }
+        return routes;
+    },
+    /**
      * Old public URL was `/media/` — on many live stacks nginx serves Django uploads under `/media/`,
      * so the gallery page got 403. Gallery UI now lives at `/gallery/`. These help when the request reaches Next.
      */

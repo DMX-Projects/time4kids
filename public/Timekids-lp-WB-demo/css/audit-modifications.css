@@ -383,3 +383,61 @@ section:not(#banner) {
     }
 }
 
+/* ---- CLS fixes (target ≤ 0.1) ---- */
+header .logo {
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 1118 / 399;
+    overflow: hidden;
+}
+header .logo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1118 / 399;
+}
+
+#banner .chalk_box img {
+    aspect-ratio: 450 / 786;
+    height: auto;
+}
+
+#banner .need_list_con .blurb img,
+#banner .your_needs .lines img,
+.eligibility_blurb img,
+#kidzee_advantages .tk-adv-icon-wrap img,
+.ready-img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+#banner .your_needs .lines img {
+    width: 100%;
+    height: auto;
+    max-height: 12px;
+    aspect-ratio: 16 / 1;
+}
+
+.ready-img {
+    width: auto;
+    max-width: 220px;
+    height: auto;
+    aspect-ratio: 3 / 1;
+}
+
+#kidzee_advantages .tk-adv-hero-img {
+    aspect-ratio: 714 / 785;
+}
+
+#awards .tk-step-hero-img {
+    aspect-ratio: 399 / 755;
+}
+
+@media screen and (max-width: 1023px) {
+    #banner .chalk_box img {
+        transform: none !important;
+    }
+}
+

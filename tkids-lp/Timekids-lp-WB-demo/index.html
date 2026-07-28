@@ -1,13 +1,6 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-PFTLCHS4');</script>
-    <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
@@ -23,17 +16,35 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Preschool Franchise | Start Your Own T.I.M.E. Kids Preschool">
     <meta name="twitter:description" content="Start your own preschool franchise with T.I.M.E. Kids. Trusted brand, training support, and a proven preschool franchise model.">
-    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <!-- LCP images first: hero + desktop banner bg -->
+    <link rel="preload" as="image" href="images/Women-1.webp" type="image/webp" fetchpriority="high">
+    <link rel="preload" as="image" href="images/bg-banner.webp" type="image/webp" media="(min-width: 1024px)">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600;700&family=Overpass:wght@400;600;700;800;900&family=Red+Hat+Display:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="preload" as="image" href="images/Women-1.webp" type="image/webp" fetchpriority="high">
-
-    <link rel="shortcut icon" href="images/time-logo.jpg" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600;700&family=Overpass:wght@400;600;700;800;900&family=Red+Hat+Display:wght@400;600;700;800&display=optional" rel="stylesheet">
+    <link rel="shortcut icon" href="images/time-logo.webp" />
     <link href="css/main-min.css" rel="stylesheet" type="text/css">
-    <link href="css/audit-modifications.css?v=20260727a" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="css/audit-modifications.css?v=20260728cls" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></noscript>
+    <!-- Google Tag Manager (delayed so it does not compete with LCP) -->
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    (function () {
+      function loadGtm() {
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-PFTLCHS4');
+      }
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadGtm, { timeout: 3500 });
+      } else {
+        window.addEventListener('load', function () { setTimeout(loadGtm, 1500); });
+      }
+    })();
+    </script>
     
 <style>
     h1{
@@ -64,7 +75,7 @@
     width: 100%;
     height: 808px;
     padding-top: 80px;
-    background: url('./images/bg-banner.png') no-repeat bottom center;
+    background: url('./images/bg-banner.webp') no-repeat bottom center;
     -moz-background-size: cover;
     -o-background-size: cover;
     background-size: cover;
@@ -1304,7 +1315,7 @@ footer {
 }
 
 #testimonials {
-    background: #f00000 url('/images/bg-4.png') no-repeat center top;
+    background: #f00000 url('/images/bg-4.webp') no-repeat center top;
 }
 
 #testimonials .test_panel {
@@ -1905,8 +1916,9 @@ iframe {
         max-height: none !important;
         object-fit: contain !important;
         object-position: center bottom;
-        transform: scale(1.1);
+        transform: none;
         transform-origin: center bottom;
+        aspect-ratio: 450 / 786;
     }
 
     #banner .form_hld {
@@ -2212,7 +2224,8 @@ iframe {
     font-size: 14px;
     line-height: 1.5;
     color: #475569;
-    max-width: 280px;
+    max-width: none;
+    white-space: nowrap;
 }
 
 .tk-book-slot-btn {
@@ -2617,24 +2630,24 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         </div>
                         <div class="your_needs">
                             <div class="lines">
-                                <img src="images/banner-line.png" alt="T.I.M.E. Kids">
+                                <img src="images/banner-line.webp" alt="T.I.M.E. Kids" width="600" height="12">
                             </div>
                             <p>Imagine waking up every day knowing you're shaping the future of little kids and securing a successful future for yourself! With T.I.M.E. Kids, you can own a preschool that brings joy, success, and financial freedom - all while making a difference.</p>
                             <div class="row need_list_con for_desktop">
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-students.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-students.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>300+</span> Centers</p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-cities.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-cities.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>15+</span> States</p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-years.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-years.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>60+</span> Cities</p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-centers.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-centers.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>35+</span> Years of Experience</p>
                                 </div>
                             </div>
@@ -2642,7 +2655,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     </div>
                     <div class="col-lg-6 banner_left">
                         <div class="chalk_box">
-                            <img src="images/Women-1.webp" alt="T.I.M.E. Kids" width="450" height="786" fetchpriority="high" decoding="async">
+                            <img src="images/Women-1.webp" alt="T.I.M.E. Kids" width="450" height="786" fetchpriority="high" decoding="sync">
                         </div>
                         <div class="form_hld tk-enquiry-card">
                             <div class="tk-enquiry-header">
@@ -2650,7 +2663,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                             </div>
                             <div id="form-success-message" class="tk-form-success" style="display:none;" aria-live="polite">
                                 <h3 class="tk-form-success__title">Book a consultation slot</h3>
-                                <p class="tk-form-success__text">Pick a preferred date and time, or skip for now.</p>
+                                <p class="tk-form-success__text">Pick a preferred date and time.</p>
 
                                 <div id="tk-book-slot-panel" class="tk-book-slot-panel">
                                     <label class="field-label" for="tk-meeting-date">Preferred date</label>
@@ -2713,19 +2726,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         <div class="your_needs for_mob">
                             <div class="row need_list_con">
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-students.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-students.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>300+</span> Centers</p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-years.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-years.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>15+</span> States</p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-cities.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-cities.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>60+</span> Cities </p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-centers.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-centers.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>35+</span> Year of Experience</p>
                                 </div>
                             </div>
@@ -2744,7 +2757,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         </div>
                         <div class="about_thumb">
                             <div class="about_thumb_glow"></div>
-                            <img src="images/indian-couple.png" alt="Eligible Franchise Partners T.I.M.E. Kids" width="429" height="949" loading="lazy" decoding="async">
+                            <img src="images/indian-couple.webp" alt="Eligible Franchise Partners T.I.M.E. Kids" width="429" height="949" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="col-lg-7 about-right">
@@ -2756,7 +2769,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                             <div class="eligibility_blurb_con">
                                 <div class="blurb">
                                     <div class="icon_wrap">
-                                        <img src="images/icon-adv-01.png" alt="Space requirement">
+                                        <img src="images/icon-adv-01.webp" alt="Space requirement" width="32" height="32">
                                     </div>
                                     <div class="blurb_content">
                                         <h4>Space Requirement</h4>
@@ -2765,7 +2778,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 </div>
                                 <div class="blurb">
                                     <div class="icon_wrap">
-                                        <img src="images/icon-adv-02.png" alt="Investment requirement">
+                                        <img src="images/icon-adv-02.webp" alt="Investment requirement" width="32" height="32">
                                     </div>
                                     <div class="blurb_content">
                                         <h4>Investment Capacity</h4>
@@ -2774,7 +2787,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 </div>
                                 <div class="blurb">
                                     <div class="icon_wrap">
-                                        <img src="images/icon-adv-12.png" alt="Passion for education">
+                                        <img src="images/icon-adv-12.webp" alt="Passion for education" width="32" height="32">
                                     </div>
                                     <div class="blurb_content">
                                         <h4>Passion for Growth</h4>
@@ -2802,7 +2815,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-4 col-md-12 tk-adv-col tk-adv-left">
                         <div class="tk-adv-card">
                             <div class="tk-adv-icon-wrap">
-                                <img src="images/icon-adv-01.png" alt="Big Name, Big Trust">
+                                <img src="images/icon-adv-01.webp" alt="Big Name, Big Trust" width="32" height="32">
                             </div>
                             <div class="tk-adv-card-body">
                                 <h4>Big Name, Big Trust</h4>
@@ -2812,7 +2825,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
                         <div class="tk-adv-card">
                             <div class="tk-adv-icon-wrap">
-                                <img src="images/icon-adv-02.png" alt="Start Small, Dream Big">
+                                <img src="images/icon-adv-02.webp" alt="Start Small, Dream Big" width="32" height="32">
                             </div>
                             <div class="tk-adv-card-body">
                                 <h4>Start Small, Dream Big</h4>
@@ -2825,7 +2838,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-4 col-md-12 tk-adv-col tk-adv-center text-center">
                         <div class="tk-adv-center-box">
                             <div class="tk-adv-glow"></div>
-                            <img src="images/adv-human.png" alt="Why T.I.M.E. Kids Advantage" class="tk-adv-hero-img" width="714" height="785" loading="lazy" decoding="async">
+                            <img src="images/adv-human.webp" alt="Why T.I.M.E. Kids Advantage" class="tk-adv-hero-img" width="714" height="785" loading="lazy" decoding="async">
                         </div>
                     </div>
 
@@ -2833,7 +2846,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-4 col-md-12 tk-adv-col tk-adv-right">
                         <div class="tk-adv-card">
                             <div class="tk-adv-icon-wrap">
-                                <img src="images/icon-adv-12.png" alt="More Me Time">
+                                <img src="images/icon-adv-12.webp" alt="More Me Time" width="32" height="32">
                             </div>
                             <div class="tk-adv-card-body">
                                 <h4>More ‘Me Time’</h4>
@@ -2843,7 +2856,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
                         <div class="tk-adv-card">
                             <div class="tk-adv-icon-wrap">
-                                <img src="images/icon-adv-05.png" alt="We've Got Your Back">
+                                <img src="images/icon-adv-05.webp" alt="We've Got Your Back" width="32" height="32">
                             </div>
                             <div class="tk-adv-card-body">
                                 <h4>We’ve Got Your Back</h4>
@@ -2870,7 +2883,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-4 col-md-12 text-center mb-4 mb-lg-0">
                         <div class="tk-step-image-box">
                             <div class="tk-step-glow"></div>
-                            <img src="images/step-woman.png" alt="No Business Experience Needed" class="tk-step-hero-img" width="399" height="755" loading="lazy" decoding="async">
+                            <img src="images/step-woman.webp" alt="No Business Experience Needed" class="tk-step-hero-img" width="399" height="755" loading="lazy" decoding="async">
                         </div>
                     </div>
 
@@ -3089,11 +3102,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
         </section>
        
-        <section style="background-image: url('images/bg-new.png');background-repeat: no-repeat;padding: 50px 0px 50px;">
+        <section style="background-image: url('images/bg-new.webp');background-repeat: no-repeat;padding: 50px 0px 50px;">
             <div class="ready-timeskids">
                 <h2>Ready to Begin Your <br> T.I.M.E. Kids Preschool?</h2>
                 <p>Your dream preschool business is just a click away. Let’s build something special together!</p>
-                <img src="images/Click here.png" class="ready-img" alt="Book consultation">
+                <img src="images/Click here.webp" class="ready-img" alt="Book consultation" width="220" height="70">
             </div>
             <div class="cta-button-container">
                 <a href="#timekidsForm"><button class="cta-button">Book A Call</button></a>
@@ -3150,7 +3163,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <script src="js/bootstrap.js" defer></script>
     <script src="js/gsap.min.js" defer></script>
     <script src="js/main.js" defer></script>
-    <script src="js/form.js?v=20260727c" defer></script>
+    <script src="js/form.js?v=20260728cls" defer></script>
     <script src="js/audit-modifications.js?v=20260727a" defer></script>
 
 </body>

@@ -596,30 +596,15 @@ $(document).ready(function () {
         });
     }
     function syncBannerHeights() {
+        // Disabled: JS height writes after paint caused large CLS (0.43 field).
+        // Banner layout is handled by CSS grid/flex instead.
         var $card = $('#banner .form_hld.tk-enquiry-card');
         var $chalk = $('#banner .chalk_box');
         var $right = $('#banner .banner_right');
-        if (!$card.length || !$chalk.length) return;
-
-        if (window.matchMedia('(max-width: 1023px)').matches) {
-            $card.css({ height: '', minHeight: '' });
-            $chalk.css({ height: '', minHeight: '' });
-            $right.css({ minHeight: '' });
-            return;
-        }
-
+        if (!$card.length) return;
         $card.css({ height: '', minHeight: '' });
         $chalk.css({ height: '', minHeight: '' });
         $right.css({ minHeight: '' });
-
-        var formH = $card.outerHeight() || 0;
-        var rightH = $right.outerHeight() || 0;
-        var target = Math.max(formH, rightH);
-        if (target < 1) return;
-
-        $card.css({ minHeight: target + 'px', height: target + 'px' });
-        $chalk.css({ height: target + 'px', minHeight: target + 'px' });
-        $right.css({ minHeight: target + 'px' });
     }
 
     var syncTimer = null;

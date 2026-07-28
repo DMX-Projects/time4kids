@@ -443,7 +443,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
                       <HighlightText
-                        text={lead.source === 'july_meta' ? '—' : formDisplayName(lead)}
+                        text={formDisplayName(lead)}
                         highlight={debouncedSearch}
                       />
                     </td>

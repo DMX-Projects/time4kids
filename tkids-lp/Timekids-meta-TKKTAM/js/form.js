@@ -10,6 +10,22 @@ $(document).ready(function () {
     var defaultState = $form.data('default-state') || '';
     var isWbCitiesOnly = geoMode === 'wb-cities';
 
+    /** Google Ads auto-tagging on this Meta LP → CRM Google channel (not META). */
+    function isGoogleAdsTraffic(url) {
+        try {
+            var search = new URL(url || window.location.href, window.location.origin).searchParams;
+            return !!(
+                search.get('gclid') ||
+                search.get('gad_source') ||
+                search.get('gad_campaignid') ||
+                search.get('gbraid') ||
+                search.get('wbraid')
+            );
+        } catch (e) {
+            return false;
+        }
+    }
+
     var UTM_STORAGE_KEY = 'tk_lp_utm_v1';
 
     function getUrlUtmParams() {
@@ -448,6 +464,7 @@ $(document).ready(function () {
             var utm = resolveUtmParams();
             // Hidden fields: name="source" (ad channel), name="type" (form page name).
             // CRM channel key stays in data-source (july_meta / july_lp / lp_wb) for filters.
+            // Google Ads clicks on this Meta LP must count as Google, not META.
             // UTM Source / Medium / Campaign come only from the ad URL (e.g. utm_source=bcwebwise_meta).
             var hiddenType = $.trim($form.find('input[name="type"]').val() || '');
             var formPageName = campaignName || hiddenType || '';
@@ -463,6 +480,13 @@ $(document).ready(function () {
                     landingUrl = u.toString();
                 } catch (e) {}
             }
+            var fromGoogleAds = isGoogleAdsTraffic(landingUrl);
+            var channelSource = fromGoogleAds ? 'july_lp' : campaignSource;
+            if (fromGoogleAds && !resolvedCampaign) {
+                try {
+                    resolvedCampaign = new URL(landingUrl, window.location.origin).searchParams.get('gad_campaignid') || '';
+                } catch (e) {}
+            }
             var payload = {
                 fullName: $.trim($name.val()),
                 email: $.trim($email.val()).toLowerCase(),
@@ -473,15 +497,15 @@ $(document).ready(function () {
                 preferredCentreLocation: cityValue,
                 // All 3 campaign LPs acknowledge ₹10–15L only (no capacity picker).
                 investmentRange: '₹10–15L',
-                source: campaignSource,
+                source: channelSource,
                 comments: campaignComments,
                 landingPageUrl: landingUrl,
-                utmSource: utm.utm_source || '',
-                utmMedium: utm.utm_medium || '',
+                utmSource: utm.utm_source || (fromGoogleAds ? 'google' : ''),
+                utmMedium: utm.utm_medium || (fromGoogleAds ? 'cpc' : ''),
                 utmCampaign: resolvedCampaign,
                 utmContent: utm.utm_content || '',
                 utmTerm: utm.utm_term || '',
-                pageType: formPageName,
+                pageType: formPageName || 'meta-tkktam',
                 campaign: resolvedCampaign
             };
 
