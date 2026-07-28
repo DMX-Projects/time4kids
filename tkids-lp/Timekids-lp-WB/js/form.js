@@ -207,12 +207,12 @@ $(document).ready(function () {
     }
 
     function hideOtpRow() {
-        $otpRow.hide().removeClass('is-visible');
+        $otpRow.removeClass('is-visible');
         $otp.val('');
     }
 
     function showOtpRow() {
-        $otpRow.show().addClass('is-visible');
+        $otpRow.addClass('is-visible');
         if (typeof queueBannerSync === 'function') {
             queueBannerSync();
         }
@@ -298,6 +298,8 @@ $(document).ready(function () {
     if (!isWbCitiesOnly) {
         showCityTextInput(false);
     }
+    // Keep OTP row in DOM flow to prevent layout shift; visibility is toggled via class.
+    $otpRow.removeAttr('style');
     loadStates();
     hideOtpRow();
     updateSendOtpVisibility();
