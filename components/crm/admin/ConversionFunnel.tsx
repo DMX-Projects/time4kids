@@ -216,6 +216,8 @@ export default function ConversionFunnel({
                 ? '14px 14px 0 0'
                 : '0'
 
+            const useTwoCol = (mode === 'franchise' || mode === 'admission') && inSpout
+
             return (
               <div
                 key={stage.id}
@@ -224,7 +226,7 @@ export default function ConversionFunnel({
                 title={`${stage.label}: ${stage.count.toLocaleString()} (${pctOfTotal}%)`}
               >
                 <div
-                  className="absolute inset-0 flex items-center justify-center px-2 text-center text-white"
+                  className="absolute inset-0 flex items-center px-2 text-white"
                   style={{
                     backgroundColor: stage.color,
                     clipPath: inSpout
@@ -234,17 +236,35 @@ export default function ConversionFunnel({
                     left: inSpout ? `${(100 - spoutWidthPct) / 2}%` : 0,
                     borderRadius: radius,
                     boxShadow: '0 1px 2px rgba(15, 23, 42, 0.08)',
+                    justifyContent: 'center',
+                    gap: undefined,
                   }}
                 >
-                  <span className="max-w-[95%] whitespace-nowrap text-[11px] font-medium leading-none text-white sm:text-xs">
-                    {stage.label}{' '}
-                    <span className="text-[17px] font-bold tabular-nums sm:text-[19px]">
-                      {stage.count.toLocaleString()}
-                    </span>{' '}
-                    <span className="text-[15px] font-semibold tabular-nums text-white/95 sm:text-base">
-                      ({pctOfTotal}%)
+                  {useTwoCol ? (
+                    <span className="flex max-w-[95%] flex-col items-center justify-center gap-0.5 text-center leading-none">
+                      <span className="text-[10px] font-medium sm:text-[11px]">
+                        {stage.label}
+                      </span>
+                      <span className="whitespace-nowrap">
+                        <span className="text-[15px] font-bold tabular-nums sm:text-base">
+                          {stage.count.toLocaleString()}
+                        </span>
+                        <span className="text-[12px] font-semibold tabular-nums text-white/95 sm:text-[13px]">
+                          ({pctOfTotal}%)
+                        </span>
+                      </span>
                     </span>
-                  </span>
+                  ) : (
+                    <span className="max-w-[95%] whitespace-nowrap text-center text-[11px] font-medium leading-none text-white sm:text-xs">
+                      {stage.label}{' '}
+                      <span className="text-[17px] font-bold tabular-nums sm:text-[19px]">
+                        {stage.count.toLocaleString()}
+                      </span>{' '}
+                      <span className="text-[15px] font-semibold tabular-nums text-white/95 sm:text-base">
+                        ({pctOfTotal}%)
+                      </span>
+                    </span>
+                  )}
                 </div>
               </div>
             )

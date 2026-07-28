@@ -171,7 +171,7 @@ export default function RemindersWidget({
             <h4 className="font-semibold text-gray-700 mb-2">
               Upcoming meetings
             </h4>
-            <div className="max-h-[320px] overflow-y-auto no-scrollbar pr-1">
+            <div className="max-h-[168px] overflow-y-auto pr-1">
               <ul className="space-y-2">
                 {meetings.map((lead) => (
                   <li
@@ -215,7 +215,7 @@ export default function RemindersWidget({
             <h4 className="font-semibold text-gray-700 mb-2">
               Follow-ups
             </h4>
-            <div className="max-h-[320px] overflow-y-auto no-scrollbar pr-1">
+            <div className="max-h-[168px] overflow-y-auto pr-1">
               <ul className="space-y-2">
                 {followUps.map((lead) => (
                   <li

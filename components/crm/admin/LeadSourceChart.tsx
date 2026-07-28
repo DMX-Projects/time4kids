@@ -4,18 +4,19 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 
 const SOURCE_LABELS: Record<string, string> = {
   facebook: 'Facebook',
+  facebook_lead_ads: 'BCWW_Meta',
   instagram: 'Instagram',
   website: 'Website',
-  google: 'Google',
-  july_lp: 'Google',
-  july_meta: 'META',
-  lp_wb: 'Google',
+  google: 'BCWW_Google',
+  july_lp: 'BCWW_Google',
+  july_meta: 'BCWW_Meta',
+  lp_wb: 'BCWW_Google',
   youtube: 'YouTube',
   admission: 'Admission',
   contact: 'Centers Enquiry',
   campaign: 'Paid Campaign',
   landing: 'Paid Campaign',
-  franchise: 'Franchise',
+  franchise: 'Website',
 }
 
 const COLORS = {
@@ -26,6 +27,7 @@ const COLORS = {
   google: '#F59E0B',
   july_lp: '#F59E0B',
   july_meta: '#EC4899',
+  facebook_lead_ads: '#EC4899',
   lp_wb: '#F59E0B',
   youtube: '#FF0000',
   admission: '#2563EB',
@@ -55,6 +57,9 @@ export default function LeadSourceChart({ data }: { data: any[] }) {
   return (
     <div className="card">
       <h3 className="text-xl font-bold text-gray-800 mb-4">Lead Source Breakdown</h3>
+      {total === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-400">No leads for this filter yet.</p>
+      ) : (
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
@@ -83,11 +88,12 @@ export default function LeadSourceChart({ data }: { data: any[] }) {
             formatter={(value, entry: any) => {
               const count = entry?.payload?.value ?? 0
               const pct = total > 0 ? Math.round((count / total) * 100) : 0
-              return `${value} ${pct}%`
+              return `${value} : ${count} (${pct}%)`
             }}
           />
         </PieChart>
       </ResponsiveContainer>
+      )}
     </div>
   )
 }
