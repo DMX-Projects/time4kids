@@ -641,7 +641,7 @@ export default function LeadDetailPage() {
                           <div className="space-y-0.5 min-w-0">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Form</p>
                             <p className="text-gray-700 truncate">
-                              {lead.source === 'july_meta' ? '—' : formDisplayName(lead)}
+                              {formDisplayName(lead)}
                             </p>
                           </div>
                         </div>

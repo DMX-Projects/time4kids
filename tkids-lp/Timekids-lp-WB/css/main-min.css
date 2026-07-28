@@ -1,4 +1,4 @@
-@font-face {
+﻿@font-face {
   font-family: "Rupee-Foradian";
   src: url("../fonts/Rupee-Foradian.eot") format("eot");
   src: url("../fonts/Rupee-Foradian.eot?#iefix") format("embedded-opentype"),
@@ -22431,7 +22431,7 @@ header .nav_overlay {
   width: 100%;
   height: 910px;
   padding-top: 80px;
-  background: url('../images/bg-banner.png') no-repeat bottom center !important;
+  background: url('../images/bg-banner.webp') no-repeat bottom center !important;
   -moz-background-size: cover;
   -o-background-size: cover;
   background-size: cover;
@@ -23763,7 +23763,7 @@ ul.slimmenu > li.has-submenu + li {
   #banner {
     height: auto;
     padding: 100px 0 100px;
-    background: #56509f url('../images/bg-banner.png') no-repeat bottom
+    background: #56509f url('../images/bg-banner.webp') no-repeat bottom
       center;
     -moz-background-size: 100% auto;
     -o-background-size: 100% auto;

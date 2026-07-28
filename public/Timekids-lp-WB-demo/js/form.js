@@ -2,16 +2,13 @@ $(document).ready(function () {
     var $form = $('#timekidsEnquiryForm');
     if (!$form.length) return;
 
-    var campaignSource = $form.data('source') || 'july_meta';
+    var campaignSource = $form.data('source') || 'lp_wb';
     var pageType = $form.data('page-type') || campaignSource;
     var campaignName = $form.data('campaign') || campaignSource;
-    var campaignComments = $form.data('comments') || 'July campaign form';
+    var campaignComments = $form.data('comments') || 'West Bengal LP campaign form';
     var geoMode = $form.data('geo-mode') || 'state-city';
     var defaultState = $form.data('default-state') || '';
     var isWbCitiesOnly = geoMode === 'wb-cities';
-    // Demo replica: no OTP, and tell API not to send emails.
-    var skipOtp = true;
-    var skipEmails = true;
 
     var UTM_STORAGE_KEY = 'tk_lp_utm_v1';
 
@@ -303,13 +300,7 @@ $(document).ready(function () {
     }
     loadStates();
     hideOtpRow();
-    if (skipOtp) {
-        $sendOtpBtn.hide();
-        $otpStatus.hide();
-        $otpRow.hide();
-    } else {
-        updateSendOtpVisibility();
-    }
+    updateSendOtpVisibility();
 
     $name.on('input', function () {
         this.value = this.value.replace(/[^a-zA-Z\s.'-]/g, '').replace(/\s{2,}/g, ' ').slice(0, 75);
@@ -318,7 +309,7 @@ $(document).ready(function () {
 
     $phone.on('input', function () {
         this.value = normalizePhone(this.value);
-        if (!skipOtp) updateSendOtpVisibility();
+        updateSendOtpVisibility();
         recheckField($phone);
     });
 
@@ -332,12 +323,10 @@ $(document).ready(function () {
         recheckField($otp);
     });
 
-    if (!skipOtp) {
-        $sendOtpBtn.on('click', function (e) {
-            e.preventDefault();
-            sendOtp();
-        });
-    }
+    $sendOtpBtn.on('click', function (e) {
+        e.preventDefault();
+        sendOtp();
+    });
 
     var $ack = $form.find('[name="acknowledge"]');
     $ack.prop('checked', true);
@@ -379,11 +368,9 @@ $(document).ready(function () {
         email: { required: true, strictEmail: true },
         phone: { required: true, phoneIndia: true, minlength: 10, maxlength: 10 },
         city: { cityRequired: true },
+        otp: { otpRequired: true },
         acknowledge: { required: true }
     };
-    if (!skipOtp) {
-        validationRules.otp = { otpRequired: true };
-    }
     var validationMessages = {
         name: {
             required: 'Please enter your full name',
@@ -450,14 +437,12 @@ $(document).ready(function () {
                 return;
             }
 
-            if (!skipOtp) {
-                if (!otpSentForPhone || otpSentForPhone !== phone) {
-                    $error.text('Please click Generate OTP and enter the code sent to your mobile.');
-                    return;
-                }
-                if (!$otpRow.is(':visible')) {
-                    showOtpRow();
-                }
+            if (!otpSentForPhone || otpSentForPhone !== phone) {
+                $error.text('Please click Generate OTP and enter the code sent to your mobile.');
+                return;
+            }
+            if (!$otpRow.is(':visible')) {
+                showOtpRow();
             }
 
             var utm = resolveUtmParams();
@@ -482,6 +467,7 @@ $(document).ready(function () {
                 fullName: $.trim($name.val()),
                 email: $.trim($email.val()).toLowerCase(),
                 mobile: phone,
+                otp: otp,
                 state: stateValue,
                 city: cityValue,
                 preferredCentreLocation: cityValue,
@@ -496,12 +482,8 @@ $(document).ready(function () {
                 utmContent: utm.utm_content || '',
                 utmTerm: utm.utm_term || '',
                 pageType: formPageName,
-                campaign: resolvedCampaign,
-                skipEmails: !!skipEmails
+                campaign: resolvedCampaign
             };
-            if (!skipOtp) {
-                payload.otp = otp;
-            }
 
             $submitBtn.prop('disabled', true).val('Submitting...');
             $error.text('');
@@ -512,8 +494,9 @@ $(document).ready(function () {
                 contentType: 'application/json',
                 data: JSON.stringify(payload),
                 success: function (res) {
-                    // Conversions fire on thank-you.html (PageView + Lead / Ads).
-                    window.location.href = 'thank-you.html';
+                    // Order: Submit → Book a slot → Thank You page (conversions fire there).
+                    var leadId = (res && (res.id || res.leadId || res.lead_id)) || '';
+                    showBookSlotStep(leadId);
                 },
                 error: function (xhr) {
                     var msg = 'Something went wrong. Please try again.';
@@ -529,31 +512,99 @@ $(document).ready(function () {
         }
     });
 
+    function goToThankYou(leadId) {
+        var ty = 'thank-you.html';
+        if (leadId) ty += '?leadId=' + encodeURIComponent(leadId);
+        window.location.href = ty;
+    }
+
+    function showBookSlotStep(leadId) {
+        var $success = $('#form-success-message');
+        var $skipBtn = $('#tk-skip-book-slot');
+        var $date = $('#tk-meeting-date');
+        var $slotList = $('#tk-slot-list');
+        var $saveBtn = $('#tk-save-slot');
+        var $status = $('#tk-slot-status');
+        var selectedSlot = '';
+        var SLOTS = ['10:00', '11:00', '12:00', '15:00', '16:00', '17:00'];
+
+        $form.hide();
+        $success.addClass('is-visible').show();
+
+        function pad(n) { return n < 10 ? '0' + n : String(n); }
+        function toYmd(d) {
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        }
+        function nextWeekday(from) {
+            var d = new Date(from.getTime());
+            d.setDate(d.getDate() + 1);
+            while (d.getDay() === 0) d.setDate(d.getDate() + 1);
+            return d;
+        }
+
+        var minDate = nextWeekday(new Date());
+        var maxDate = new Date(minDate.getTime());
+        maxDate.setDate(maxDate.getDate() + 14);
+        $date.attr({ min: toYmd(minDate), max: toYmd(maxDate) }).val(toYmd(minDate));
+
+        $slotList.empty();
+        SLOTS.forEach(function (slot) {
+            var h = parseInt(slot.split(':')[0], 10);
+            var label = (h > 12 ? h - 12 : h) + (h >= 12 ? ' PM' : ' AM');
+            if (h === 12) label = '12 PM';
+            var $chip = $('<button type="button" class="tk-slot-chip"></button>')
+                .text(label)
+                .attr('data-slot', slot);
+            $chip.on('click', function () {
+                selectedSlot = slot;
+                $slotList.find('.tk-slot-chip').removeClass('is-active');
+                $chip.addClass('is-active');
+            });
+            $slotList.append($chip);
+        });
+
+        $skipBtn.off('click').on('click', function () {
+            goToThankYou(leadId);
+        });
+
+        $saveBtn.off('click').on('click', function () {
+            $status.removeClass('is-error').text('');
+            if (!$date.val() || !selectedSlot) {
+                $status.addClass('is-error').text('Please choose both a date and a time.');
+                return;
+            }
+            if (!leadId) {
+                goToThankYou(leadId);
+                return;
+            }
+            var meetingDate = $date.val() + 'T' + selectedSlot + ':00';
+            var slotLabel = $date.val() + ' ' + selectedSlot + ' IST';
+            $saveBtn.prop('disabled', true).text('Saving…');
+            $.ajax({
+                type: 'POST',
+                url: '/api/enquiries/crm-leads/meeting-preference/',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    leadId: leadId,
+                    meetingDate: meetingDate,
+                    meetingSlot: slotLabel
+                }),
+                complete: function () {
+                    goToThankYou(leadId);
+                }
+            });
+        });
+    }
     function syncBannerHeights() {
+        // Disabled: JS height writes after paint caused large CLS (0.43 field).
+        // Banner layout is handled by CSS grid/flex instead.
         var $card = $('#banner .form_hld.tk-enquiry-card');
         var $chalk = $('#banner .chalk_box');
         var $right = $('#banner .banner_right');
-        if (!$card.length || !$chalk.length) return;
-
-        if (window.matchMedia('(max-width: 1023px)').matches) {
-            $card.css({ height: '', minHeight: '' });
-            $chalk.css({ height: '', minHeight: '' });
-            $right.css({ minHeight: '' });
-            return;
-        }
-
+        if (!$card.length) return;
         $card.css({ height: '', minHeight: '' });
         $chalk.css({ height: '', minHeight: '' });
         $right.css({ minHeight: '' });
-
-        var formH = $card.outerHeight() || 0;
-        var rightH = $right.outerHeight() || 0;
-        var target = Math.max(formH, rightH);
-        if (target < 1) return;
-
-        $card.css({ minHeight: target + 'px', height: target + 'px' });
-        $chalk.css({ height: target + 'px', minHeight: target + 'px' });
-        $right.css({ minHeight: target + 'px' });
     }
 
     var syncTimer = null;

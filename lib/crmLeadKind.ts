@@ -19,26 +19,46 @@ export function isFranchiseLpGeoSource(source?: string | null): boolean {
   return (FRANCHISE_LP_GEO_SOURCES as readonly string[]).includes(source);
 }
 
+/** True when lead came from Meta Instant Form (not a website LP). */
+export function isMetaInstantFormLead(lead: {
+  utmSource?: string | null;
+  landingPageUrl?: string | null;
+} | null | undefined): boolean {
+  if (!lead) return false;
+  const utm = String(lead.utmSource || "").trim().toLowerCase();
+  if (utm === "facebook_lead_ads") return true;
+  return false;
+}
+
 /** Form page names for July LP / Meta forms. */
 const LP_FORM_NAME_BY_SOURCE: Record<string, string> = {
   july_lp: "lp-tkktam",
   july_meta: "meta-tkktam",
   lp_wb: "lp-wb",
+  google: "lp-tkktam",
 };
 
-/** Which LP form was used (lp-tkktam / meta-tkktam / lp-wb). */
+/** Which LP form was used (lp-tkktam / meta-tkktam / lp-wb). Blank for Instant Forms. */
 export function formDisplayName(lead: {
   source?: string | null;
   formName?: string | null;
   pageType?: string | null;
+  utmSource?: string | null;
+  landingPageUrl?: string | null;
 } | null | undefined): string {
   if (!lead) return "—";
+  // Instant Forms: form name lives in Medium/Campaign — keep Form column empty.
+  if (isMetaInstantFormLead(lead)) return "—";
   const fromApi = String(lead.formName || "").trim();
   if (fromApi) return fromApi;
-  const src = String(lead.source || "").toLowerCase();
-  if (LP_FORM_NAME_BY_SOURCE[src]) return LP_FORM_NAME_BY_SOURCE[src];
   const page = String(lead.pageType || "").trim().toLowerCase();
   if (page === "lp-tkktam" || page === "meta-tkktam" || page === "lp-wb") return page;
+  const url = String(lead.landingPageUrl || "").toLowerCase();
+  if (url.includes("timekids-meta-tkktam")) return "meta-tkktam";
+  if (url.includes("timekids-lp-wb")) return "lp-wb";
+  if (url.includes("timekids-lp-tkktam")) return "lp-tkktam";
+  const src = String(lead.source || "").toLowerCase();
+  if (LP_FORM_NAME_BY_SOURCE[src]) return LP_FORM_NAME_BY_SOURCE[src];
   return "—";
 }
 

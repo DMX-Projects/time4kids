@@ -1,13 +1,6 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-PFTLCHS4');</script>
-    <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
@@ -23,17 +16,35 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Preschool Franchise | Start Your Own T.I.M.E. Kids Preschool">
     <meta name="twitter:description" content="Start your own preschool franchise with T.I.M.E. Kids. Trusted brand, training support, and a proven preschool franchise model.">
-    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <!-- LCP images first: hero + desktop banner bg -->
+    <link rel="preload" as="image" href="images/Women-1.webp" type="image/webp" fetchpriority="high">
+    <link rel="preload" as="image" href="images/bg-banner.webp" type="image/webp" media="(min-width: 1024px)">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600;700&family=Overpass:wght@400;600;700;800;900&family=Red+Hat+Display:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="preload" as="image" href="images/Women-1.webp" type="image/webp" fetchpriority="high">
-
-    <link rel="shortcut icon" href="images/time-logo.jpg" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600;700&family=Overpass:wght@400;600;700;800;900&family=Red+Hat+Display:wght@400;600;700;800&display=optional" rel="stylesheet">
+    <link rel="shortcut icon" href="images/time-logo.webp" />
     <link href="css/main-min.css" rel="stylesheet" type="text/css">
-    <link href="css/audit-modifications.css?v=20260721f" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="css/audit-modifications.css?v=20260728cls" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></noscript>
+    <!-- Google Tag Manager (delayed so it does not compete with LCP) -->
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    (function () {
+      function loadGtm() {
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-PFTLCHS4');
+      }
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadGtm, { timeout: 3500 });
+      } else {
+        window.addEventListener('load', function () { setTimeout(loadGtm, 1500); });
+      }
+    })();
+    </script>
     
 <style>
     h1{
@@ -64,7 +75,7 @@
     width: 100%;
     height: 808px;
     padding-top: 80px;
-    background: url('./images/bg-banner.png') no-repeat bottom center;
+    background: url('./images/bg-banner.webp') no-repeat bottom center;
     -moz-background-size: cover;
     -o-background-size: cover;
     background-size: cover;
@@ -927,7 +938,7 @@ footer .footer_blurbs {
     #kidzee_advantages .adv_panel {
         padding-top: 0 !important;
     }
-    /* Stack benefits vertically � no mobile carousel */
+    /* Stack benefits vertically — no mobile carousel */
     #kidzee_advantages .adv_blurb_con,
     #kidzee_advantages .adv_blurb_con.slick-initialized,
     #kidzee_advantages .adv_blurb_con .slick-list,
@@ -1304,7 +1315,7 @@ footer {
 }
 
 #testimonials {
-    background: #f00000 url('/images/bg-4.png') no-repeat center top;
+    background: #f00000 url('/images/bg-4.webp') no-repeat center top;
 }
 
 #testimonials .test_panel {
@@ -1905,8 +1916,9 @@ iframe {
         max-height: none !important;
         object-fit: contain !important;
         object-position: center bottom;
-        transform: scale(1.1);
+        transform: none;
         transform-origin: center bottom;
+        aspect-ratio: 450 / 786;
     }
 
     #banner .form_hld {
@@ -1925,7 +1937,7 @@ iframe {
     }
 }
 
-/* Enquiry form � must stay outside media queries so desktop is not stuck with legacy red labels */
+/* Enquiry form — must stay outside media queries so desktop is not stuck with legacy red labels */
 #banner .form_hld select.textBox,
 #banner .form_hld input.textBox {
     width: 100%;
@@ -2200,19 +2212,93 @@ iframe {
 .tk-form-success__title {
     margin: 0 0 8px;
     font-family: "IBM Plex Serif", "Red Hat Display", Georgia, serif;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
-    color: #166534;
+    color: #1c4b8c;
     line-height: 1.2;
 }
 
 .tk-form-success__text {
-    margin: 0;
+    margin: 0 0 16px;
     font-family: "IBM Plex Sans", "Overpass", sans-serif;
     font-size: 14px;
     line-height: 1.5;
     color: #475569;
+    max-width: none;
+    white-space: nowrap;
+}
+
+.tk-book-slot-btn {
+    display: inline-block;
+    width: 100%;
     max-width: 280px;
+    margin: 0;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1c4b8c 0%, #163a6d 100%);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.tk-book-slot-panel {
+    width: 100%;
+    max-width: 300px;
+    margin-top: 8px;
+    text-align: left;
+}
+
+.tk-slot-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 8px 0 12px;
+}
+
+.tk-slot-chip {
+    border: 1px solid #dbe3ee;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 8px 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+}
+
+.tk-slot-chip.is-active {
+    border-color: #1c4b8c;
+    background: #eef4ff;
+    color: #1c4b8c;
+}
+
+.tk-skip-slot-btn {
+    display: block;
+    width: 100%;
+    max-width: 280px;
+    margin: 8px auto 0;
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+    text-align: center;
+}
+
+.tk-slot-status {
+    min-height: 1.1rem;
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: #16a34a;
+    text-align: center;
+}
+
+.tk-slot-status.is-error {
+    color: #dc2626;
 }
 
 #form-error {
@@ -2461,34 +2547,17 @@ iframe {
 }
 </style>
 
-<!-- Google tag (gtag.js) -->
+<!-- Google tag (gtag.js) — config only on LP; conversion fires on thank-you.html -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17858028843"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'AW-17858028843');
-</script>
-<!-- Event snippet for Submit lead form conversion page -->
-<script>
-  gtag('event', 'conversion', {
-      'send_to': 'AW-17858028843/XGqqCOLyrt4bEKvKr8NC',
-      'value': 1.0,
-      'currency': 'INR'
-  });
+  gtag('config', 'G-8T7M9HB21X');
 </script>
 
-
-<!-- Google tag (gtag.js) -->
-<script>
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'G-8T7M9HB21X');
-</script>
-
-<!-- Event snippet for Times - Lead Generation Form conversion page -->
+<!-- Helper for optional click-based Ads conversion (thank-you remains primary) -->
 <script>
 function gtag_report_conversion(url) {
 var callback = function () {
@@ -2555,30 +2624,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-6 banner_right">
                         <div class="banner_typo">
                             <h1>
-                                Own India's Fastest Growing Preschool in ?10�15L
+                                Own India's Fastest Growing Preschool in ₹10–15L
                             </h1>
                             <!-- <img src="assets/images/banner-typo.png" alt=""> -->
                         </div>
                         <div class="your_needs">
                             <div class="lines">
-                                <img src="images/banner-line.png" alt="T.I.M.E. Kids">
+                                <img src="images/banner-line.webp" alt="T.I.M.E. Kids" width="600" height="12">
                             </div>
                             <p>Imagine waking up every day knowing you're shaping the future of little kids and securing a successful future for yourself! With T.I.M.E. Kids, you can own a preschool that brings joy, success, and financial freedom - all while making a difference.</p>
                             <div class="row need_list_con for_desktop">
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-students.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-students.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>300+</span> Centers</p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-cities.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-cities.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>15+</span> States</p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-years.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-years.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>60+</span> Cities</p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-centers.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-centers.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>35+</span> Years of Experience</p>
                                 </div>
                             </div>
@@ -2586,21 +2655,29 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     </div>
                     <div class="col-lg-6 banner_left">
                         <div class="chalk_box">
-                            <img src="images/Women-1.webp" alt="T.I.M.E. Kids" width="450" height="786" fetchpriority="high" decoding="async">
+                            <img src="images/Women-1.webp" alt="T.I.M.E. Kids" width="450" height="786" fetchpriority="high" decoding="sync">
                         </div>
                         <div class="form_hld tk-enquiry-card">
                             <div class="tk-enquiry-header">
                                 <h3 id="timekidsForm" class="tk-enquiry-title">Enquire Now</h3>
                             </div>
                             <div id="form-success-message" class="tk-form-success" style="display:none;" aria-live="polite">
-                                <div class="tk-form-success__tick" aria-hidden="true">?</div>
-                                <h3 class="tk-form-success__title">Submitted</h3>
-                                <p class="tk-form-success__text">Thank you! Your enquiry has been submitted successfully. Our team will contact you shortly.</p>
+                                <h3 class="tk-form-success__title">Book a consultation slot</h3>
+                                <p class="tk-form-success__text">Pick a preferred date and time.</p>
+
+                                <div id="tk-book-slot-panel" class="tk-book-slot-panel">
+                                    <label class="field-label" for="tk-meeting-date">Preferred date</label>
+                                    <input id="tk-meeting-date" type="date" class="textBox tk-input" />
+                                    <div id="tk-slot-list" class="tk-slot-list" aria-label="Preferred time slots"></div>
+                                    <button type="button" id="tk-save-slot" class="tk-book-slot-btn">Save slot &amp; continue</button>
+                                    <button type="button" id="tk-skip-book-slot" class="tk-skip-slot-btn">Skip for now</button>
+                                    <p id="tk-slot-status" class="tk-slot-status" role="status"></p>
+                                </div>
                             </div>
                             <form id="timekidsEnquiryForm" class="tk-enquiry-form" novalidate
                                 data-source="lp_wb"
                                 data-page-type="Google" data-campaign="lp-wb"
-                                data-comments="West Bengal LP campaign form (demo � no OTP, no email)"
+                                data-comments="West Bengal LP campaign form"
                                 data-geo-mode="wb-cities"
                                 data-default-state="West Bengal">
                                 <!-- Edit these anytime: type = campaign, source = ad channel -->
@@ -2618,11 +2695,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                     <label class="field-label" for="tk-phone">Phone Number *</label>
                                     <div class="tk-phone-row">
                                         <input id="tk-phone" type="tel" class="textBox tk-input" placeholder="10-digit mobile number" maxlength="10" name="phone" />
-                                        <button type="button" id="tk-send-otp" class="tk-send-otp-btn" disabled style="display:none;" aria-hidden="true">Generate OTP</button>
+                                        <button type="button" id="tk-send-otp" class="tk-send-otp-btn" disabled>Generate OTP</button>
                                     </div>
-                                    <div id="tk-otp-status" class="tk-otp-status" aria-live="polite" style="display:none;" aria-hidden="true"></div>
+                                    <div id="tk-otp-status" class="tk-otp-status" aria-live="polite"></div>
                                 </div>
-                                <div class="form_field tk-otp-row" style="display:none;" aria-hidden="true">
+                                <div class="form_field tk-otp-row" style="display:none;">
                                     <label class="field-label" for="tk-otp">Enter OTP *</label>
                                     <input id="tk-otp" type="tel" class="textBox tk-input" placeholder="4-digit OTP" maxlength="4" name="otp" inputmode="numeric" autocomplete="one-time-code" />
                                 </div>
@@ -2637,7 +2714,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <div class="form_field tk-form-terms">
                                     <label>
                                         <input type="checkbox" name="acknowledge" checked />
-                                        <span>By ticking this box, I acknowledge a minimum investment of ?10�15 lacs* is required. I have read and accepted the TKPL privacy policy and terms &amp; conditions.</span>
+                                        <span>By ticking this box, I acknowledge a minimum investment of ₹10–15 lacs* is required. I have read and accepted the TKPL privacy policy and terms &amp; conditions.</span>
                                     </label>
                                 </div>
                                 <div class="form_field">
@@ -2649,19 +2726,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                         <div class="your_needs for_mob">
                             <div class="row need_list_con">
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-students.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-students.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>300+</span> Centers</p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-years.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-years.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>15+</span> States</p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-cities.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-cities.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>60+</span> Cities </p>
                                 </div>
                                 <div class="blurb col-sm-3">
-                                    <img src="images/icon-cap-centers.png" alt="T.I.M.E. Kids">
+                                    <img src="images/icon-cap-centers.webp" alt="T.I.M.E. Kids" width="40" height="40">
                                     <p><span>35+</span> Year of Experience</p>
                                 </div>
                             </div>
@@ -2676,41 +2753,41 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <div class="row align-items-md-center about_us">
                     <div class="col-lg-5 about-left">
                         <div class="about-header-mobile">
-                            <h2 class="about-title about-title-mobile">What You Need To Be Eligible�</h2>
+                            <h2 class="about-title about-title-mobile">What You Need To Be Eligible…</h2>
                         </div>
                         <div class="about_thumb">
                             <div class="about_thumb_glow"></div>
-                            <img src="images/indian-couple.png" alt="Eligible Franchise Partners T.I.M.E. Kids" width="429" height="949" loading="lazy" decoding="async">
+                            <img src="images/indian-couple.webp" alt="Eligible Franchise Partners T.I.M.E. Kids" width="429" height="949" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="col-lg-7 about-right">
                         <div class="about-header-desktop">
                             <span class="tk-eligibility-badge">ELIGIBILITY CRITERIA</span>
-                            <h2 class="about-title about-title-desktop">What You Need To Be Eligible�</h2>
+                            <h2 class="about-title about-title-desktop">What You Need To Be Eligible…</h2>
                         </div>
                         <div class="about_det">
                             <div class="eligibility_blurb_con">
                                 <div class="blurb">
                                     <div class="icon_wrap">
-                                        <img src="images/icon-adv-01.png" alt="Space requirement">
+                                        <img src="images/icon-adv-01.webp" alt="Space requirement" width="32" height="32">
                                     </div>
                                     <div class="blurb_content">
                                         <h4>Space Requirement</h4>
-                                        <p>1500�2000 sq. ft. of constructed area (owned or rented), preferably an independent house in a good locality.</p>
+                                        <p>1500–2000 sq. ft. of constructed area (owned or rented), preferably an independent house in a good locality.</p>
                                     </div>
                                 </div>
                                 <div class="blurb">
                                     <div class="icon_wrap">
-                                        <img src="images/icon-adv-02.png" alt="Investment requirement">
+                                        <img src="images/icon-adv-02.webp" alt="Investment requirement" width="32" height="32">
                                     </div>
                                     <div class="blurb_content">
                                         <h4>Investment Capacity</h4>
-                                        <p>?10�?15 lakhs capital to set up the preschool infrastructure and operate successfully.</p>
+                                        <p>₹10–₹15 lakhs capital to set up the preschool infrastructure and operate successfully.</p>
                                     </div>
                                 </div>
                                 <div class="blurb">
                                     <div class="icon_wrap">
-                                        <img src="images/icon-adv-12.png" alt="Passion for education">
+                                        <img src="images/icon-adv-12.webp" alt="Passion for education" width="32" height="32">
                                     </div>
                                     <div class="blurb_content">
                                         <h4>Passion for Growth</h4>
@@ -2738,21 +2815,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-4 col-md-12 tk-adv-col tk-adv-left">
                         <div class="tk-adv-card">
                             <div class="tk-adv-icon-wrap">
-                                <img src="images/icon-adv-01.png" alt="Big Name, Big Trust">
+                                <img src="images/icon-adv-01.webp" alt="Big Name, Big Trust" width="32" height="32">
                             </div>
                             <div class="tk-adv-card-body">
                                 <h4>Big Name, Big Trust</h4>
-                                <p>Be part of South India�s No.1 trusted education brand with 35+ years of operational excellence.</p>
+                                <p>Be part of South India’s No.1 trusted education brand with 35+ years of operational excellence.</p>
                             </div>
                         </div>
 
                         <div class="tk-adv-card">
                             <div class="tk-adv-icon-wrap">
-                                <img src="images/icon-adv-02.png" alt="Start Small, Dream Big">
+                                <img src="images/icon-adv-02.webp" alt="Start Small, Dream Big" width="32" height="32">
                             </div>
                             <div class="tk-adv-card-body">
                                 <h4>Start Small, Dream Big</h4>
-                                <p>Invest in your preschool with just ?10�?15 lakhs and scale your returns rapidly.</p>
+                                <p>Invest in your preschool with just ₹10–₹15 lakhs and scale your returns rapidly.</p>
                             </div>
                         </div>
                     </div>
@@ -2761,7 +2838,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-4 col-md-12 tk-adv-col tk-adv-center text-center">
                         <div class="tk-adv-center-box">
                             <div class="tk-adv-glow"></div>
-                            <img src="images/adv-human.png" alt="Why T.I.M.E. Kids Advantage" class="tk-adv-hero-img" width="714" height="785" loading="lazy" decoding="async">
+                            <img src="images/adv-human.webp" alt="Why T.I.M.E. Kids Advantage" class="tk-adv-hero-img" width="714" height="785" loading="lazy" decoding="async">
                         </div>
                     </div>
 
@@ -2769,21 +2846,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-4 col-md-12 tk-adv-col tk-adv-right">
                         <div class="tk-adv-card">
                             <div class="tk-adv-icon-wrap">
-                                <img src="images/icon-adv-12.png" alt="More Me Time">
+                                <img src="images/icon-adv-12.webp" alt="More Me Time" width="32" height="32">
                             </div>
                             <div class="tk-adv-card-body">
-                                <h4>More �Me Time�</h4>
-                                <p>Work only 4�5 hours a day and enjoy perfect work-life balance while running your business.</p>
+                                <h4>More ‘Me Time’</h4>
+                                <p>Work only 4–5 hours a day and enjoy perfect work-life balance while running your business.</p>
                             </div>
                         </div>
 
                         <div class="tk-adv-card">
                             <div class="tk-adv-icon-wrap">
-                                <img src="images/icon-adv-05.png" alt="We've Got Your Back">
+                                <img src="images/icon-adv-05.webp" alt="We've Got Your Back" width="32" height="32">
                             </div>
                             <div class="tk-adv-card-body">
-                                <h4>We�ve Got Your Back</h4>
-                                <p>Complete teacher training, marketing campaigns, and operational guidance � you�re never alone!</p>
+                                <h4>We’ve Got Your Back</h4>
+                                <p>Complete teacher training, marketing campaigns, and operational guidance — you’re never alone!</p>
                             </div>
                         </div>
                     </div>
@@ -2806,7 +2883,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-4 col-md-12 text-center mb-4 mb-lg-0">
                         <div class="tk-step-image-box">
                             <div class="tk-step-glow"></div>
-                            <img src="images/step-woman.png" alt="No Business Experience Needed" class="tk-step-hero-img" width="399" height="755" loading="lazy" decoding="async">
+                            <img src="images/step-woman.webp" alt="No Business Experience Needed" class="tk-step-hero-img" width="399" height="755" loading="lazy" decoding="async">
                         </div>
                     </div>
 
@@ -2882,20 +2959,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <section class="leading-box mt-5" >
             <div class="leading-section">
                 <h2 class="pb-3">The T.I.M.E. Kids Advantage</h2>
-                <p class="tk-usp-subtitle">At a glance � everything franchise partners gain with T.I.M.E. Kids</p>
+                <p class="tk-usp-subtitle">At a glance — everything franchise partners gain with T.I.M.E. Kids</p>
                 <div class="tk-usp-grid">
-                    <div class="tk-usp-card tk-usp-green"><h4>250+ Centres Across India</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-green"><h4>34+ Years of Educational Excellence</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-green"><h4>Child-Safe and Non-Toxic Infra</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-orange"><h4>Low Investment with Strong Growth Potential</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-orange"><h4>High Social-Impact Business Opportunity</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-orange"><h4>End-to-End Academic and Ops Support</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-blue"><h4>Proven Systems and Structured Processes</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-blue"><h4>Trusted Brand with Nationwide Recognition</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-blue"><h4>NEP 2020 Updated Curriculum</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-red"><h4>Complete Staff Training and Development</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-red"><h4>National + Local Marketing Assistance</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-red"><h4>Parent Engagement Programs</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
+                    <div class="tk-usp-card tk-usp-green"><h4>250+ Centres Across India</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-green"><h4>34+ Years of Educational Excellence</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-green"><h4>Child-Safe and Non-Toxic Infra</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-orange"><h4>Low Investment with Strong Growth Potential</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-orange"><h4>High Social-Impact Business Opportunity</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-orange"><h4>End-to-End Academic and Ops Support</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-blue"><h4>Proven Systems and Structured Processes</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-blue"><h4>Trusted Brand with Nationwide Recognition</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-blue"><h4>NEP 2020 Updated Curriculum</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-red"><h4>Complete Staff Training and Development</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-red"><h4>National + Local Marketing Assistance</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-red"><h4>Parent Engagement Programs</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
                 </div>
             </div>
         </section>
@@ -2944,7 +3021,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <div class="acc-content">
                                     <div class="content">
                                         <div class="text">
-                                            <i class="fa fa-hand-o-right"></i> ?10 - ?15 lakhs investment <br>
+                                            <i class="fa fa-hand-o-right"></i> ₹10 - ₹15 lakhs investment <br>
                                             <i class="fa fa-hand-o-right"></i> 1500 - 2000 sq feet space <br>
                                             <i class="fa fa-hand-o-right"></i> A burning desire to make it big. <br>
                                             <i class="fa fa-hand-o-right"></i> Commitment to quality and interest in the future of kids.
@@ -2999,7 +3076,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                             </div>
                             <div class="testimonial">
                                 <img src="images/test-new.webp" alt="Ms. Pooja" width="300" height="300" loading="lazy" decoding="async">
-                                <p>Partnering with T.I.M.E. Kids Preschool has been a rewarding journey for me. The brand�s focus on quality education and the robust support system have been crucial in helping me succeed. The well-researched curriculum and ongoing training have been key factors in the growth of my preschool.</p>
+                                <p>Partnering with T.I.M.E. Kids Preschool has been a rewarding journey for me. The brand’s focus on quality education and the robust support system have been crucial in helping me succeed. The well-researched curriculum and ongoing training have been key factors in the growth of my preschool.</p>
                                 <span class="author">- Ms. Pooja, Franchisee, Bangalore
 
                                 </span>
@@ -3025,14 +3102,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
         </section>
        
-        <section style="background-image: url('images/bg-new.png');background-repeat: no-repeat;padding: 50px 0px 50px;">
+        <section style="background-image: url('images/bg-new.webp');background-repeat: no-repeat;padding: 50px 0px 50px;">
             <div class="ready-timeskids">
                 <h2>Ready to Begin Your <br> T.I.M.E. Kids Preschool?</h2>
-                <p>Your dream preschool business is just a click away. Let�s build something special together!</p>
-                <img src="images/Click here.png" class="ready-img" alt="Book consultation">
+                <p>Your dream preschool business is just a click away. Let’s build something special together!</p>
+                <img src="images/Click here.webp" class="ready-img" alt="Book consultation" width="220" height="70">
             </div>
             <div class="cta-button-container">
-                <a href="#timekidsForm"><button class="cta-button">Get Started</button></a>
+                <a href="#timekidsForm"><button class="cta-button">Book A Call</button></a>
             </div>
         </section>
 
@@ -3042,7 +3119,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="container_sm">
                 <div class="footer_blurbs">
                     <div class="blurb">
-                        <p>�2026 - T.I.M.E. Kids All Rights Reserved</p>
+                        <p>©2026 - T.I.M.E. Kids All Rights Reserved</p>
                     </div>
                 </div>
             </div>
@@ -3079,15 +3156,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <script>
     /* Testimonials: show all 3 cards statically (no carousel) */
 </script>
-    <script src="js/jquery-2.1.4.min.js"></script>
-    <script src="js/jquery.easing.1.3.js"></script>
-    <script src="js/jquery.validate.js"></script>
-    <script src="js/slick.min.js"></script>
-    <script src="js/bootstrap.js"></script>
-    <script src="js/gsap.min.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/form.js?v=20260721g"></script>
-    <script src="js/audit-modifications.js?v=20260721e"></script>
+    <script src="js/jquery-2.1.4.min.js" defer></script>
+    <script src="js/jquery.easing.1.3.js" defer></script>
+    <script src="js/jquery.validate.js" defer></script>
+    <script src="js/slick.min.js" defer></script>
+    <script src="js/bootstrap.js" defer></script>
+    <script src="js/gsap.min.js" defer></script>
+    <script src="js/main.js" defer></script>
+    <script src="js/form.js?v=20260728cls" defer></script>
+    <script src="js/audit-modifications.js?v=20260727a" defer></script>
 
 </body>
 
