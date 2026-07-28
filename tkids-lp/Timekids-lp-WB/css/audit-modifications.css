@@ -18,23 +18,11 @@ section:not(#banner) {
 }
 
 #banner .tk-enquiry-form .tk-otp-row {
-    display: block !important;
-    min-height: 72px;
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    pointer-events: none;
-    transition: max-height 0.2s ease, opacity 0.2s ease;
+    display: none;
 }
 
 #banner .tk-enquiry-form .tk-otp-row.is-visible {
-    max-height: 96px;
-    opacity: 1;
-    pointer-events: auto;
-}
-
-#banner .tk-enquiry-form .tk-otp-status {
-    min-height: 20px;
+    display: block;
 }
 
 #banner .tk-enquiry-form .tk-investment-chips {
