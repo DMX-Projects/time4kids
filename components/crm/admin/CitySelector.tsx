@@ -33,16 +33,71 @@ export default function CitySelector({
     loadCities()
   }, [state, scope, scopeUserId])
 
+  // Drop cities that are no longer in the scoped options list.
+  useEffect(() => {
+    if (loading || cities.length === 0 || value.length === 0) return
+    const allowed = new Set(cities.map((c) => (c.name || '').trim().toLowerCase()))
+    const next = value.filter((v) => allowed.has((v || '').trim().toLowerCase()))
+    if (next.length !== value.length) onChange(next)
+  }, [loading, cities, value, onChange])
+
+  const loadScopedStateNames = async (): Promise<string[] | null> => {
+    try {
+      const scopedParams = new URLSearchParams()
+      if (scopeUserId) scopedParams.set('userId', scopeUserId)
+      const qs = scopedParams.toString()
+      const scopedRes = await api.get(`/states${qs ? `?${qs}` : ''}`)
+      const names = (Array.isArray(scopedRes.data) ? scopedRes.data : [])
+        .map((s: { name?: string }) => (s?.name || '').trim())
+        .filter(Boolean)
+      return names.length > 0 ? names : null
+    } catch {
+      return null
+    }
+  }
+
+  const loadCrmCities = async () => {
+    const params = new URLSearchParams()
+    if (state) params.append('state', state)
+    if (scopeUserId) params.append('userId', scopeUserId)
+    const qs = params.toString()
+    const response = await api.get(`/cities${qs ? `?${qs}` : ''}`)
+    setCities(response.data || [])
+  }
+
+  const loadFranchiseLpCities = async (statesToLoad: string[]) => {
+    const merged = new Map<string, { name: string }>()
+    await Promise.all(
+      statesToLoad.map(async (stateName: string) => {
+        const params = new URLSearchParams({ state: stateName, scope: 'franchise-lp' })
+        const res = await fetch(apiUrl(`/common/cities/?${params.toString()}`))
+        const data = await res.json()
+        const rows = Array.isArray(data?.results) ? data.results : []
+        for (const row of rows) {
+          const name = (row?.name || '').trim()
+          if (name) merged.set(name.toLowerCase(), { name })
+        }
+      }),
+    )
+    setCities(Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name)))
+  }
+
   const loadCities = async () => {
     setLoading(true)
     try {
+      // Zonal/regional CRM: always use their territory cities (never full LP India list).
+      const scopedNames = await loadScopedStateNames()
+      if (scopedNames) {
+        await loadCrmCities()
+        return
+      }
+
       if (scope === 'franchise-lp') {
         const stateNames = (state || '')
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean)
 
-        // No state selected → load cities for all franchise-lp states.
         let statesToLoad = stateNames
         if (!statesToLoad.length) {
           const statesRes = await fetch(apiUrl('/common/states/?scope=franchise-lp'))
@@ -52,39 +107,9 @@ export default function CitySelector({
             .filter(Boolean)
         }
 
-        // If a CRM user is selected, keep only states in their territory.
-        if (scopeUserId) {
-          const scopedRes = await api.get(`/states?userId=${encodeURIComponent(scopeUserId)}`)
-          const allowed = new Set(
-            (Array.isArray(scopedRes.data) ? scopedRes.data : [])
-              .map((s: { name?: string }) => (s?.name || '').trim().toLowerCase())
-              .filter(Boolean),
-          )
-          if (allowed.size > 0) {
-            statesToLoad = statesToLoad.filter((s) => allowed.has(s.toLowerCase()))
-          }
-        }
-
-        const merged = new Map<string, { name: string }>()
-        await Promise.all(
-          statesToLoad.map(async (stateName: string) => {
-            const params = new URLSearchParams({ state: stateName, scope: 'franchise-lp' })
-            const res = await fetch(apiUrl(`/common/cities/?${params.toString()}`))
-            const data = await res.json()
-            const rows = Array.isArray(data?.results) ? data.results : []
-            for (const row of rows) {
-              const name = (row?.name || '').trim()
-              if (name) merged.set(name.toLowerCase(), { name })
-            }
-          })
-        )
-        setCities(Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name)))
+        await loadFranchiseLpCities(statesToLoad)
       } else {
-        const params = new URLSearchParams()
-        if (state) params.append('state', state)
-        if (scopeUserId) params.append('userId', scopeUserId)
-        const response = await api.get(`/cities?${params.toString()}`)
-        setCities(response.data || [])
+        await loadCrmCities()
       }
     } catch (error) {
       console.error('Failed to load cities:', error)

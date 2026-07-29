@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/crmApi'
-import { formDisplayName, utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay } from '@/lib/crmLeadKind'
+import { formDisplayName, utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay, expectedStartDisplay } from '@/lib/crmLeadKind'
 import { toast } from 'react-hot-toast'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -22,6 +22,10 @@ interface LeadsTableProps {
   returnHref?: string
   onBeforeNavigate?: () => void
   onLeadUpdated?: () => void
+  /** Hide mobile/email contact column (third-party campaign viewer). */
+  hideContact?: boolean
+  /** Show budget + start-period columns for paid-campaign viewers. */
+  campaignViewer?: boolean
 }
 
 const HighlightText = ({ text, highlight }: { text: string; highlight: string }) => {
@@ -132,14 +136,15 @@ const statusColors: { [key: string]: string } = {
   meeting_scheduled: 'bg-teal-100 text-teal-700 border border-teal-200',
 }
 
-export default function LeadsTable({ dateRange, city, state, centreId, status, source, campaign, medium, userId, search, title, returnHref, onBeforeNavigate, onLeadUpdated }: LeadsTableProps) {
+export default function LeadsTable({ dateRange, city, state, centreId, status, source, campaign, medium, userId, search, title, returnHref, onBeforeNavigate, onLeadUpdated, hideContact = false, campaignViewer = false }: LeadsTableProps) {
   const hideCentreColumn =
     source === 'campaign' ||
     source === 'franchise' ||
     source === 'google' ||
     source === 'july_lp' ||
     source === 'july_meta' ||
-    source === 'lp_wb'
+    source === 'lp_wb' ||
+    campaignViewer
   const isFranchiseCampaignLead = (leadSource: string) =>
     leadSource === 'july_lp' || leadSource === 'july_meta' || leadSource === 'lp_wb' || leadSource === 'google'
   const router = useRouter()
@@ -346,9 +351,17 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
               <thead>
                 <tr className="bg-gray-100 uppercase tracking-wider">
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 sticky left-0 bg-gray-100 z-20 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-[160px] min-w-[140px] max-w-[180px]">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Contact</th>
+                  {!hideContact && (
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Contact</th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">State</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">City</th>
+                  {campaignViewer && (
+                    <>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Budget</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Start Period</th>
+                    </>
+                  )}
                   {!hideCentreColumn && (
                     <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Centre</th>
                   )}
@@ -362,7 +375,9 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Source</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Medium</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Form</th>
+                  {!campaignViewer && (
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Form</th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign Month</th>
                   {source === 'franchise' && (
@@ -383,15 +398,27 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                         <HighlightText text={lead.fullName || ''} highlight={debouncedSearch} />
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-gray-600 text-sm">
-                      <HighlightText text={lead.mobile || ''} highlight={debouncedSearch} />
-                    </td>
+                    {!hideContact && (
+                      <td className="px-4 py-4 text-gray-600 text-sm">
+                        <HighlightText text={lead.mobile || ''} highlight={debouncedSearch} />
+                      </td>
+                    )}
                     <td className="px-4 py-4 text-gray-600 text-sm">
                       <HighlightText text={lead.state || '-'} highlight={debouncedSearch} />
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm">
                       <HighlightText text={lead.city || '-'} highlight={debouncedSearch} />
                     </td>
+                    {campaignViewer && (
+                      <>
+                        <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
+                          {lead.investmentRange || '—'}
+                        </td>
+                        <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
+                          {expectedStartDisplay(lead)}
+                        </td>
+                      </>
+                    )}
                     {!hideCentreColumn && (
                       <td className="px-4 py-4 text-gray-600 text-sm">
                         {isFranchiseCampaignLead(lead.source) ? (
@@ -442,12 +469,14 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                         <HighlightText text={utmCampaignDisplay(lead)} highlight={debouncedSearch} />
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
-                      <HighlightText
-                        text={formDisplayName(lead)}
-                        highlight={debouncedSearch}
-                      />
-                    </td>
+                    {!campaignViewer && (
+                      <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
+                        <HighlightText
+                          text={formDisplayName(lead)}
+                          highlight={debouncedSearch}
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
                       {formatDate(lead.createdAt)}
                     </td>

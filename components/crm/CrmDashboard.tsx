@@ -19,6 +19,7 @@ import {
 } from "@/lib/crmDashboardFilters";
 import DashboardStats from "@/components/crm/admin/DashboardStats";
 import LeadsTable from "@/components/crm/admin/LeadsTable";
+import { isCampaignOnlyCrmEmail, isCampaignExternalViewerEmail } from "@/lib/crmCampaignAccess";
 import DateRangePicker from "@/components/crm/admin/DateRangePicker";
 import CitySelector from "@/components/crm/admin/CitySelector";
 import StateSelector from "@/components/crm/admin/StateSelector";
@@ -284,8 +285,6 @@ const FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "converted_agreement_signed", label: "Converted – Agreement" },
 ];
 
-const CAMPAIGN_ONLY_CRM_EMAILS = new Set(["sachin.dhakate@time4education.com"]);
-
 export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'reports' | 'all' }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -318,7 +317,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const snapshotRef = useRef<CrmDashboardFiltersSnapshot | null>(null);
 
     const isCrmUser = normalizeRole(user?.role) === "crm";
-    const isCampaignOnlyUser = CAMPAIGN_ONLY_CRM_EMAILS.has(String(user?.email || "").toLowerCase());
+    const isCampaignOnlyUser = isCampaignOnlyCrmEmail(user?.email);
+    const isExternalCampaignViewer = isCampaignExternalViewerEmail(user?.email);
     const returnPath = view === "reports" ? "/crm-admin/reports" : "/crm-admin";
     const selectedLeadType = leadTypeFromSource(selectedSource);
     const selectedSubFilter = subFilterFromSource(selectedSource);
@@ -1265,6 +1265,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     returnHref={returnHref}
                                     onBeforeNavigate={persistFiltersNow}
                                     onLeadUpdated={silentRefreshStats}
+                                    hideContact={isExternalCampaignViewer}
+                                    campaignViewer={isExternalCampaignViewer}
                                     title={
                                         selectedSource === "all"
                                             ? "All Leads"

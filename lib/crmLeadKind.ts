@@ -109,6 +109,43 @@ export function campaignDisplayName(lead: {
   return utmCampaignDisplay(lead);
 }
 
+/** Pretty Meta Instant Form start-period values (3_months → 3 months). Yes/No → blank. */
+export function formatMetaChoiceLabel(value?: string | null): string {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase().replace(/^_+|_+$/g, "");
+  if (["yes", "no", "y", "n"].includes(lower)) return "";
+  const known: Record<string, string> = {
+    "3_months": "3 months",
+    "6_months": "6 months",
+    "1_month": "1 month",
+    "12_months": "12 months",
+    "1_year": "1 year",
+    immediately: "Immediately",
+    asap: "ASAP",
+    test: "Test",
+  };
+  if (known[text.toLowerCase()]) return known[text.toLowerCase()];
+  if (known[lower]) return known[lower];
+  const pretty = text.replace(/_+/g, " ").replace(/\s+/g, " ").trim();
+  if (["yes", "y", "no", "n"].includes(pretty.toLowerCase())) return "";
+  if (/\d+\s*(month|months|year|years|week|weeks|day|days)/i.test(pretty)) return pretty;
+  if (["immediately", "asap", "test"].includes(pretty.toLowerCase())) {
+    return pretty.toLowerCase() === "asap" ? "ASAP" : pretty.charAt(0).toUpperCase() + pretty.slice(1).toLowerCase();
+  }
+  // Hide unknown yes/no-style tokens
+  if (/^[a-zA-Z]+$/.test(pretty) && !["immediately", "asap", "test"].includes(pretty.toLowerCase())) {
+    return "";
+  }
+  return pretty;
+}
+
+export function expectedStartDisplay(lead: { expectedStartDate?: string | null } | null | undefined): string {
+  const raw = String(lead?.expectedStartDate || "").trim();
+  if (!raw) return "—";
+  return formatMetaChoiceLabel(raw) || "—";
+}
+
 /** True when this lead should use franchise statuses + workflow. */
 export function isFranchiseLead(lead: {
   leadKind?: string | null;

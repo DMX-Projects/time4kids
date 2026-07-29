@@ -32,31 +32,46 @@ export default function StateSelector({
     loadStates()
   }, [scope, scopeUserId])
 
+  // Drop out-of-territory selections (e.g. Jammu & Kashmir left over from a wider list).
+  useEffect(() => {
+    if (loading || states.length === 0 || value.length === 0) return
+    const allowed = new Set(states.map((s) => (s.name || '').trim().toLowerCase()))
+    const next = value.filter((v) => allowed.has((v || '').trim().toLowerCase()))
+    if (next.length !== value.length) onChange(next)
+  }, [loading, states, value, onChange])
+
+  const loadScopedStateNames = async (): Promise<string[] | null> => {
+    try {
+      const scopedParams = new URLSearchParams()
+      if (scopeUserId) scopedParams.set('userId', scopeUserId)
+      const qs = scopedParams.toString()
+      const scopedRes = await api.get(`/states${qs ? `?${qs}` : ''}`)
+      const names = (Array.isArray(scopedRes.data) ? scopedRes.data : [])
+        .map((s: { name?: string }) => (s?.name || '').trim())
+        .filter(Boolean)
+      return names.length > 0 ? names : null
+    } catch {
+      return null
+    }
+  }
+
   const loadStates = async () => {
     setLoading(true)
     try {
+      // Zonal/regional CRM logins: always use their territory (never the full India / LP list).
+      const scopedNames = await loadScopedStateNames()
+      if (scopedNames) {
+        setStates(scopedNames.map((name) => ({ name })))
+        return
+      }
+
       if (scope === 'franchise-lp') {
         const res = await fetch(apiUrl('/common/states/?scope=franchise-lp'))
         const data = await res.json()
-        let rows: { name: string }[] = Array.isArray(data?.results) ? data.results : []
-        // Narrow franchise-lp list to the selected CRM user's territory when possible.
-        if (scopeUserId) {
-          const scopedRes = await api.get(`/states?userId=${encodeURIComponent(scopeUserId)}`)
-          const allowed = new Set(
-            (Array.isArray(scopedRes.data) ? scopedRes.data : [])
-              .map((s: { name?: string }) => (s?.name || '').trim().toLowerCase())
-              .filter(Boolean),
-          )
-          if (allowed.size > 0) {
-            rows = rows.filter((s) => allowed.has((s.name || '').trim().toLowerCase()))
-          }
-        }
+        const rows: { name: string }[] = Array.isArray(data?.results) ? data.results : []
         setStates(rows)
       } else {
-        const params = new URLSearchParams()
-        if (scopeUserId) params.set('userId', scopeUserId)
-        const qs = params.toString()
-        const response = await api.get(`/states${qs ? `?${qs}` : ''}`)
+        const response = await api.get('/states')
         setStates(response.data || [])
       }
     } catch (error) {
