@@ -4,7 +4,12 @@ import { useEffect, useState, useMemo } from 'react'
 import api from '@/lib/crmApi'
 import { apiUrl } from '@/lib/api-client'
 import { MultiSelectCheckbox } from '@/components/crm/MultiSelectCheckbox'
+import { useAuth } from '@/components/auth/AuthProvider'
 import type { GeoScope } from '@/components/crm/admin/StateSelector'
+import {
+  filterStateNameListToEmailTerritory,
+  territoryStateNamesForEmail,
+} from '@/lib/crmTerritory'
 
 interface CitySelectorProps {
   value: string[]
@@ -23,15 +28,17 @@ export default function CitySelector({
   scope = 'default',
   userId = '',
 }: CitySelectorProps) {
+  const { user } = useAuth()
   const [cities, setCities] = useState<{ name: string }[]>([])
   const [loading, setLoading] = useState(true)
 
   const scopeUserId =
     userId && userId !== 'unassigned' && userId !== 'all' ? userId : ''
+  const viewerEmail = user?.email || ''
 
   useEffect(() => {
     loadCities()
-  }, [state, scope, scopeUserId])
+  }, [state, scope, scopeUserId, viewerEmail])
 
   // Drop cities that are no longer in the scoped options list.
   useEffect(() => {
@@ -42,6 +49,10 @@ export default function CitySelector({
   }, [loading, cities, value, onChange])
 
   const loadScopedStateNames = async (): Promise<string[] | null> => {
+    const hard = territoryStateNamesForEmail(viewerEmail)
+    if (hard && hard.length > 0 && !scopeUserId) {
+      return hard
+    }
     try {
       const scopedParams = new URLSearchParams()
       if (scopeUserId) scopedParams.set('userId', scopeUserId)
@@ -50,9 +61,10 @@ export default function CitySelector({
       const names = (Array.isArray(scopedRes.data) ? scopedRes.data : [])
         .map((s: { name?: string }) => (s?.name || '').trim())
         .filter(Boolean)
-      return names.length > 0 ? names : null
+      const filtered = filterStateNameListToEmailTerritory(names, viewerEmail)
+      return filtered.length > 0 ? filtered : null
     } catch {
-      return null
+      return hard && hard.length > 0 ? [...hard] : null
     }
   }
 
@@ -85,7 +97,6 @@ export default function CitySelector({
   const loadCities = async () => {
     setLoading(true)
     try {
-      // Zonal/regional CRM: always use their territory cities (never full LP India list).
       const scopedNames = await loadScopedStateNames()
       if (scopedNames) {
         await loadCrmCities()
@@ -98,13 +109,18 @@ export default function CitySelector({
           .map((s) => s.trim())
           .filter(Boolean)
 
-        let statesToLoad = stateNames
+        let statesToLoad = filterStateNameListToEmailTerritory(stateNames, viewerEmail)
         if (!statesToLoad.length) {
-          const statesRes = await fetch(apiUrl('/common/states/?scope=franchise-lp'))
-          const statesData = await statesRes.json()
-          statesToLoad = (Array.isArray(statesData?.results) ? statesData.results : [])
-            .map((s: { name?: string }) => (s?.name || '').trim())
-            .filter(Boolean)
+          const hard = territoryStateNamesForEmail(viewerEmail)
+          if (hard?.length) {
+            statesToLoad = [...hard]
+          } else {
+            const statesRes = await fetch(apiUrl('/common/states/?scope=franchise-lp'))
+            const statesData = await statesRes.json()
+            statesToLoad = (Array.isArray(statesData?.results) ? statesData.results : [])
+              .map((s: { name?: string }) => (s?.name || '').trim())
+              .filter(Boolean)
+          }
         }
 
         await loadFranchiseLpCities(statesToLoad)

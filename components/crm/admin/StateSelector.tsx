@@ -4,6 +4,12 @@ import { useEffect, useState, useMemo } from 'react'
 import api from '@/lib/crmApi'
 import { apiUrl } from '@/lib/api-client'
 import { MultiSelectCheckbox } from '@/components/crm/MultiSelectCheckbox'
+import { useAuth } from '@/components/auth/AuthProvider'
+import {
+  filterStateNameListToEmailTerritory,
+  filterStatesToEmailTerritory,
+  territoryStateNamesForEmail,
+} from '@/lib/crmTerritory'
 
 export type GeoScope = 'default' | 'franchise-lp'
 
@@ -22,15 +28,17 @@ export default function StateSelector({
   scope = 'default',
   userId = '',
 }: StateSelectorProps) {
+  const { user } = useAuth()
   const [states, setStates] = useState<{ name: string }[]>([])
   const [loading, setLoading] = useState(true)
 
   const scopeUserId =
     userId && userId !== 'unassigned' && userId !== 'all' ? userId : ''
+  const viewerEmail = user?.email || ''
 
   useEffect(() => {
     loadStates()
-  }, [scope, scopeUserId])
+  }, [scope, scopeUserId, viewerEmail])
 
   // Drop out-of-territory selections (e.g. Jammu & Kashmir left over from a wider list).
   useEffect(() => {
@@ -55,13 +63,29 @@ export default function StateSelector({
     }
   }
 
+  const applyTerritory = (names: string[]): string[] => {
+    const hard = territoryStateNamesForEmail(viewerEmail)
+    if (hard && hard.length > 0) {
+      const hardSet = new Set(hard.map((n) => n.trim().toLowerCase()))
+      const intersected = names.filter((n) => hardSet.has((n || '').trim().toLowerCase()))
+      // Always stay inside the hard territory — never allow JK etc. through.
+      return intersected.length > 0 ? intersected : [...hard]
+    }
+    return filterStateNameListToEmailTerritory(names, viewerEmail)
+  }
+
   const loadStates = async () => {
     setLoading(true)
     try {
-      // Zonal/regional CRM logins: always use their territory (never the full India / LP list).
+      const hard = territoryStateNamesForEmail(viewerEmail)
+      if (hard && hard.length > 0 && !scopeUserId) {
+        setStates(hard.map((name) => ({ name })))
+        return
+      }
+
       const scopedNames = await loadScopedStateNames()
       if (scopedNames) {
-        setStates(scopedNames.map((name) => ({ name })))
+        setStates(applyTerritory(scopedNames).map((name) => ({ name })))
         return
       }
 
@@ -69,14 +93,16 @@ export default function StateSelector({
         const res = await fetch(apiUrl('/common/states/?scope=franchise-lp'))
         const data = await res.json()
         const rows: { name: string }[] = Array.isArray(data?.results) ? data.results : []
-        setStates(rows)
+        setStates(filterStatesToEmailTerritory(rows, viewerEmail))
       } else {
         const response = await api.get('/states')
-        setStates(response.data || [])
+        const rows: { name: string }[] = response.data || []
+        setStates(filterStatesToEmailTerritory(rows, viewerEmail))
       }
     } catch (error) {
       console.error('Failed to load states:', error)
-      setStates([])
+      const hard = territoryStateNamesForEmail(viewerEmail)
+      setStates(hard ? hard.map((name) => ({ name })) : [])
     } finally {
       setLoading(false)
     }
