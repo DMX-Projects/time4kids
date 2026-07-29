@@ -134,7 +134,7 @@ const CHANNEL_LABELS: Record<string, string> = {
     google: "Google",
     july_lp: "Google",
     july_meta: "META",
-    lp_wb: "Google",
+    lp_wb: "Ants_Google",
     youtube: "YouTube",
     whatsapp: "WhatsApp",
     sms: "SMS",

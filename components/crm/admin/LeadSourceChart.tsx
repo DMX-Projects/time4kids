@@ -10,7 +10,7 @@ const SOURCE_LABELS: Record<string, string> = {
   google: 'BCWW_Google',
   july_lp: 'BCWW_Google',
   july_meta: 'BCWW_Meta',
-  lp_wb: 'BCWW_Google',
+  lp_wb: 'Ants_Google',
   youtube: 'YouTube',
   admission: 'Admission',
   contact: 'Centers Enquiry',
