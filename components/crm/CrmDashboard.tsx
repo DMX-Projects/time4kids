@@ -323,6 +323,13 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const selectedLeadType = leadTypeFromSource(selectedSource);
     const selectedSubFilter = subFilterFromSource(selectedSource);
 
+    // External campaign viewer has Dashboard only — block direct /reports URL access.
+    useEffect(() => {
+        if (!authLoading && user && isExternalCampaignViewer && view === "reports") {
+            router.replace("/crm-admin");
+        }
+    }, [authLoading, user, isExternalCampaignViewer, view, router]);
+
     const applySnapshot = (saved: CrmDashboardFiltersSnapshot) => {
         const { filterDateRange: savedFilter, dateRange: savedApplied } = datesFromSnapshot(saved);
         setSelectedCity(Array.isArray(saved.selectedCity) ? saved.selectedCity : []);
@@ -893,6 +900,10 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     };
 
     if (authLoading || !user || !filtersReady) {
+        return <AccessLoading />;
+    }
+
+    if (isExternalCampaignViewer && view === "reports") {
         return <AccessLoading />;
     }
 
