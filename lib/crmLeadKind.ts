@@ -62,11 +62,78 @@ export function formDisplayName(lead: {
   return "—";
 }
 
-/** UTM source from ad URL (e.g. bcwebwise_meta). */
-export function utmSourceDisplay(lead: {
+/** True for West Bengal LP form (Timekids-lp-WB / source lp_wb). */
+export function isWestBengalLpLead(lead: {
+  source?: string | null;
+  formName?: string | null;
+  pageType?: string | null;
+  landingPageUrl?: string | null;
+} | null | undefined): boolean {
+  if (!lead) return false;
+  const src = String(lead.source || "").trim().toLowerCase();
+  if (src === "lp_wb") return true;
+  const page = String(lead.formName || lead.pageType || "")
+    .trim()
+    .toLowerCase();
+  if (page === "lp-wb") return true;
+  const url = String(lead.landingPageUrl || "").toLowerCase();
+  return url.includes("timekids-lp-wb");
+}
+
+function isMetaAdTraffic(lead: {
   utmSource?: string | null;
+  utmMedium?: string | null;
+} | null | undefined): boolean {
+  if (!lead) return false;
+  const utm = String(lead.utmSource || "").trim().toLowerCase();
+  if (utm === "facebook_lead_ads") return true;
+  if (/(meta|facebook|\bfb\b|instagram|\big\b)/.test(utm)) return true;
+  const medium = String(lead.utmMedium || "").trim().toLowerCase();
+  return /(meta|facebook|instagram)/.test(medium);
+}
+
+function isGoogleAdTraffic(lead: {
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  landingPageUrl?: string | null;
+} | null | undefined): boolean {
+  if (!lead) return false;
+  const url = String(lead.landingPageUrl || "").toLowerCase();
+  if (
+    ["gclid=", "gad_source=", "gad_campaignid=", "gbraid=", "wbraid="].some((m) =>
+      url.includes(m),
+    )
+  ) {
+    return true;
+  }
+  const utm = String(lead.utmSource || "").trim().toLowerCase();
+  if (utm === "google" || utm.includes("google")) return true;
+  const medium = String(lead.utmMedium || "").trim().toLowerCase();
+  return medium === "cpc" || medium.includes("google");
+}
+
+/**
+ * UTM / channel source label for CRM tables & detail.
+ * West Bengal LP: Google → Ants_Google, Meta → Ants_Meta.
+ * Other LPs keep BCWW_* labels.
+ */
+export function utmSourceDisplay(lead: {
+  source?: string | null;
+  formName?: string | null;
+  pageType?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  landingPageUrl?: string | null;
 } | null | undefined): string {
   if (!lead) return "—";
+
+  if (isWestBengalLpLead(lead)) {
+    if (isMetaAdTraffic(lead)) return "Ants_Meta";
+    if (isGoogleAdTraffic(lead)) return "Ants_Google";
+    // WB page default (no UTM) is the Google LP.
+    return "Ants_Google";
+  }
+
   const raw = String(lead.utmSource || "").trim();
   if (!raw) return "—";
   const key = raw.toLowerCase();

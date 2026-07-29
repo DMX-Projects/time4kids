@@ -55,7 +55,7 @@ const SOURCE_LABELS: Record<string, string> = {
   instagram: 'Instagram',
   july_lp: 'BCWW_Google',
   july_meta: 'BCWW_Meta',
-  lp_wb: 'BCWW_Google',
+  lp_wb: 'Ants_Google',
   google: 'BCWW_Google',
   facebook_lead_ads: 'BCWW_Meta',
   admission: 'Admission',

@@ -214,7 +214,7 @@ const SOURCE_LABELS: Record<string, string> = {
   instagram: 'Instagram',
   july_lp: 'BCWW_Google',
   july_meta: 'BCWW_Meta',
-  lp_wb: 'BCWW_Google',
+  lp_wb: 'Ants_Google',
   google: 'BCWW_Google',
   facebook_lead_ads: 'BCWW_Meta',
   youtube: 'YouTube',
@@ -443,6 +443,7 @@ export default function LeadDetailPage() {
         channel: 'email'
       })
       toast.success(`${type === 'meeting' ? 'Meeting reminder' : 'Follow-up'} email sent successfully!`)
+      loadLead()
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to send reminder')
     } finally {
@@ -454,12 +455,18 @@ export default function LeadDetailPage() {
     setSendingWhatsApp(true)
     try {
       const type = lead.meetingDate ? 'meeting' : 'follow-up'
+      const templates = getTemplatesForLead(lead)
       await api.post('/leads/send-reminder', {
         leadId: params.id,
         type,
-        channel: 'whatsapp'
+        channel: 'whatsapp',
+        body: templates.whatsapp,
       })
-      toast.success(`${type === 'meeting' ? 'Meeting reminder' : 'Follow-up'} WhatsApp message sent!`)
+      if (lead?.mobile?.trim()) {
+        window.open(getWhatsAppUrl(lead.mobile, templates.whatsapp), '_blank', 'noopener,noreferrer')
+      }
+      toast.success(`${type === 'meeting' ? 'Meeting reminder' : 'Follow-up'} WhatsApp message logged!`)
+      loadLead()
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to send WhatsApp message')
     } finally {
@@ -477,7 +484,7 @@ export default function LeadDetailPage() {
     setWhatsappComposeOpen(true)
   }
 
-  const handleOpenWhatsApp = () => {
+  const handleOpenWhatsApp = async () => {
     if (!lead?.mobile?.trim()) {
       toast.error('Lead has no mobile number')
       return
@@ -486,8 +493,20 @@ export default function LeadDetailPage() {
       toast.error('Message is required')
       return
     }
-    window.open(getWhatsAppUrl(lead.mobile, whatsappMessage.trim()), '_blank', 'noopener,noreferrer')
+    const message = whatsappMessage.trim()
+    try {
+      await api.post('/leads/send-reminder', {
+        leadId: params.id,
+        channel: 'whatsapp',
+        body: message,
+      })
+    } catch {
+      // Still open WhatsApp even if history logging fails.
+    }
+    window.open(getWhatsAppUrl(lead.mobile, message), '_blank', 'noopener,noreferrer')
     setWhatsappComposeOpen(false)
+    toast.success('WhatsApp opened — logged in History')
+    loadLead()
   }
 
   const openEmailCompose = () => {
@@ -520,6 +539,7 @@ export default function LeadDetailPage() {
       })
       toast.success('Email sent from franchise@timekidspreschools.com')
       setEmailComposeOpen(false)
+      loadLead()
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to send email')
     } finally {
@@ -980,10 +1000,11 @@ export default function LeadDetailPage() {
                   ...(lead.notificationLogs || []).map((l: any) => ({
                     id: l.id,
                     type: 'notification',
-                    content: `${l.type === 'whatsapp' ? 'WhatsApp' : 'Email'} reminder sent`,
+                    content: `${l.type === 'whatsapp' ? 'WhatsApp' : 'Email'} sent`,
                     date: new Date(l.createdAt),
                     icon: l.type === 'whatsapp' ? '💬' : '📧',
-                    status: l.status,
+                    channel: l.type === 'whatsapp' ? 'WhatsApp' : 'Email',
+                    status: l.status || 'sent',
                     bgColor: 'bg-green-50',
                     textColor: 'text-green-800',
                     dotColor: 'bg-green-500'
@@ -1012,11 +1033,14 @@ export default function LeadDetailPage() {
                       <div className={`p-4 rounded-xl ${item.bgColor} border border-gray-100 shadow-sm transition-all hover:shadow-md`}>
                         <div className="flex justify-between items-start mb-1">
                           <span className={`text-xs font-bold uppercase tracking-wider ${item.textColor} flex items-center gap-1`}>
-                            {item.icon} {item.type.replace('_', ' ')}
+                            {item.icon}{' '}
+                            {item.type === 'notification'
+                              ? (item.channel || 'Communication')
+                              : item.type.replace('_', ' ')}
                           </span>
                           <span className="text-[10px] text-gray-500 font-medium">{item.date.toLocaleString()}</span>
                         </div>
-                        <div className="text-gray-800 text-sm leading-relaxed">{item.content}</div>
+                        <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-line">{item.content}</div>
                         {item.user && <div className="mt-2 text-[10px] text-gray-400 font-medium">Action by: {item.user}</div>}
                         {item.status && (
                           <div className="mt-1.5 flex items-center gap-1.5">
