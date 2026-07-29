@@ -7,14 +7,15 @@ import { Menu, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SidebarNav } from "@/components/crm/SidebarNav";
 import { hardRefreshCrmDashboard } from "@/lib/crmDashboardFilters";
+import { isCampaignExternalViewerEmail } from "@/lib/crmCampaignAccess";
 
 export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
     const isLogin = pathname?.startsWith("/crm-admin/login");
-    const isLeadDetail = Boolean(pathname?.match(/\/crm-admin\/leads\//));
+    const hideReports = isCampaignExternalViewerEmail(user?.email);
 
     const handleLogout = () => {
         logout();
@@ -75,28 +76,18 @@ export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
                             >
                                 Dashboard
                             </Link>
-                            <Link
-                                href="/crm-admin/reports"
-                                className="block px-3 py-2.5 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50"
-                            >
-                                Reports
-                            </Link>
+                            {!hideReports && (
+                                <Link
+                                    href="/crm-admin/reports"
+                                    className="block px-3 py-2.5 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50"
+                                >
+                                    Reports
+                                </Link>
+                            )}
                         </div>
                     )}
                 </div>
 
-                {/* Lead detail has no CrmDashboard header — keep top-right logout on desktop */}
-                {isLeadDetail && (
-                    <div className="hidden md:flex items-center justify-end gap-3 px-6 py-3 border-b border-gray-200 bg-white sticky top-0 z-30">
-                        <button
-                            type="button"
-                            onClick={handleLogout}
-                            className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 text-sm font-medium transition-colors"
-                        >
-                            Logout
-                        </button>
-                    </div>
-                )}
                 {children}
             </div>
         </div>

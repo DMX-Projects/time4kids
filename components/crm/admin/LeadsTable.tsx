@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/crmApi'
-import { formDisplayName, utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay, expectedStartDisplay } from '@/lib/crmLeadKind'
+import { formDisplayName, utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay } from '@/lib/crmLeadKind'
 import { toast } from 'react-hot-toast'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -24,7 +24,7 @@ interface LeadsTableProps {
   onLeadUpdated?: () => void
   /** Hide mobile/email contact column (third-party campaign viewer). */
   hideContact?: boolean
-  /** Show budget + start-period columns for paid-campaign viewers. */
+  /** Paid-campaign viewer layout (hides Form/Centre; no budget/start-period columns). */
   campaignViewer?: boolean
 }
 
@@ -356,12 +356,6 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                   )}
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">State</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">City</th>
-                  {campaignViewer && (
-                    <>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Budget</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Start Period</th>
-                    </>
-                  )}
                   {!hideCentreColumn && (
                     <th className="px-4 py-3 text-left text-xs font-bold text-gray-500">Centre</th>
                   )}
@@ -409,16 +403,6 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     <td className="px-4 py-4 text-gray-600 text-sm">
                       <HighlightText text={lead.city || '-'} highlight={debouncedSearch} />
                     </td>
-                    {campaignViewer && (
-                      <>
-                        <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
-                          {lead.investmentRange || '—'}
-                        </td>
-                        <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
-                          {expectedStartDisplay(lead)}
-                        </td>
-                      </>
-                    )}
                     {!hideCentreColumn && (
                       <td className="px-4 py-4 text-gray-600 text-sm">
                         {isFranchiseCampaignLead(lead.source) ? (

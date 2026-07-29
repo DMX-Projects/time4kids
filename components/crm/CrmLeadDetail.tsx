@@ -9,7 +9,7 @@ import { getCrmDashboardReturnHref, isSafeCrmReturnHref } from '@/lib/crmDashboa
 import { formDisplayName, utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay, isFranchiseLead, isFranchiseLpGeoSource, crmPipelineForLead, expectedStartDisplay } from '@/lib/crmLeadKind'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { isCampaignOnlyCrmEmail, isCampaignExternalViewerEmail } from '@/lib/crmCampaignAccess'
-import { Clock } from 'lucide-react'
+import { ChevronLeft, Clock } from 'lucide-react'
 
 /** TKPL Zonal Managers + CRM Super Admins who may reassign leads. */
 const CRM_LEAD_ASSIGNER_EMAILS = new Set([
@@ -228,7 +228,7 @@ function sourceLabel(source?: string) {
 export default function LeadDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const [lead, setLead] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [note, setNote] = useState('')
@@ -358,6 +358,11 @@ export default function LeadDetailPage() {
       return
     }
     router.push(getCrmDashboardReturnHref())
+  }
+
+  const handleLogout = () => {
+    logout()
+    router.push('/crm-admin/login')
   }
 
   const loadLead = async () => {
@@ -533,21 +538,30 @@ export default function LeadDetailPage() {
   const isLpLead = isFranchiseLpGeoSource(lead.source)
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 pb-8">
       <Toaster position="top-center" />
       <div className="container mx-auto px-4">
-        <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="sticky top-0 z-30 -mx-4 mb-6 flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50/95 px-4 py-3 backdrop-blur">
           <button
+            type="button"
             onClick={goBackToDashboard}
-            className="text-blue-600 hover:text-blue-800"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-semibold text-blue-600 shadow-sm transition-colors hover:bg-blue-50 hover:text-blue-700"
           >
-            ← Back to Dashboard
+            <ChevronLeft className="h-4 w-4" />
+            Back to Dashboard
+          </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="hidden rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 md:inline-flex"
+          >
+            Logout
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={`grid grid-cols-1 gap-6 ${isCampaignReadonlyUser ? '' : 'lg:grid-cols-3'}`}>
           {/* Main Details */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className={`space-y-6 ${isCampaignReadonlyUser ? '' : 'lg:col-span-2'}`}>
             <div className="card">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Lead Details</h2>
@@ -878,6 +892,7 @@ export default function LeadDetailPage() {
 
           </div>
 
+          {!isCampaignReadonlyUser && (
           <div className="space-y-6">
 
 
@@ -1001,6 +1016,7 @@ export default function LeadDetailPage() {
               </div>
             </div>}
           </div>
+          )}
         </div>
       </div>
 
