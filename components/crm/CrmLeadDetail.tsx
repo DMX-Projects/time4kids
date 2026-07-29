@@ -765,31 +765,43 @@ export default function LeadDetailPage() {
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned</label>
                     {canAssignUsers ? (
-                      <div className="flex gap-2 items-stretch">
-                        <select
-                          value={editForm.assignedUserId || ''}
-                          onChange={(e) =>
-                            setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))
-                          }
-                          className="form-input w-full text-sm font-semibold text-gray-800"
-                          disabled={!isEditable && !canAssignUsers}
-                        >
-                          <option value="">Select user</option>
-                          {assignUserOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={handleAssign}
-                          disabled={saving}
-                          className="btn-primary text-sm py-1.5 px-4 whitespace-nowrap disabled:opacity-50"
-                        >
-                          {saving ? '…' : 'Assign'}
-                        </button>
-                      </div>
+                      <>
+                        <div className="flex gap-2 items-stretch">
+                          <select
+                            value={editForm.assignedUserId || ''}
+                            onChange={(e) =>
+                              setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))
+                            }
+                            className="form-input w-full text-sm font-semibold text-gray-800"
+                            disabled={!isEditable && !canAssignUsers}
+                          >
+                            <option value="">Select user</option>
+                            {assignUserOptions.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={handleAssign}
+                            disabled={saving}
+                            className="btn-primary text-sm py-1.5 px-4 whitespace-nowrap disabled:opacity-50"
+                          >
+                            {saving ? '…' : 'Assign'}
+                          </button>
+                        </div>
+                        {lead.assignedUserLabel ? (
+                          <p className="text-sm text-gray-600">
+                            Assigned to{' '}
+                            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 font-bold text-blue-700 ring-1 ring-inset ring-blue-200">
+                              {lead.assignedUserLabel}
+                            </span>
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-400">Not assigned yet</p>
+                        )}
+                      </>
                     ) : lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
                       <p className="text-gray-700 font-semibold">
                         {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
