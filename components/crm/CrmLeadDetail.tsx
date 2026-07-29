@@ -11,7 +11,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { isCampaignOnlyCrmEmail, isCampaignExternalViewerEmail } from '@/lib/crmCampaignAccess'
 import { ChevronLeft, Clock } from 'lucide-react'
 
-/** TKPL Zonal Managers + CRM Super Admins who may reassign leads. */
+/** TKPL Zonal Managers + CRM Super Admins who may assign leads. */
 const CRM_LEAD_ASSIGNER_EMAILS = new Set([
   'tejbal@timekidspreschools.com',
   'gaurav@timekidspreschools.com',
@@ -258,14 +258,6 @@ export default function LeadDetailPage() {
 
   useEffect(() => {
     if (lead) {
-      const assigned =
-        lead.assignedUserId != null && lead.assignedUserId !== ''
-          ? String(lead.assignedUserId)
-          : ''
-      const suggested =
-        lead.suggestedAssignedUserId != null && lead.suggestedAssignedUserId !== ''
-          ? String(lead.suggestedAssignedUserId)
-          : ''
       setEditForm({
         fullName: lead.fullName ?? '',
         mobile: lead.mobile ?? '',
@@ -281,8 +273,8 @@ export default function LeadDetailPage() {
         sourceOther: lead.sourceOther ?? '',
         newNote: '',
         status: lead.status ?? 'new',
-        // Persist geo assignee on save if lead was still unassigned in DB
-        assignedUserId: assigned || suggested || '',
+        // Assignment is an explicit ZM action; never preselect a suggested/random manager.
+        assignedUserId: '',
         meetingDate: toLocalDatetimeString(lead.meetingDate),
         nextFollowUpDate: toLocalDatetimeString(lead.nextFollowUpDate),
       })
@@ -336,17 +328,8 @@ export default function LeadDetailPage() {
   }, [canAssignUsers, lead?.id, lead?.state, lead?.city, lead?.leadKind, lead?.enquiryType, lead?.source])
 
   const assignUserOptions = useMemo(() => {
-    const opts = assignUsers.map((u) => ({ value: String(u.id), label: u.label }))
-    const currentId = editForm.assignedUserId || ''
-    if (currentId && !opts.some((o) => o.value === currentId)) {
-      const label =
-        lead?.assignedUserLabel ||
-        lead?.suggestedAssignedUserLabel ||
-        `User ${currentId}`
-      opts.unshift({ value: currentId, label })
-    }
-    return opts
-  }, [assignUsers, editForm.assignedUserId, lead?.assignedUserLabel, lead?.suggestedAssignedUserLabel])
+    return assignUsers.map((u) => ({ value: String(u.id), label: u.label }))
+  }, [assignUsers])
 
   const goBackToDashboard = () => {
     if (typeof window !== 'undefined') {
@@ -377,40 +360,59 @@ export default function LeadDetailPage() {
     }
   }
 
-  const handleSaveAll = async () => {
-    if (!editForm.newNote?.trim()) {
-      toast.error('Please enter a comment before saving.')
+  const handleAssign = async () => {
+    const prevUser = lead.assignedUserId != null ? String(lead.assignedUserId) : ''
+    const nextUser = editForm.assignedUserId || ''
+    if (!nextUser) {
+      toast.error('Please select a user to assign.')
+      return
+    }
+    if (nextUser === prevUser) {
+      toast.error('This lead is already assigned to that user.')
       return
     }
 
     setSaving(true)
     try {
-      await api.post(`/leads/${params.id}/notes`, { 
-        content: editForm.newNote.trim(),
-        status: editForm.status
+      await api.patch(`/leads/${params.id}`, { assignedUserId: nextUser })
+      toast.success('Lead assigned successfully!')
+      loadLead()
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.response?.data?.detail || 'Failed to assign')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveStatus = async () => {
+    const noteText = (editForm.newNote || '').trim()
+    if (!noteText) {
+      toast.error('Please enter a comment before updating status.')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await api.post(`/leads/${params.id}/notes`, {
+        content: noteText,
+        status: editForm.status,
       })
-      
-      const payload: Record<string, unknown> = {
+
+      await api.patch(`/leads/${params.id}`, {
         meetingDate: editForm.meetingDate ? new Date(editForm.meetingDate).toISOString() : null,
         nextFollowUpDate: editForm.nextFollowUpDate ? new Date(editForm.nextFollowUpDate).toISOString() : null,
         status: editForm.status,
-      }
-      const prevUser = lead.assignedUserId != null ? String(lead.assignedUserId) : ''
-      if ((editForm.assignedUserId || '') !== prevUser) {
-        payload.assignedUserId = editForm.assignedUserId || null
-      }
-      await api.patch(`/leads/${params.id}`, payload)
-      
-      if (editForm.status !== lead.status) {
-        toast.success('Status updated successfully!')
-      } else {
-        toast.success('Details saved successfully!')
-      }
-      
-      setEditForm(f => ({ ...f, newNote: '' }))
+      })
+
+      toast.success(
+        editForm.status !== lead.status
+          ? 'Status updated successfully!'
+          : 'Details saved successfully!',
+      )
+      setEditForm((f) => ({ ...f, newNote: '' }))
       loadLead()
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to save')
+      toast.error(error.response?.data?.message || error.response?.data?.detail || 'Failed to save')
     } finally {
       setSaving(false)
     }
@@ -763,21 +765,31 @@ export default function LeadDetailPage() {
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned</label>
                     {canAssignUsers ? (
-                      <select
-                        value={editForm.assignedUserId || ''}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))
-                        }
-                        className="form-input w-full text-sm font-semibold text-gray-800"
-                        disabled={!isEditable && !canAssignUsers}
-                      >
-                        <option value="">Select user</option>
-                        {assignUserOptions.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex gap-2 items-stretch">
+                        <select
+                          value={editForm.assignedUserId || ''}
+                          onChange={(e) =>
+                            setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))
+                          }
+                          className="form-input w-full text-sm font-semibold text-gray-800"
+                          disabled={!isEditable && !canAssignUsers}
+                        >
+                          <option value="">Select user</option>
+                          {assignUserOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={handleAssign}
+                          disabled={saving}
+                          className="btn-primary text-sm py-1.5 px-4 whitespace-nowrap disabled:opacity-50"
+                        >
+                          {saving ? '…' : 'Assign'}
+                        </button>
+                      </div>
                     ) : lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
                       <p className="text-gray-700 font-semibold">
                         {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
@@ -820,13 +832,14 @@ export default function LeadDetailPage() {
                     <div className="col-span-2 pt-4 border-t border-gray-100 mt-2">
                       <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block">
                         Comments <span className="text-red-500">*</span>
+                        <span className="font-normal normal-case text-gray-400"> (required for status update)</span>
                       </label>
                       <textarea
                         value={editForm.newNote}
                         onChange={(e) => setEditForm((f) => ({ ...f, newNote: e.target.value }))}
                         className="form-input w-full text-sm"
                         rows={3}
-                        placeholder="Add comments here..."
+                        placeholder="Add comments for this status update..."
                       />
                     </div>
 
@@ -853,11 +866,11 @@ export default function LeadDetailPage() {
                       </div>
                       <div className="col-span-1 sm:col-span-2 flex justify-end mt-2">
                         <button
-                          onClick={handleSaveAll}
+                          onClick={handleSaveStatus}
                           disabled={saving}
                           className="btn-primary text-sm py-1.5 px-6 w-full sm:w-auto disabled:opacity-50"
                         >
-                          {saving ? 'Saving...' : 'Save'}
+                          {saving ? 'Saving...' : 'Update Status'}
                         </button>
                       </div>
                     </div>
