@@ -6,8 +6,9 @@ import api from '@/lib/crmApi'
 import { Toaster, toast } from 'react-hot-toast'
 import { getWhatsAppUrl } from '@/lib/crmContactHelpers'
 import { getCrmDashboardReturnHref, isSafeCrmReturnHref } from '@/lib/crmDashboardFilters'
-import { formDisplayName, utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay, isFranchiseLead, isFranchiseLpGeoSource, crmPipelineForLead } from '@/lib/crmLeadKind'
+import { formDisplayName, utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay, isFranchiseLead, isFranchiseLpGeoSource, crmPipelineForLead, expectedStartDisplay } from '@/lib/crmLeadKind'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { isCampaignOnlyCrmEmail, isCampaignExternalViewerEmail } from '@/lib/crmCampaignAccess'
 import { Clock } from 'lucide-react'
 
 /** TKPL Zonal Managers + CRM Super Admins who may reassign leads. */
@@ -243,8 +244,8 @@ export default function LeadDetailPage() {
   const [whatsappMessage, setWhatsappMessage] = useState('')
   const [editForm, setEditForm] = useState<Record<string, string>>({})
   const [assignUsers, setAssignUsers] = useState<{ id: number; label: string }[]>([])
-  const isCampaignReadonlyUser =
-    String(user?.email || '').trim().toLowerCase() === 'sachin.dhakate@time4education.com'
+  const isCampaignReadonlyUser = isCampaignOnlyCrmEmail(user?.email)
+  const isExternalCampaignViewer = isCampaignExternalViewerEmail(user?.email)
   const canAssignUsers = Boolean(
     lead?.canAssignUsers ||
       user?.canAssignUsers ||
@@ -556,14 +557,18 @@ export default function LeadDetailPage() {
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Full Name</label>
                   <p className="text-lg font-semibold text-gray-800">{lead.fullName}</p>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mobile</label>
-                  <p className="text-lg font-semibold text-gray-800">{lead.mobile}</p>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email</label>
-                  <p className="text-gray-700">{lead.email}</p>
-                </div>
+                {!isExternalCampaignViewer && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mobile</label>
+                      <p className="text-lg font-semibold text-gray-800">{lead.mobile}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Email</label>
+                      <p className="text-gray-700">{lead.email}</p>
+                    </div>
+                  </>
+                )}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">State</label>
                   <p className="text-gray-700">{lead.state || '—'}</p>
@@ -607,7 +612,7 @@ export default function LeadDetailPage() {
                             </div>
                             <div className="space-y-0.5">
                               <p className="text-[11px] font-semibold text-gray-400 uppercase">Expected start</p>
-                              <p className="text-gray-700">{lead.expectedStartDate || '—'}</p>
+                              <p className="text-gray-700">{expectedStartDisplay(lead)}</p>
                             </div>
                             {lead.preferredCentreLocation ? (
                               <div className="space-y-0.5">
@@ -639,12 +644,14 @@ export default function LeadDetailPage() {
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Campaign</p>
                             <p className="text-gray-700 break-all">{utmCampaignDisplay(lead)}</p>
                           </div>
-                          <div className="space-y-0.5 min-w-0">
-                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Form</p>
-                            <p className="text-gray-700 truncate">
-                              {formDisplayName(lead)}
-                            </p>
-                          </div>
+                          {!isExternalCampaignViewer && (
+                            <div className="space-y-0.5 min-w-0">
+                              <p className="text-[11px] font-semibold text-gray-400 uppercase">Form</p>
+                              <p className="text-gray-700 truncate">
+                                {formDisplayName(lead)}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="space-y-1">
