@@ -6,7 +6,7 @@ import api from '@/lib/crmApi'
 import { Toaster, toast } from 'react-hot-toast'
 import { getWhatsAppUrl } from '@/lib/crmContactHelpers'
 import { getCrmDashboardReturnHref, isSafeCrmReturnHref } from '@/lib/crmDashboardFilters'
-import { formDisplayName, utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay, isFranchiseLead, isFranchiseLpGeoSource, crmPipelineForLead, expectedStartDisplay } from '@/lib/crmLeadKind'
+import { utmCampaignDisplay, utmContentDisplay, utmMediumDisplay, utmSourceDisplay, isFranchiseLead, isFranchiseLpGeoSource, crmPipelineForLead, expectedStartDisplay } from '@/lib/crmLeadKind'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { isCampaignOnlyCrmEmail, isCampaignExternalViewerEmail } from '@/lib/crmCampaignAccess'
 import { ChevronLeft, Clock } from 'lucide-react'
@@ -680,14 +680,10 @@ export default function LeadDetailPage() {
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Campaign</p>
                             <p className="text-gray-700 break-all">{utmCampaignDisplay(lead)}</p>
                           </div>
-                          {!isExternalCampaignViewer && (
-                            <div className="space-y-0.5 min-w-0">
-                              <p className="text-[11px] font-semibold text-gray-400 uppercase">Form</p>
-                              <p className="text-gray-700 truncate">
-                                {formDisplayName(lead)}
-                              </p>
-                            </div>
-                          )}
+                          <div className="space-y-0.5 min-w-0">
+                            <p className="text-[11px] font-semibold text-gray-400 uppercase">Content</p>
+                            <p className="text-gray-700 break-all">{utmContentDisplay(lead)}</p>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-1">
@@ -698,12 +694,15 @@ export default function LeadDetailPage() {
                           {utmCampaignDisplay(lead) !== '—' && (
                             <p className="text-sm text-gray-600">Campaign: {utmCampaignDisplay(lead)}</p>
                           )}
+                          {utmContentDisplay(lead) !== '—' && (
+                            <p className="text-sm text-gray-600">Content: {utmContentDisplay(lead)}</p>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
                 )}
-                {!isFranchiseLeadFlag && (utmMediumDisplay(lead) !== '—' || utmCampaignDisplay(lead) !== '—') && (
+                {!isFranchiseLeadFlag && (utmMediumDisplay(lead) !== '—' || utmCampaignDisplay(lead) !== '—' || utmContentDisplay(lead) !== '—') && (
                   <div className="col-span-2 space-y-1">
                     {utmMediumDisplay(lead) !== '—' && (
                       <>
@@ -715,6 +714,12 @@ export default function LeadDetailPage() {
                       <>
                         <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Campaign</label>
                         <p className="text-gray-700">{utmCampaignDisplay(lead)}</p>
+                      </>
+                    )}
+                    {utmContentDisplay(lead) !== '—' && (
+                      <>
+                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Content</label>
+                        <p className="text-gray-700">{utmContentDisplay(lead)}</p>
                       </>
                     )}
                   </div>
