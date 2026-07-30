@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/crmApi'
-import { utmCampaignDisplay, utmContentDisplay, utmMediumDisplay, utmSourceDisplay } from '@/lib/crmLeadKind'
+import { utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay } from '@/lib/crmLeadKind'
 import { toast } from 'react-hot-toast'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -369,7 +369,6 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Source</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Medium</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Content</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign Month</th>
                   {source === 'franchise' && (
@@ -449,14 +448,6 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     >
                       <div className="truncate">
                         <HighlightText text={utmCampaignDisplay(lead)} highlight={debouncedSearch} />
-                      </div>
-                    </td>
-                    <td
-                      className="px-4 py-4 text-gray-600 text-sm max-w-[160px]"
-                      title={utmContentDisplay(lead) !== '—' ? utmContentDisplay(lead) : undefined}
-                    >
-                      <div className="truncate">
-                        <HighlightText text={utmContentDisplay(lead)} highlight={debouncedSearch} />
                       </div>
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">

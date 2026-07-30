@@ -165,15 +165,6 @@ export function utmCampaignDisplay(lead: {
   return "—";
 }
 
-/** UTM content (ad creative / content variant). */
-export function utmContentDisplay(lead: {
-  utmContent?: string | null;
-} | null | undefined): string {
-  if (!lead) return "—";
-  const raw = String(lead.utmContent || "").trim();
-  return raw || "—";
-}
-
 /** @deprecated Prefer utmCampaignDisplay for UTM campaign; formDisplayName for form page. */
 export function campaignDisplayName(lead: {
   source?: string | null;
