@@ -169,7 +169,7 @@ export default function RemindersWidget({
         {meetings.length > 0 && (
           <div>
             <h4 className="font-semibold text-gray-700 mb-2">
-              Upcoming meetings
+              Upcoming meetings - ({meetings.length})
             </h4>
             <div className="max-h-[168px] overflow-y-auto pr-1">
               <ul className="space-y-2">
@@ -213,7 +213,7 @@ export default function RemindersWidget({
         {followUps.length > 0 && (
           <div>
             <h4 className="font-semibold text-gray-700 mb-2">
-              Follow-ups
+              Follow-ups - ({followUps.length})
             </h4>
             <div className="max-h-[168px] overflow-y-auto pr-1">
               <ul className="space-y-2">

@@ -857,6 +857,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                 "Source",
                 "Medium",
                 "Campaign",
+                "Content",
                 "Status",
                 "Created At",
             ];
@@ -873,6 +874,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                     l.utmSource || "",
                     l.utmMedium || "",
                     l.utmCampaign || l.campaign || "",
+                    l.utmContent || "",
                     l.status || "",
                     l.createdAt ? new Date(l.createdAt).toLocaleString() : "",
                 ];
