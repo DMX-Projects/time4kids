@@ -20,8 +20,8 @@ export const CAMPAIGN_EXTERNAL_VIEWER_EMAILS = new Set<string>([
 export const BCWEBWISE_AGENCY_EMAILS = new Set<string>(["bcwebwise.agency@gmail.com"]);
 export const ANTS_AGENCY_EMAILS = new Set<string>(["ants.agency@gmail.com"]);
 export const AGENCY_VIEWER_EMAILS = new Set<string>([
-  ...BCWEBWISE_AGENCY_EMAILS,
-  ...ANTS_AGENCY_EMAILS,
+  "bcwebwise.agency@gmail.com",
+  "ants.agency@gmail.com",
 ]);
 
 export const AGENCY_VIEWER_LABELS: Record<string, string> = {
