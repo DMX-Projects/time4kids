@@ -72,6 +72,7 @@ const getCategoryColumns = (categoryId: string, source?: string) => {
         categoryId === "franchise" ||
         categoryId === "campaign" ||
         categoryId === "google" ||
+        categoryId === "lp_wb" ||
         categoryId === "july_meta" ||
         categoryId === "youtube" ||
         FRANCHISE_OTHERS_SOURCES.has(categoryId)
@@ -100,6 +101,7 @@ const CATEGORIES = [
 
 const CAMPAIGN_CHANNEL_CATEGORIES = [
     { id: "google", label: "Google", bg: "bg-amber-50 text-amber-800", subkey: "lp" },
+    { id: "lp_wb", label: "Ants", bg: "bg-teal-50 text-teal-800", subkey: "ants" },
     { id: "july_meta", label: "META", bg: "bg-fuchsia-50 text-fuchsia-800", subkey: "meta" },
     { id: "youtube", label: "YouTube", bg: "bg-red-50 text-red-800", subkey: "yt" },
 ];
@@ -240,13 +242,23 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
             ];
         if (source === "others") return FRANCHISE_OTHERS_CHANNEL_CATEGORIES;
         if (source === "admission_others") return ADMISSION_OTHERS_CHANNEL_CATEGORIES;
-        if (source === "google" || source === "july_lp" || source === "lp_wb") {
+        if (source === "google" || source === "july_lp") {
             return [
                 {
                     id: "campaign",
                     label: "Google Leads",
                     bg: "bg-amber-50 text-amber-800",
                     subkey: "lp",
+                },
+            ];
+        }
+        if (source === "lp_wb") {
+            return [
+                {
+                    id: "campaign",
+                    label: "Ants Leads",
+                    bg: "bg-teal-50 text-teal-800",
+                    subkey: "ants",
                 },
             ];
         }
@@ -342,16 +354,14 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
             const normalizedData: any = {};
             Object.keys(data).forEach((k) => {
                 const cityData = { ...(data[k] || {}) };
-                // Merge LP TKKTAM + LP WB into one Google bucket (legacy keys).
+                // Merge legacy july_lp into Google; keep Ants (lp_wb) separate.
                 const googleBucket = { ...(cityData.google || {}) };
-                for (const legacy of ["july_lp", "lp_wb"] as const) {
-                    const part = cityData[legacy];
-                    if (part && typeof part === "object") {
-                        Object.entries(part).forEach(([status, count]) => {
-                            googleBucket[status] = (googleBucket[status] || 0) + Number(count || 0);
-                        });
-                        delete cityData[legacy];
-                    }
+                const part = cityData.july_lp;
+                if (part && typeof part === "object") {
+                    Object.entries(part).forEach(([status, count]) => {
+                        googleBucket[status] = (googleBucket[status] || 0) + Number(count || 0);
+                    });
+                    delete cityData.july_lp;
                 }
                 if (Object.keys(googleBucket).length > 0) {
                     cityData.google = googleBucket;
