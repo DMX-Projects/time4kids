@@ -21,13 +21,15 @@ export function isFranchiseLpGeoSource(source?: string | null): boolean {
 
 /** True when lead came from Meta Instant Form (not a website LP). */
 export function isMetaInstantFormLead(lead: {
+  source?: string | null;
   utmSource?: string | null;
   landingPageUrl?: string | null;
 } | null | undefined): boolean {
   if (!lead) return false;
   const utm = String(lead.utmSource || "").trim().toLowerCase();
   if (utm === "facebook_lead_ads") return true;
-  return false;
+  const source = String(lead.source || "").trim().toLowerCase();
+  return source === "july_meta" || source === "july-meta" || source === "facebook_lead_ads";
 }
 
 /** Form page names for July LP / Meta forms. */

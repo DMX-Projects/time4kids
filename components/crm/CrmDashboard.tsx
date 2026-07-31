@@ -19,7 +19,7 @@ import {
 } from "@/lib/crmDashboardFilters";
 import DashboardStats from "@/components/crm/admin/DashboardStats";
 import LeadsTable from "@/components/crm/admin/LeadsTable";
-import { isCampaignOnlyCrmEmail, isCampaignExternalViewerEmail } from "@/lib/crmCampaignAccess";
+import { isCampaignOnlyCrmEmail, isCampaignExternalViewerEmail, isAgencyCrmEmail, agencyViewerLabel, isRestrictedCrmViewerEmail } from "@/lib/crmCampaignAccess";
 import DateRangePicker from "@/components/crm/admin/DateRangePicker";
 import CitySelector from "@/components/crm/admin/CitySelector";
 import StateSelector from "@/components/crm/admin/StateSelector";
@@ -318,12 +318,14 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
     const isCrmUser = normalizeRole(user?.role) === "crm";
     const isCampaignOnlyUser = isCampaignOnlyCrmEmail(user?.email);
+    const isAgencyUser = isAgencyCrmEmail(user?.email);
+    const isRestrictedViewer = isRestrictedCrmViewerEmail(user?.email);
     const isExternalCampaignViewer = isCampaignExternalViewerEmail(user?.email);
     const returnPath = view === "reports" ? "/crm-admin/reports" : "/crm-admin";
     const selectedLeadType = leadTypeFromSource(selectedSource);
     const selectedSubFilter = subFilterFromSource(selectedSource);
 
-    // External campaign viewer has Dashboard only — block direct /reports URL access.
+    // External campaign / agency viewer has Dashboard only — block direct /reports URL access.
     useEffect(() => {
         if (!authLoading && user && isExternalCampaignViewer && view === "reports") {
             router.replace("/crm-admin");
@@ -477,6 +479,10 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     }, [filtersReady, currentSnapshot, pathname, router]);
 
     const getHeaderTitle = () => {
+        if (isAgencyUser) {
+            const label = agencyViewerLabel(user?.email);
+            return view === "reports" ? `${label} Reports` : `${label} Dashboard`;
+        }
         if (isCampaignOnlyUser) {
             return view === "reports" ? "Paid Campaign Reports" : "Paid Campaign Dashboard";
         }
@@ -524,19 +530,23 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         selectedSource === "admission_others" ? ADMISSION_OTHERS_CHANNEL_FILTERS : OTHERS_CHANNEL_FILTERS;
     const isFranchiseLpGeoView = isFranchiseLpGeoChannel(selectedCampaignChannel);
     // All campaign channels (Web/FB/Insta + LP) use franchise status workflow
+    // Agency viewers see Meta/FB + landing — use franchise status list for filters.
     const isFranchise =
+        isAgencyUser ||
         selectedSource === "franchise" ||
         selectedSource === "campaign" ||
         selectedSource === "franchise_all" ||
         selectedSource === "others";
-    const apiSource = apiSourceParam(selectedSource, selectedCampaignChannel);
+    const apiSource = isAgencyUser
+        ? "agency"
+        : apiSourceParam(selectedSource, selectedCampaignChannel);
     const apiStatus = apiStatusParam(selectedStatus);
     // Paid Campaign leads (LP + Meta inline) use franchise-lp state/city lists — same as the forms.
     const usesFranchiseLpGeo = isFranchiseLpGeoView || selectedSource === "campaign";
     const hidesCentreForCampaignChannel = usesFranchiseLpGeo;
     // Select Centre only for Admission — hidden for Franchise Lead (and when Lead = All)
     const showCentreSelector =
-        !isCampaignOnlyUser &&
+        !isRestrictedViewer &&
         selectedLeadType === "admission" &&
         !hidesCentreForCampaignChannel;
     const activeCentreIds = useMemo(
@@ -567,10 +577,14 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     }, [selectedUserId]);
 
     useEffect(() => {
-        if (!isCampaignOnlyUser) return;
-        // Hard lock this login to Paid Campaign only.
-        if (selectedSource !== "campaign") {
+        if (!isCampaignOnlyUser && !isAgencyUser) return;
+        // Hard lock campaign-only → Paid Campaign; agency → landing + Facebook/Meta.
+        if (isCampaignOnlyUser && selectedSource !== "campaign") {
             setSelectedSource("campaign");
+        }
+        if (isAgencyUser && selectedSource !== "landing") {
+            // Keep a stable non-editable source label in UI filters; API uses `agency`.
+            setSelectedSource("landing");
         }
         if (selectedCampaignChannel !== "") {
             setSelectedCampaignChannel("");
@@ -580,7 +594,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         if (selectedUserId !== "") {
             setSelectedUserId("");
         }
-    }, [isCampaignOnlyUser, selectedSource, selectedCampaignChannel, selectedUserId]);
+    }, [isCampaignOnlyUser, isAgencyUser, selectedSource, selectedCampaignChannel, selectedUserId]);
 
     const resetOnLeadChange = () => {
         setSelectedStatus("all");
@@ -718,7 +732,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     }, [mediumOptions, selectedUtmMedium]);
 
     useEffect(() => {
-        if (!isCrmUser || isCampaignOnlyUser) return;
+        if (!isCrmUser || isRestrictedViewer) return;
         let cancelled = false;
         const params = new URLSearchParams();
         params.set("forAssign", "1");
@@ -743,7 +757,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [isCrmUser, isCampaignOnlyUser, usersApiPipeline, selectedState, selectedCity]);
+    }, [isCrmUser, isRestrictedViewer, usersApiPipeline, selectedState, selectedCity]);
 
     useEffect(() => {
         if (!selectedUserId) return;
@@ -980,7 +994,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                     <div className="flex flex-col gap-3">
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap items-end gap-3 w-full pb-2">
-                            {!isCampaignOnlyUser && (
+                            {!isRestrictedViewer && (
                                 <div className="flex-1 min-w-[140px] w-full">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Lead Source</label>
                                      <SearchableSelect
@@ -992,7 +1006,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
-                            {!isCampaignOnlyUser && (selectedLeadType === "franchise" || selectedLeadType === "admission") && (
+                            {!isRestrictedViewer && (selectedLeadType === "franchise" || selectedLeadType === "admission") && (
                                 <div className="flex-1 min-w-[140px] w-full">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Lead Source</label>
                                     <SearchableSelect
@@ -1007,7 +1021,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
-                            {isCampaignView && !isCampaignOnlyUser && (
+                            {isCampaignView && !isRestrictedViewer && (
                                 <div className="flex-1 min-w-[140px]">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Select Channel</label>
                                     <SearchableSelect
@@ -1032,7 +1046,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
-                            {isCampaignView && !isCampaignOnlyUser && (
+                            {isCampaignView && !isRestrictedViewer && (
                                 <div className="flex-1 min-w-[160px]">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Select Campaign</label>
                                     <SearchableSelect
@@ -1050,7 +1064,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
-                            {isCampaignView && !isCampaignOnlyUser && view !== "reports" && (
+                            {isCampaignView && !isRestrictedViewer && view !== "reports" && (
                                 <div className="flex-1 min-w-[160px]">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Medium</label>
                                     <SearchableSelect
@@ -1096,7 +1110,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
-                            {!isCampaignOnlyUser && (
+                            {!isRestrictedViewer && (
                                 <div className="flex-1 min-w-[140px]">
                                         <label className="mb-2 block text-sm font-semibold text-gray-700">Select User</label>
                                         <SearchableSelect
@@ -1281,7 +1295,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     hideContact={isExternalCampaignViewer}
                                     campaignViewer={isExternalCampaignViewer}
                                     title={
-                                        selectedSource === "all"
+                                        isAgencyUser
+                                            ? `${agencyViewerLabel(user?.email)} Leads`
+                                            : selectedSource === "all"
                                             ? "All Leads"
                                             : selectedSource === "campaign"
                                               ? selectedCampaignChannel

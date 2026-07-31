@@ -28,7 +28,7 @@ const COLORS = {
   july_lp: '#F59E0B',
   july_meta: '#EC4899',
   facebook_lead_ads: '#EC4899',
-  lp_wb: '#F59E0B',
+  lp_wb: '#0D9488',
   youtube: '#FF0000',
   admission: '#2563EB',
   contact: '#0EA5E9',
@@ -44,7 +44,8 @@ export default function LeadSourceChart({ data }: { data: any[] }) {
   const merged = new Map<string, number>()
   for (const item of data) {
     const raw = String(item.source || '')
-    const key = raw === 'july_lp' || raw === 'lp_wb' ? 'google' : raw
+    // BCWW Google LP only — keep Ants (lp_wb / West Bengal) as its own slice.
+    const key = raw === 'july_lp' ? 'google' : raw
     merged.set(key, (merged.get(key) || 0) + parseInt(item.count, 10))
   }
   const chartData = Array.from(merged.entries()).map(([source, count]) => ({
