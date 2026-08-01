@@ -1241,7 +1241,12 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         </>
                                     }
                                 >
-                                    <LeadSourceChart data={stats.sourceBreakdown} />
+                                    <LeadSourceChart
+                                        data={stats.sourceBreakdown}
+                                        meetingFixed={Number(stats.meetingFixed) || 0}
+                                        meetingDone={Number(stats.meetingDone) || 0}
+                                        showMeetings
+                                    />
                                     <ConversionFunnel
                                         data={stats.statusBreakdown}
                                         funnelMode={
