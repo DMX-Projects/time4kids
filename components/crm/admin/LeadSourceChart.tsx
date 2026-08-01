@@ -40,7 +40,17 @@ const COLORS = {
   other: '#6B7280',
 }
 
-export default function LeadSourceChart({ data }: { data: any[] }) {
+export default function LeadSourceChart({
+  data,
+  meetingFixed = 0,
+  meetingDone = 0,
+  showMeetings = false,
+}: {
+  data: any[]
+  meetingFixed?: number
+  meetingDone?: number
+  showMeetings?: boolean
+}) {
   const merged = new Map<string, number>()
   for (const item of data) {
     const raw = String(item.source || '')
@@ -56,7 +66,7 @@ export default function LeadSourceChart({ data }: { data: any[] }) {
   const total = chartData.reduce((sum, d) => sum + d.value, 0)
 
   return (
-    <div className="card">
+    <div className={`card ${showMeetings ? 'flex h-full flex-col' : ''}`}>
       <h3 className="text-xl font-bold text-gray-800 mb-4">Lead Source Breakdown</h3>
       {total === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">No leads for this filter yet.</p>
@@ -94,6 +104,22 @@ export default function LeadSourceChart({ data }: { data: any[] }) {
           />
         </PieChart>
       </ResponsiveContainer>
+      )}
+
+      {showMeetings && (
+        <div className="mt-auto border-t border-gray-100 pt-4">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Meetings</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg bg-sky-50 px-3 py-3 ring-1 ring-inset ring-sky-100">
+              <p className="text-xs font-semibold text-sky-700">Meeting fixed</p>
+              <p className="mt-1 text-2xl font-bold text-sky-900">{meetingFixed}</p>
+            </div>
+            <div className="rounded-lg bg-emerald-50 px-3 py-3 ring-1 ring-inset ring-emerald-100">
+              <p className="text-xs font-semibold text-emerald-700">Meeting done</p>
+              <p className="mt-1 text-2xl font-bold text-emerald-900">{meetingDone}</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

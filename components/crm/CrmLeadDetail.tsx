@@ -279,6 +279,8 @@ export default function LeadDetailPage() {
         assignedUserId: '',
         meetingDate: toLocalDatetimeString(lead.meetingDate),
         nextFollowUpDate: toLocalDatetimeString(lead.nextFollowUpDate),
+        meetingFixed: lead.meetingFixed ? '1' : '',
+        meetingDone: lead.meetingDone ? '1' : '',
       })
     }
   }, [lead])
@@ -410,6 +412,8 @@ export default function LeadDetailPage() {
       await api.patch(`/leads/${params.id}`, {
         meetingDate: editForm.meetingDate ? new Date(editForm.meetingDate).toISOString() : null,
         nextFollowUpDate: editForm.nextFollowUpDate ? new Date(editForm.nextFollowUpDate).toISOString() : null,
+        meetingFixed: Boolean(editForm.meetingFixed),
+        meetingDone: Boolean(editForm.meetingDone),
         status: editForm.status,
       })
 
@@ -746,43 +750,31 @@ export default function LeadDetailPage() {
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned</label>
                     {canAssignUsers ? (
-                      <>
-                        <div className="flex gap-2 items-stretch">
-                          <select
-                            value={editForm.assignedUserId || ''}
-                            onChange={(e) =>
-                              setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))
-                            }
-                            className="form-input w-full text-sm font-semibold text-gray-800"
-                            disabled={!isEditable && !canAssignUsers}
-                          >
-                            <option value="">Select user</option>
-                            {assignUserOptions.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={handleAssign}
-                            disabled={saving}
-                            className="btn-primary text-sm py-1.5 px-4 whitespace-nowrap disabled:opacity-50"
-                          >
-                            {saving ? '…' : 'Assign'}
-                          </button>
-                        </div>
-                        {lead.assignedUserLabel ? (
-                          <p className="text-sm text-gray-600">
-                            Assigned to{' '}
-                            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 font-bold text-blue-700 ring-1 ring-inset ring-blue-200">
-                              {lead.assignedUserLabel}
-                            </span>
-                          </p>
-                        ) : (
-                          <p className="text-sm text-gray-400">Not assigned yet</p>
-                        )}
-                      </>
+                      <div className="flex gap-2 items-stretch">
+                        <select
+                          value={editForm.assignedUserId || ''}
+                          onChange={(e) =>
+                            setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))
+                          }
+                          className="form-input w-full text-sm font-semibold text-gray-800"
+                          disabled={!isEditable && !canAssignUsers}
+                        >
+                          <option value="">Select user</option>
+                          {assignUserOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={handleAssign}
+                          disabled={saving}
+                          className="btn-primary text-sm py-1.5 px-4 whitespace-nowrap disabled:opacity-50"
+                        >
+                          {saving ? '…' : 'Assign'}
+                        </button>
+                      </div>
                     ) : lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
                       <p className="text-gray-700 font-semibold">
                         {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
@@ -857,6 +849,42 @@ export default function LeadDetailPage() {
                           className="form-input text-sm w-full"
                         />
                       </div>
+                      {isFranchiseLeadFlag && (
+                        <div className="col-span-1 sm:col-span-2 flex flex-wrap items-center gap-6 pt-1">
+                          <label className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(editForm.meetingFixed)}
+                              onChange={(e) => {
+                                const checked = e.target.checked
+                                setEditForm((f) => ({
+                                  ...f,
+                                  meetingFixed: checked ? '1' : '',
+                                  meetingDone: checked ? f.meetingDone : '',
+                                }))
+                              }}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            Meeting fixed
+                          </label>
+                          <label className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(editForm.meetingDone)}
+                              onChange={(e) => {
+                                const checked = e.target.checked
+                                setEditForm((f) => ({
+                                  ...f,
+                                  meetingDone: checked ? '1' : '',
+                                  meetingFixed: checked ? '1' : f.meetingFixed,
+                                }))
+                              }}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            Meeting done
+                          </label>
+                        </div>
+                      )}
                       <div className="col-span-1 sm:col-span-2 flex justify-end mt-2">
                         <button
                           onClick={handleSaveStatus}
@@ -875,7 +903,7 @@ export default function LeadDetailPage() {
                       <p className="text-gray-700 mt-1 italic">{lead.comments || 'No original message'}</p>
                     </div>
 
-                    <div className="col-span-2 flex gap-6 text-sm py-4 border-t border-gray-100 mt-2">
+                    <div className="col-span-2 flex flex-wrap gap-6 text-sm py-4 border-t border-gray-100 mt-2">
                       {isFranchiseLeadFlag && (
                         <div>
                           <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting Date</label>
@@ -886,6 +914,18 @@ export default function LeadDetailPage() {
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Next Follow-up</label>
                         <p className="font-medium text-blue-600">{formatLeadDateTime(lead.nextFollowUpDate)}</p>
                       </div>
+                      {isFranchiseLeadFlag && (
+                        <>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting fixed</label>
+                            <p className="font-medium">{lead.meetingFixed ? 'Yes' : 'No'}</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Meeting done</label>
+                            <p className="font-medium">{lead.meetingDone ? 'Yes' : 'No'}</p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </>
                 )}
