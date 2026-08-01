@@ -385,9 +385,20 @@ export default function LeadDetailPage() {
 
     setSaving(true)
     try {
-      await api.patch(`/leads/${params.id}`, { assignedUserId: nextUser })
+      const response = await api.patch(`/leads/${params.id}`, { assignedUserId: nextUser })
       toast.success('Lead assigned successfully!')
-      loadLead()
+      // Prefer PATCH body — assignment already saved even if this lead leaves the
+      // assigner's territory view (ZM/RM forwarded lead → their manager).
+      if (response?.data) {
+        setLead(response.data)
+      }
+      try {
+        const refreshed = await api.get(`/leads/${params.id}`)
+        setLead(refreshed.data)
+      } catch {
+        // Expected when the lead is no longer in this ZM/RM's visible list.
+        goBackToDashboard()
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.response?.data?.detail || 'Failed to assign')
     } finally {
