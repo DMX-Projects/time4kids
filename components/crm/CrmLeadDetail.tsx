@@ -4,11 +4,82 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import api from '@/lib/crmApi'
 import { Toaster, toast } from 'react-hot-toast'
+import { getWhatsAppUrl } from '@/lib/crmContactHelpers'
 import { getCrmDashboardReturnHref, isSafeCrmReturnHref } from '@/lib/crmDashboardFilters'
 import { utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay, isFranchiseLead, isFranchiseLpGeoSource, crmPipelineForLead, expectedStartDisplay, isMetaInstantFormLead } from '@/lib/crmLeadKind'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { isCampaignExternalViewerEmail, isRestrictedCrmViewerEmail } from '@/lib/crmCampaignAccess'
 import { ChevronLeft } from 'lucide-react'
+
+interface LeadTemplate {
+  whatsapp: string
+  emailSubject: string
+  emailBody: string
+}
+
+const getTemplatesForLead = (lead: any): LeadTemplate => {
+  const isFranchise = isFranchiseLead(lead)
+  const isAdmission = lead.leadKind === 'enquiry' && lead.enquiryType === 'ADMISSION'
+  const isCenterPage = lead.leadKind === 'enquiry' && lead.enquiryType === 'CONTACT'
+
+  if (isFranchise) {
+    return {
+      whatsapp: 'Hi! I am from T.I.M.E. Kids. We received your franchise enquiry and would like to connect with you. When would be a good time to talk?',
+      emailSubject: 'T.I.M.E. Kids – Follow-up on your franchise enquiry',
+      emailBody: `Hi,
+
+I'm following up on your franchise enquiry with T.I.M.E. Kids.
+
+We'd like to discuss the opportunity with you. Please let us know a convenient time for a quick call.
+
+Best regards,
+T.I.M.E. Kids Team`,
+    }
+  }
+
+  if (isAdmission) {
+    return {
+      whatsapp: 'Hi! I am from T.I.M.E. Kids. We received your preschool admission enquiry and would like to connect with you to discuss the details. When would be a good time to talk?',
+      emailSubject: 'T.I.M.E. Kids Preschool – Follow-up on your admission enquiry',
+      emailBody: `Hi,
+
+I'm following up on your preschool admission enquiry with T.I.M.E. Kids.
+
+We'd like to invite you and your child for a visit to our center and share the details. Please let us know a convenient time to connect.
+
+Best regards,
+T.I.M.E. Kids Team`,
+    }
+  }
+
+  if (isCenterPage) {
+    return {
+      whatsapp: 'Hi! I am from T.I.M.E. Kids. We received your enquiry and would like to connect with you to assist. When would be a good time to talk?',
+      emailSubject: 'T.I.M.E. Kids – Follow-up on your enquiry',
+      emailBody: `Hi,
+
+I'm following up on your enquiry with T.I.M.E. Kids.
+
+We'd like to help answer any questions you have. Please let us know a convenient time for a quick call.
+
+Best regards,
+T.I.M.E. Kids Team`,
+    }
+  }
+
+  return {
+    whatsapp: 'Hi! I am from T.I.M.E. Kids. We saw that you registered interest via our online campaign. When would be a good time to talk?',
+    emailSubject: 'T.I.M.E. Kids – Information regarding your inquiry',
+    emailBody: `Hi,
+
+I'm following up on your interest registered via our online campaign with T.I.M.E. Kids.
+
+We'd like to connect and share more details with you. Please let us know a convenient time for a quick call.
+
+Best regards,
+T.I.M.E. Kids Team`,
+  }
+}
 
 /** TKPL Zonal Managers + CRM Super Admins who may assign leads. */
 const CRM_LEAD_ASSIGNER_EMAILS = new Set([
@@ -162,11 +233,17 @@ export default function LeadDetailPage() {
   const [note, setNote] = useState('')
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [sendingDirectEmail, setSendingDirectEmail] = useState(false)
+  const [emailComposeOpen, setEmailComposeOpen] = useState(false)
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailBody, setEmailBody] = useState('')
+  const [whatsappComposeOpen, setWhatsappComposeOpen] = useState(false)
+  const [whatsappMessage, setWhatsappMessage] = useState('')
   const [editForm, setEditForm] = useState<Record<string, string>>({})
   const [assignUsers, setAssignUsers] = useState<{ id: number; label: string }[]>([])
   const isCampaignReadonlyUser = isRestrictedCrmViewerEmail(user?.email)
   const isExternalCampaignViewer = isCampaignExternalViewerEmail(user?.email)
-  // Agency / external viewers: hide assign, follow-ups, original message, meeting fields.
+  // Agency / external / campaign viewers only — normal CRM logins keep full lead tools.
   const hideCrmOpsFields =
     isCampaignReadonlyUser ||
     isExternalCampaignViewer ||
@@ -365,6 +442,79 @@ export default function LeadDetailPage() {
     }
   }
 
+  const openWhatsAppCompose = () => {
+    if (!lead?.mobile?.trim()) {
+      toast.error('Lead has no mobile number')
+      return
+    }
+    const templates = getTemplatesForLead(lead)
+    setWhatsappMessage(templates.whatsapp)
+    setWhatsappComposeOpen(true)
+  }
+
+  const handleOpenWhatsApp = async () => {
+    if (!lead?.mobile?.trim()) {
+      toast.error('Lead has no mobile number')
+      return
+    }
+    if (!whatsappMessage.trim()) {
+      toast.error('Message is required')
+      return
+    }
+    const message = whatsappMessage.trim()
+    try {
+      await api.post('/leads/send-reminder', {
+        leadId: params.id,
+        channel: 'whatsapp',
+        body: message,
+      })
+    } catch {
+      // Still open WhatsApp even if history logging fails.
+    }
+    window.open(getWhatsAppUrl(lead.mobile, message), '_blank', 'noopener,noreferrer')
+    setWhatsappComposeOpen(false)
+    toast.success('WhatsApp opened — logged in History')
+    loadLead()
+  }
+
+  const openEmailCompose = () => {
+    if (!lead?.email?.trim()) {
+      toast.error('Lead has no email address')
+      return
+    }
+    const templates = getTemplatesForLead(lead)
+    setEmailSubject(templates.emailSubject)
+    setEmailBody(templates.emailBody)
+    setEmailComposeOpen(true)
+  }
+
+  const handleDirectEmail = async () => {
+    if (!lead?.email?.trim()) {
+      toast.error('Lead has no email address')
+      return
+    }
+    if (!emailSubject.trim() || !emailBody.trim()) {
+      toast.error('Subject and body are required')
+      return
+    }
+    setSendingDirectEmail(true)
+    try {
+      await api.post('/leads/send-reminder', {
+        leadId: params.id,
+        channel: 'email',
+        subject: emailSubject.trim(),
+        body: emailBody.trim(),
+      })
+      toast.success('Email sent from franchise@timekidspreschools.com')
+      setEmailComposeOpen(false)
+      loadLead()
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to send email')
+    } finally {
+      setSendingDirectEmail(false)
+    }
+  }
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
@@ -400,9 +550,9 @@ export default function LeadDetailPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className={`grid grid-cols-1 gap-6 ${hideCrmOpsFields ? '' : 'lg:grid-cols-3'}`}>
           {/* Main Details */}
-          <div className="space-y-6">
+          <div className={`space-y-6 ${hideCrmOpsFields ? '' : 'lg:col-span-2'}`}>
             <div className="card">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Lead Details</h2>
@@ -744,9 +894,285 @@ export default function LeadDetailPage() {
 
           </div>
 
+          {!hideCrmOpsFields && (
+            <div className="space-y-6">
+              <div className="card">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={openWhatsAppCompose}
+                    disabled={!lead.mobile}
+                    className="block w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    WhatsApp
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openEmailCompose}
+                    disabled={!lead.email}
+                    className="block w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    Email
+                  </button>
+                </div>
+              </div>
+
+              <div className="card">
+                <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                  History
+                </h3>
+
+                <div className="relative border-l-2 border-gray-100 ml-3 space-y-8 pb-4">
+                  {[
+                    ...(lead.notes || []).map((n: any) => ({
+                      id: n.id,
+                      type: 'comment',
+                      content: n.content,
+                      date: new Date(n.createdAt),
+                      bgColor: 'bg-blue-50',
+                      textColor: 'text-blue-800',
+                      dotColor: 'bg-blue-500',
+                      status: n.status,
+                    })),
+                    ...(lead.auditLogs || []).map((a: any) => ({
+                      id: a.id,
+                      type: 'audit',
+                      content:
+                        a.action === 'status_change' ? (
+                          <span>
+                            Status changed to{' '}
+                            <span className="font-bold uppercase">
+                              {a.newValues?.status?.replace('_', ' ')}
+                            </span>
+                          </span>
+                        ) : a.action === 'create' ? (
+                          'Lead created in system'
+                        ) : (
+                          `${a.action.replace('_', ' ')} action`
+                        ),
+                      date: new Date(a.createdAt),
+                      user: a.user?.fullName,
+                      bgColor: 'bg-purple-50',
+                      textColor: 'text-purple-800',
+                      dotColor: 'bg-purple-500',
+                    })),
+                    ...(lead.notificationLogs || []).map((l: any) => ({
+                      id: l.id,
+                      type: 'notification',
+                      content: `${l.type === 'whatsapp' ? 'WhatsApp' : 'Email'} sent`,
+                      date: new Date(l.createdAt),
+                      channel: l.type === 'whatsapp' ? 'WhatsApp' : 'Email',
+                      status: l.status || 'sent',
+                      bgColor: 'bg-green-50',
+                      textColor: 'text-green-800',
+                      dotColor: 'bg-green-500',
+                    })),
+                    ...(lead.callHistory || []).map((c: any) => ({
+                      id: c.id,
+                      type: 'call',
+                      content: (
+                        <div>
+                          <p className="font-bold">{c.isAnswered ? 'Answered Call' : 'No Answer'}</p>
+                          {c.duration > 0 && (
+                            <p className="text-xs text-gray-500">Duration: {c.duration} mins</p>
+                          )}
+                          {c.notes && <p className="mt-1">{c.notes}</p>}
+                        </div>
+                      ),
+                      date: new Date(c.createdAt),
+                      bgColor: 'bg-rose-50',
+                      textColor: 'text-rose-800',
+                      dotColor: 'bg-rose-500',
+                    })),
+                  ]
+                    .sort((a, b) => b.date.getTime() - a.date.getTime())
+                    .map((item, idx) => (
+                      <div key={`${item.type}-${item.id || idx}`} className="relative pl-8">
+                        <div
+                          className={`absolute left-[-9px] top-1 w-4 h-4 rounded-full border-4 border-white shadow-sm ${item.dotColor}`}
+                        />
+                        <div
+                          className={`p-4 rounded-xl ${item.bgColor} border border-gray-100 shadow-sm transition-all hover:shadow-md`}
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <span
+                              className={`text-xs font-bold uppercase tracking-wider ${item.textColor}`}
+                            >
+                              {item.type === 'notification'
+                                ? item.channel || 'Communication'
+                                : item.type.replace('_', ' ')}
+                            </span>
+                            <span className="text-[10px] text-gray-500 font-medium">
+                              {item.date.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-line">
+                            {item.content}
+                          </div>
+                          {item.user && (
+                            <div className="mt-2 text-[10px] text-gray-400 font-medium">
+                              Action by: {item.user}
+                            </div>
+                          )}
+                          {item.status && (
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              {item.type === 'comment' ? (
+                                <>
+                                  <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">
+                                    Status:
+                                  </span>
+                                  <span
+                                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                      STATUS_COLORS[item.status] ||
+                                      'bg-gray-100 text-gray-800 border border-gray-200'
+                                    }`}
+                                  >
+                                    {STATUS_LABELS[item.status] || item.status.replace('_', ' ')}
+                                  </span>
+                                </>
+                              ) : (
+                                <span
+                                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                    item.status === 'sent'
+                                      ? 'bg-green-200 text-green-800'
+                                      : 'bg-red-100 text-red-800'
+                                  }`}
+                                >
+                                  {item.status.toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  <div className="absolute bottom-0 left-[-9px] w-4 h-4 rounded-full border-4 border-white bg-gray-200 shadow-sm" />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
+      {whatsappComposeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+            <div className="border-b border-gray-100 px-5 py-4">
+              <h3 className="text-lg font-bold text-gray-800">Compose WhatsApp</h3>
+              <p className="mt-1 text-xs text-gray-500">
+                Edit the message, then open WhatsApp to send
+              </p>
+            </div>
+            <div className="space-y-3 px-5 py-4">
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
+                  To
+                </label>
+                <input
+                  type="text"
+                  value={lead.mobile || ''}
+                  readOnly
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
+                  Message
+                </label>
+                <textarea
+                  value={whatsappMessage}
+                  onChange={(e) => setWhatsappMessage(e.target.value)}
+                  rows={8}
+                  className="w-full resize-y rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-100"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setWhatsappComposeOpen(false)}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenWhatsApp}
+                className="rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600"
+              >
+                Open WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {emailComposeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+            <div className="border-b border-gray-100 px-5 py-4">
+              <h3 className="text-lg font-bold text-gray-800">Compose email</h3>
+              <p className="mt-1 text-xs text-gray-500">
+                From: franchise@timekidspreschools.com · Edit then send
+              </p>
+            </div>
+            <div className="space-y-3 px-5 py-4">
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
+                  To
+                </label>
+                <input
+                  type="text"
+                  value={lead.email || ''}
+                  readOnly
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-gray-400">
+                  Body
+                </label>
+                <textarea
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  rows={10}
+                  className="w-full resize-y rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setEmailComposeOpen(false)}
+                disabled={sendingDirectEmail}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDirectEmail}
+                disabled={sendingDirectEmail}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {sendingDirectEmail ? 'Sending…' : 'Send email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
