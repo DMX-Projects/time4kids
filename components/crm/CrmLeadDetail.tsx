@@ -800,14 +800,23 @@ export default function LeadDetailPage() {
                           </button>
                         </div>
                         <p className="text-sm text-gray-600">
-                          {lead.assignedUserLabel
-                            ? `Assigned to ${lead.assignedUserLabel}`
-                            : 'Not assigned yet'}
+                          {lead.assignedUserLabel ? (
+                            <>
+                              Assigned to{' '}
+                              <span className="font-semibold text-[#085390] bg-amber-50 px-1.5 py-0.5 rounded">
+                                {lead.assignedUserLabel}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-gray-400">Not assigned yet</span>
+                          )}
                         </p>
                       </div>
                     ) : lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
                       <p className="text-gray-700 font-semibold">
-                        {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
+                        <span className="text-[#085390] bg-amber-50 px-1.5 py-0.5 rounded">
+                          {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
+                        </span>
                       </p>
                     ) : (
                       <p className="text-gray-400 text-sm">—</p>
