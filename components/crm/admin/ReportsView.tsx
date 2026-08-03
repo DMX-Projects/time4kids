@@ -48,6 +48,7 @@ const FRANCHISE_CAMPAIGN_SOURCES = new Set([
     "july_lp",
     "july_meta",
     "lp_wb",
+    "ants_meta",
     "youtube",
 ]);
 
@@ -73,6 +74,7 @@ const getCategoryColumns = (categoryId: string, source?: string) => {
         categoryId === "campaign" ||
         categoryId === "google" ||
         categoryId === "lp_wb" ||
+        categoryId === "ants_meta" ||
         categoryId === "july_meta" ||
         categoryId === "youtube" ||
         FRANCHISE_OTHERS_SOURCES.has(categoryId)
@@ -100,9 +102,10 @@ const CATEGORIES = [
 ];
 
 const CAMPAIGN_CHANNEL_CATEGORIES = [
-    { id: "google", label: "Google", bg: "bg-amber-50 text-amber-800", subkey: "lp" },
-    { id: "lp_wb", label: "Ants", bg: "bg-teal-50 text-teal-800", subkey: "ants" },
-    { id: "july_meta", label: "META", bg: "bg-fuchsia-50 text-fuchsia-800", subkey: "meta" },
+    { id: "google", label: "BCWW_Google", bg: "bg-amber-50 text-amber-800", subkey: "lp" },
+    { id: "july_meta", label: "BCWW_Meta", bg: "bg-fuchsia-50 text-fuchsia-800", subkey: "meta" },
+    { id: "lp_wb", label: "Ants_Google", bg: "bg-teal-50 text-teal-800", subkey: "ants" },
+    { id: "ants_meta", label: "Ants_Meta", bg: "bg-emerald-50 text-emerald-800", subkey: "antsm" },
     { id: "youtube", label: "YouTube", bg: "bg-red-50 text-red-800", subkey: "yt" },
 ];
 
@@ -137,6 +140,7 @@ const CHANNEL_LABELS: Record<string, string> = {
     july_lp: "Google",
     july_meta: "META",
     lp_wb: "Ants_Google",
+    ants_meta: "Ants_Meta",
     youtube: "YouTube",
     whatsapp: "WhatsApp",
     sms: "SMS",
@@ -256,9 +260,19 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
             return [
                 {
                     id: "campaign",
-                    label: "Ants Leads",
+                    label: "Ants_Google Leads",
                     bg: "bg-teal-50 text-teal-800",
                     subkey: "ants",
+                },
+            ];
+        }
+        if (source === "ants_meta") {
+            return [
+                {
+                    id: "campaign",
+                    label: "Ants_Meta Leads",
+                    bg: "bg-emerald-50 text-emerald-800",
+                    subkey: "antsm",
                 },
             ];
         }
@@ -266,7 +280,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
             return [
                 {
                     id: "campaign",
-                    label: "META Leads",
+                    label: "BCWW_Meta Leads",
                     bg: "bg-fuchsia-50 text-fuchsia-800",
                     subkey: "meta",
                 },

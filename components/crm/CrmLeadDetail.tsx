@@ -8,7 +8,11 @@ import { getWhatsAppUrl } from '@/lib/crmContactHelpers'
 import { getCrmDashboardReturnHref, isSafeCrmReturnHref } from '@/lib/crmDashboardFilters'
 import { utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay, isFranchiseLead, isFranchiseLpGeoSource, crmPipelineForLead, expectedStartDisplay, isMetaInstantFormLead } from '@/lib/crmLeadKind'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { isCampaignExternalViewerEmail, isRestrictedCrmViewerEmail } from '@/lib/crmCampaignAccess'
+import {
+  isAgencyCrmEmail,
+  isCampaignExternalViewerEmail,
+  isRestrictedCrmViewerEmail,
+} from '@/lib/crmCampaignAccess'
 import { ChevronLeft } from 'lucide-react'
 
 interface LeadTemplate {
@@ -214,6 +218,7 @@ const SOURCE_LABELS: Record<string, string> = {
   july_lp: 'BCWW_Google',
   july_meta: 'BCWW_Meta',
   lp_wb: 'Ants_Google',
+  ants_meta: 'Ants_Meta',
   google: 'BCWW_Google',
   facebook_lead_ads: 'BCWW_Meta',
   youtube: 'YouTube',
@@ -243,11 +248,15 @@ export default function LeadDetailPage() {
   const [assignUsers, setAssignUsers] = useState<{ id: number; label: string }[]>([])
   const isCampaignReadonlyUser = isRestrictedCrmViewerEmail(user?.email)
   const isExternalCampaignViewer = isCampaignExternalViewerEmail(user?.email)
+  const isAgencyUser = isAgencyCrmEmail(user?.email) || Boolean(lead?.agencyCommentOnly)
   // Agency / external / campaign viewers only — normal CRM logins keep full lead tools.
   const hideCrmOpsFields =
     isCampaignReadonlyUser ||
     isExternalCampaignViewer ||
     Boolean(lead?.campaignViewer)
+  // Agency: comment box + History only (no status edit, WhatsApp, email, assignment).
+  const showAgencyCommentHistory = isAgencyUser
+  const showHistoryPanel = !hideCrmOpsFields || showAgencyCommentHistory
   const canAssignUsers = Boolean(
     lead?.canAssignUsers ||
       user?.canAssignUsers ||
@@ -396,7 +405,7 @@ export default function LeadDetailPage() {
         const refreshed = await api.get(`/leads/${params.id}`)
         setLead(refreshed.data)
       } catch {
-        // Expected when the lead is no longer in this ZM/RM's visible list.
+        // Only if this login still cannot open the lead after assign.
         goBackToDashboard()
       }
     } catch (error: any) {
@@ -444,16 +453,19 @@ export default function LeadDetailPage() {
 
   const handleAddNote = async () => {
     if (!note.trim()) {
-      toast.error('Please enter a note')
+      toast.error('Please enter a comment')
       return
     }
+    setSaving(true)
     try {
-      await api.post(`/leads/${params.id}/notes`, { content: note })
-      toast.success('Note added')
+      await api.post(`/leads/${params.id}/notes`, { content: note.trim() })
+      toast.success('Comment added')
       setNote('')
       loadLead()
-    } catch (error) {
-      toast.error('Failed to add note')
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || error.response?.data?.message || 'Failed to add comment')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -565,9 +577,9 @@ export default function LeadDetailPage() {
           </button>
         </div>
 
-        <div className={`grid grid-cols-1 gap-6 ${hideCrmOpsFields ? '' : 'lg:grid-cols-3'}`}>
+        <div className={`grid grid-cols-1 gap-6 ${showHistoryPanel ? 'lg:grid-cols-3' : ''}`}>
           {/* Main Details */}
-          <div className={`space-y-6 ${hideCrmOpsFields ? '' : 'lg:col-span-2'}`}>
+          <div className={`space-y-6 ${showHistoryPanel ? 'lg:col-span-2' : ''}`}>
             <div className="card">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Lead Details</h2>
@@ -761,30 +773,37 @@ export default function LeadDetailPage() {
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned</label>
                     {canAssignUsers ? (
-                      <div className="flex gap-2 items-stretch">
-                        <select
-                          value={editForm.assignedUserId || ''}
-                          onChange={(e) =>
-                            setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))
-                          }
-                          className="form-input w-full text-sm font-semibold text-gray-800"
-                          disabled={!isEditable && !canAssignUsers}
-                        >
-                          <option value="">Select user</option>
-                          {assignUserOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={handleAssign}
-                          disabled={saving}
-                          className="btn-primary text-sm py-1.5 px-4 whitespace-nowrap disabled:opacity-50"
-                        >
-                          {saving ? '…' : 'Assign'}
-                        </button>
+                      <div className="space-y-1.5">
+                        <div className="flex gap-2 items-stretch">
+                          <select
+                            value={editForm.assignedUserId || ''}
+                            onChange={(e) =>
+                              setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))
+                            }
+                            className="form-input w-full text-sm font-semibold text-gray-800"
+                            disabled={!isEditable && !canAssignUsers}
+                          >
+                            <option value="">Select user</option>
+                            {assignUserOptions.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={handleAssign}
+                            disabled={saving}
+                            className="btn-primary text-sm py-1.5 px-4 whitespace-nowrap disabled:opacity-50"
+                          >
+                            {saving ? '…' : 'Assign'}
+                          </button>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {lead.assignedUserLabel
+                            ? `Assigned to ${lead.assignedUserLabel}`
+                            : 'Not assigned yet'}
+                        </p>
                       </div>
                     ) : lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
                       <p className="text-gray-700 font-semibold">
@@ -907,6 +926,29 @@ export default function LeadDetailPage() {
                       </div>
                     </div>
                   </>
+                ) : showAgencyCommentHistory ? (
+                  <div className="col-span-2 pt-4 border-t border-gray-100 mt-2 space-y-3">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
+                      Add comment
+                    </label>
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      className="form-input w-full text-sm"
+                      rows={3}
+                      placeholder="Write a comment for this lead..."
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleAddNote}
+                        disabled={saving || !note.trim()}
+                        className="btn-primary text-sm py-1.5 px-6 disabled:opacity-50"
+                      >
+                        {saving ? 'Saving...' : 'Add comment'}
+                      </button>
+                    </div>
+                  </div>
                 ) : hideCrmOpsFields ? null : (
                   <>
                     <div className="col-span-2 pt-4 border-t border-gray-100 mt-2">
@@ -945,8 +987,9 @@ export default function LeadDetailPage() {
 
           </div>
 
-          {!hideCrmOpsFields && (
+          {showHistoryPanel && (
             <div className="space-y-6">
+              {!hideCrmOpsFields && (
               <div className="card">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
                 <div className="space-y-3">
@@ -968,6 +1011,7 @@ export default function LeadDetailPage() {
                   </button>
                 </div>
               </div>
+              )}
 
               <div className="card">
                 <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">

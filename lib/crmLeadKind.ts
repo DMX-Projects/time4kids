@@ -82,11 +82,28 @@ export function isWestBengalLpLead(lead: {
   return url.includes("timekids-lp-wb");
 }
 
+/** West Bengal territory (Ants) — LP + Instant Form / Meta leads with WB state. */
+export function isWestBengalTerritoryLead(lead: {
+  source?: string | null;
+  state?: string | null;
+  formName?: string | null;
+  pageType?: string | null;
+  landingPageUrl?: string | null;
+} | null | undefined): boolean {
+  if (!lead) return false;
+  if (isWestBengalLpLead(lead)) return true;
+  const state = String(lead.state || "").trim().toLowerCase();
+  if (!state) return false;
+  return state === "west bengal" || state === "wb" || state.includes("bengal");
+}
+
 function isMetaAdTraffic(lead: {
+  source?: string | null;
   utmSource?: string | null;
   utmMedium?: string | null;
 } | null | undefined): boolean {
   if (!lead) return false;
+  if (isMetaInstantFormLead(lead)) return true;
   const utm = String(lead.utmSource || "").trim().toLowerCase();
   if (utm === "facebook_lead_ads") return true;
   if (/(meta|facebook|\bfb\b|instagram|\big\b)/.test(utm)) return true;
@@ -116,11 +133,12 @@ function isGoogleAdTraffic(lead: {
 
 /**
  * UTM / channel source label for CRM tables & detail.
- * West Bengal LP: Google → Ants_Google, Meta → Ants_Meta.
- * Other LPs keep BCWW_* labels.
+ * West Bengal (Ants): Google → Ants_Google, Meta → Ants_Meta.
+ * BCWW (Bcwebwise) only for the 6 Instant-Form / TKKTAM states — never West Bengal.
  */
 export function utmSourceDisplay(lead: {
   source?: string | null;
+  state?: string | null;
   formName?: string | null;
   pageType?: string | null;
   utmSource?: string | null;
@@ -129,10 +147,12 @@ export function utmSourceDisplay(lead: {
 } | null | undefined): string {
   if (!lead) return "—";
 
-  if (isWestBengalLpLead(lead)) {
+  if (isWestBengalTerritoryLead(lead)) {
     if (isMetaAdTraffic(lead)) return "Ants_Meta";
     if (isGoogleAdTraffic(lead)) return "Ants_Google";
-    // WB page default (no UTM) is the Google LP.
+    const src = String(lead.source || "").trim().toLowerCase();
+    if (src === "july_meta" || src === "facebook_lead_ads") return "Ants_Meta";
+    // WB page / Google LP default.
     return "Ants_Google";
   }
 

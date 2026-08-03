@@ -3,9 +3,8 @@
  *
  * - Campaign-only (e.g. Sachin): paid campaign; can see contact; view-only writes in current backend.
  * - External viewer (campaign.viewer): paid campaign; no mobile/email; view-only; no Reports.
- * - Agency viewers:
- *   - Bcwebwise: 6-state landing + Facebook/Meta leads
- *   - Ants: West Bengal city landing pages only
+ * - Agency viewers (Bcwebwise / Ants): state-scoped leads; no mobile/email; comment + History only
+ *   (no status/assignment/WhatsApp/email edits).
  */
 
 export const CAMPAIGN_ONLY_CRM_EMAILS = new Set([

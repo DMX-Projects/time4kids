@@ -838,22 +838,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         try {
             const params = new URLSearchParams();
             params.append("limit", "10000");
-            if (dateRange.startDate) {
-                const start = new Date(dateRange.startDate);
-                start.setHours(0, 0, 0, 0);
-                params.append("startDate", start.toISOString());
-            }
-            if (dateRange.endDate) {
-                const end = new Date(dateRange.endDate);
-                end.setHours(23, 59, 59, 999);
-                params.append("endDate", end.toISOString());
-            }
-            if (selectedCity.length > 0) params.append("city", selectedCity.join(","));
-            if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
-            if (apiSource) params.append("source", apiSource);
-            if (apiStatus) params.append("status", apiStatus);
-            if (selectedUtmCampaign) params.append("campaign", selectedUtmCampaign);
-            if (selectedUtmMedium) params.append("medium", selectedUtmMedium);
+            // Same filters as the on-screen leads list (incl. state + userId).
+            appendLeadQueryParams(params);
             const response = await crmApi.get(`/leads?${params.toString()}`);
             const leads = response.data?.leads || [];
             if (leads.length === 0) {
