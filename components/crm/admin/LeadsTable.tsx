@@ -56,6 +56,7 @@ const SOURCE_LABELS: Record<string, string> = {
   july_lp: 'BCWW_Google',
   july_meta: 'BCWW_Meta',
   lp_wb: 'Ants_Google',
+  ants_meta: 'Ants_Meta',
   google: 'BCWW_Google',
   facebook_lead_ads: 'BCWW_Meta',
   admission: 'Admission',
