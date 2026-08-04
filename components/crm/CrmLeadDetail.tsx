@@ -254,9 +254,9 @@ export default function LeadDetailPage() {
     isCampaignReadonlyUser ||
     isExternalCampaignViewer ||
     Boolean(lead?.campaignViewer)
-  // Agency: comment box + History only (no status edit, WhatsApp, email, assignment).
-  const showAgencyCommentHistory = isAgencyUser
-  const showHistoryPanel = !hideCrmOpsFields || showAgencyCommentHistory
+  // Agency: History only (no comment box, status edit, WhatsApp, email, assignment).
+  const showAgencyHistory = isAgencyUser
+  const showHistoryPanel = !hideCrmOpsFields || showAgencyHistory
   const canAssignUsers = Boolean(
     lead?.canAssignUsers ||
       user?.canAssignUsers ||
@@ -935,29 +935,6 @@ export default function LeadDetailPage() {
                       </div>
                     </div>
                   </>
-                ) : showAgencyCommentHistory ? (
-                  <div className="col-span-2 pt-4 border-t border-gray-100 mt-2 space-y-3">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
-                      Add comment
-                    </label>
-                    <textarea
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      className="form-input w-full text-sm"
-                      rows={3}
-                      placeholder="Write a comment for this lead..."
-                    />
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        onClick={handleAddNote}
-                        disabled={saving || !note.trim()}
-                        className="btn-primary text-sm py-1.5 px-6 disabled:opacity-50"
-                      >
-                        {saving ? 'Saving...' : 'Add comment'}
-                      </button>
-                    </div>
-                  </div>
                 ) : hideCrmOpsFields ? null : (
                   <>
                     <div className="col-span-2 pt-4 border-t border-gray-100 mt-2">
