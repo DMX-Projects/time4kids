@@ -348,8 +348,51 @@ export default function LeadDetailPage() {
   }, [canAssignUsers, lead?.id, lead?.state, lead?.city, lead?.leadKind, lead?.enquiryType, lead?.source])
 
   const assignUserOptions = useMemo(() => {
-    return assignUsers.map((u) => ({ value: String(u.id), label: u.label }))
-  }, [assignUsers])
+    const myId = user?.id != null ? String(user.id) : ''
+    return assignUsers.map((u) => {
+      const value = String(u.id)
+      const isMe = myId && value === myId
+      return {
+        value,
+        label: isMe ? `Me — ${u.label}` : u.label,
+      }
+    })
+  }, [assignUsers, user?.id])
+
+  const alreadyAssignedToMe =
+    user?.id != null &&
+    lead?.assignedUserId != null &&
+    String(lead.assignedUserId) === String(user.id)
+
+  const handleAssignToMe = async () => {
+    if (!user?.id) {
+      toast.error('Could not identify your login.')
+      return
+    }
+    if (alreadyAssignedToMe) {
+      toast.error('This lead is already assigned to you.')
+      return
+    }
+    setEditForm((f) => ({ ...f, assignedUserId: String(user.id) }))
+    setSaving(true)
+    try {
+      const response = await api.patch(`/leads/${params.id}`, { assignedUserId: String(user.id) })
+      toast.success('Lead assigned to you.')
+      if (response?.data) {
+        setLead(response.data)
+      }
+      try {
+        const refreshed = await api.get(`/leads/${params.id}`)
+        setLead(refreshed.data)
+      } catch {
+        goBackToDashboard()
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.response?.data?.detail || 'Failed to assign')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const goBackToDashboard = () => {
     if (typeof window !== 'undefined') {
@@ -797,6 +840,14 @@ export default function LeadDetailPage() {
                             className="btn-primary text-sm py-1.5 px-4 whitespace-nowrap disabled:opacity-50"
                           >
                             {saving ? '…' : 'Assign'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleAssignToMe}
+                            disabled={saving || alreadyAssignedToMe || !user?.id}
+                            className="text-sm py-1.5 px-4 whitespace-nowrap rounded-lg border border-[#085390] text-[#085390] font-semibold hover:bg-sky-50 disabled:opacity-50"
+                          >
+                            Assign to me
                           </button>
                         </div>
                         <p className="text-sm text-gray-600">
