@@ -262,6 +262,8 @@ export default function LeadDetailPage() {
       user?.canAssignUsers ||
       CRM_LEAD_ASSIGNER_EMAILS.has(String(user?.email || '').trim().toLowerCase()),
   ) && !hideCrmOpsFields
+  // Any normal CRM login can claim a lead for themselves (self-assign).
+  const canSelfAssign = Boolean(user?.id) && !hideCrmOpsFields
 
   useEffect(() => {
     loadLead()
@@ -817,13 +819,13 @@ export default function LeadDetailPage() {
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned</label>
                     {canAssignUsers ? (
                       <div className="space-y-1.5">
-                        <div className="flex gap-2 items-stretch">
+                        <div className="flex gap-2 items-stretch flex-wrap">
                           <select
                             value={editForm.assignedUserId || ''}
                             onChange={(e) =>
                               setEditForm((f) => ({ ...f, assignedUserId: e.target.value }))
                             }
-                            className="form-input w-full text-sm font-semibold text-gray-800"
+                            className="form-input w-full text-sm font-semibold text-gray-800 min-w-[12rem] flex-1"
                             disabled={!isEditable && !canAssignUsers}
                           >
                             <option value="">Select user</option>
@@ -863,14 +865,28 @@ export default function LeadDetailPage() {
                           )}
                         </p>
                       </div>
-                    ) : lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
-                      <p className="text-gray-700 font-semibold">
-                        <span className="text-[#085390] bg-amber-50 px-1.5 py-0.5 rounded">
-                          {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
-                        </span>
-                      </p>
                     ) : (
-                      <p className="text-gray-400 text-sm">—</p>
+                      <div className="space-y-1.5">
+                        <p className="text-gray-700 font-semibold">
+                          {lead.assignedUserLabel || lead.suggestedAssignedUserLabel ? (
+                            <span className="text-[#085390] bg-amber-50 px-1.5 py-0.5 rounded">
+                              {lead.assignedUserLabel || lead.suggestedAssignedUserLabel}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-sm font-normal">Not assigned yet</span>
+                          )}
+                        </p>
+                        {canSelfAssign && (
+                          <button
+                            type="button"
+                            onClick={handleAssignToMe}
+                            disabled={saving || alreadyAssignedToMe || !user?.id}
+                            className="text-sm py-1.5 px-4 whitespace-nowrap rounded-lg border border-[#085390] text-[#085390] font-semibold hover:bg-sky-50 disabled:opacity-50"
+                          >
+                            Assign to me
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
