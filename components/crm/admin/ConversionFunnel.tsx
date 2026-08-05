@@ -168,6 +168,20 @@ export default function ConversionFunnel({
   })
 
   const total = stages.reduce((sum, s) => sum + s.count, 0)
+  // Not qualified = Not Interested + Not Answering + Wrong Enquiry
+  // (franchise uses not_answering_calls; admission/all use not_answering)
+  const notQualifiedStatuses = new Set([
+    'not_interested',
+    'not_answering',
+    'not_answering_calls',
+    'wrong_enquiry',
+  ])
+  const notQualified = (data || []).reduce((sum, row) => {
+    const status = String(row?.status || '').trim()
+    if (!notQualifiedStatuses.has(status)) return sum
+    return sum + (parseInt(row.count, 10) || 0)
+  }, 0)
+  const qualified = Math.max(total - notQualified, 0)
   const stageCount = Math.max(stages.length, 1)
 
   // Tapering body, then a straight spout for the last 2 stages (matches reference funnel).
@@ -197,86 +211,115 @@ export default function ConversionFunnel({
       {total === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">No leads in this funnel yet.</p>
       ) : (
-        <div className="mx-auto flex w-full max-w-[300px] flex-col items-center">
-          {stages.map((stage, index) => {
-            const { widthTop, widthBottom } = segmentWidth(index)
-            const insetTop = (100 - widthTop) / 2
-            const insetBottom = (100 - widthBottom) / 2
-            const pctOfTotal = total > 0 ? Math.round((stage.count / total) * 100) : 0
-            const inSpout = index >= bodyCount
-            const isFirst = index === 0
-            const isLast = index === stageCount - 1
-            const height = bandHeight
+        <>
+          <div className="mb-5 grid grid-cols-3 gap-2 text-center sm:gap-3">
+            <div className="rounded-lg bg-emerald-50 px-2 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 sm:text-xs">
+                Qualified
+              </p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-emerald-900 sm:text-2xl">
+                {qualified.toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-lg bg-slate-100 px-2 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600 sm:text-xs">
+                Total Leads
+              </p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">
+                {total.toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-lg bg-rose-50 px-2 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700 sm:text-xs">
+                Not Qualified
+              </p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-rose-900 sm:text-2xl">
+                {notQualified.toLocaleString()}
+              </p>
+            </div>
+          </div>
 
-            const radius = inSpout
-              ? isLast
-                ? '0 0 12px 12px'
-                : '10px'
-              : isFirst
-                ? '14px 14px 0 0'
-                : '0'
+          <div className="mx-auto flex w-full max-w-[300px] flex-col items-center">
+            {stages.map((stage, index) => {
+              const { widthTop, widthBottom } = segmentWidth(index)
+              const insetTop = (100 - widthTop) / 2
+              const insetBottom = (100 - widthBottom) / 2
+              const pctOfTotal = total > 0 ? Math.round((stage.count / total) * 100) : 0
+              const inSpout = index >= bodyCount
+              const isFirst = index === 0
+              const isLast = index === stageCount - 1
+              const height = bandHeight
 
-            const useTwoCol = (mode === 'franchise' || mode === 'admission') && inSpout
-            // Stack label above count when text would clip (spout / long names like Converted – MOU).
-            const stackLabel =
-              useTwoCol ||
-              stage.label.length > 14 ||
-              stage.label.toLowerCase().includes('converted')
+              const radius = inSpout
+                ? isLast
+                  ? '0 0 12px 12px'
+                  : '10px'
+                : isFirst
+                  ? '14px 14px 0 0'
+                  : '0'
 
-            return (
-              <div
-                key={stage.id}
-                className="relative w-full"
-                style={{
-                  height: stackLabel ? Math.max(height, 64) : height,
-                  marginBottom: isLast ? 0 : gapPx,
-                }}
-                title={`${stage.label}: ${stage.count.toLocaleString()} (${pctOfTotal}%)`}
-              >
+              const useTwoCol = (mode === 'franchise' || mode === 'admission') && inSpout
+              // Stack label above count when text would clip (spout / long names like Converted – MOU).
+              const stackLabel =
+                useTwoCol ||
+                stage.label.length > 14 ||
+                stage.label.toLowerCase().includes('converted')
+
+              return (
                 <div
-                  className="absolute inset-0 flex items-center px-2 text-white"
+                  key={stage.id}
+                  className="relative w-full"
                   style={{
-                    backgroundColor: stage.color,
-                    clipPath: inSpout
-                      ? undefined
-                      : `polygon(${insetTop}% 0%, ${100 - insetTop}% 0%, ${100 - insetBottom}% 100%, ${insetBottom}% 100%)`,
-                    width: inSpout ? `${spoutWidthPct}%` : '100%',
-                    left: inSpout ? `${(100 - spoutWidthPct) / 2}%` : 0,
-                    borderRadius: radius,
-                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.08)',
-                    justifyContent: 'center',
+                    height: stackLabel ? Math.max(height, 64) : height,
+                    marginBottom: isLast ? 0 : gapPx,
                   }}
+                  title={`${stage.label}: ${stage.count.toLocaleString()} (${pctOfTotal}%)`}
                 >
-                  {stackLabel ? (
-                    <span className="flex max-w-[92%] flex-col items-center justify-center gap-0.5 px-0.5 text-center leading-tight">
-                      <span className="text-[15px] font-medium break-words sm:text-base">
-                        {stage.label}
+                  <div
+                    className="absolute inset-0 flex items-center px-2 text-white"
+                    style={{
+                      backgroundColor: stage.color,
+                      clipPath: inSpout
+                        ? undefined
+                        : `polygon(${insetTop}% 0%, ${100 - insetTop}% 0%, ${100 - insetBottom}% 100%, ${insetBottom}% 100%)`,
+                      width: inSpout ? `${spoutWidthPct}%` : '100%',
+                      left: inSpout ? `${(100 - spoutWidthPct) / 2}%` : 0,
+                      borderRadius: radius,
+                      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.08)',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {stackLabel ? (
+                      <span className="flex max-w-[92%] flex-col items-center justify-center gap-0.5 px-0.5 text-center leading-tight">
+                        <span className="text-[15px] font-medium break-words sm:text-base">
+                          {stage.label}
+                        </span>
+                        <span className="whitespace-nowrap">
+                          <span className="text-[15px] font-bold tabular-nums sm:text-base">
+                            {stage.count.toLocaleString()}
+                          </span>
+                          <span className="text-[15px] font-semibold tabular-nums text-white/95 sm:text-base">
+                            ({pctOfTotal}%)
+                          </span>
+                        </span>
                       </span>
-                      <span className="whitespace-nowrap">
+                    ) : (
+                      <span className="max-w-[95%] whitespace-nowrap text-center text-[15px] font-medium leading-none text-white sm:text-base">
+                        {stage.label}{' '}
                         <span className="text-[15px] font-bold tabular-nums sm:text-base">
                           {stage.count.toLocaleString()}
-                        </span>
+                        </span>{' '}
                         <span className="text-[15px] font-semibold tabular-nums text-white/95 sm:text-base">
                           ({pctOfTotal}%)
                         </span>
                       </span>
-                    </span>
-                  ) : (
-                    <span className="max-w-[95%] whitespace-nowrap text-center text-[15px] font-medium leading-none text-white sm:text-base">
-                      {stage.label}{' '}
-                      <span className="text-[15px] font-bold tabular-nums sm:text-base">
-                        {stage.count.toLocaleString()}
-                      </span>{' '}
-                      <span className="text-[15px] font-semibold tabular-nums text-white/95 sm:text-base">
-                        ({pctOfTotal}%)
-                      </span>
-                    </span>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        </>
       )}
     </div>
   )

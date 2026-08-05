@@ -11,6 +11,8 @@ interface ReportsViewProps {
     source?: string;
     campaign?: string;
     medium?: string;
+    /** Super-admin only: bcww | ants */
+    agency?: string;
     userId?: string;
     centreId?: string;
 }
@@ -180,7 +182,7 @@ function cityRowTotal(
     }, 0);
 }
 
-export default function ReportsView({ dateRange, city, state, source, campaign, medium, userId, centreId }: ReportsViewProps) {
+export default function ReportsView({ dateRange, city, state, source, campaign, medium, agency, userId, centreId }: ReportsViewProps) {
     const tableContainerRef = useRef<HTMLDivElement>(null);
     const [cities, setCities] = useState<{ name: string }[]>([]);
     const [reportData, setReportData] = useState<any>({});
@@ -347,7 +349,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
 
     useEffect(() => {
         loadReportData();
-    }, [dateRange, city, state, source, campaign, medium, userId, centreId]);
+    }, [dateRange, city, state, source, campaign, medium, agency, userId, centreId]);
 
     useEffect(() => {
         setPage(1);
@@ -372,6 +374,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
             if (source && source !== "all") params.append("source", source);
             if (campaign) params.append("campaign", campaign);
             if (medium) params.append("medium", medium);
+            if (agency) params.append("agency", agency);
             if (userId) params.append("userId", userId);
             if (centreId) params.append("centreId", centreId);
 
