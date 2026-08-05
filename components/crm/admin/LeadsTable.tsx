@@ -429,11 +429,11 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     <td className="px-4 py-4">
                       <span className="capitalize text-sm text-gray-500">
                         <HighlightText
-                          text={
-                            utmSourceDisplay(lead, agency === 'ants' ? 'ants.agency@gmail.com' : undefined) !== '—'
-                              ? utmSourceDisplay(lead, agency === 'ants' ? 'ants.agency@gmail.com' : undefined)
-                              : sourceLabel(lead.source) || ''
-                          }
+                           text={
+                             sourceLabel(lead.source) !== '—'
+                               ? sourceLabel(lead.source)
+                               : utmSourceDisplay(lead, agency === 'ants' ? 'ants.agency@gmail.com' : undefined) || ''
+                           }
                           highlight={debouncedSearch}
                         />
                       </span>
