@@ -35,7 +35,7 @@ $(document).ready(function () {
         var params = {};
         try {
             var search = new URLSearchParams(window.location.search || '');
-            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'form_name', 'ad_name', 'campaign_name'].forEach(function (key) {
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'form_name', 'ad_name', 'campaign_name', 'gclid'].forEach(function (key) {
                 var value = $.trim(search.get(key) || '');
                 if (value) params[key] = value;
             });
@@ -514,6 +514,7 @@ $(document).ready(function () {
                 source: channelSource,
                 comments: campaignComments,
                 landingPageUrl: landingUrl,
+                gclid: utm.gclid || '',
                 utmSource: utm.utm_source || (fromGoogleAds ? 'google' : ''),
                 utmMedium: utm.utm_medium || (fromGoogleAds ? 'cpc' : ''),
                 utmCampaign: resolvedCampaign,

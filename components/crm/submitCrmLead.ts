@@ -25,6 +25,8 @@ export async function submitCrmLead(source: CrmSource, data: CrmLeadPayload): Pr
   if (typeof window !== 'undefined') {
     payload.landingPageUrl = window.location.href
     const params = new URLSearchParams(window.location.search)
+    const gclid = params.get('gclid')
+    if (gclid) payload.gclid = gclid
     const utmSource = params.get('utm_source')
     const utmMedium = params.get('utm_medium')
     const utmCampaign = params.get('utm_campaign')

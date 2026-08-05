@@ -156,6 +156,14 @@ export function utmSourceDisplay(lead: {
     return "Ants_Google";
   }
 
+  // Google Ads clicks win over the form's own channel — matches the CRM Google filter.
+  if (isGoogleAdTraffic(lead)) return "BCWW_Google";
+  const src = String(lead.source || "").trim().toLowerCase();
+  if (src === "july_meta" || src === "facebook_lead_ads" || isMetaAdTraffic(lead)) {
+    return "BCWW_Meta";
+  }
+  if (src === "july_lp") return "BCWW_Google";
+
   const raw = String(lead.utmSource || "").trim();
   if (!raw) return "—";
   const key = raw.toLowerCase();

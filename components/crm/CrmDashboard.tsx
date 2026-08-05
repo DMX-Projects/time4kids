@@ -19,6 +19,7 @@ import {
 } from "@/lib/crmDashboardFilters";
 import DashboardStats from "@/components/crm/admin/DashboardStats";
 import LeadsTable from "@/components/crm/admin/LeadsTable";
+import { utmSourceDisplay } from "@/lib/crmLeadKind";
 import { isCampaignOnlyCrmEmail, isCampaignExternalViewerEmail, isAgencyCrmEmail, agencyViewerLabel, isRestrictedCrmViewerEmail } from "@/lib/crmCampaignAccess";
 import DateRangePicker from "@/components/crm/admin/DateRangePicker";
 import CitySelector from "@/components/crm/admin/CitySelector";
@@ -870,7 +871,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                     l.city || "",
                     l.state || "",
                     l.preferredCentreLocation || "",
-                    l.source || "",
+                    utmSourceDisplay(l) !== "—" ? utmSourceDisplay(l) : l.source || "",
                     l.utmSource || "",
                     l.utmMedium || "",
                     l.utmCampaign || l.campaign || "",

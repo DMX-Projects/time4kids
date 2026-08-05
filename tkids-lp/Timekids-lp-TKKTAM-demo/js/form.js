@@ -19,7 +19,7 @@ $(document).ready(function () {
         var params = {};
         try {
             var search = new URLSearchParams(window.location.search || '');
-            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(function (key) {
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid'].forEach(function (key) {
                 var value = $.trim(search.get(key) || '');
                 if (value) params[key] = value;
             });
@@ -472,7 +472,7 @@ $(document).ready(function () {
             if (landingUrl.indexOf('utm_') === -1 && (utm.utm_source || utm.utm_medium || utm.utm_campaign)) {
                 try {
                     var u = new URL(landingUrl, window.location.origin);
-                    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(function (k) {
+                    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid'].forEach(function (k) {
                         if (utm[k]) u.searchParams.set(k, utm[k]);
                     });
                     landingUrl = u.toString();
@@ -490,6 +490,7 @@ $(document).ready(function () {
                 source: campaignSource,
                 comments: campaignComments,
                 landingPageUrl: landingUrl,
+                gclid: utm.gclid || '',
                 utmSource: utm.utm_source || '',
                 utmMedium: utm.utm_medium || '',
                 utmCampaign: resolvedCampaign,
