@@ -926,7 +926,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                     l.city || "",
                     l.state || "",
                     l.preferredCentreLocation || "",
-                    utmSourceDisplay(l) !== "—" ? utmSourceDisplay(l) : l.source || "",
+                    utmSourceDisplay(l, user?.email) !== "—" ? utmSourceDisplay(l, user?.email) : l.source || "",
                     l.utmSource || "",
                     l.utmMedium || "",
                     l.utmCampaign || l.campaign || "",
