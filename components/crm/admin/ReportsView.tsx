@@ -249,10 +249,16 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
         if (source === "google" || source === "july_lp") {
             return [
                 {
-                    id: "campaign",
-                    label: "Google Leads",
+                    id: "google",
+                    label: "BCWW_Google Leads",
                     bg: "bg-amber-50 text-amber-800",
                     subkey: "lp",
+                },
+                {
+                    id: "lp_wb",
+                    label: "Ants_Google Leads",
+                    bg: "bg-teal-50 text-teal-800",
+                    subkey: "ants",
                 },
             ];
         }
@@ -279,10 +285,16 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
         if (source === "july_meta") {
             return [
                 {
-                    id: "campaign",
+                    id: "july_meta",
                     label: "BCWW_Meta Leads",
                     bg: "bg-fuchsia-50 text-fuchsia-800",
                     subkey: "meta",
+                },
+                {
+                    id: "ants_meta",
+                    label: "Ants_Meta Leads",
+                    bg: "bg-emerald-50 text-emerald-800",
+                    subkey: "antsm",
                 },
             ];
         }

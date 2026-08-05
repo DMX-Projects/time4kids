@@ -320,13 +320,19 @@ export default function LeadDetailPage() {
     const pipeline = crmPipelineForLead(lead)
     if (pipeline) paramsQs.set('pipeline', pipeline)
     if (lead.state) paramsQs.set('state', String(lead.state))
-    // Meta Instant Forms have no city dropdown — map RMs by state only.
-    if (isMetaInstantFormLead(lead)) {
+    const metaInstantForm = isMetaInstantFormLead(lead)
+    const metaFormName = String(lead.utmCampaign || lead.campaign || lead.utmMedium || '').trim()
+    const hasVerifiedCityDropdown =
+      metaInstantForm && metaFormName.startsWith('BCWW TK Kerala ') && metaFormName.endsWith(' - R1')
+    // Only verified R1 dropdown forms use city; old free-text forms stay state-only.
+    if (metaInstantForm && (!hasVerifiedCityDropdown || !String(lead.city || '').trim())) {
       paramsQs.set('stateOnly', '1')
       if (lead.source) paramsQs.set('source', String(lead.source))
       if (lead.utmSource) paramsQs.set('utmSource', String(lead.utmSource))
+      if (metaFormName) paramsQs.set('formName', metaFormName)
     } else if (lead.city) {
       paramsQs.set('city', String(lead.city))
+      if (metaFormName) paramsQs.set('formName', metaFormName)
     }
     const qs = paramsQs.toString()
     api

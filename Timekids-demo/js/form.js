@@ -14,7 +14,7 @@ $(document).ready(function () {
         var params = {};
         try {
             var search = new URLSearchParams(window.location.search || '');
-            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(function (key) {
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid'].forEach(function (key) {
                 var value = $.trim(search.get(key) || '');
                 if (value) params[key] = value;
             });
@@ -435,6 +435,7 @@ $(document).ready(function () {
                 source: campaignSource,
                 comments: campaignComments,
                 landingPageUrl: window.location.href.split('#')[0],
+                gclid: utm.gclid || '',
                 utmSource: utm.utm_source || pageType,
                 utmMedium: utm.utm_medium || '',
                 utmCampaign: resolvedCampaign,
