@@ -139,27 +139,31 @@ function isGoogleAdTraffic(lead: {
 
 /**
  * UTM / channel source label for CRM tables & detail.
- * West Bengal (Ants): Google → Ants_Google, Meta → Ants_Meta.
- * BCWW (Bcwebwise) only for the 6 Instant-Form / TKKTAM states — never West Bengal.
+ * West Bengal Meta/Google labels stay generic for standard CRM users and super-admins;
+ * Ants-specific WB labels are reserved for the Ants agency viewer only.
  */
-export function utmSourceDisplay(lead: {
-  source?: string | null;
-  state?: string | null;
-  formName?: string | null;
-  pageType?: string | null;
-  utmSource?: string | null;
-  utmMedium?: string | null;
-  landingPageUrl?: string | null;
-} | null | undefined): string {
+export function utmSourceDisplay(
+  lead: {
+    source?: string | null;
+    state?: string | null;
+    formName?: string | null;
+    pageType?: string | null;
+    utmSource?: string | null;
+    utmMedium?: string | null;
+    landingPageUrl?: string | null;
+  } | null | undefined,
+  viewerEmail?: string | null,
+): string {
   if (!lead) return "—";
 
   const src = String(lead.source || "").trim().toLowerCase();
   const isMetaSource = src === "july_meta" || src === "facebook_lead_ads";
+  const isAntsViewer = String(viewerEmail || "").trim().toLowerCase() === "ants.agency@gmail.com";
 
   if (isWestBengalTerritoryLead(lead)) {
-    if (isMetaSource || isMetaAdTraffic(lead)) return "Ants_Meta";
-    // WB page / Google LP default.
-    return "Ants_Google";
+    if (isMetaSource || isMetaAdTraffic(lead)) return isAntsViewer ? "Ants_Meta" : "BCWW_Meta";
+    // WB page / Google LP default for standard viewers; Ants viewer keeps Ants_Google.
+    return isAntsViewer ? "Ants_Google" : "BCWW_Google";
   }
 
   // Only a real Google Ads click overrides the stored channel — same rule the

@@ -716,7 +716,7 @@ export default function LeadDetailPage() {
                           <div className="space-y-0.5 min-w-0">
                             <p className="text-[11px] font-semibold text-gray-400 uppercase">Source</p>
                             <p className="text-gray-700 font-semibold break-all">
-                              {utmSourceDisplay(lead) !== '—' ? utmSourceDisplay(lead) : sourceLabel(lead.source)}
+                              {utmSourceDisplay(lead, user?.email) !== '—' ? utmSourceDisplay(lead, user?.email) : sourceLabel(lead.source)}
                             </p>
                           </div>
                           <div className="space-y-0.5 min-w-0">
