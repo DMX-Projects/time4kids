@@ -10,8 +10,10 @@ export type CrmDashboardFiltersSnapshot = {
   selectedCentre: string[];
   selectedSource: string;
   selectedCampaignChannel: string;
+  selectedAgency: string;
   selectedUtmCampaign: string;
   selectedUtmMedium: string;
+  /** Comma-separated statuses from the Status checkbox filter; empty = all. */
   selectedStatus: string;
   selectedUserId: string;
   filterStart: string | null;
@@ -54,6 +56,12 @@ function normalizeSnapshot(data: CrmDashboardFiltersSnapshot & { selectedCentre?
   }
   if (typeof data.selectedUtmMedium !== "string") {
     data.selectedUtmMedium = "";
+  }
+  if (typeof data.selectedAgency !== "string") {
+    data.selectedAgency = "";
+  }
+  if (typeof data.selectedStatus !== "string" || data.selectedStatus === "all") {
+    data.selectedStatus = "";
   }
   return data as CrmDashboardFiltersSnapshot;
 }
@@ -107,6 +115,7 @@ export function snapshotToSearchParams(snapshot: CrmDashboardFiltersSnapshot): U
   const params = new URLSearchParams();
   if (snapshot.selectedSource) params.set("source", snapshot.selectedSource);
   if (snapshot.selectedCampaignChannel) params.set("channel", snapshot.selectedCampaignChannel);
+  if (snapshot.selectedAgency) params.set("agency", snapshot.selectedAgency);
   if (snapshot.selectedUtmCampaign) params.set("campaign", snapshot.selectedUtmCampaign);
   if (snapshot.selectedUtmMedium) params.set("medium", snapshot.selectedUtmMedium);
   if (snapshot.selectedStatus) params.set("status", snapshot.selectedStatus);
@@ -127,6 +136,7 @@ export function snapshotFromSearchParams(
 ): CrmDashboardFiltersSnapshot | null {
   const source = searchParams.get("source") || "";
   const channel = searchParams.get("channel") || "";
+  const agency = searchParams.get("agency") || "";
   const campaign = searchParams.get("campaign") || "";
   const medium = searchParams.get("medium") || "";
   const status = searchParams.get("status") || "";
@@ -143,6 +153,7 @@ export function snapshotFromSearchParams(
   const hasAny =
     source ||
     channel ||
+    agency ||
     campaign ||
     medium ||
     status ||
@@ -162,9 +173,10 @@ export function snapshotFromSearchParams(
     returnPath: "/crm-admin",
     selectedSource: source,
     selectedCampaignChannel: channel,
+    selectedAgency: agency === "bcww" || agency === "ants" ? agency : "",
     selectedUtmCampaign: campaign,
     selectedUtmMedium: medium,
-    selectedStatus: !status || status === "all" ? "all" : status,
+    selectedStatus: !status || status === "all" ? "" : status,
     selectedUserId: userId,
     selectedState: state,
     selectedCity: city,

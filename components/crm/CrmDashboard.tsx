@@ -26,6 +26,7 @@ import CitySelector from "@/components/crm/admin/CitySelector";
 import StateSelector from "@/components/crm/admin/StateSelector";
 import CentreSelector from "@/components/crm/admin/CentreSelector";
 import { SearchableSelect } from "@/components/crm/SearchableSelect";
+import { MultiSelectCheckbox } from "@/components/crm/MultiSelectCheckbox";
 import RemindersWidget from "@/components/crm/admin/RemindersWidget";
 import ReportsView from "@/components/crm/admin/ReportsView";
 
@@ -74,6 +75,7 @@ type FranchiseSubFilter = "" | "franchise" | "campaign" | "others";
 type AdmissionSubFilter = "" | "website" | "landing" | "contact" | "others";
 type SubFilter = FranchiseSubFilter | AdmissionSubFilter;
 type CampaignChannelFilter = "" | "google" | "july_meta" | "youtube";
+type AgencyFilter = "" | "bcww" | "ants";
 type OthersChannelFilter =
     | ""
     | "whatsapp"
@@ -188,9 +190,20 @@ function apiSourceParam(source: SourceFilter, channel: ChannelFilter): string {
     return source;
 }
 
-function apiStatusParam(status: StatusFilter): string {
-    if (!status || status === "all") return "";
-    return status;
+/** Status checkbox filter → comma-separated API value (empty = all statuses). */
+function apiStatusParam(statuses: StatusFilter[]): string {
+    return statuses.filter((status) => status && status !== "all").join(",");
+}
+
+function parseStatusFilters(raw: unknown): StatusFilter[] {
+    if (Array.isArray(raw)) {
+        return raw.filter((s): s is StatusFilter => Boolean(s) && s !== "all");
+    }
+    if (typeof raw !== "string") return [];
+    return raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s && s !== "all") as StatusFilter[];
 }
 
 const LEAD_TYPE_OPTIONS: { id: LeadType; label: string }[] = [
@@ -232,6 +245,12 @@ const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] =
     { id: "google", label: "Google" },
     { id: "july_meta", label: "META" },
     { id: "youtube", label: "YouTube" },
+];
+
+const AGENCY_FILTERS: { id: AgencyFilter; label: string }[] = [
+    { id: "", label: "All Agencies" },
+    { id: "bcww", label: "BC Web Wise" },
+    { id: "ants", label: "Ants" },
 ];
 
 const OTHERS_CHANNEL_FILTERS: { id: OthersChannelFilter; label: string }[] = [
@@ -305,11 +324,12 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     });
     const [selectedSource, setSelectedSource] = useState<SourceFilter>("all");
     const [selectedCampaignChannel, setSelectedCampaignChannel] = useState<ChannelFilter>("");
+    const [selectedAgency, setSelectedAgency] = useState<AgencyFilter>("");
     const [selectedUtmCampaign, setSelectedUtmCampaign] = useState<string>("");
     const [campaignOptions, setCampaignOptions] = useState<{ value: string; label: string }[]>([]);
     const [selectedUtmMedium, setSelectedUtmMedium] = useState<string>("");
     const [mediumOptions, setMediumOptions] = useState<{ value: string; label: string }[]>([]);
-    const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
+    const [selectedStatus, setSelectedStatus] = useState<StatusFilter[]>([]);
     const [selectedUserId, setSelectedUserId] = useState<string>("");
     const [crmUsers, setCrmUsers] = useState<{ id: number; label: string }[]>([]);
     const [refreshKey, setRefreshKey] = useState(0);
@@ -322,6 +342,12 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const isAgencyUser = isAgencyCrmEmail(user?.email);
     const isRestrictedViewer = isRestrictedCrmViewerEmail(user?.email);
     const isExternalCampaignViewer = isCampaignExternalViewerEmail(user?.email);
+    // National CRM Super Admin (All Zones) — Agency dropdown is for these logins only.
+    const isCrmSuperAdmin =
+        !isRestrictedViewer &&
+        !user?.crmZone &&
+        !user?.crmRegion &&
+        (isCrmUser || Boolean(user?.isSuperuser));
     const returnPath = view === "reports" ? "/crm-admin/reports" : "/crm-admin";
     const selectedLeadType = leadTypeFromSource(selectedSource);
     const selectedSubFilter = subFilterFromSource(selectedSource);
@@ -358,8 +384,9 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             setSelectedUtmCampaign("");
             setSelectedUtmMedium("");
         }
-        const restoredStatus = (saved.selectedStatus as StatusFilter) || "all";
-        setSelectedStatus(restoredStatus);
+        const savedAgency = (saved.selectedAgency || "").trim().toLowerCase();
+        setSelectedAgency(savedAgency === "bcww" || savedAgency === "ants" ? savedAgency : "");
+        setSelectedStatus(parseStatusFilters(saved.selectedStatus));
         setSelectedUserId(typeof saved.selectedUserId === "string" ? saved.selectedUserId : "");
         setSelectedUtmCampaign(typeof saved.selectedUtmCampaign === "string" ? saved.selectedUtmCampaign : "");
         setSelectedUtmMedium(typeof saved.selectedUtmMedium === "string" ? saved.selectedUtmMedium : "");
@@ -395,9 +422,10 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             setSelectedCentre([]);
             setSelectedSource("all");
             setSelectedCampaignChannel("");
+            setSelectedAgency("");
         setSelectedUtmCampaign("");
         setSelectedUtmMedium("");
-            setSelectedStatus("all");
+            setSelectedStatus([]);
             setSelectedUserId("");
             setFilterDateRange({ startDate: null, endDate: null });
             setDateRange({ startDate: null, endDate: null });
@@ -431,9 +459,10 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             selectedCentre,
             selectedSource,
             selectedCampaignChannel,
+            selectedAgency,
             selectedUtmCampaign,
             selectedUtmMedium,
-            selectedStatus,
+            selectedStatus: selectedStatus.join(","),
             selectedUserId,
             filterStart: filterDateRange.startDate?.toISOString() ?? null,
             filterEnd: filterDateRange.endDate?.toISOString() ?? null,
@@ -448,6 +477,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             selectedCentre,
             selectedSource,
             selectedCampaignChannel,
+            selectedAgency,
             selectedUtmCampaign,
             selectedUtmMedium,
             selectedStatus,
@@ -570,6 +600,22 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return base;
     }, [crmUsers]);
     const currentStatusFilters = isFranchise ? FRANCHISE_FILTERS : NON_FRANCHISE_FILTERS;
+    // "All Status" is the checkbox list's own All row — keep it out of the options.
+    const statusFilterOptions = useMemo(
+        () =>
+            currentStatusFilters
+                .filter((f) => f.id !== "all")
+                .map((f) => ({ value: f.id, label: f.label })),
+        [currentStatusFilters],
+    );
+
+    // Drop selections that do not exist in the current franchise/admission status list.
+    useEffect(() => {
+        if (selectedStatus.length === 0) return;
+        const allowed = new Set(statusFilterOptions.map((o) => o.value));
+        const next = selectedStatus.filter((s) => allowed.has(s));
+        if (next.length !== selectedStatus.length) setSelectedStatus(next);
+    }, [statusFilterOptions, selectedStatus]);
 
     useEffect(() => {
         if (selectedUserId === "unassigned") {
@@ -597,8 +643,14 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         }
     }, [isCampaignOnlyUser, isAgencyUser, selectedSource, selectedCampaignChannel, selectedUserId]);
 
+    useEffect(() => {
+        if (!isCrmSuperAdmin && selectedAgency) {
+            setSelectedAgency("");
+        }
+    }, [isCrmSuperAdmin, selectedAgency]);
+
     const resetOnLeadChange = () => {
-        setSelectedStatus("all");
+        setSelectedStatus([]);
         if (view === "reports") {
             setReportsFiltersApplied(false);
             setSelectedState([]);
@@ -664,6 +716,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         if (activeCentreIds.length > 0) params.append("centreId", activeCentreIds.join(","));
         if (apiSource) params.append("source", apiSource);
         if (apiStatus) params.append("status", apiStatus);
+        if (isCrmSuperAdmin && selectedAgency) params.append("agency", selectedAgency);
         if (selectedUtmCampaign) params.append("campaign", selectedUtmCampaign);
         if (selectedUtmMedium) params.append("medium", selectedUtmMedium);
         if (selectedUserId) params.append("userId", selectedUserId);
@@ -679,6 +732,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         if (apiSource) params.set("source", apiSource);
         if (selectedState.length > 0) params.set("state", selectedState.join(","));
         if (selectedCity.length > 0) params.set("city", selectedCity.join(","));
+        if (isCrmSuperAdmin && selectedAgency) params.set("agency", selectedAgency);
         crmApi
             .get(`/campaigns?${params.toString()}`)
             .then((res) => {
@@ -692,7 +746,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [isCampaignView, filtersReady, apiSource, selectedState, selectedCity]);
+    }, [isCampaignView, filtersReady, apiSource, selectedState, selectedCity, isCrmSuperAdmin, selectedAgency]);
 
     useEffect(() => {
         if (!selectedUtmCampaign) return;
@@ -711,6 +765,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         if (selectedState.length > 0) params.set("state", selectedState.join(","));
         if (selectedCity.length > 0) params.set("city", selectedCity.join(","));
         if (selectedUtmCampaign) params.set("campaign", selectedUtmCampaign);
+        if (isCrmSuperAdmin && selectedAgency) params.set("agency", selectedAgency);
         crmApi
             .get(`/mediums?${params.toString()}`)
             .then((res) => {
@@ -724,7 +779,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [isCampaignView, filtersReady, apiSource, selectedState, selectedCity, selectedUtmCampaign]);
+    }, [isCampaignView, filtersReady, apiSource, selectedState, selectedCity, selectedUtmCampaign, isCrmSuperAdmin, selectedAgency]);
 
     useEffect(() => {
         if (!selectedUtmMedium) return;
@@ -796,7 +851,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [filtersReady, isCrmUser, dateRange, selectedCity, selectedState, activeCentreIds, apiSource, apiStatus, selectedUtmCampaign, selectedUtmMedium, selectedUserId]);
+    }, [filtersReady, isCrmUser, dateRange, selectedCity, selectedState, activeCentreIds, apiSource, apiStatus, selectedUtmCampaign, selectedUtmMedium, selectedUserId, isCrmSuperAdmin, selectedAgency]);
 
     const fetchStats = () => {
         setStatsLoading(true);
@@ -1033,6 +1088,22 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 </div>
                             )}
 
+                            {isCrmSuperAdmin && (
+                                <div className="flex-1 min-w-[140px]">
+                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Select Agency</label>
+                                    <SearchableSelect
+                                        value={selectedAgency}
+                                        onChange={(val) => {
+                                            const next = (val || "") as AgencyFilter;
+                                            setSelectedAgency(next === "bcww" || next === "ants" ? next : "");
+                                            if (view === "reports") setReportsFiltersApplied(false);
+                                        }}
+                                        options={AGENCY_FILTERS.map((f) => ({ value: f.id, label: f.label }))}
+                                        placeholder="All Agencies"
+                                    />
+                                </div>
+                            )}
+
                             {isCampaignView && !isRestrictedViewer && (
                                 <div className="flex-1 min-w-[160px]">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Select Campaign</label>
@@ -1087,11 +1158,11 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                             {view !== 'reports' && (
                                 <div className="flex-1 min-w-[140px]">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Select Status</label>
-                                    <SearchableSelect
+                                    <MultiSelectCheckbox
                                         key={`status-${selectedSource}`}
-                                        value={selectedStatus || "all"}
-                                        onChange={(val) => setSelectedStatus((val || "all") as StatusFilter)}
-                                        options={currentStatusFilters.map(f => ({ value: f.id, label: f.label }))}
+                                        value={selectedStatus}
+                                        onChange={(vals) => setSelectedStatus(vals as StatusFilter[])}
+                                        options={statusFilterOptions}
                                         placeholder="All Status"
                                     />
                                 </div>
@@ -1259,6 +1330,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         state={selectedState}
                                         source={apiSource || selectedSource}
                                         campaign={selectedUtmCampaign}
+                                        medium={selectedUtmMedium}
+                                        agency={isCrmSuperAdmin ? selectedAgency : ""}
                                         userId={selectedUserId}
                                         centreId={activeCentreIds.join(",")}
                                     />
@@ -1271,7 +1344,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 )
                             ) : (
                                 <LeadsTable
-                                    key={`${refreshKey}-${apiSource}-${apiStatus}-${selectedUtmCampaign}-${selectedUtmMedium}-${selectedUserId}-${selectedCity}-${activeCentreIds.join(",")}-${selectedState.join(",")}`}
+                                    key={`${refreshKey}-${apiSource}-${apiStatus}-${selectedAgency}-${selectedUtmCampaign}-${selectedUtmMedium}-${selectedUserId}-${selectedCity}-${activeCentreIds.join(",")}-${selectedState.join(",")}`}
                                     dateRange={dateRange}
                                     city={selectedCity.join(",")}
                                     state={selectedState.join(",")}
@@ -1279,6 +1352,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     source={apiSource}
                                     campaign={selectedUtmCampaign}
                                     medium={selectedUtmMedium}
+                                    agency={isCrmSuperAdmin ? selectedAgency : ""}
                                     status={apiStatus}
                                     userId={selectedUserId}
                                     returnHref={returnHref}

@@ -111,20 +111,26 @@ function isMetaAdTraffic(lead: {
   return /(meta|facebook|instagram)/.test(medium);
 }
 
+/**
+ * Real Google Ads click on the landing page URL. Mirrors is_google_ads_landing_url()
+ * on the backend, which decides whether a lead lands in the Google channel.
+ * Deliberately narrow: Meta LP campaigns also run with utm_medium=cpc.
+ */
+function hasGoogleAdsClick(lead: { landingPageUrl?: string | null } | null | undefined): boolean {
+  if (!lead) return false;
+  const url = String(lead.landingPageUrl || "").toLowerCase();
+  return ["gclid=", "gad_source=", "gad_campaignid=", "gbraid=", "wbraid="].some((m) =>
+    url.includes(m),
+  );
+}
+
 function isGoogleAdTraffic(lead: {
   utmSource?: string | null;
   utmMedium?: string | null;
   landingPageUrl?: string | null;
 } | null | undefined): boolean {
   if (!lead) return false;
-  const url = String(lead.landingPageUrl || "").toLowerCase();
-  if (
-    ["gclid=", "gad_source=", "gad_campaignid=", "gbraid=", "wbraid="].some((m) =>
-      url.includes(m),
-    )
-  ) {
-    return true;
-  }
+  if (hasGoogleAdsClick(lead)) return true;
   const utm = String(lead.utmSource || "").trim().toLowerCase();
   if (utm === "google" || utm.includes("google")) return true;
   const medium = String(lead.utmMedium || "").trim().toLowerCase();
@@ -147,22 +153,21 @@ export function utmSourceDisplay(lead: {
 } | null | undefined): string {
   if (!lead) return "—";
 
+  const src = String(lead.source || "").trim().toLowerCase();
+  const isMetaSource = src === "july_meta" || src === "facebook_lead_ads";
+
   if (isWestBengalTerritoryLead(lead)) {
-    if (isMetaAdTraffic(lead)) return "Ants_Meta";
-    if (isGoogleAdTraffic(lead)) return "Ants_Google";
-    const src = String(lead.source || "").trim().toLowerCase();
-    if (src === "july_meta" || src === "facebook_lead_ads") return "Ants_Meta";
+    if (isMetaSource || isMetaAdTraffic(lead)) return "Ants_Meta";
     // WB page / Google LP default.
     return "Ants_Google";
   }
 
-  // Google Ads clicks win over the form's own channel — matches the CRM Google filter.
-  if (isGoogleAdTraffic(lead)) return "BCWW_Google";
-  const src = String(lead.source || "").trim().toLowerCase();
-  if (src === "july_meta" || src === "facebook_lead_ads" || isMetaAdTraffic(lead)) {
-    return "BCWW_Meta";
-  }
+  // Only a real Google Ads click overrides the stored channel — same rule the
+  // Google filter uses, so the label always matches the channel the lead sits in.
+  if (hasGoogleAdsClick(lead)) return "BCWW_Google";
+  if (isMetaSource) return "BCWW_Meta";
   if (src === "july_lp") return "BCWW_Google";
+  if (isMetaAdTraffic(lead)) return "BCWW_Meta";
 
   const raw = String(lead.utmSource || "").trim();
   if (!raw) return "—";

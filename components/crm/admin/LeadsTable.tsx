@@ -16,6 +16,8 @@ interface LeadsTableProps {
   source?: string
   campaign?: string
   medium?: string
+  /** Super-admin only: bcww | ants */
+  agency?: string
   userId?: string
   search?: string
   title?: string
@@ -137,7 +139,7 @@ const statusColors: { [key: string]: string } = {
   meeting_scheduled: 'bg-teal-100 text-teal-700 border border-teal-200',
 }
 
-export default function LeadsTable({ dateRange, city, state, centreId, status, source, campaign, medium, userId, search, title, returnHref, onBeforeNavigate, onLeadUpdated, hideContact = false, campaignViewer = false }: LeadsTableProps) {
+export default function LeadsTable({ dateRange, city, state, centreId, status, source, campaign, medium, agency, userId, search, title, returnHref, onBeforeNavigate, onLeadUpdated, hideContact = false, campaignViewer = false }: LeadsTableProps) {
   const hideCentreColumn =
     source === 'campaign' ||
     source === 'franchise' ||
@@ -191,7 +193,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
 
   useEffect(() => {
     loadLeads()
-  }, [page, pageSize, dateRange, city, state, centreId, status, source, campaign, medium, userId, debouncedSearch])
+  }, [page, pageSize, dateRange, city, state, centreId, status, source, campaign, medium, agency, userId, debouncedSearch])
 
   const loadLeads = async (silent = false) => {
     if (!silent) setLoading(true)
@@ -217,6 +219,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
       if (source) params.append('source', source)
       if (campaign) params.append('campaign', campaign)
       if (medium) params.append('medium', medium)
+      if (agency) params.append('agency', agency)
       if (userId) params.append('userId', userId)
       if (debouncedSearch) params.append('search', debouncedSearch)
 
