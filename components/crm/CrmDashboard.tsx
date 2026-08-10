@@ -20,7 +20,7 @@ import {
 import DashboardStats from "@/components/crm/admin/DashboardStats";
 import LeadsTable from "@/components/crm/admin/LeadsTable";
 import { utmSourceDisplay } from "@/lib/crmLeadKind";
-import { isCampaignOnlyCrmEmail, isCampaignExternalViewerEmail, isAgencyCrmEmail, agencyViewerLabel, isRestrictedCrmViewerEmail } from "@/lib/crmCampaignAccess";
+import { isCampaignOnlyCrmEmail, isCampaignExternalViewerEmail, isAgencyCrmEmail, agencyViewerLabel, agencySlugForEmail, isRestrictedCrmViewerEmail, shouldHideReportsTab } from "@/lib/crmCampaignAccess";
 import DateRangePicker from "@/components/crm/admin/DateRangePicker";
 import CitySelector from "@/components/crm/admin/CitySelector";
 import StateSelector from "@/components/crm/admin/StateSelector";
@@ -352,12 +352,13 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const selectedLeadType = leadTypeFromSource(selectedSource);
     const selectedSubFilter = subFilterFromSource(selectedSource);
 
-    // External campaign / agency viewer has Dashboard only — block direct /reports URL access.
+    // External campaign / agency viewer without reports access — block direct /reports URL access.
+    const hideReports = shouldHideReportsTab(user?.email);
     useEffect(() => {
-        if (!authLoading && user && isExternalCampaignViewer && view === "reports") {
+        if (!authLoading && user && hideReports && view === "reports") {
             router.replace("/crm-admin");
         }
-    }, [authLoading, user, isExternalCampaignViewer, view, router]);
+    }, [authLoading, user, hideReports, view, router]);
 
     const applySnapshot = (saved: CrmDashboardFiltersSnapshot) => {
         const { filterDateRange: savedFilter, dateRange: savedApplied } = datesFromSnapshot(saved);
@@ -572,6 +573,20 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         ? "agency"
         : apiSourceParam(selectedSource, selectedCampaignChannel);
     const apiStatus = apiStatusParam(selectedStatus);
+    // Paid Campaign dashboard: "Converted" = MOU + Agreement (not admission converted).
+    const displayStats = useMemo(() => {
+        if (!stats) return null;
+        if (!isCampaignView) return stats;
+        const breakdown = Array.isArray(stats.statusBreakdown) ? stats.statusBreakdown : [];
+        const franchiseConverted = breakdown.reduce((sum: number, row: { status?: string; count?: number | string }) => {
+            const status = String(row?.status || "").trim();
+            if (status !== "converted_mou_signed" && status !== "converted_agreement_signed") {
+                return sum;
+            }
+            return sum + (Number(row.count) || 0);
+        }, 0);
+        return { ...stats, converted: franchiseConverted };
+    }, [stats, isCampaignView]);
     // Paid Campaign leads (LP + Meta inline) use franchise-lp state/city lists — same as the forms.
     const usesFranchiseLpGeo = isFranchiseLpGeoView || selectedSource === "campaign";
     const hidesCentreForCampaignChannel = usesFranchiseLpGeo;
@@ -866,7 +881,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
 
     const handleApplyFilters = () => {
         if (view === 'reports') {
-            // Empty state/city means All — allowed; lead type defaults to All
+            // Empty state/city means All — allowed; date range is required before Generate.
             if (!filterDateRange.startDate || !filterDateRange.endDate) {
                 toast.error("Please select a complete Date Range before generating the report.");
                 return;
@@ -961,7 +976,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return <AccessLoading />;
     }
 
-    if (isExternalCampaignViewer && view === "reports") {
+    // Only accounts with Reports hidden (Ants / external campaign viewers) — not BCWW agency.
+    if (hideReports && view === "reports") {
         return <AccessLoading />;
     }
 
@@ -1234,7 +1250,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         {view === 'reports' ? 'Generate' : 'Apply Filters'}
                                     </button>
                                     
-                                    {view === 'reports' && reportsFiltersApplied && (
+                                    {view === 'reports' && reportsFiltersApplied && !isAgencyUser && !agencySlugForEmail(user?.email) && (
                                         <button
                                             type="button"
                                             onClick={handleDownload}
@@ -1261,8 +1277,11 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     </div>
                                 ))}
                             </div>
-                        ) : stats ? (
-                            <DashboardStats stats={stats} />
+                        ) : displayStats ? (
+                            <DashboardStats
+                                stats={displayStats}
+                                showCrossStateForm={!isRestrictedViewer}
+                            />
                         ) : null}
 
                         <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -1328,12 +1347,14 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         dateRange={dateRange}
                                         city={selectedCity}
                                         state={selectedState}
-                                        source={apiSource || selectedSource}
+                                        source={isAgencyUser ? "campaign" : (apiSource || selectedSource)}
                                         campaign={selectedUtmCampaign}
                                         medium={selectedUtmMedium}
-                                        agency={isCrmSuperAdmin ? selectedAgency : ""}
+                                        agency={isCrmSuperAdmin ? selectedAgency : agencySlugForEmail(user?.email)}
+                                        agencySlug={isCrmSuperAdmin ? (selectedAgency as "bcww" | "ants" | "") : (agencySlugForEmail(user?.email) as "bcww" | "ants" | "")}
                                         userId={selectedUserId}
                                         centreId={activeCentreIds.join(",")}
+                                        isSuperAdmin={isCrmSuperAdmin}
                                     />
                                 ) : (
                                     <div className="rounded-xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center shadow-sm">

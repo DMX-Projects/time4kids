@@ -28,6 +28,17 @@ export const AGENCY_VIEWER_LABELS: Record<string, string> = {
   "ants.agency@gmail.com": "Ants Agency",
 };
 
+/** Maps agency email to the API agency filter slug (bcww | ants) */
+export const AGENCY_EMAIL_SLUG: Record<string, "bcww" | "ants"> = {
+  "bcwebwise.agency@gmail.com": "bcww",
+  "ants.agency@gmail.com": "ants",
+};
+
+/** Returns the agency API slug for agency-viewer emails, or "" for non-agency */
+export function agencySlugForEmail(email?: string | null): "" | "bcww" | "ants" {
+  return AGENCY_EMAIL_SLUG[normEmail(email)] ?? "";
+}
+
 function normEmail(email?: string | null): string {
   return String(email || "").trim().toLowerCase();
 }
@@ -49,6 +60,13 @@ export function isRestrictedCrmViewerEmail(email?: string | null): boolean {
 export function isCampaignExternalViewerEmail(email?: string | null): boolean {
   const e = normEmail(email);
   return CAMPAIGN_EXTERNAL_VIEWER_EMAILS.has(e) || AGENCY_VIEWER_EMAILS.has(e);
+}
+
+export function shouldHideReportsTab(email?: string | null): boolean {
+  const e = normEmail(email);
+  // Hide Reports for external campaign viewers + Ants agency only.
+  // Bcwebwise agency keeps Reports (agency lead report).
+  return CAMPAIGN_EXTERNAL_VIEWER_EMAILS.has(e) || ANTS_AGENCY_EMAILS.has(e);
 }
 
 export function agencyViewerLabel(email?: string | null): string {

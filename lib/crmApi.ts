@@ -34,6 +34,9 @@ function resolveCrmUrl(path: string): string {
     if (pathname === "/leads/reminders") {
         return apiUrl(`/enquiries/admin/crm-leads/reminders/${qs ? `?${qs}` : ""}`);
     }
+    if (pathname === "/leads/reports/state-summary") {
+        return apiUrl(`/enquiries/admin/crm-leads/reports/state-summary/${qs ? `?${qs}` : ""}`);
+    }
     if (pathname === "/leads/reports") {
         return apiUrl(`/enquiries/admin/crm-leads/reports/${qs ? `?${qs}` : ""}`);
     }
