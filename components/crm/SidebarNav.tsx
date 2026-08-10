@@ -4,12 +4,12 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, PieChart } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { clearCrmDashboardFilters } from "@/lib/crmDashboardFilters";
-import { isCampaignExternalViewerEmail } from "@/lib/crmCampaignAccess";
+import { shouldHideReportsTab } from "@/lib/crmCampaignAccess";
 
 export function SidebarNav() {
     const pathname = usePathname();
     const { user } = useAuth();
-    const hideReports = isCampaignExternalViewerEmail(user?.email);
+    const hideReports = shouldHideReportsTab(user?.email);
 
     const isDashboard = pathname === "/crm-admin" || pathname === "/crm-admin/";
     const isReports = Boolean(pathname?.includes("/reports"));

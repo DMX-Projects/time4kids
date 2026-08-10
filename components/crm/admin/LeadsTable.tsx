@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import api from '@/lib/crmApi'
 import { utmCampaignDisplay, utmMediumDisplay, utmSourceDisplay } from '@/lib/crmLeadKind'
 import { toast } from 'react-hot-toast'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react'
 
 interface LeadsTableProps {
   dateRange: { startDate: Date | null; endDate: Date | null }
@@ -153,16 +153,37 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
   const router = useRouter()
   const tableContainerRef = useRef<HTMLDivElement>(null)
   const [leads, setLeads] = useState<any[]>([])
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
-  const openLead = (leadId: string) => {
-    // Save filters before leaving so Back always restores them.
-    onBeforeNavigate?.()
+  const leadHref = (leadId: string) => {
     const base = `/crm-admin/leads/${encodeURIComponent(leadId)}`
-    const href = returnHref
+    return returnHref
       ? `${base}?from=${encodeURIComponent(returnHref)}`
       : base
-    router.push(href)
   }
+
+  const openLead = (leadId: string) => {
+    onBeforeNavigate?.()
+    router.push(leadHref(leadId))
+  }
+
+  const openLeadInNewTab = (leadId: string) => {
+    onBeforeNavigate?.()
+    window.open(leadHref(leadId), '_blank', 'noopener,noreferrer')
+    setOpenMenuId(null)
+  }
+
+  useEffect(() => {
+    if (!openMenuId) return
+    const onDocClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null)
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [openMenuId])
 
   const scrollTable = (direction: 'left' | 'right') => {
     if (tableContainerRef.current) {
@@ -392,6 +413,15 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                       <div className="truncate">
                         <HighlightText text={lead.fullName || ''} highlight={debouncedSearch} />
                       </div>
+                      {lead.isCrossStateForm && !campaignViewer ? (
+                        <span
+                          className="mt-1 inline-flex max-w-full truncate rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800"
+                          title={`Other state form: ${lead.crossStateFormFrom || '—'} → city in ${lead.crossStateFormTo || '—'}`}
+                        >
+                          Other state form
+                          {lead.crossStateFormFrom ? ` · ${lead.crossStateFormFrom}` : ''}
+                        </span>
+                      ) : null}
                     </td>
                     {!hideContact && (
                       <td className="px-4 py-4 text-gray-600 text-sm">
@@ -471,12 +501,37 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <button
-                        onClick={() => openLead(lead.id)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold transition-all"
-                      >
-                        View
-                      </button>
+                      <div className="relative flex items-center gap-1" ref={openMenuId === lead.id ? menuRef : undefined}>
+                        <button
+                          type="button"
+                          onClick={() => openLead(lead.id)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold transition-all"
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="More actions"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setOpenMenuId((id) => (id === lead.id ? null : lead.id))
+                          }}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                        {openMenuId === lead.id && (
+                          <div className="absolute right-0 top-full z-20 mt-1 min-w-[160px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                            <button
+                              type="button"
+                              onClick={() => openLeadInNewTab(lead.id)}
+                              className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                            >
+                              Open in new tab
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

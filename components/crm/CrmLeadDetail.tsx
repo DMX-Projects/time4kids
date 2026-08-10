@@ -13,6 +13,11 @@ import {
   isCampaignExternalViewerEmail,
   isRestrictedCrmViewerEmail,
 } from '@/lib/crmCampaignAccess'
+import {
+  canUseFranchiseNurture,
+  getFranchiseNurtureOptions,
+  type FranchiseNurtureOption,
+} from '@/lib/crmFranchiseNurture'
 import { ChevronLeft } from 'lucide-react'
 
 interface LeadTemplate {
@@ -244,6 +249,7 @@ export default function LeadDetailPage() {
   const [emailBody, setEmailBody] = useState('')
   const [whatsappComposeOpen, setWhatsappComposeOpen] = useState(false)
   const [whatsappMessage, setWhatsappMessage] = useState('')
+  const [selectedNurtureId, setSelectedNurtureId] = useState('nurture-1')
   const [editForm, setEditForm] = useState<Record<string, string>>({})
   const [assignUsers, setAssignUsers] = useState<{ id: number; label: string }[]>([])
   const isCampaignReadonlyUser = isRestrictedCrmViewerEmail(user?.email)
@@ -520,12 +526,12 @@ export default function LeadDetailPage() {
     }
   }
 
-  const openWhatsAppCompose = () => {
+  const openWhatsAppCompose = (preset?: { whatsapp: string }) => {
     if (!lead?.mobile?.trim()) {
       toast.error('Lead has no mobile number')
       return
     }
-    const templates = getTemplatesForLead(lead)
+    const templates = preset || getTemplatesForLead(lead)
     setWhatsappMessage(templates.whatsapp)
     setWhatsappComposeOpen(true)
   }
@@ -555,15 +561,28 @@ export default function LeadDetailPage() {
     loadLead()
   }
 
-  const openEmailCompose = () => {
+  const openEmailCompose = (preset?: { emailSubject: string; emailBody: string }) => {
     if (!lead?.email?.trim()) {
       toast.error('Lead has no email address')
       return
     }
-    const templates = getTemplatesForLead(lead)
+    const templates = preset || getTemplatesForLead(lead)
     setEmailSubject(templates.emailSubject)
     setEmailBody(templates.emailBody)
     setEmailComposeOpen(true)
+  }
+
+  const openNurtureWhatsApp = (option: FranchiseNurtureOption) => {
+    setSelectedNurtureId(option.id)
+    openWhatsAppCompose({ whatsapp: option.whatsapp })
+  }
+
+  const openNurtureEmail = (option: FranchiseNurtureOption) => {
+    setSelectedNurtureId(option.id)
+    openEmailCompose({
+      emailSubject: option.emailSubject,
+      emailBody: option.emailBody,
+    })
   }
 
   const handleDirectEmail = async () => {
@@ -605,6 +624,10 @@ export default function LeadDetailPage() {
     (lead.editable !== false) && !hideCrmOpsFields && !Boolean(lead?.campaignViewer)
   const isFranchiseLeadFlag = isFranchiseLead(lead)
   const isLpLead = isFranchiseLpGeoSource(lead.source)
+  const showFranchiseNurture = !hideCrmOpsFields && canUseFranchiseNurture(lead)
+  const nurtureOptions = showFranchiseNurture
+    ? getFranchiseNurtureOptions(lead?.fullName || lead?.name || '')
+    : []
 
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
@@ -635,6 +658,20 @@ export default function LeadDetailPage() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Lead Details</h2>
               </div>
+              {lead.isCrossStateForm && !isAgencyUser && !isCampaignReadonlyUser ? (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                  <p className="font-semibold">Additional lead — other state form</p>
+                  <p className="mt-1 text-amber-900/90">
+                    Form state: <span className="font-medium">{lead.crossStateFormFrom || lead.state || '—'}</span>
+                    {' · '}
+                    City state: <span className="font-medium">{lead.crossStateFormTo || '—'}</span>
+                    {lead.city ? ` (${lead.city})` : ''}
+                  </p>
+                  <p className="mt-1 text-xs text-amber-800/80">
+                    This lead came from a different state&apos;s campaign form. It may not appear under a strict State filter for the city state.
+                  </p>
+                </div>
+              ) : null}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Full Name</label>
@@ -1049,12 +1086,69 @@ export default function LeadDetailPage() {
           {showHistoryPanel && (
             <div className="space-y-6">
               {!hideCrmOpsFields && (
+              <>
+              {showFranchiseNurture && (
+              <div className="card">
+                <h3 className="text-xl font-bold text-gray-800 mb-1">Nurturing</h3>
+                <p className="mb-4 text-xs text-gray-500">
+                  Franchise paid-campaign only · pick a message, then send Email or WhatsApp.
+                  Logged in History after send.
+                </p>
+                <div className="space-y-3">
+                  {nurtureOptions.map((option) => {
+                    const selected = selectedNurtureId === option.id
+                    return (
+                      <div
+                        key={option.id}
+                        className={`rounded-xl border p-3 transition-colors ${
+                          selected
+                            ? 'border-blue-400 bg-blue-50/60'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedNurtureId(option.id)}
+                          className="w-full text-left"
+                        >
+                          <p className="text-sm font-bold text-gray-800">
+                            {option.label} · {option.theme}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-xs text-gray-500">
+                            {option.whatsapp}
+                          </p>
+                        </button>
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openNurtureWhatsApp(option)}
+                            disabled={!lead.mobile}
+                            className="flex-1 rounded-lg bg-green-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            WhatsApp
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openNurtureEmail(option)}
+                            disabled={!lead.email}
+                            className="flex-1 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Email
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              )}
+
               <div className="card">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
                 <div className="space-y-3">
                   <button
                     type="button"
-                    onClick={openWhatsAppCompose}
+                    onClick={() => openWhatsAppCompose()}
                     disabled={!lead.mobile}
                     className="block w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
                   >
@@ -1062,7 +1156,7 @@ export default function LeadDetailPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={openEmailCompose}
+                    onClick={() => openEmailCompose()}
                     disabled={!lead.email}
                     className="block w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
                   >
@@ -1070,6 +1164,7 @@ export default function LeadDetailPage() {
                   </button>
                 </div>
               </div>
+              </>
               )}
 
               <div className="card">

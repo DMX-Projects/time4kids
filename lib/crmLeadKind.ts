@@ -139,8 +139,9 @@ function isGoogleAdTraffic(lead: {
 
 /**
  * UTM / channel source label for CRM tables & detail.
- * West Bengal Meta/Google labels stay generic for standard CRM users and super-admins;
- * Ants-specific WB labels are reserved for the Ants agency viewer only.
+ * Matches email / backend agency rules:
+ * - West Bengal LP (lp_wb / timekids-lp-wb) → always Ants_Google / Ants_Meta
+ * - Other Meta Instant Form / BCWW Google → BCWW_* (even if state happens to be WB)
  */
 export function utmSourceDisplay(
   lead: {
@@ -152,25 +153,24 @@ export function utmSourceDisplay(
     utmMedium?: string | null;
     landingPageUrl?: string | null;
   } | null | undefined,
-  viewerEmail?: string | null,
+  _viewerEmail?: string | null,
 ): string {
   if (!lead) return "—";
 
   const src = String(lead.source || "").trim().toLowerCase();
-  const isMetaSource = src === "july_meta" || src === "facebook_lead_ads";
-  const isAntsViewer = String(viewerEmail || "").trim().toLowerCase() === "ants.agency@gmail.com";
+  const isMetaSource = src === "july_meta" || src === "facebook_lead_ads" || src === "ants_meta";
 
-  if (isWestBengalTerritoryLead(lead)) {
-    if (isMetaSource || isMetaAdTraffic(lead)) return isAntsViewer ? "Ants_Meta" : "BCWW_Meta";
-    // WB page / Google LP default for standard viewers; Ants viewer keeps Ants_Google.
-    return isAntsViewer ? "Ants_Google" : "BCWW_Google";
+  // Dedicated Ants WB landing page — never label as BCWW.
+  if (isWestBengalLpLead(lead) || src === "lp_wb") {
+    if (isMetaSource || isMetaAdTraffic(lead)) return "Ants_Meta";
+    return "Ants_Google";
   }
 
   // Only a real Google Ads click overrides the stored channel — same rule the
   // Google filter uses, so the label always matches the channel the lead sits in.
   if (hasGoogleAdsClick(lead)) return "BCWW_Google";
   if (isMetaSource) return "BCWW_Meta";
-  if (src === "july_lp") return "BCWW_Google";
+  if (src === "july_lp" || src === "google") return "BCWW_Google";
   if (isMetaAdTraffic(lead)) return "BCWW_Meta";
 
   const raw = String(lead.utmSource || "").trim();

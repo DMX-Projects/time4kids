@@ -7,7 +7,7 @@ import { Menu, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SidebarNav } from "@/components/crm/SidebarNav";
 import { hardRefreshCrmDashboard } from "@/lib/crmDashboardFilters";
-import { isCampaignExternalViewerEmail } from "@/lib/crmCampaignAccess";
+import { shouldHideReportsTab } from "@/lib/crmCampaignAccess";
 
 export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -15,7 +15,7 @@ export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
     const { user, logout } = useAuth();
     const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
     const isLogin = pathname?.startsWith("/crm-admin/login");
-    const hideReports = isCampaignExternalViewerEmail(user?.email);
+    const hideReports = shouldHideReportsTab(user?.email);
 
     const handleLogout = () => {
         logout();
