@@ -867,7 +867,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                                 </h2>
                             </div>
                             <p className="text-xs text-indigo-200 mt-1">
-                                Captured across BCWW, ANTS, Franchise Referrals, and Website ({stateReportData?.period || "Selected Date Period"}).
+                                Captured across BCWW, ANTS, Franchise Referrals, and Website franchise forms ({stateReportData?.period || "Selected Date Period"}).
                             </p>
                         </div>
 
