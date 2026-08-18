@@ -182,6 +182,8 @@ export default function ConversionFunnel({
     return sum + (parseInt(row.count, 10) || 0)
   }, 0)
   const qualified = Math.max(total - notQualified, 0)
+  const qualifiedPct = total > 0 ? Math.round((qualified / total) * 100) : 0
+  const notQualifiedPct = total > 0 ? Math.round((notQualified / total) * 100) : 0
   const stageCount = Math.max(stages.length, 1)
 
   // Tapering body, then a straight spout for the last 2 stages (matches reference funnel).
@@ -218,7 +220,10 @@ export default function ConversionFunnel({
                 Qualified
               </p>
               <p className="mt-1 text-xl font-bold tabular-nums text-emerald-900 sm:text-2xl">
-                {qualified.toLocaleString()}
+                {qualified.toLocaleString()}{' '}
+                <span className="text-base font-semibold text-emerald-800/80 sm:text-lg">
+                  ({qualifiedPct}%)
+                </span>
               </p>
             </div>
             <div className="rounded-lg bg-slate-100 px-2 py-3">
@@ -234,7 +239,10 @@ export default function ConversionFunnel({
                 Not Qualified
               </p>
               <p className="mt-1 text-xl font-bold tabular-nums text-rose-900 sm:text-2xl">
-                {notQualified.toLocaleString()}
+                {notQualified.toLocaleString()}{' '}
+                <span className="text-base font-semibold text-rose-800/80 sm:text-lg">
+                  ({notQualifiedPct}%)
+                </span>
               </p>
             </div>
           </div>
