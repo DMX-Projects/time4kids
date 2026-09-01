@@ -1085,88 +1085,6 @@ export default function LeadDetailPage() {
 
           {showHistoryPanel && (
             <div className="space-y-6">
-              {!hideCrmOpsFields && (
-              <>
-              {showFranchiseNurture && (
-              <div className="card">
-                <h3 className="text-xl font-bold text-gray-800 mb-1">Nurturing</h3>
-                <p className="mb-4 text-xs text-gray-500">
-                  Franchise paid-campaign only · pick a message, then send Email or WhatsApp.
-                  Logged in History after send.
-                </p>
-                <div className="space-y-3">
-                  {nurtureOptions.map((option) => {
-                    const selected = selectedNurtureId === option.id
-                    return (
-                      <div
-                        key={option.id}
-                        className={`rounded-xl border p-3 transition-colors ${
-                          selected
-                            ? 'border-blue-400 bg-blue-50/60'
-                            : 'border-gray-200 bg-white hover:border-gray-300'
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setSelectedNurtureId(option.id)}
-                          className="w-full text-left"
-                        >
-                          <p className="text-sm font-bold text-gray-800">
-                            {option.label} · {option.theme}
-                          </p>
-                          <p className="mt-1 line-clamp-2 text-xs text-gray-500">
-                            {option.whatsapp}
-                          </p>
-                        </button>
-                        <div className="mt-3 flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openNurtureWhatsApp(option)}
-                            disabled={!lead.mobile}
-                            className="flex-1 rounded-lg bg-green-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            WhatsApp
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openNurtureEmail(option)}
-                            disabled={!lead.email}
-                            className="flex-1 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Email
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-              )}
-
-              <div className="card">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
-                <div className="space-y-3">
-                  <button
-                    type="button"
-                    onClick={() => openWhatsAppCompose()}
-                    disabled={!lead.mobile}
-                    className="block w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    WhatsApp
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openEmailCompose()}
-                    disabled={!lead.email}
-                    className="block w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    Email
-                  </button>
-                </div>
-              </div>
-              </>
-              )}
-
               <div className="card">
                 <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                   History
@@ -1299,6 +1217,89 @@ export default function LeadDetailPage() {
                   <div className="absolute bottom-0 left-[-9px] w-4 h-4 rounded-full border-4 border-white bg-gray-200 shadow-sm" />
                 </div>
               </div>
+
+              {!hideCrmOpsFields && (
+              <>
+              {showFranchiseNurture && (
+              <div className="card">
+                <h3 className="text-xl font-bold text-gray-800 mb-1">Nurturing</h3>
+                <p className="mb-4 text-xs text-gray-500">
+                  Franchise paid-campaign only · pick a message, then send Email or WhatsApp.
+                  Logged in History after send.
+                </p>
+                <div className="space-y-3">
+                  {nurtureOptions.map((option) => {
+                    const selected = selectedNurtureId === option.id
+                    return (
+                      <div
+                        key={option.id}
+                        className={`rounded-xl border p-3 transition-colors ${
+                          selected
+                            ? 'border-blue-400 bg-blue-50/60'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedNurtureId(option.id)}
+                          className="w-full text-left"
+                        >
+                          <p className="text-sm font-bold text-gray-800">
+                            {option.label} · {option.theme}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-xs text-gray-500">
+                            {option.whatsapp}
+                          </p>
+                        </button>
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openNurtureWhatsApp(option)}
+                            disabled={!lead.mobile}
+                            className="flex-1 rounded-lg bg-green-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            WhatsApp
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openNurtureEmail(option)}
+                            disabled={!lead.email}
+                            className="flex-1 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Email
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              )}
+
+              <div className="card">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Direct Contact</h3>
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => openWhatsAppCompose()}
+                    disabled={!lead.mobile}
+                    className="block w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    WhatsApp
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEmailCompose()}
+                    disabled={!lead.email}
+                    className="block w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-center font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    Email
+                  </button>
+                </div>
+              </div>
+              </>
+              )}
+
             </div>
           )}
         </div>
