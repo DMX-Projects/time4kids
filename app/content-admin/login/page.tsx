@@ -1,7 +1,11 @@
-import ContentAdminLogin from "@/components/content-admin/ContentAdminLogin";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+type Props = {
+    searchParams?: { next?: string };
+};
 
-export default function ContentAdminLoginPage() {
-    return <ContentAdminLogin />;
+/** Legacy URL — content admin uses the normal site login at `/login`. */
+export default function ContentAdminLoginRedirect({ searchParams }: Props) {
+    const next = searchParams?.next?.trim() || "/dashboard/admin";
+    redirect(`/login?next=${encodeURIComponent(next)}`);
 }
