@@ -117,8 +117,16 @@ export default function Header() {
                             <AnimatedNavBar />
                         </div>
 
-                        {/* Mobile / tablet: hamburger + drawer (all links + login without horizontal scroll) */}
-                        <div className="flex flex-shrink-0 items-center gap-2 lg:hidden">
+                        {/* Mobile / tablet: social icons + hamburger */}
+                        <div className="ml-auto flex flex-shrink-0 items-center gap-2 lg:ml-0 lg:hidden">
+                            <span
+                                className="header-mobile-social-icons flex items-center gap-1.5 sm:gap-2"
+                                aria-label="Connect with us on social media"
+                            >
+                                <SocialBrandLink platform="facebook" href={footer.social.facebook} size="xs" />
+                                <SocialBrandLink platform="instagram" href={footer.social.instagram} size="xs" />
+                                <SocialBrandLink platform="youtube" href={footer.social.youtube} size="xs" />
+                            </span>
                             <button
                                 type="button"
                                 onClick={() => setMobileMenuOpen(true)}

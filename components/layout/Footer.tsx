@@ -152,8 +152,8 @@ const Footer = () => {
                         </ul>
                     </div>
 
-                    {/* Column 4: Connect With Us */}
-                    <div>
+                    {/* Column 4: Connect With Us (desktop/tablet footer; mobile uses header icons) */}
+                    <div className="hidden md:block">
                         <h3 className="mb-4 text-lg font-bold text-gray-900 md:mb-6">Connect With Us</h3>
                         <div className="flex justify-center gap-3 md:justify-start">
                             <SocialBrandLink platform="facebook" href={footer.social.facebook} size="sm" />
