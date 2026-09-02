@@ -98,6 +98,7 @@ const CRM_LEAD_ASSIGNER_EMAILS = new Set([
   'admin@timekids.com',
   'jayesh@time4education.com',
   'bethleena@timekidspreschools.com',
+  'prashant.mishra@timekidspreschools.com',
 ])
 
 const toLocalDatetimeString = (dateStr: string | undefined | null) => {
@@ -222,8 +223,8 @@ const SOURCE_LABELS: Record<string, string> = {
   instagram: 'Instagram',
   july_lp: 'BCWW_Google',
   july_meta: 'BCWW_Meta',
-  lp_wb: 'Ants_Google',
-  ants_meta: 'Ants_Meta',
+  lp_wb: 'BCWW_Google',
+  ants_meta: 'BCWW_Meta',
   google: 'BCWW_Google',
   facebook_lead_ads: 'BCWW_Meta',
   youtube: 'YouTube',

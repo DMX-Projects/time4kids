@@ -10,8 +10,8 @@ const SOURCE_LABELS: Record<string, string> = {
   google: 'BCWW_Google',
   july_lp: 'BCWW_Google',
   july_meta: 'BCWW_Meta',
-  lp_wb: 'Ants_Google',
-  ants_meta: 'Ants_Meta',
+  lp_wb: 'BCWW_Google',
+  ants_meta: 'BCWW_Meta',
   youtube: 'YouTube',
   admission: 'Admission',
   contact: 'Centers Enquiry',
@@ -56,8 +56,13 @@ export default function LeadSourceChart({
   const merged = new Map<string, number>()
   for (const item of data) {
     const raw = String(item.source || '')
-    // BCWW Google LP only — keep Ants (lp_wb / West Bengal) as its own slice.
-    const key = raw === 'july_lp' ? 'google' : raw
+    // Fold WB LP (lp_wb) into BCWW Google; ants_meta into BCWW Meta.
+    const key =
+      raw === 'july_lp' || raw === 'lp_wb'
+        ? 'google'
+        : raw === 'ants_meta'
+          ? 'july_meta'
+          : raw
     merged.set(key, (merged.get(key) || 0) + parseInt(item.count, 10))
   }
   const chartData = Array.from(merged.entries()).map(([source, count]) => ({
