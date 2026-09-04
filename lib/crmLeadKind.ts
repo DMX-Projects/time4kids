@@ -139,7 +139,9 @@ function isGoogleAdTraffic(lead: {
 
 /**
  * UTM / channel source label for CRM tables & detail.
- * West Bengal LP (lp_wb / timekids-lp-wb) is folded into BCWW_Google / BCWW_Meta.
+ * Matches email / backend agency rules:
+ * - West Bengal LP (lp_wb / timekids-lp-wb) → always Ants_Google / Ants_Meta
+ * - Other Meta Instant Form / BCWW Google → BCWW_* (even if state happens to be WB)
  */
 export function utmSourceDisplay(
   lead: {
@@ -158,10 +160,10 @@ export function utmSourceDisplay(
   const src = String(lead.source || "").trim().toLowerCase();
   const isMetaSource = src === "july_meta" || src === "facebook_lead_ads" || src === "ants_meta";
 
-  // WB LP sits under BCWW (Ants agency folded in).
+  // Dedicated Ants WB landing page — never label as BCWW.
   if (isWestBengalLpLead(lead) || src === "lp_wb") {
-    if (isMetaSource || isMetaAdTraffic(lead)) return "BCWW_Meta";
-    return "BCWW_Google";
+    if (isMetaSource || isMetaAdTraffic(lead)) return "Ants_Meta";
+    return "Ants_Google";
   }
 
   // Only a real Google Ads click overrides the stored channel — same rule the

@@ -109,6 +109,8 @@ const CATEGORIES = [
 const CAMPAIGN_CHANNEL_CATEGORIES = [
     { id: "google", label: "BCWW_Google", bg: "bg-amber-50 text-amber-800", subkey: "lp" },
     { id: "july_meta", label: "BCWW_Meta", bg: "bg-fuchsia-50 text-fuchsia-800", subkey: "meta" },
+    { id: "lp_wb", label: "Ants_Google", bg: "bg-teal-50 text-teal-800", subkey: "ants" },
+    { id: "ants_meta", label: "Ants_Meta", bg: "bg-emerald-50 text-emerald-800", subkey: "antsm" },
     { id: "youtube", label: "YouTube", bg: "bg-red-50 text-red-800", subkey: "yt" },
 ];
 
@@ -142,8 +144,8 @@ const CHANNEL_LABELS: Record<string, string> = {
     google: "Google",
     july_lp: "Google",
     july_meta: "META",
-    lp_wb: "BCWW_Google",
-    ants_meta: "BCWW_Meta",
+    lp_wb: "Ants_Google",
+    ants_meta: "Ants_Meta",
     youtube: "YouTube",
     whatsapp: "WhatsApp",
     sms: "SMS",
@@ -321,8 +323,8 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
         }
         if (agencySlug === "ants") {
             return [
-                { id: "google", label: "BCWW Google", bg: "bg-amber-50 text-amber-800", subkey: "lp" },
-                { id: "july_meta", label: "BCWW Meta", bg: "bg-fuchsia-50 text-fuchsia-800", subkey: "meta" },
+                { id: "lp_wb", label: "Ants Google", bg: "bg-teal-50 text-teal-800", subkey: "ants" },
+                { id: "ants_meta", label: "Ants Meta", bg: "bg-emerald-50 text-emerald-800", subkey: "antsm" },
             ];
         }
         if (!source || source === "all") return CATEGORIES;
@@ -354,7 +356,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
             ];
         if (source === "others") return FRANCHISE_OTHERS_CHANNEL_CATEGORIES;
         if (source === "admission_others") return ADMISSION_OTHERS_CHANNEL_CATEGORIES;
-        if (source === "google" || source === "july_lp" || source === "lp_wb") {
+        if (source === "google" || source === "july_lp") {
             return [
                 {
                     id: "google",
@@ -362,15 +364,47 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                     bg: "bg-amber-50 text-amber-800",
                     subkey: "lp",
                 },
+                {
+                    id: "lp_wb",
+                    label: "Ants_Google Leads",
+                    bg: "bg-teal-50 text-teal-800",
+                    subkey: "ants",
+                },
             ];
         }
-        if (source === "july_meta" || source === "ants_meta") {
+        if (source === "lp_wb") {
+            return [
+                {
+                    id: "campaign",
+                    label: "Ants_Google Leads",
+                    bg: "bg-teal-50 text-teal-800",
+                    subkey: "ants",
+                },
+            ];
+        }
+        if (source === "ants_meta") {
+            return [
+                {
+                    id: "campaign",
+                    label: "Ants_Meta Leads",
+                    bg: "bg-emerald-50 text-emerald-800",
+                    subkey: "antsm",
+                },
+            ];
+        }
+        if (source === "july_meta") {
             return [
                 {
                     id: "july_meta",
                     label: "BCWW_Meta Leads",
                     bg: "bg-fuchsia-50 text-fuchsia-800",
                     subkey: "meta",
+                },
+                {
+                    id: "ants_meta",
+                    label: "Ants_Meta Leads",
+                    bg: "bg-emerald-50 text-emerald-800",
+                    subkey: "antsm",
                 },
             ];
         }
@@ -482,30 +516,17 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                     const normalizedData: any = {};
                     Object.keys(data).forEach((k) => {
                         const cityData = { ...(data[k] || {}) };
-                        // Merge july_lp + WB LP into Google; ants_meta into META.
+                        // Merge legacy july_lp into Google; keep Ants (lp_wb) separate.
                         const googleBucket = { ...(cityData.google || {}) };
-                        for (const partKey of ["july_lp", "lp_wb"]) {
-                            const part = cityData[partKey];
-                            if (part && typeof part === "object") {
-                                Object.entries(part).forEach(([status, count]) => {
-                                    googleBucket[status] = (googleBucket[status] || 0) + Number(count || 0);
-                                });
-                                delete cityData[partKey];
-                            }
+                        const part = cityData.july_lp;
+                        if (part && typeof part === "object") {
+                            Object.entries(part).forEach(([status, count]) => {
+                                googleBucket[status] = (googleBucket[status] || 0) + Number(count || 0);
+                            });
+                            delete cityData.july_lp;
                         }
                         if (Object.keys(googleBucket).length > 0) {
                             cityData.google = googleBucket;
-                        }
-                        const metaBucket = { ...(cityData.july_meta || {}) };
-                        const antsMeta = cityData.ants_meta;
-                        if (antsMeta && typeof antsMeta === "object") {
-                            Object.entries(antsMeta).forEach(([status, count]) => {
-                                metaBucket[status] = (metaBucket[status] || 0) + Number(count || 0);
-                            });
-                            delete cityData.ants_meta;
-                        }
-                        if (Object.keys(metaBucket).length > 0) {
-                            cityData.july_meta = metaBucket;
                         }
                         normalizedData[k.toLowerCase()] = cityData;
                     });

@@ -250,6 +250,7 @@ const CAMPAIGN_CHANNEL_FILTERS: { id: CampaignChannelFilter; label: string }[] =
 const AGENCY_FILTERS: { id: AgencyFilter; label: string }[] = [
     { id: "", label: "All Agencies" },
     { id: "bcww", label: "BC Web Wise" },
+    { id: "ants", label: "Ants" },
 ];
 
 const OTHERS_CHANNEL_FILTERS: { id: OthersChannelFilter; label: string }[] = [
