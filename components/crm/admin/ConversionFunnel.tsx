@@ -9,6 +9,7 @@ const STATUS_LABELS: Record<string, string> = {
   joined_competition: 'Joined competition',
   not_interested: 'Not Interested',
   wrong_enquiry: 'Wrong enquiry',
+  meeting_done: 'Meeting done',
 
   hot: 'Hot',
   warm: 'Warm',
@@ -30,6 +31,7 @@ const FRANCHISE_STATUS_ORDER = [
   'hot',
   'not_interested',
   'wrong_enquiry',
+  'meeting_done',
   'converted_mou_signed',
   'converted_agreement_signed',
 ]
@@ -44,12 +46,14 @@ const ALL_STATUS_ORDER = [
   'converted_admission',
   'not_interested',
   'wrong_enquiry',
+  'meeting_done',
 ]
 
 const ADMISSION_STATUS_ORDER = [
   'untouched',
   'not_answering',
   'wrong_enquiry',
+  'meeting_done',
   'not_interested',
   'follow_up',
   'joined_competition',
@@ -66,6 +70,7 @@ const statusColors: Record<string, string> = {
   converted_admission: '#10B981',
   not_interested: '#EF4444',
   wrong_enquiry: '#F97316',
+  meeting_done: '#059669',
 
   hot: '#EF4444',
   warm: '#F97316',
@@ -131,12 +136,15 @@ interface ConversionFunnelProps {
   /** @deprecated use funnelMode */
   isFranchise?: boolean
   funnelMode?: FunnelMode
+  /** Meeting done is a lead flag, not a CRM status. */
+  meetingDone?: number
 }
 
 export default function ConversionFunnel({
   data,
   isFranchise = false,
   funnelMode,
+  meetingDone,
 }: ConversionFunnelProps) {
   const mode: FunnelMode = funnelMode ?? (isFranchise ? 'franchise' : 'all')
   const statusOrder =
@@ -151,23 +159,36 @@ export default function ConversionFunnel({
       : mode === 'admission'
         ? admissionLegacyMap
         : legacyMap
-  const stages = statusOrder.map((status) => {
-    const keys = keyMap[status] || [status]
-    let count = 0
-    keys.forEach((k) => {
-      const item = data?.find((d) => d.status === k)
-      if (item) count += parseInt(item.count, 10) || 0
+  const stages = statusOrder
+    .filter((status) => status !== 'meeting_done' || meetingDone !== undefined)
+    .map((status) => {
+      if (status === 'meeting_done') {
+        return {
+          id: status,
+          label: STATUS_LABELS[status] || status,
+          count: Number(meetingDone) || 0,
+          color: statusColors[status] || '#6B7280',
+        }
+      }
+      const keys = keyMap[status] || [status]
+      let count = 0
+      keys.forEach((k) => {
+        const item = data?.find((d) => d.status === k)
+        if (item) count += parseInt(item.count, 10) || 0
+      })
+
+      return {
+        id: status,
+        label: STATUS_LABELS[status] || status,
+        count,
+        color: statusColors[status] || '#6B7280',
+      }
     })
 
-    return {
-      id: status,
-      label: STATUS_LABELS[status] || status,
-      count,
-      color: statusColors[status] || '#6B7280',
-    }
-  })
-
-  const total = stages.reduce((sum, s) => sum + s.count, 0)
+  // Meeting done is a flag on leads that already have a status — do not inflate Total / Qualified.
+  const total = stages
+    .filter((s) => s.id !== 'meeting_done')
+    .reduce((sum, s) => sum + s.count, 0)
   // Not qualified = Not Interested + Not Answering + Wrong Enquiry
   // (franchise uses not_answering_calls; admission/all use not_answering)
   const notQualifiedStatuses = new Set([
@@ -270,6 +291,7 @@ export default function ConversionFunnel({
               // Stack label above count when text would clip (spout / long names like Converted – MOU).
               const stackLabel =
                 useTwoCol ||
+                stage.id === 'meeting_done' ||
                 stage.label.length > 14 ||
                 stage.label.toLowerCase().includes('converted')
 

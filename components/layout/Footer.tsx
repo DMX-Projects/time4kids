@@ -178,7 +178,13 @@ const Footer = () => {
                 
                 <div className="container mx-auto px-8 text-center">
                     <p className="text-sm font-medium text-gray-800">
-                        © {currentYear} All Rights Reserved. T.I.M.E. Kids Preschools.
+                        © {currentYear} All Rights Reserved.{' '}
+                        <Link
+                            href="/disclaimer"
+                            className="text-gray-800 transition-colors hover:text-blue-600 hover:underline"
+                        >
+                            Disclaimer
+                        </Link>
                     </p>
                 </div>
             </div>
