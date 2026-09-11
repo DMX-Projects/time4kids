@@ -103,6 +103,7 @@ type StatusFilter =
     | "converted_agreement_signed"
     | "join_later"
     | "not_answering_calls"
+    | "meeting_done"
     // Legacy just in case
     | "new"
     | "contacted"
@@ -287,6 +288,7 @@ const NON_FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "follow_up", label: "Follow-up" },
     { id: "joined_competition", label: "Joined competition" },
     { id: "visited_school", label: "Visited the school" },
+    { id: "meeting_done", label: "Meetings done" },
     { id: "converted_admission", label: "Converted to Admission" },
 ];
 
@@ -295,6 +297,7 @@ const FRANCHISE_FILTERS: { id: StatusFilter; label: string }[] = [
     { id: "untouched", label: "Untouched" },
     { id: "not_answering_calls", label: "Not Answering Calls" },
     { id: "follow_up", label: "Follow-up" },
+    { id: "meeting_done", label: "Meetings done" },
     { id: "join_later", label: "Join Later" },
     { id: "cold", label: "Cold" },
     { id: "warm", label: "Warm" },
@@ -1326,6 +1329,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     />
                                     <ConversionFunnel
                                         data={stats.statusBreakdown}
+                                        meetingDone={Number(stats.meetingDone) || 0}
                                         funnelMode={
                                             isFranchise
                                                 ? "franchise"
