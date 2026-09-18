@@ -5,6 +5,7 @@
  * - External viewer (campaign.viewer): paid campaign; no mobile/email; view-only; no Reports.
  * - Agency viewers (Bcwebwise / Ants): state-scoped leads; no mobile/email; History only
  *   (no comment box, status/assignment/WhatsApp/email edits).
+ *   Bcwebwise also sees Google city landing pages (timekids-2g).
  */
 
 export const CAMPAIGN_ONLY_CRM_EMAILS = new Set([
