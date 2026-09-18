@@ -15,6 +15,7 @@ interface ReportsViewProps {
     agency?: string;
     /** Agency slug for scoped column view: bcww | ants */
     agencySlug?: "bcww" | "ants" | "";
+    agencyLead?: string;
     userId?: string;
     centreId?: string;
     isSuperAdmin?: boolean;
@@ -187,7 +188,7 @@ function cityRowTotal(
     }, 0);
 }
 
-export default function ReportsView({ dateRange, city, state, source, campaign, medium, agency, agencySlug, userId, centreId, isSuperAdmin }: ReportsViewProps) {
+export default function ReportsView({ dateRange, city, state, source, campaign, medium, agency, agencySlug, agencyLead, userId, centreId, isSuperAdmin }: ReportsViewProps) {
     const tableContainerRef = useRef<HTMLDivElement>(null);
     const [cities, setCities] = useState<{ name: string }[]>([]);
     const [reportData, setReportData] = useState<any>({});
@@ -502,6 +503,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                 if (medium) params.append("medium", medium);
                 if (userId) params.append("userId", userId);
                 if (centreId) params.append("centreId", centreId);
+                if (agencyLead) params.append("agencyLead", agencyLead);
 
                 const response = await api.get(`/leads/reports?${params.toString()}`);
                 if (cancelled) return;
@@ -555,7 +557,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
             cancelled = true;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps -- stable serialized filter keys
-    }, [startKey, endKey, cityKey, stateKey, source, campaign, medium, agency, agencySlug, userId, centreId]);
+    }, [startKey, endKey, cityKey, stateKey, source, campaign, medium, agency, agencySlug, agencyLead, userId, centreId]);
 
     useEffect(() => {
         setPage(1);
@@ -615,6 +617,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                 (l.name || "").toLowerCase().includes(search) ||
                 (l.city || "").toLowerCase().includes(search) ||
                 (l.state || "").toLowerCase().includes(search) ||
+                (l.lead_type || "").toLowerCase().includes(search) ||
                 (l.utm_source || "").toLowerCase().includes(search) ||
                 (l.utm_medium || "").toLowerCase().includes(search) ||
                 (l.utm_campaign || "").toLowerCase().includes(search) ||
@@ -652,6 +655,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
             if (activeStateList.length > 0) params.append("state", activeStateList.join(","));
             if (activeCityList.length > 0) params.append("city", activeCityList.join(","));
             if (agency) params.append("agency", agency);
+            if (agencyLead) params.append("agencyLead", agencyLead);
             params.append("export", "csv");
 
             // Use axios with blob responseType to ensure JWT auth header is sent
@@ -696,19 +700,30 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
 
     if (isAgencyMode) {
         const agencyTotalPages = Math.ceil(filteredAgencyLeads.length / pageSize) || 1;
+        const leadTypeLabel =
+            agencyLead === "landing" ? "Admission" : agencyLead === "campaign" ? "Campaign" : "All";
+        const reportTitle =
+            agencyLead === "landing"
+                ? "Agency Admission Leads Report"
+                : agencyLead === "campaign"
+                  ? "Agency Campaign Leads Report"
+                  : "Agency Leads Report";
         return (
             <div className="space-y-6">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div className="p-5 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50">
                         <div>
                             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                <span>Agency Campaign Leads Report</span>
+                                <span>{reportTitle}</span>
                                 <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">
                                     {filteredAgencyLeads.length} Leads
                                 </span>
+                                <span className="bg-slate-100 text-slate-700 text-xs px-2.5 py-0.5 rounded-full font-bold">
+                                    {leadTypeLabel}
+                                </span>
                             </h2>
                             <p className="text-xs text-gray-500 mt-0.5">
-                                Showing campaign leads with full UTM parameter detail & description.
+                                Use Lead Type All / Campaign / Admission, then Generate. CSV includes the same split.
                             </p>
                         </div>
 
@@ -753,6 +768,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                                     <th className="p-3 border border-slate-800">name</th>
                                     <th className="p-3 border border-slate-800">state</th>
                                     <th className="p-3 border border-slate-800">city</th>
+                                    <th className="p-3 border border-slate-800">lead_type</th>
                                     <th className="p-3 border border-slate-800">utm_source</th>
                                     <th className="p-3 border border-slate-800">utm_medium</th>
                                     <th className="p-3 border border-slate-800">utm_campaign</th>
@@ -766,7 +782,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={11} className="p-8 text-center">
+                                        <td colSpan={12} className="p-8 text-center">
                                             <div className="flex justify-center">
                                                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                                             </div>
@@ -774,7 +790,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                                     </tr>
                                 ) : paginatedAgencyLeads.length === 0 ? (
                                     <tr>
-                                        <td colSpan={11} className="p-8 text-center text-gray-500">
+                                        <td colSpan={12} className="p-8 text-center text-gray-500">
                                             No agency leads found matching the current filters.
                                         </td>
                                     </tr>
@@ -784,6 +800,15 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                                             <td className="p-3 font-semibold text-gray-900 whitespace-nowrap">{lead.name || "-"}</td>
                                             <td className="p-3 text-gray-700 whitespace-nowrap">{lead.state || "-"}</td>
                                             <td className="p-3 text-gray-700 whitespace-nowrap">{lead.city || "-"}</td>
+                                            <td className="p-3 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                                                    String(lead.lead_type || "").toLowerCase() === "admission"
+                                                        ? "bg-violet-50 text-violet-800 border-violet-200"
+                                                        : "bg-sky-50 text-sky-800 border-sky-200"
+                                                }`}>
+                                                    {lead.lead_type || "Campaign"}
+                                                </span>
+                                            </td>
                                             <td className="p-3 text-gray-600 font-mono text-xs whitespace-nowrap">{lead.utm_source || "-"}</td>
                                             <td className="p-3 text-gray-600 font-mono text-xs max-w-[150px] truncate" title={lead.utm_medium}>{lead.utm_medium || "-"}</td>
                                             <td className="p-3 text-gray-600 font-mono text-xs max-w-[150px] truncate" title={lead.utm_campaign}>{lead.utm_campaign || "-"}</td>

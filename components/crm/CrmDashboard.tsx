@@ -328,6 +328,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const [selectedSource, setSelectedSource] = useState<SourceFilter>("all");
     const [selectedCampaignChannel, setSelectedCampaignChannel] = useState<ChannelFilter>("");
     const [selectedAgency, setSelectedAgency] = useState<AgencyFilter>("");
+    const [selectedAgencyLead, setSelectedAgencyLead] = useState<"" | "campaign" | "landing">("");
     const [selectedUtmCampaign, setSelectedUtmCampaign] = useState<string>("");
     const [campaignOptions, setCampaignOptions] = useState<{ value: string; label: string }[]>([]);
     const [selectedUtmMedium, setSelectedUtmMedium] = useState<string>("");
@@ -343,6 +344,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     const isCrmUser = normalizeRole(user?.role) === "crm";
     const isCampaignOnlyUser = isCampaignOnlyCrmEmail(user?.email);
     const isAgencyUser = isAgencyCrmEmail(user?.email);
+    const isBcwwAgencyUser = agencySlugForEmail(user?.email) === "bcww";
     const isRestrictedViewer = isRestrictedCrmViewerEmail(user?.email);
     const isExternalCampaignViewer = isCampaignExternalViewerEmail(user?.email);
     // National CRM Super Admin (All Zones) — Agency dropdown is for these logins only.
@@ -390,6 +392,8 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         }
         const savedAgency = (saved.selectedAgency || "").trim().toLowerCase();
         setSelectedAgency(savedAgency === "bcww" || savedAgency === "ants" ? savedAgency : "");
+        const savedAgencyLead = (saved.selectedAgencyLead || "").trim().toLowerCase();
+        setSelectedAgencyLead(savedAgencyLead === "campaign" || savedAgencyLead === "landing" ? savedAgencyLead : "");
         setSelectedStatus(parseStatusFilters(saved.selectedStatus));
         setSelectedUserId(typeof saved.selectedUserId === "string" ? saved.selectedUserId : "");
         setSelectedUtmCampaign(typeof saved.selectedUtmCampaign === "string" ? saved.selectedUtmCampaign : "");
@@ -427,6 +431,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             setSelectedSource("all");
             setSelectedCampaignChannel("");
             setSelectedAgency("");
+            setSelectedAgencyLead("");
         setSelectedUtmCampaign("");
         setSelectedUtmMedium("");
             setSelectedStatus([]);
@@ -464,6 +469,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             selectedSource,
             selectedCampaignChannel,
             selectedAgency,
+            selectedAgencyLead,
             selectedUtmCampaign,
             selectedUtmMedium,
             selectedStatus: selectedStatus.join(","),
@@ -482,6 +488,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
             selectedSource,
             selectedCampaignChannel,
             selectedAgency,
+            selectedAgencyLead,
             selectedUtmCampaign,
             selectedUtmMedium,
             selectedStatus,
@@ -735,6 +742,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         if (apiSource) params.append("source", apiSource);
         if (apiStatus) params.append("status", apiStatus);
         if (isCrmSuperAdmin && selectedAgency) params.append("agency", selectedAgency);
+        if (isBcwwAgencyUser && selectedAgencyLead) params.append("agencyLead", selectedAgencyLead);
         if (selectedUtmCampaign) params.append("campaign", selectedUtmCampaign);
         if (selectedUtmMedium) params.append("medium", selectedUtmMedium);
         if (selectedUserId) params.append("userId", selectedUserId);
@@ -869,7 +877,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
         return () => {
             cancelled = true;
         };
-    }, [filtersReady, isCrmUser, dateRange, selectedCity, selectedState, activeCentreIds, apiSource, apiStatus, selectedUtmCampaign, selectedUtmMedium, selectedUserId, isCrmSuperAdmin, selectedAgency]);
+    }, [filtersReady, isCrmUser, dateRange, selectedCity, selectedState, activeCentreIds, apiSource, apiStatus, selectedUtmCampaign, selectedUtmMedium, selectedUserId, isCrmSuperAdmin, selectedAgency, selectedAgencyLead]);
 
     const fetchStats = () => {
         setStatsLoading(true);
@@ -1055,6 +1063,25 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                     <div className="flex flex-col gap-3">
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap items-end gap-3 w-full pb-2">
+                            {isBcwwAgencyUser && (
+                                <div className="flex-1 min-w-[140px] w-full">
+                                    <label className="mb-2 block text-sm font-semibold text-gray-700">Lead Type</label>
+                                    <SearchableSelect
+                                        value={selectedAgencyLead}
+                                        onChange={(val) => {
+                                            const next = val === "campaign" || val === "landing" ? val : "";
+                                            setSelectedAgencyLead(next);
+                                            if (view === "reports") setReportsFiltersApplied(false);
+                                        }}
+                                        options={[
+                                            { value: "", label: "All" },
+                                            { value: "campaign", label: "Campaign" },
+                                            { value: "landing", label: "Admission" },
+                                        ]}
+                                        placeholder="All"
+                                    />
+                                </div>
+                            )}
                             {!isRestrictedViewer && (
                                 <div className="flex-1 min-w-[140px] w-full">
                                     <label className="mb-2 block text-sm font-semibold text-gray-700">Lead Source</label>
@@ -1295,6 +1322,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 state={selectedState.join(",")}
                                 userId={selectedUserId}
                                 centreId={activeCentreIds.join(",")}
+                                agencyLead={isBcwwAgencyUser ? selectedAgencyLead : ""}
                                 returnHref={returnHref}
                                 onBeforeNavigate={persistFiltersNow}
                             />
@@ -1355,6 +1383,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                         campaign={selectedUtmCampaign}
                                         medium={selectedUtmMedium}
                                         agency={isCrmSuperAdmin ? selectedAgency : agencySlugForEmail(user?.email)}
+                                        agencyLead={isBcwwAgencyUser ? selectedAgencyLead : ""}
                                         agencySlug={isCrmSuperAdmin ? (selectedAgency as "bcww" | "ants" | "") : (agencySlugForEmail(user?.email) as "bcww" | "ants" | "")}
                                         userId={selectedUserId}
                                         centreId={activeCentreIds.join(",")}
@@ -1369,7 +1398,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                 )
                             ) : (
                                 <LeadsTable
-                                    key={`${refreshKey}-${apiSource}-${apiStatus}-${selectedAgency}-${selectedUtmCampaign}-${selectedUtmMedium}-${selectedUserId}-${selectedCity}-${activeCentreIds.join(",")}-${selectedState.join(",")}`}
+                                    key={`${refreshKey}-${apiSource}-${apiStatus}-${selectedAgency}-${selectedAgencyLead}-${selectedUtmCampaign}-${selectedUtmMedium}-${selectedUserId}-${selectedCity}-${activeCentreIds.join(",")}-${selectedState.join(",")}`}
                                     dateRange={dateRange}
                                     city={selectedCity.join(",")}
                                     state={selectedState.join(",")}
@@ -1378,6 +1407,7 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
                                     campaign={selectedUtmCampaign}
                                     medium={selectedUtmMedium}
                                     agency={isCrmSuperAdmin ? selectedAgency : ""}
+                                    agencyLead={isBcwwAgencyUser ? selectedAgencyLead : ""}
                                     status={apiStatus}
                                     userId={selectedUserId}
                                     returnHref={returnHref}

@@ -64,6 +64,7 @@ export default function RemindersWidget({
   state,
   userId,
   centreId,
+  agencyLead,
   returnHref,
   onBeforeNavigate,
 }: {
@@ -72,6 +73,7 @@ export default function RemindersWidget({
   state?: string
   userId?: string
   centreId?: string
+  agencyLead?: string
   returnHref?: string
   onBeforeNavigate?: () => void
 }) {
@@ -91,6 +93,7 @@ export default function RemindersWidget({
       if (state) params.append('state', state)
       if (userId) params.append('userId', userId)
       if (centreId) params.append('centreId', centreId)
+      if (agencyLead) params.append('agencyLead', agencyLead)
       params.append('_t', Date.now().toString()) // cache bust
 
       const res = await api.get(`/leads/reminders?${params.toString()}`)
@@ -106,7 +109,7 @@ export default function RemindersWidget({
 
   useEffect(() => {
     fetchReminders(true)
-  }, [source, city, state, userId, centreId])
+  }, [source, city, state, userId, centreId, agencyLead])
 
   const handleSendReminder = async (leadId: string, type: 'meeting' | 'follow-up', channel: 'email' | 'whatsapp' = 'email') => {
     setSendingReminder(`${leadId}-${channel}`)
