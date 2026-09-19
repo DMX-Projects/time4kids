@@ -23,6 +23,7 @@ import { openFranchiseEmbedLink } from "@/lib/franchise-hub-document-open";
 import { resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
 
 import { openBlobInlineInNewTab, openDirectAudioUrlInNewTab } from "@/lib/inline-document-open";
+import { saveBlobFile } from "@/lib/save-blob-file";
 
 import { withParentStudentQuery } from "@/lib/parent-student-query";
 
@@ -105,37 +106,6 @@ function resolveFileExtension(doc: ParentDocFileInput): string {
 
 
 
-function saveBlobFile(blob: Blob, fileName: string): void {
-
-    const safeName = fileName.trim() || "document";
-
-    const named =
-
-        typeof File !== "undefined"
-
-            ? new File([blob], safeName, { type: blob.type || "application/octet-stream" })
-
-            : blob;
-
-    const url = URL.createObjectURL(named);
-
-    const a = document.createElement("a");
-
-    a.href = url;
-
-    a.download = safeName;
-
-    a.rel = "noopener noreferrer";
-
-    document.body.appendChild(a);
-
-    a.click();
-
-    a.remove();
-
-    window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
-
-}
 
 
 

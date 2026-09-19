@@ -34,6 +34,11 @@ function errorHtml(message: string, status: number): NextResponse {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+/** Chrome retries POST downloads with GET and otherwise shows "Site wasn't available". */
+export async function GET() {
+    return errorHtml("Open this file again from the dashboard. Direct download links expire after the first request.", 405);
+}
+
 export async function POST(request: NextRequest) {
     let pathname = "";
     let token = "";
