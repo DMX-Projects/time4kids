@@ -1,6 +1,6 @@
 /**
- * Franchise centre files — opens in a new tab without putting tokens in the URL.
- * Each click fetches the file in the background (session auto-refreshes if idle).
+ * Franchise centre files — downloads PDFs and opens previewable media in a new tab.
+ * Each click fetches the file with the session token (auto-refreshes if idle).
  */
 
 import { resolveFranchiseEmbedSrc } from "@/lib/franchise-embed-url";
@@ -10,11 +10,8 @@ import {
 } from "@/lib/franchise-download-filename";
 import { extensionFromPath } from "@/lib/franchise-download-filename";
 import { openBlobInlineInNewTab, openViewUrlInNewTab } from "@/lib/inline-document-open";
-import {
-    GetAccessToken,
-    normalizeProtectedDocumentApiPath,
-    openProtectedDocumentView,
-} from "@/lib/protected-document-view-url";
+import { saveBlobFile } from "@/lib/save-blob-file";
+import type { GetAccessToken } from "@/lib/protected-document-view-url";
 
 export type AuthFetchBlobResponse = (
     path: string,
@@ -39,41 +36,37 @@ function resolveDownloadName(preferred: string, fromServer?: string): string {
     return preferred.trim() || "document";
 }
 
-function saveBlobFile(blob: Blob, fileName: string): void {
-    const safeName = fileName.trim() || "document";
-    const named =
-        typeof File !== "undefined"
-            ? new File([blob], safeName, { type: blob.type || "application/octet-stream" })
-            : blob;
-    const url = URL.createObjectURL(named);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = safeName;
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
-}
-
 type BlobFetchResult = { blob: Blob; filename?: string };
 
 function openViaBlobFetch(
     fetcher: () => Promise<BlobFetchResult>,
     downloadName: string,
 ): void {
+    const tab = window.open("about:blank", "_blank");
+    if (tab) tab.opener = null;
     void (async () => {
         try {
             const { blob, filename } = await fetcher();
             saveBlobFile(blob, resolveDownloadName(downloadName, filename));
+            if (tab && !tab.closed) tab.close();
         } catch {
-            /* silent */
+            const message = "Could not download this file. Make sure you are signed in and try again.";
+            if (tab && !tab.closed) {
+                tab.document.open();
+                tab.document.write(
+                    `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Download failed</title></head>` +
+                        `<body style="font-family:system-ui;display:flex;min-height:100vh;align-items:center;justify-content:center;color:#334155">${message}</body></html>`,
+                );
+                tab.document.close();
+            } else {
+                window.alert(message);
+            }
         }
     })();
 }
 
 function openFranchiseFile(
-    getAccessToken: GetAccessToken,
+    _getAccessToken: GetAccessToken,
     downloadName: string,
     options: {
         hubDocId?: number;
@@ -95,12 +88,20 @@ function openFranchiseFile(
     const fetchHref = href ? () => options.authFetchBlobFromHref(href) : null;
     const isPdf = extensionFromPath(name).toLowerCase() === ".pdf";
 
-    if (shouldViewFileInline(name)) {
-        const protectedPath = hubApiPath || normalizeProtectedDocumentApiPath(href);
-        if (isPdf && protectedPath) {
-            void openProtectedDocumentView(getAccessToken, protectedPath);
+    // PDFs must download as a real file. POST /document-open/ makes Chrome save a
+    // nameless "download" and then retry with GET, which shows "Site wasn't available".
+    if (isPdf) {
+        if (fetchHub) {
+            openViaBlobFetch(() => fetchHub(), name);
             return;
         }
+        if (fetchHref) {
+            openViaBlobFetch(() => fetchHref(), name);
+            return;
+        }
+    }
+
+    if (shouldViewFileInline(name)) {
         if (fetchHub) {
             openBlobInlineInNewTab(
                 () => fetchHub().then((r) => ({ blob: r.blob, filename: resolveDownloadName(name, r.filename) })),

@@ -79,7 +79,8 @@ function submitDocumentOpenForm(fields: Record<string, string>): void {
 
     document.body.appendChild(form);
     form.submit();
-    form.remove();
+    // Removing the form in the same tick can cancel Chrome's navigation/download.
+    window.setTimeout(() => form.remove(), 2_000);
 }
 
 export function openProtectedDocumentView(
