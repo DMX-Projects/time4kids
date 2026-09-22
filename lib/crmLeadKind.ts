@@ -252,13 +252,41 @@ export function expectedStartDisplay(lead: { expectedStartDate?: string | null }
   return formatMetaChoiceLabel(raw) || "—";
 }
 
+/** True for admission city LPs and Meta/Google forms whose name says Admission. */
+export function isAdmissionCityLpLead(lead: {
+  leadKind?: string | null;
+  enquiryType?: string | null;
+  source?: string | null;
+  landingPageUrl?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  utmContent?: string | null;
+  formName?: string | null;
+} | null | undefined): boolean {
+  if (!lead) return false;
+  if (String(lead.leadKind || "").toLowerCase() === "landing") return true;
+  if (String(lead.enquiryType || "").toUpperCase().includes("ADMISSION")) return true;
+  if (String(lead.source || "").toLowerCase() === "landing") return true;
+  if (String(lead.landingPageUrl || "").toLowerCase().includes("timekids-2g")) return true;
+  const named = [lead.utmMedium, lead.utmCampaign, lead.utmContent, lead.formName]
+    .join(" ")
+    .toLowerCase();
+  return named.includes("admission");
+}
+
 /** True when this lead should use franchise statuses + workflow. */
 export function isFranchiseLead(lead: {
   leadKind?: string | null;
   enquiryType?: string | null;
   source?: string | null;
+  landingPageUrl?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  utmContent?: string | null;
+  formName?: string | null;
 } | null | undefined): boolean {
   if (!lead) return false;
+  if (isAdmissionCityLpLead(lead)) return false;
   if (lead.leadKind === "franchiseenquiry") return true;
   if (lead.leadKind === "crm") return true; // campaign_leads table
   if (lead.enquiryType === "FRANCHISE") return true;
@@ -273,9 +301,15 @@ export function crmPipelineForLead(
     leadKind?: string | null;
     enquiryType?: string | null;
     source?: string | null;
+    landingPageUrl?: string | null;
+    utmMedium?: string | null;
+    utmCampaign?: string | null;
+    utmContent?: string | null;
+    formName?: string | null;
   } | null | undefined,
 ): "franchise" | "admission" | undefined {
   if (!lead) return undefined;
+  if (isAdmissionCityLpLead(lead)) return "admission";
   if (isFranchiseLead(lead)) return "franchise";
   const kind = String(lead.leadKind || "").toLowerCase();
   if (kind === "enquiry" || kind === "landing") return "admission";

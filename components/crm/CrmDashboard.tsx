@@ -120,7 +120,14 @@ function leadTypeFromSource(source: string): LeadType {
         source === "campaign" ||
         source === "franchise" ||
         source === "franchise_all" ||
-        source === "others"
+        source === "others" ||
+        source === "google" ||
+        source === "july_lp" ||
+        source === "july_meta" ||
+        source === "lp_wb" ||
+        source === "july-lp" ||
+        source === "july-meta" ||
+        source === "lp-wb"
     ) {
         return "franchise";
     }
@@ -574,11 +581,11 @@ export default function CrmDashboard({ view = 'all' }: { view?: 'dashboard' | 'r
     // All campaign channels (Web/FB/Insta + LP) use franchise status workflow
     // Agency viewers see Meta/FB + landing — use franchise status list for filters.
     const isFranchise =
-        isAgencyUser ||
         selectedSource === "franchise" ||
         selectedSource === "campaign" ||
         selectedSource === "franchise_all" ||
-        selectedSource === "others";
+        selectedSource === "others" ||
+        (isAgencyUser && selectedAgencyLead !== "landing");
     const apiSource = isAgencyUser
         ? "agency"
         : apiSourceParam(selectedSource, selectedCampaignChannel);
