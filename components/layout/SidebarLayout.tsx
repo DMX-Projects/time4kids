@@ -24,6 +24,8 @@ type SidebarProps = {
     };
     navItems: DashboardNavItem[];
     open: boolean;
+    /** Dashboard home link that should only be active on an exact match. */
+    rootHref?: string;
 };
 
 // ==================== ADMIN SIDEBAR ====================
@@ -80,7 +82,7 @@ export function AdminSidebar({ brand, navItems, open }: SidebarProps) {
 }
 
 // ==================== FRANCHISE SIDEBAR ====================
-export function FranchiseSidebar({ brand, navItems, open }: SidebarProps) {
+export function FranchiseSidebar({ brand, navItems, open, rootHref = "/dashboard/franchise/" }: SidebarProps) {
     const pathname = usePathname();
     const { closeMenu } = useSidebarMenu();
 
@@ -105,7 +107,7 @@ export function FranchiseSidebar({ brand, navItems, open }: SidebarProps) {
                 {/* Navigation */}
                 <nav className="px-3 py-3 space-y-1 flex-1 min-h-0 overflow-y-auto">
                     {navItems.map((item, idx) => {
-                        const active = isDashboardNavActive(pathname, item.href, "/dashboard/franchise/");
+                        const active = isDashboardNavActive(pathname, item.href, rootHref);
                         return (
                             <Link
                                 key={item.href}

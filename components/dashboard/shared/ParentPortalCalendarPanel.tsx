@@ -188,7 +188,7 @@ export function ParentPortalCalendarPanel({
                     fetchAllApiList(authFetch, "/students/franchise/announcements/"),
                     authFetch<unknown>(
                         `/documents/franchise/parent-documents/?manage=newsletter&from=${from}&to=${to}`,
-                    ),
+                    ).catch(() => []),
                 ]);
 
                 const calendarItems: PortalCalendarItem[] = [];

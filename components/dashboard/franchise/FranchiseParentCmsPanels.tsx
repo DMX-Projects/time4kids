@@ -11,6 +11,7 @@ import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseData
 import { ParentNewsletterCmsPanel } from "@/components/dashboard/ParentNewsletterCmsPanel";
 import { ParentParentalTipsCmsPanel } from "@/components/dashboard/ParentParentalTipsCmsPanel";
 import { CENTRE_CLASS_LABELS } from "@/lib/student-class-match";
+import { useTeacherClass } from "@/components/dashboard/teacher/useTeacherClass";
 import {
     emptySendToForm,
     sendToFormFromRow,
@@ -47,11 +48,11 @@ type AnnouncementRow = {
     campaign?: number | null;
 };
 
-const emptyAnnouncementForm = () => ({
+const emptyAnnouncementForm = (lockedClass?: string | null) => ({
     title: "",
     body: "",
     schedule_date: todayLocal(),
-    send_to: emptySendToForm(),
+    send_to: lockedClass ? { mode: "class" as const, class_name: lockedClass, student: "" } : emptySendToForm(),
 });
 
 export function FranchiseAnnouncementsPanel({
@@ -63,12 +64,13 @@ export function FranchiseAnnouncementsPanel({
     showToast: ShowToastFn;
     students: MiniStudent[];
 }) {
+    const lockedClass = useTeacherClass();
     const [rows, setRows] = useState<AnnouncementRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [trackDate, setTrackDate] = useState(todayLocal);
-    const [form, setForm] = useState(emptyAnnouncementForm());
+    const [form, setForm] = useState(() => emptyAnnouncementForm(lockedClass));
     const [editModal, setEditModal] = useState<{ isOpen: boolean; id: number | null }>({ isOpen: false, id: null });
-    const [editForm, setEditForm] = useState(emptyAnnouncementForm());
+    const [editForm, setEditForm] = useState(() => emptyAnnouncementForm(lockedClass));
     const [editSaving, setEditSaving] = useState(false);
 
     const classOptions = CENTRE_CLASS_LABELS;
@@ -116,7 +118,7 @@ export function FranchiseAnnouncementsPanel({
                 }),
             });
             const sentDate = form.schedule_date.trim() || todayLocal();
-            setForm(emptyAnnouncementForm());
+            setForm(emptyAnnouncementForm(lockedClass));
             setTrackDate(sentDate);
             showToast("Notification sent to parents.", "success");
             await load(sentDate);
@@ -159,7 +161,7 @@ export function FranchiseAnnouncementsPanel({
 
     const closeEdit = () => {
         setEditModal({ isOpen: false, id: null });
-        setEditForm(emptyAnnouncementForm());
+        setEditForm(emptyAnnouncementForm(lockedClass));
     };
 
     const saveEdit = async (e: FormEvent) => {
@@ -212,6 +214,7 @@ export function FranchiseAnnouncementsPanel({
                     onChange={(send_to) => setForm((p) => ({ ...p, send_to }))}
                     classOptions={classOptions}
                     students={students}
+                    lockedClass={lockedClass}
                 />
             }
             publishDate={
@@ -271,6 +274,7 @@ export function FranchiseAnnouncementsPanel({
                             onChange={(send_to) => setEditForm((p) => ({ ...p, send_to }))}
                             classOptions={classOptions}
                             students={students}
+                            lockedClass={lockedClass}
                         />
                     </label>
                     <label className="block text-xs font-semibold text-[#4B5563]">

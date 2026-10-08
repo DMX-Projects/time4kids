@@ -1,18 +1,24 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, PieChart } from "lucide-react";
+import { LayoutDashboard, PieChart, UserPlus, Users } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { clearCrmDashboardFilters } from "@/lib/crmDashboardFilters";
 import { shouldHideReportsTab } from "@/lib/crmCampaignAccess";
+import { canAddCrmLeads } from "@/lib/crmLeadAdd";
+import { isCrmSuperAdminUser } from "@/lib/crmSuperAdmin";
 
 export function SidebarNav() {
     const pathname = usePathname();
     const { user } = useAuth();
     const hideReports = shouldHideReportsTab(user?.email);
+    const showAddLead = canAddCrmLeads(user);
+    const showUsers = isCrmSuperAdminUser(user);
 
     const isDashboard = pathname === "/crm-admin" || pathname === "/crm-admin/";
     const isReports = Boolean(pathname?.includes("/reports"));
+    const isAddLead = Boolean(pathname?.startsWith("/crm-admin/add-lead"));
+    const isUsers = Boolean(pathname?.startsWith("/crm-admin/users"));
 
     const goFresh = (path: "/crm-admin" | "/crm-admin/reports") => {
         // Always open a clean view — clear saved filters and hard-refresh.
@@ -38,6 +44,26 @@ export function SidebarNav() {
                 >
                     <PieChart className="w-4 h-4 mr-2.5 shrink-0" />
                     Reports
+                </button>
+            )}
+            {showAddLead && (
+                <button
+                    type="button"
+                    onClick={() => window.location.assign("/crm-admin/add-lead")}
+                    className={`w-full flex items-center px-2.5 py-2 text-sm font-medium rounded-md ${isAddLead ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"}`}
+                >
+                    <UserPlus className="w-4 h-4 mr-2.5 shrink-0" />
+                    Add Lead
+                </button>
+            )}
+            {showUsers && (
+                <button
+                    type="button"
+                    onClick={() => window.location.assign("/crm-admin/users")}
+                    className={`w-full flex items-center px-2.5 py-2 text-sm font-medium rounded-md ${isUsers ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"}`}
+                >
+                    <Users className="w-4 h-4 mr-2.5 shrink-0" />
+                    Users
                 </button>
             )}
         </nav>

@@ -523,6 +523,8 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
                 loadFranchiseEnquiries(),
                 loadFranchiseStudentsAndGrades(),
             ]);
+        } else if (user.role === "teacher") {
+            await Promise.all([loadFranchiseEvents(), loadFranchiseStudentsAndGrades()]);
         } else if (user.role === "admin") {
             await loadAdminEnquiries();
         }
@@ -599,7 +601,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     const refreshEvents = async () => {
         if (!user) return;
         if (user.role === "parent") await loadParentEvents();
-        else if (user.role === "franchise") await loadFranchiseEvents();
+        else if (user.role === "franchise" || user.role === "teacher") await loadFranchiseEvents();
     };
 
     /** Refresh gallery when parent opens Event Gallery (picks up new franchise uploads). */

@@ -14,6 +14,8 @@ type Props = {
     disabled?: boolean;
     allowClassStudent?: boolean;
     studentsLoading?: boolean;
+    /** Teacher logins: only their class (whole class or one student), never "All parents". */
+    lockedClass?: string | null;
 };
 
 export function ManualNotificationSendToFields({
@@ -24,14 +26,47 @@ export function ManualNotificationSendToFields({
     disabled = false,
     allowClassStudent = true,
     studentsLoading = false,
+    lockedClass = null,
 }: Props) {
     const setMode = (mode: SendToMode) => {
         onChange({
             mode,
-            class_name: mode === "class" ? value.class_name : "",
+            class_name: mode === "class" ? lockedClass || value.class_name : "",
             student: mode === "student" ? value.student : "",
         });
     };
+
+    if (lockedClass) {
+        const studentChoices = students.map((student) => ({
+            value: String(student.id),
+            label: student.full_name,
+        }));
+        return (
+            <div className="mt-1 space-y-2">
+                <select
+                    value={value.mode === "student" ? "student" : "class"}
+                    onChange={(e) => setMode(e.target.value as SendToMode)}
+                    disabled={disabled}
+                    className={selectClass}
+                >
+                    <option value="class">All parents of {lockedClass}</option>
+                    <option value="student">One student</option>
+                </select>
+                {value.mode === "student" ? (
+                    <SearchableSelect
+                        value={value.student}
+                        onChange={(student) => onChange({ ...value, student })}
+                        options={studentChoices}
+                        placeholder="Select student"
+                        searchPlaceholder="Search student name…"
+                        disabled={disabled}
+                        loading={studentsLoading}
+                        emptyMessage={studentsLoading ? "Loading students…" : "No student matches your search."}
+                    />
+                ) : null}
+            </div>
+        );
+    }
 
     const studentOptions = students.map((student) => ({
         value: String(student.id),

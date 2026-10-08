@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { jsonHeaders } from "@/lib/api-client";
 import { CENTRE_PROGRAM_LABELS } from "@/config/centre-program-cards-defaults";
+import { lockClassOptions, useTeacherClass } from "@/components/dashboard/teacher/useTeacherClass";
 import {
     buildMonthGrid,
     dateMonthKey,
@@ -47,10 +48,12 @@ export function FranchiseDailyActivitiesPanel({
     authFetch: AuthFetchFn;
     showToast: ShowToastFn;
 }) {
+    const lockedClass = useTeacherClass();
+    const classOptions = useMemo(() => lockClassOptions(CLASS_OPTIONS, lockedClass), [lockedClass]);
     const [activities, setActivities] = useState<DailyActivityRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [month, setMonth] = useState(() => toLocalMonth(new Date()));
-    const [selectedClass, setSelectedClass] = useState<string>("");
+    const [selectedClass, setSelectedClass] = useState<string>(lockedClass ?? "");
     
     // Editor modal state
     const [editorModal, setEditorModal] = useState<{
@@ -95,10 +98,10 @@ export function FranchiseDailyActivitiesPanel({
             if (!map.has(d)) {
                 map.set(d, new Map());
             }
-            map.get(d)!.set(act.class_name || "All classes", act);
+            map.get(d)!.set(lockedClass || act.class_name || "All classes", act);
         }
         return map;
-    }, [activities]);
+    }, [activities, lockedClass]);
 
     const handleSelectDay = (date: string, classNameOverride?: string) => {
         const targetClass = classNameOverride !== undefined ? classNameOverride : selectedClass;
@@ -109,7 +112,7 @@ export function FranchiseDailyActivitiesPanel({
         setEditorModal({
             isOpen: true,
             date,
-            class_name: targetClass || CLASS_OPTIONS[1].value, // Default to first concrete class if "All classes"
+            class_name: lockedClass || targetClass || CLASS_OPTIONS[1].value, // Default to first concrete class if "All classes"
             activityId: existing ? existing.id : null,
             description: existing ? existing.description : "",
         });
@@ -211,7 +214,7 @@ export function FranchiseDailyActivitiesPanel({
                                 onChange={(e) => setSelectedClass(e.target.value)}
                                 className="rounded-xl border border-[#E5E7EB] px-3 py-2 text-xs font-semibold text-gray-700 bg-white focus:outline-none focus:border-pink-500"
                             >
-                                {CLASS_OPTIONS.map((opt) => (
+                                {classOptions.map((opt) => (
                                     <option key={opt.value} value={opt.value}>
                                         {opt.label}
                                     </option>
@@ -387,7 +390,7 @@ export function FranchiseDailyActivitiesPanel({
                                     onChange={(e) => setEditorModal((prev) => ({ ...prev, class_name: e.target.value }))}
                                     className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 bg-white focus:outline-none focus:border-pink-500"
                                 >
-                                    {CLASS_OPTIONS.filter(o => o.value).map((opt) => (
+                                    {classOptions.filter(o => o.value).map((opt) => (
                                         <option key={opt.value} value={opt.value}>
                                             {opt.label}
                                         </option>
