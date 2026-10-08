@@ -9,6 +9,24 @@ export const FRANCHISE_CAMPAIGN_SOURCES = [
 /** July / LP-WB only — state-city from franchise-lp geo, no centre. */
 export const FRANCHISE_LP_GEO_SOURCES = ["july_lp", "july_meta", "lp_wb", "google"] as const;
 
+/** Admission channels for leads added manually from the CRM (campaign_leads table). */
+export const ADMISSION_OTHER_SOURCES = [
+  "admission_website",
+  "admission_google",
+  "admission_meta",
+  "admission_youtube",
+  "admission_whatsapp",
+  "admission_sms",
+  "admission_email",
+  "referral_parents",
+  "referral_family_friends",
+] as const;
+
+export function isAdmissionOtherSource(source?: string | null): boolean {
+  if (!source) return false;
+  return (ADMISSION_OTHER_SOURCES as readonly string[]).includes(source);
+}
+
 export function isFranchiseCampaignSource(source?: string | null): boolean {
   if (!source) return false;
   return (FRANCHISE_CAMPAIGN_SOURCES as readonly string[]).includes(source);
@@ -287,6 +305,7 @@ export function isFranchiseLead(lead: {
 } | null | undefined): boolean {
   if (!lead) return false;
   if (isAdmissionCityLpLead(lead)) return false;
+  if (isAdmissionOtherSource(lead.source)) return false;
   if (lead.leadKind === "franchiseenquiry") return true;
   if (lead.leadKind === "crm") return true; // campaign_leads table
   if (lead.enquiryType === "FRANCHISE") return true;
@@ -309,7 +328,7 @@ export function crmPipelineForLead(
   } | null | undefined,
 ): "franchise" | "admission" | undefined {
   if (!lead) return undefined;
-  if (isAdmissionCityLpLead(lead)) return "admission";
+  if (isAdmissionCityLpLead(lead) || isAdmissionOtherSource(lead.source)) return "admission";
   if (isFranchiseLead(lead)) return "franchise";
   const kind = String(lead.leadKind || "").toLowerCase();
   if (kind === "enquiry" || kind === "landing") return "admission";

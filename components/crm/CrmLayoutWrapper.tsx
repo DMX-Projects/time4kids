@@ -8,6 +8,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { SidebarNav } from "@/components/crm/SidebarNav";
 import { hardRefreshCrmDashboard } from "@/lib/crmDashboardFilters";
 import { shouldHideReportsTab } from "@/lib/crmCampaignAccess";
+import { canAddCrmLeads } from "@/lib/crmLeadAdd";
+import { isCrmSuperAdminUser } from "@/lib/crmSuperAdmin";
 
 export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -16,6 +18,8 @@ export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
     const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
     const isLogin = pathname?.startsWith("/crm-admin/login");
     const hideReports = shouldHideReportsTab(user?.email);
+    const showAddLead = canAddCrmLeads(user);
+    const showUsers = isCrmSuperAdminUser(user);
 
     const handleLogout = () => {
         logout();
@@ -82,6 +86,22 @@ export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
                                     className="block px-3 py-2.5 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50"
                                 >
                                     Reports
+                                </Link>
+                            )}
+                            {showAddLead && (
+                                <Link
+                                    href="/crm-admin/add-lead"
+                                    className="block px-3 py-2.5 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50"
+                                >
+                                    Add Lead
+                                </Link>
+                            )}
+                            {showUsers && (
+                                <Link
+                                    href="/crm-admin/users"
+                                    className="block px-3 py-2.5 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50"
+                                >
+                                    Users
                                 </Link>
                             )}
                         </div>

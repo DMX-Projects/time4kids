@@ -6,7 +6,7 @@ import { apiUrl, jsonHeaders, mediaUrl, normalizeApiPath, toApiError } from "@/l
 import { parseFilenameFromContentDisposition } from "@/lib/franchise-download-filename";
 import { AccessLoading } from "@/components/auth/AccessLoading";
 
-type Role = "admin" | "crm" | "franchise" | "parent" | "driver";
+type Role = "admin" | "crm" | "franchise" | "parent" | "driver" | "teacher";
 
 type User = {
     id: string;
@@ -21,6 +21,10 @@ type User = {
     crmRegion?: string;
     /** CRM Zonal Managers / Super Admins may reassign leads. */
     canAssignUsers?: boolean;
+    /** CRM Zonal Managers / Super Admins may add leads manually. */
+    canAddLeads?: boolean;
+    /** CRM national Super Admin (configured, or given the Super Admin designation on the Users page). */
+    isCrmSuperAdmin?: boolean;
     /** Child name from login / me (parent accounts). */
     childName?: string;
     /** Use for greetings in the parent app — child name, not parent full_name. */
@@ -29,6 +33,10 @@ type User = {
     gender?: "M" | "F" | "";
     /** Human-readable label (`Male` | `Female`). */
     genderLabel?: string;
+    /** Teacher only: the single class this login manages. */
+    teacherClass?: string;
+    /** Teacher only: centre name. */
+    teacherCentre?: string;
 };
 
 type Tokens = { access: string; refresh: string };
@@ -68,6 +76,12 @@ export type AuthLoginResponse = {
         vehicle_insurance?: string | null;
         is_active?: boolean;
         created_at?: string;
+    };
+    teacher_profile?: {
+        id: number;
+        class_name: string;
+        franchise_name?: string;
+        is_active?: boolean;
     };
 };
 
@@ -109,7 +123,7 @@ const LEGACY_STORAGE_KEY = "tk-auth-session";
 const LAST_ROLE_KEY = "tk-auth-last-role";
 
 const storageKeyForRole = (role: Role) => `tk-auth-${role}`;
-const ALL_ROLE_KEYS: string[] = ["admin", "crm", "franchise", "parent", "driver"].map((r) => storageKeyForRole(r as Role));
+const ALL_ROLE_KEYS: string[] = ["admin", "crm", "franchise", "parent", "driver", "teacher"].map((r) => storageKeyForRole(r as Role));
 
 export const normalizeRole = (role?: string | null): Role => {
     const mapped = String(role ?? "")
@@ -119,6 +133,7 @@ export const normalizeRole = (role?: string | null): Role => {
     if (mapped === "crm") return "crm";
     if (mapped === "franchise") return "franchise";
     if (mapped === "driver") return "driver";
+    if (mapped === "teacher") return "teacher";
     return "parent";
 };
 
@@ -137,6 +152,10 @@ function mapApiUserToSession(data: Record<string, unknown>, fallbackEmail = ""):
             : childName;
     const genderRaw = data.gender ?? primaryStudent?.gender;
     const genderLabelRaw = data.gender_label ?? primaryStudent?.gender_label;
+    const teacherProfile =
+        data.teacher_profile && typeof data.teacher_profile === "object"
+            ? (data.teacher_profile as Record<string, unknown>)
+            : null;
 
     return {
         id: String(data.id ?? ""),
@@ -146,6 +165,8 @@ function mapApiUserToSession(data: Record<string, unknown>, fallbackEmail = ""):
         crmZone: data.crm_zone != null ? String(data.crm_zone).trim().toUpperCase() : undefined,
         crmRegion: data.crm_region != null ? String(data.crm_region).trim().toUpperCase() : undefined,
         canAssignUsers: Boolean(data.can_assign_users),
+        canAddLeads: Boolean(data.can_add_leads),
+        isCrmSuperAdmin: Boolean(data.is_crm_super_admin),
         childName,
         displayName,
         gender: normalizeParentGender(genderRaw),
@@ -153,6 +174,8 @@ function mapApiUserToSession(data: Record<string, unknown>, fallbackEmail = ""):
             genderLabelRaw != null
                 ? String(genderLabelRaw)
                 : genderLabelFromCode(genderRaw),
+        teacherClass: teacherProfile?.class_name != null ? String(teacherProfile.class_name) : undefined,
+        teacherCentre: teacherProfile?.franchise_name != null ? String(teacherProfile.franchise_name) : undefined,
         role: normalizeRole(data.role as string | undefined),
     };
 }
@@ -179,7 +202,7 @@ function pathnameDashboardRole(): Role | null {
     const parts = window.location.pathname.split("/").filter(Boolean);
     if (parts[0] === "dashboard") {
         const r = parts[1];
-        if (r === "parent" || r === "franchise" || r === "admin" || r === "driver") return r as Role;
+        if (r === "parent" || r === "franchise" || r === "admin" || r === "driver" || r === "teacher") return r as Role;
     }
     if (parts[0] === "driver") return "driver";
     if (parts[0] === "crm-admin") return "crm";
@@ -249,12 +272,19 @@ function readStoredSessionRaw(): string | null {
     }
 
     const last = storage.getItem(LAST_ROLE_KEY) as Role | null;
-    if (last === "parent" || last === "franchise" || last === "admin" || last === "crm" || last === "driver") {
+    if (
+        last === "parent" ||
+        last === "franchise" ||
+        last === "admin" ||
+        last === "crm" ||
+        last === "driver" ||
+        last === "teacher"
+    ) {
         const fromLast = storage.getItem(storageKeyForRole(last));
         if (fromLast) return fromLast;
     }
 
-    for (const r of ["admin", "crm", "franchise", "parent", "driver"] as const) {
+    for (const r of ["admin", "crm", "franchise", "parent", "driver", "teacher"] as const) {
         const raw = storage.getItem(storageKeyForRole(r));
         if (raw) return raw;
     }
@@ -377,7 +407,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const u = data.user ?? data.driver_profile?.user;
         const resolvedRole = u?.role ?? data.driver_profile?.user?.role ?? options?.forceRole;
         const nextUser: User = {
-            ...mapApiUserToSession((u ?? {}) as Record<string, unknown>, email),
+            ...mapApiUserToSession(
+                { ...(u ?? {}), ...(data.teacher_profile ? { teacher_profile: data.teacher_profile } : {}) },
+                email,
+            ),
             role: normalizeRole(resolvedRole),
         };
         setTokens(nextTokens);

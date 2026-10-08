@@ -99,6 +99,9 @@ export function DashboardShell({
                     {/* Render role-specific sidebar */}
                     {isAdmin && <AdminSidebar brand={brand} navItems={navItems} open={open} />}
                     {role === "franchise" && hasSidebarNav && <FranchiseSidebar brand={brand} navItems={navItems} open={open} />}
+                    {role === "teacher" && hasSidebarNav && (
+                        <FranchiseSidebar brand={brand} navItems={navItems} open={open} rootHref="/dashboard/teacher/" />
+                    )}
                     {role === "parent" && hasSidebarNav && <ParentSidebar brand={brand} navItems={navItems} open={open} />}
                 </SidebarMenuProvider>
                 {open && hasSidebarNav && (
@@ -129,7 +132,7 @@ export function DashboardShell({
                                                 System Control
                                             </span>
                                         </>
-                                    ) : role === "franchise" ? null : (
+                                    ) : role === "franchise" || role === "teacher" ? null : (
                                         <>
                                             <div className="flex flex-col min-w-0">
                                                 <span className="text-sm font-semibold text-[#1F2937] truncate">{brand.title}</span>

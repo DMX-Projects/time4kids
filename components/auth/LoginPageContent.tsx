@@ -18,7 +18,7 @@ const copy: Record<
         title: "Sign In",
         subtitle: "",
         leftTitle: "Welcome Back",
-        leftBody: "Sign in to access your dashboard, parent app, or driver trip screen.",
+        leftBody: "Sign in to access your dashboard, parent app, teacher portal, or driver trip screen.",
     },
     parent: {
         title: "Parent sign in",

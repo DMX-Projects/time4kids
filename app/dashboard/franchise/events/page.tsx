@@ -7,6 +7,7 @@ import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useFranchiseData } from "@/components/dashboard/franchise/FranchiseDataProvider";
+import { lockClassOptions, useTeacherClass } from "@/components/dashboard/teacher/useTeacherClass";
 import { useSchoolData } from "@/components/dashboard/shared/SchoolDataProvider";
 import { EventGalleryImage } from "@/components/ui/EventGalleryImage";
 import { EventGalleryVideo } from "@/components/ui/EventGalleryVideo";
@@ -247,13 +248,15 @@ export default function FranchiseEventsPage() {
     const { tokens } = useAuth();
     const { showToast } = useToast();
     const { profile } = useFranchiseData();
+    const lockedClass = useTeacherClass();
+    const classOptions = useMemo(() => lockClassOptions(PORTAL_CLASS_OPTIONS, lockedClass), [lockedClass]);
     const { events, eventMedia, addEvent, updateEvent, deleteEvent, addEventMedia, deleteEventMedia, refreshEvents } =
         useSchoolData();
     const publicCentrePath =
         profile.slug && profile.city ? centrePublicPagePath(profile.city, profile.slug) : null;
 
     const [query, setQuery] = useState("");
-    const [addForm, setAddForm] = useState({ title: "", date: "", venue: "", notes: "", className: "" });
+    const [addForm, setAddForm] = useState({ title: "", date: "", venue: "", notes: "", className: lockedClass ?? "" });
     const [editForm, setEditForm] = useState({ title: "", date: "", venue: "", notes: "", className: "" });
     const [editingId, setEditingId] = useState<string | null>(null);
     const [viewId, setViewId] = useState<string | null>(null);
@@ -281,7 +284,7 @@ export default function FranchiseEventsPage() {
     }, [events, query]);
 
     const resetAddForm = () => {
-        setAddForm({ title: "", date: "", venue: "", notes: "", className: "" });
+        setAddForm({ title: "", date: "", venue: "", notes: "", className: lockedClass ?? "" });
     };
 
     const resetMediaUploadFields = (clearEvent = false) => {
@@ -578,15 +581,17 @@ export default function FranchiseEventsPage() {
                                 onChange={(e) => setAddForm({ ...addForm, className: e.target.value })}
                                 className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
                             >
-                                {PORTAL_CLASS_OPTIONS.map((opt) => (
+                                {classOptions.map((opt) => (
                                     <option key={opt.value || "all"} value={opt.value}>
                                         {opt.label}
                                     </option>
                                 ))}
                             </select>
-                            <span className="text-[11px] font-normal text-orange-600">
-                                Choose &ldquo;All classes&rdquo; for centre-wide and public page gallery.
-                            </span>
+                            {lockedClass ? null : (
+                                <span className="text-[11px] font-normal text-orange-600">
+                                    Choose &ldquo;All classes&rdquo; for centre-wide and public page gallery.
+                                </span>
+                            )}
                         </label>
                         <Input label="Venue" value={addForm.venue} onChange={(e) => setAddForm({ ...addForm, venue: e.target.value })} />
                         <Input label="Notes" value={addForm.notes} onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })} />
@@ -707,7 +712,7 @@ export default function FranchiseEventsPage() {
                                     onChange={(e) => setEditForm({ ...editForm, className: e.target.value })}
                                     className="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-400 focus:outline-none"
                                 >
-                                    {PORTAL_CLASS_OPTIONS.map((opt) => (
+                                    {classOptions.map((opt) => (
                                         <option key={opt.value || "all"} value={opt.value}>
                                             {opt.label}
                                         </option>

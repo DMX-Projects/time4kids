@@ -65,6 +65,24 @@ function resolveCrmUrl(path: string): string {
         return apiUrl(`/enquiries/admin/crm-users/${qs ? `?${qs}` : ""}`);
     }
 
+    if (pathname === "/leads/add") {
+        return apiUrl(`/enquiries/admin/crm-leads/add/${qs ? `?${qs}` : ""}`);
+    }
+    if (pathname === "/team") {
+        return apiUrl("/enquiries/admin/crm-team/");
+    }
+    if (pathname === "/team/cities") {
+        return apiUrl(`/enquiries/admin/crm-team/cities/${qs ? `?${qs}` : ""}`);
+    }
+    const teamUserMatch = pathname.match(/^\/team\/(\d+)$/);
+    if (teamUserMatch) {
+        return apiUrl(`/enquiries/admin/crm-team/${teamUserMatch[1]}/`);
+    }
+    const teamMatch = pathname.match(/^\/team\/(\d+)\/(leads|transfer|status)$/);
+    if (teamMatch) {
+        return apiUrl(`/enquiries/admin/crm-team/${teamMatch[1]}/${teamMatch[2]}/`);
+    }
+
     const leadMatch = pathname.match(/^\/leads\/([^/?]+)$/);
     if (leadMatch) {
         return apiUrl(`/enquiries/admin/crm-leads/${encodeURIComponent(leadMatch[1])}/`);

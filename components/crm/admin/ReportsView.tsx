@@ -654,32 +654,52 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
             );
             if (activeStateList.length > 0) params.append("state", activeStateList.join(","));
             if (activeCityList.length > 0) params.append("city", activeCityList.join(","));
-            if (agency) params.append("agency", agency);
+            // Same scope as Generate — always pull full list from API (not just the visible page).
+            if (agencySlug) {
+                params.append("mode", "agency");
+                params.append("agency", agency || agencySlug);
+                params.append("source", "agency");
+            } else if (agency) {
+                params.append("agency", agency);
+            }
             if (agencyLead) params.append("agencyLead", agencyLead);
             params.append("export", "csv");
 
-            // Use axios with blob responseType to ensure JWT auth header is sent
             const response = await api.get(`/leads/reports?${params.toString()}`, {
                 responseType: "arraybuffer",
             });
 
+            const contentType = String(response.headers?.["content-type"] || "");
+            if (contentType.includes("application/json")) {
+                const text = new TextDecoder().decode(new Uint8Array(response.data as ArrayBuffer));
+                let msg = "CSV download failed. Please try again.";
+                try {
+                    msg = JSON.parse(text)?.detail || msg;
+                } catch {
+                    /* ignore */
+                }
+                alert(msg);
+                return;
+            }
+
             const uint8 = new Uint8Array(response.data as ArrayBuffer);
-            const blob = new Blob([uint8], { type: "text/csv;charset=utf-8;" });
+            // octet-stream so Chrome saves a real .csv (not a failed blob named "download")
+            const blob = new Blob([uint8], { type: "application/octet-stream" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.style.display = "none";
             link.href = url;
-            link.setAttribute(
-                "download",
-                `Agency_Lead_Report_${agency || agencySlug || "export"}.csv`,
-            );
+            link.download = `Agency_Lead_Report_${
+                agencyLead === "landing"
+                    ? "admission"
+                    : agencyLead === "campaign"
+                      ? "campaign"
+                      : agency || agencySlug || "export"
+            }.csv`;
             document.body.appendChild(link);
             link.click();
-            // Clean up after a short delay to allow the download to initiate
-            setTimeout(() => {
-                URL.revokeObjectURL(url);
-                document.body.removeChild(link);
-            }, 200);
+            link.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
         } catch (err) {
             console.error("Failed to download CSV report:", err);
             alert("CSV download failed. Please try again.");

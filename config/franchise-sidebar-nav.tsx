@@ -14,6 +14,7 @@ import {
     GraduationCap,
     LifeBuoy,
     Bell,
+    Presentation,
 } from "lucide-react";
 import type { DashboardNavItem } from "@/components/layout/DashboardShell";
 
@@ -26,6 +27,7 @@ export const FRANCHISE_SIDEBAR_NAV: DashboardNavItem[] = [
     { label: "Notifications", href: "/dashboard/franchise/notifications/", icon: <Bell className="w-4 h-4" /> },
     { label: "Add Grades", href: "/dashboard/franchise/add-grades/", icon: <GraduationCap className="w-4 h-4" /> },
     { label: "Parent Support", href: "/dashboard/franchise/parent-tickets/", icon: <LifeBuoy className="w-4 h-4" /> },
+    { label: "Teachers", href: "/dashboard/franchise/teachers/", icon: <Presentation className="w-4 h-4" /> },
     { label: "Drivers", href: "/dashboard/franchise/drivers/", icon: <UserCircle className="w-4 h-4" /> },
     { label: "Enquiries", href: "/dashboard/franchise/enquiries/", icon: <MessageSquare className="w-4 h-4" /> },
     { label: "Profile", href: "/dashboard/franchise/profile/", icon: <UserCircle className="w-4 h-4" /> },
