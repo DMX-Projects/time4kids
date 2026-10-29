@@ -88,6 +88,14 @@ export function CrmLayoutWrapper({ children }: { children: React.ReactNode }) {
                                     Reports
                                 </Link>
                             )}
+                            {showUsers && (
+                                <Link
+                                    href="/crm-admin/lead-reports"
+                                    className="block px-3 py-2.5 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50"
+                                >
+                                    Lead Reports
+                                </Link>
+                            )}
                             {showAddLead && (
                                 <Link
                                     href="/crm-admin/add-lead"
