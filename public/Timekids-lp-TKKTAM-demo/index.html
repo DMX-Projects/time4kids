@@ -28,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600;700&family=Overpass:wght@400;600;700;800;900&family=Red+Hat+Display:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="preload" as="image" href="images/Women-1.webp" type="image/webp" fetchpriority="high">
+    <link rel="preload" as="image" href="images/hero-woman-2026.webp" type="image/webp" fetchpriority="high">
 
     <link rel="shortcut icon" href="images/time-logo.jpg" />
     <link href="css/main-min.css" rel="stylesheet" type="text/css">
@@ -927,7 +927,7 @@ footer .footer_blurbs {
     #kidzee_advantages .adv_panel {
         padding-top: 0 !important;
     }
-    /* Stack benefits vertically � no mobile carousel */
+    /* Stack benefits vertically — no mobile carousel */
     #kidzee_advantages .adv_blurb_con,
     #kidzee_advantages .adv_blurb_con.slick-initialized,
     #kidzee_advantages .adv_blurb_con .slick-list,
@@ -1925,7 +1925,7 @@ iframe {
     }
 }
 
-/* Enquiry form � must stay outside media queries so desktop is not stuck with legacy red labels */
+/* Enquiry form — must stay outside media queries so desktop is not stuck with legacy red labels */
 #banner .form_hld select.textBox,
 #banner .form_hld input.textBox {
     width: 100%;
@@ -2526,6 +2526,50 @@ src="https://www.facebook.com/tr?id=801032009696331&ev=PageView&noscript=1"
 
 
 
+
+<style id="tk-oct2026-hero">
+/* ===== Oct 2026 hero refresh (new photo, navy bg, 3-line heading) ===== */
+#banner{background:radial-gradient(circle at 100% 0,#f7b500 0,#f7b500 170px,transparent 171px),linear-gradient(135deg,#14245e 0%,#22388f 60%,#2c47a8 100%) !important;background-size:auto !important;}
+#banner .banner_typo{position:relative;z-index:3;}
+#banner .banner_typo h1 .tk-h1-line{white-space:nowrap;}
+#banner .your_needs p.tk-journey-line{font-weight:700 !important;color:#ffd24d !important;margin-top:10px !important;}
+/* Desktop / laptop */
+@media (min-width:1024px){
+  #banner{padding-bottom:0 !important;}
+  #banner .banner_typo h1{font-size:31px !important;line-height:1.25 !important;}
+  #banner .banner_con > .banner_right{padding-bottom:40px;}
+  #banner .form_hld{min-height:0 !important;align-self:start !important;margin-bottom:40px !important;}
+  #banner .chalk_box{align-self:stretch !important;overflow:visible !important;}
+  #banner .chalk_box img{position:absolute !important;bottom:0 !important;left:50% !important;right:auto !important;transform:translateX(-50%) !important;width:auto !important;height:auto !important;max-width:118% !important;max-height:100% !important;}
+}
+@media (min-width:1024px) and (max-width:1399px){
+  #banner .container_lg{padding-left:32px !important;padding-right:32px !important;max-width:100% !important;}
+  #banner .banner_con > .banner_right{transform:none !important;}
+  #banner .banner_right > *{width:100% !important;}
+  #banner .form_hld{width:100% !important;}
+  #banner .banner_right .need_list_con p{word-break:normal !important;overflow-wrap:normal !important;hyphens:none !important;font-size:11px !important;}
+}
+@media (min-width:1024px) and (max-width:1199px){#banner .banner_typo h1{font-size:23px !important;}
+  #banner .banner_left{grid-template-columns:minmax(0,1fr) minmax(340px,1fr) !important;}}
+/* Tablet + mobile: restack -> heading/text full width, photo, then form */
+@media (max-width:1023px){
+  #banner{background:radial-gradient(circle at 100% 0,#f7b500 0,#f7b500 90px,transparent 91px),linear-gradient(160deg,#14245e 0%,#22388f 60%,#2c47a8 100%) !important;padding:28px 0 40px !important;overflow:hidden;}
+  #banner .container_lg{padding-left:16px;padding-right:16px;}
+  #banner .banner_con{display:grid !important;grid-template-columns:minmax(0,1fr) !important;gap:0 !important;align-items:stretch !important;}
+  #banner .banner_right{grid-column:1 !important;grid-row:1 !important;width:100% !important;max-width:640px !important;justify-self:center;}
+  #banner .banner_typo{width:100% !important;max-width:100% !important;}
+  #banner .banner_typo h1{font-size:clamp(19px,5.6vw,36px) !important;line-height:1.28 !important;padding:0 0 14px !important;text-shadow:none !important;}
+  #banner .banner_right .your_needs > p,#banner .banner_right p{font-size:15px !important;line-height:1.55 !important;max-width:100% !important;}
+  #banner .chalk_box{grid-column:1 !important;grid-row:2 !important;position:relative !important;width:100% !important;height:auto !important;margin:18px 0 0 !important;overflow:visible !important;display:flex !important;justify-content:center;align-items:flex-end;align-self:auto !important;}
+  #banner .chalk_box img{position:static !important;display:block;width:min(45vw,260px) !important;max-width:none !important;height:auto !important;max-height:none !important;transform:none !important;margin:0 auto !important;}
+  #banner .form_hld{grid-column:1 !important;grid-row:3 !important;margin:0 auto !important;width:100% !important;max-width:620px !important;}
+  #banner .banner_left > .your_needs.for_mob{grid-column:1 !important;grid-row:4 !important;}
+}
+@media (max-width:575px){
+  #banner .chalk_box img{width:min(56vw,210px) !important;}
+  #banner .form_hld{padding:16px !important;}
+}
+</style>
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -2555,7 +2599,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-6 banner_right">
                         <div class="banner_typo">
                             <h1>
-                                Own India's Fastest Growing Preschool in ?10�15L
+                                <span class="tk-h1-line">Be Your Own Boss.</span><br><span class="tk-h1-line">Build a Brighter Tomorrow.</span><br><span class="tk-h1-line">Start a T.I.M.E. KIDS Pre-school.</span>
                             </h1>
                             <!-- <img src="assets/images/banner-typo.png" alt=""> -->
                         </div>
@@ -2564,6 +2608,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <img src="images/banner-line.png" alt="T.I.M.E. Kids">
                             </div>
                             <p>Imagine waking up every day knowing you're shaping the future of little kids and securing a successful future for yourself! With T.I.M.E. Kids, you can own a preschool that brings joy, success, and financial freedom - all while making a difference.</p>
+                            <p class="tk-journey-line">Your journey towards owning a preschool starts here.</p>
                             <div class="row need_list_con for_desktop">
                                 <div class="blurb col-sm-3">
                                     <img src="images/icon-cap-students.png" alt="T.I.M.E. Kids">
@@ -2586,21 +2631,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     </div>
                     <div class="col-lg-6 banner_left">
                         <div class="chalk_box">
-                            <img src="images/Women-1.webp" alt="T.I.M.E. Kids" width="450" height="786" fetchpriority="high" decoding="async">
+                            <img src="images/hero-woman-2026.webp" alt="T.I.M.E. Kids franchise owner" width="720" height="1329" fetchpriority="high" decoding="async">
                         </div>
                         <div class="form_hld tk-enquiry-card">
                             <div class="tk-enquiry-header">
                                 <h3 id="timekidsForm" class="tk-enquiry-title">Enquire Now</h3>
                             </div>
                             <div id="form-success-message" class="tk-form-success" style="display:none;" aria-live="polite">
-                                <div class="tk-form-success__tick" aria-hidden="true">?</div>
+                                <div class="tk-form-success__tick" aria-hidden="true">✓</div>
                                 <h3 class="tk-form-success__title">Submitted</h3>
                                 <p class="tk-form-success__text">Thank you! Your enquiry has been submitted successfully. Our team will contact you shortly.</p>
                             </div>
                             <form id="timekidsEnquiryForm" class="tk-enquiry-form" novalidate
                                 data-source="july_lp"
                                 data-page-type="Google" data-campaign="lp-tkktam"
-                                data-comments="TKKTAM LP campaign form (demo � no OTP, no email)"
+                                data-comments="TKKTAM LP campaign form (demo — no OTP, no email)"
                                 data-geo-mode="state-city">
                                 <!-- Edit these anytime: type = campaign, source = ad channel -->
                                 <input type="hidden" name="type" value="lp-tkktam" />
@@ -2643,7 +2688,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <div class="form_field tk-form-terms">
                                     <label>
                                         <input type="checkbox" name="acknowledge" checked />
-                                        <span>By ticking this box, I acknowledge a minimum investment of ?10�15 lacs* is required. I have read and accepted the TKPL privacy policy and terms &amp; conditions.</span>
+                                        <span>By ticking this box, I acknowledge a minimum investment of ₹10–15 lacs* is required. I have read and accepted the TKPL privacy policy and terms &amp; conditions.</span>
                                     </label>
                                 </div>
                                 <div class="form_field">
@@ -2682,7 +2727,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <div class="row align-items-md-center about_us">
                     <div class="col-lg-5 about-left">
                         <div class="about-header-mobile">
-                            <h2 class="about-title about-title-mobile">What You Need To Be Eligible�</h2>
+                            <h2 class="about-title about-title-mobile">What You Need To Be Eligible…</h2>
                         </div>
                         <div class="about_thumb">
                             <div class="about_thumb_glow"></div>
@@ -2692,7 +2737,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-7 about-right">
                         <div class="about-header-desktop">
                             <span class="tk-eligibility-badge">ELIGIBILITY CRITERIA</span>
-                            <h2 class="about-title about-title-desktop">What You Need To Be Eligible�</h2>
+                            <h2 class="about-title about-title-desktop">What You Need To Be Eligible…</h2>
                         </div>
                         <div class="about_det">
                             <div class="eligibility_blurb_con">
@@ -2702,7 +2747,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                     </div>
                                     <div class="blurb_content">
                                         <h4>Space Requirement</h4>
-                                        <p>1500�2000 sq. ft. of constructed area (owned or rented), preferably an independent house in a good locality.</p>
+                                        <p>1500–2000 sq. ft. of constructed area (owned or rented), preferably an independent house in a good locality.</p>
                                     </div>
                                 </div>
                                 <div class="blurb">
@@ -2711,7 +2756,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                     </div>
                                     <div class="blurb_content">
                                         <h4>Investment Capacity</h4>
-                                        <p>?10�?15 lakhs capital to set up the preschool infrastructure and operate successfully.</p>
+                                        <p>₹10–₹15 lakhs capital to set up the preschool infrastructure and operate successfully.</p>
                                     </div>
                                 </div>
                                 <div class="blurb">
@@ -2748,7 +2793,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                             </div>
                             <div class="tk-adv-card-body">
                                 <h4>Big Name, Big Trust</h4>
-                                <p>Be part of South India�s No.1 trusted education brand with 34+ years of operational excellence.</p>
+                                <p>Be part of South India’s highly trusted education brand with 34+ years of operational excellence.</p>
                             </div>
                         </div>
 
@@ -2758,7 +2803,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                             </div>
                             <div class="tk-adv-card-body">
                                 <h4>Start Small, Dream Big</h4>
-                                <p>Invest in your preschool with just ?10�?15 lakhs and scale your returns rapidly.</p>
+                                <p>Invest in your preschool with just ₹10–₹15 lakhs and build a rewarding business with high growth potential.</p>
                             </div>
                         </div>
                     </div>
@@ -2778,8 +2823,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <img src="images/icon-adv-12.png" alt="More Me Time">
                             </div>
                             <div class="tk-adv-card-body">
-                                <h4>More �Me Time�</h4>
-                                <p>Work only 4�5 hours a day and enjoy perfect work-life balance while running your business.</p>
+                                <h4>More ‘Me Time’</h4>
+                                <p>Work only 4–5 hours a day and enjoy perfect work-life balance while running your business.</p>
                             </div>
                         </div>
 
@@ -2788,8 +2833,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <img src="images/icon-adv-05.png" alt="We've Got Your Back">
                             </div>
                             <div class="tk-adv-card-body">
-                                <h4>We�ve Got Your Back</h4>
-                                <p>Complete teacher training, marketing campaigns, and operational guidance � you�re never alone!</p>
+                                <h4>We’ve Got Your Back</h4>
+                                <p>Complete teacher training, marketing campaigns, and operational guidance — you’re never alone!</p>
                             </div>
                         </div>
                     </div>
@@ -2888,20 +2933,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <section class="leading-box mt-5" >
             <div class="leading-section">
                 <h2 class="pb-3">The T.I.M.E. Kids Advantage</h2>
-                <p class="tk-usp-subtitle">At a glance � everything franchise partners gain with T.I.M.E. Kids</p>
+                <p class="tk-usp-subtitle">At a glance — everything franchise partners gain with T.I.M.E. Kids</p>
                 <div class="tk-usp-grid">
-                    <div class="tk-usp-card tk-usp-green"><h4>250+ Centres Across India</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-green"><h4>34+ Years of Educational Excellence</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-green"><h4>Child-Safe and Non-Toxic Infra</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-orange"><h4>Low Investment with Strong Growth Potential</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-orange"><h4>High Social-Impact Business Opportunity</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-orange"><h4>End-to-End Academic and Ops Support</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-blue"><h4>Proven Systems and Structured Processes</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-blue"><h4>Trusted Brand with Nationwide Recognition</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-blue"><h4>NEP 2020 Updated Curriculum</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-red"><h4>Complete Staff Training and Development</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-red"><h4>National + Local Marketing Assistance</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
-                    <div class="tk-usp-card tk-usp-red"><h4>Parent Engagement Programs</h4><span class="tk-usp-check" aria-hidden="true">?</span></div>
+                    <div class="tk-usp-card tk-usp-green"><h4>250+ Centres Across India</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-green"><h4>34+ Years of Educational Excellence</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-green"><h4>Child-Safe and Non-Toxic Infra</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-orange"><h4>Low Investment with Strong Growth Potential</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-orange"><h4>High Social-Impact Business Opportunity</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-orange"><h4>End-to-End Academic and Ops Support</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-blue"><h4>Proven Systems and Structured Processes</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-blue"><h4>Trusted Brand with Nationwide Recognition</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-blue"><h4>NEP 2020 Updated Curriculum</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-red"><h4>Complete Staff Training and Development</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-red"><h4>National + Local Marketing Assistance</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
+                    <div class="tk-usp-card tk-usp-red"><h4>Parent Engagement Programs</h4><span class="tk-usp-check" aria-hidden="true">✓</span></div>
                 </div>
             </div>
         </section>
@@ -2931,7 +2976,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <div class="acc-content">
                                     <div class="content">
                                         <div class="text">
-                                            <i class="fa fa-hand-o-right"></i> Low investment, high returns <br>
+                                            <i class="fa fa-hand-o-right"></i> Smart investment. Strong growth potential. <br>
                                             <i class="fa fa-hand-o-right"></i> The right to use the well-known T.I.M.E. brand name 'T.I.M.E. Kids' for preschool. <br>
                                             <i class="fa fa-hand-o-right"></i> Backed by our educational expertise of over 35 years<br>
                                             <i class="fa fa-hand-o-right"></i> Continuous training and up-gradation for business partners on the business know-how. <br>
@@ -2950,7 +2995,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <div class="acc-content">
                                     <div class="content">
                                         <div class="text">
-                                            <i class="fa fa-hand-o-right"></i> ?10 - ?15 lakhs investment <br>
+                                            <i class="fa fa-hand-o-right"></i> ₹10 - ₹15 lakhs investment <br>
                                             <i class="fa fa-hand-o-right"></i> 1500 - 2000 sq feet space <br>
                                             <i class="fa fa-hand-o-right"></i> A burning desire to make it big. <br>
                                             <i class="fa fa-hand-o-right"></i> Commitment to quality and interest in the future of kids.
@@ -3005,7 +3050,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                             </div>
                             <div class="testimonial">
                                 <img src="images/test-new.webp" alt="Ms. Pooja" width="300" height="300" loading="lazy" decoding="async">
-                                <p>Partnering with T.I.M.E. Kids Preschool has been a rewarding journey for me. The brand�s focus on quality education and the robust support system have been crucial in helping me succeed. The well-researched curriculum and ongoing training have been key factors in the growth of my preschool.</p>
+                                <p>Partnering with T.I.M.E. Kids Preschool has been a rewarding journey for me. The brand’s focus on quality education and the robust support system have been crucial in helping me succeed. The well-researched curriculum and ongoing training have been key factors in the growth of my preschool.</p>
                                 <span class="author">- Ms. Pooja, Franchisee, Bangalore
 
                                 </span>
@@ -3034,7 +3079,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <section style="background-image: url('images/bg-new.png');background-repeat: no-repeat;padding: 50px 0px 50px;">
             <div class="ready-timeskids">
                 <h2>Ready to Begin Your <br> T.I.M.E. Kids Preschool?</h2>
-                <p>Your dream preschool business is just a click away. Let�s build something special together!</p>
+                <p>Your dream preschool business is just a click away. Let’s build something special together!</p>
                 <img src="images/Click here.png" class="ready-img" alt="Book consultation">
             </div>
             <div class="cta-button-container">
@@ -3048,7 +3093,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="container_sm">
                 <div class="footer_blurbs">
                     <div class="blurb">
-                        <p>�2026 - T.I.M.E. Kids All Rights Reserved</p>
+                        <p>©2026 - T.I.M.E. Kids All Rights Reserved</p>
                     </div>
                 </div>
             </div>
