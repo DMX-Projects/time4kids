@@ -28,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@600;700&family=Overpass:wght@400;600;700;800;900&family=Red+Hat+Display:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="preload" as="image" href="images/Women-1.webp" type="image/webp" fetchpriority="high">
+    <link rel="preload" as="image" href="images/hero-woman-2026.webp" type="image/webp" fetchpriority="high">
 
     <link rel="shortcut icon" href="images/time-logo.jpg" />
     <link href="css/main-min.css" rel="stylesheet" type="text/css">
@@ -2526,6 +2526,50 @@ src="https://www.facebook.com/tr?id=1502626011898766&ev=PageView&noscript=1"
 
 
 
+
+<style id="tk-oct2026-hero">
+/* ===== Oct 2026 hero refresh (new photo, navy bg, 3-line heading) ===== */
+#banner{background:radial-gradient(circle at 100% 0,#f7b500 0,#f7b500 170px,transparent 171px),linear-gradient(135deg,#14245e 0%,#22388f 60%,#2c47a8 100%) !important;background-size:auto !important;}
+#banner .banner_typo{position:relative;z-index:3;}
+#banner .banner_typo h1 .tk-h1-line{white-space:nowrap;}
+#banner .your_needs p.tk-journey-line{font-weight:700 !important;color:#ffd24d !important;margin-top:10px !important;}
+/* Desktop / laptop */
+@media (min-width:1024px){
+  #banner{padding-bottom:0 !important;}
+  #banner .banner_typo h1{font-size:31px !important;line-height:1.25 !important;}
+  #banner .banner_con > .banner_right{padding-bottom:40px;}
+  #banner .form_hld{min-height:0 !important;align-self:start !important;margin-bottom:40px !important;}
+  #banner .chalk_box{align-self:stretch !important;overflow:visible !important;}
+  #banner .chalk_box img{position:absolute !important;bottom:0 !important;left:50% !important;right:auto !important;transform:translateX(-50%) !important;width:auto !important;height:auto !important;max-width:118% !important;max-height:100% !important;}
+}
+@media (min-width:1024px) and (max-width:1399px){
+  #banner .container_lg{padding-left:32px !important;padding-right:32px !important;max-width:100% !important;}
+  #banner .banner_con > .banner_right{transform:none !important;}
+  #banner .banner_right > *{width:100% !important;}
+  #banner .form_hld{width:100% !important;}
+  #banner .banner_right .need_list_con p{word-break:normal !important;overflow-wrap:normal !important;hyphens:none !important;font-size:11px !important;}
+}
+@media (min-width:1024px) and (max-width:1199px){#banner .banner_typo h1{font-size:23px !important;}
+  #banner .banner_left{grid-template-columns:minmax(0,1fr) minmax(340px,1fr) !important;}}
+/* Tablet + mobile: restack -> heading/text full width, photo, then form */
+@media (max-width:1023px){
+  #banner{background:radial-gradient(circle at 100% 0,#f7b500 0,#f7b500 90px,transparent 91px),linear-gradient(160deg,#14245e 0%,#22388f 60%,#2c47a8 100%) !important;padding:28px 0 40px !important;overflow:hidden;}
+  #banner .container_lg{padding-left:16px;padding-right:16px;}
+  #banner .banner_con{display:grid !important;grid-template-columns:minmax(0,1fr) !important;gap:0 !important;align-items:stretch !important;}
+  #banner .banner_right{grid-column:1 !important;grid-row:1 !important;width:100% !important;max-width:640px !important;justify-self:center;}
+  #banner .banner_typo{width:100% !important;max-width:100% !important;}
+  #banner .banner_typo h1{font-size:clamp(19px,5.6vw,36px) !important;line-height:1.28 !important;padding:0 0 14px !important;text-shadow:none !important;}
+  #banner .banner_right .your_needs > p,#banner .banner_right p{font-size:15px !important;line-height:1.55 !important;max-width:100% !important;}
+  #banner .chalk_box{grid-column:1 !important;grid-row:2 !important;position:relative !important;width:100% !important;height:auto !important;margin:18px 0 0 !important;overflow:visible !important;display:flex !important;justify-content:center;align-items:flex-end;align-self:auto !important;}
+  #banner .chalk_box img{position:static !important;display:block;width:min(45vw,260px) !important;max-width:none !important;height:auto !important;max-height:none !important;transform:none !important;margin:0 auto !important;}
+  #banner .form_hld{grid-column:1 !important;grid-row:3 !important;margin:0 auto !important;width:100% !important;max-width:620px !important;}
+  #banner .banner_left > .your_needs.for_mob{grid-column:1 !important;grid-row:4 !important;}
+}
+@media (max-width:575px){
+  #banner .chalk_box img{width:min(56vw,210px) !important;}
+  #banner .form_hld{padding:16px !important;}
+}
+</style>
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->
@@ -2555,7 +2599,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <div class="col-lg-6 banner_right">
                         <div class="banner_typo">
                             <h1>
-                                Own India's Fastest Growing Preschool in ₹10–15L
+                                <span class="tk-h1-line">Be Your Own Boss.</span><br><span class="tk-h1-line">Build a Brighter Tomorrow.</span><br><span class="tk-h1-line">Start a T.I.M.E. KIDS Pre-school.</span>
                             </h1>
                             <!-- <img src="assets/images/banner-typo.png" alt=""> -->
                         </div>
@@ -2564,6 +2608,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <img src="images/banner-line.png" alt="T.I.M.E. Kids">
                             </div>
                             <p>Imagine waking up every day knowing you're shaping the future of little kids and securing a successful future for yourself! With T.I.M.E. Kids, you can own a preschool that brings joy, success, and financial freedom - all while making a difference.</p>
+                            <p class="tk-journey-line">Your journey towards owning a preschool starts here.</p>
                             <div class="row need_list_con for_desktop">
                                 <div class="blurb col-sm-3">
                                     <img src="images/icon-cap-students.png" alt="T.I.M.E. Kids">
@@ -2586,7 +2631,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     </div>
                     <div class="col-lg-6 banner_left">
                         <div class="chalk_box">
-                            <img src="images/Women-1.webp" alt="T.I.M.E. Kids" width="450" height="786" fetchpriority="high" decoding="async">
+                            <img src="images/hero-woman-2026.webp" alt="T.I.M.E. Kids franchise owner" width="720" height="1329" fetchpriority="high" decoding="async">
                         </div>
                         <div class="form_hld tk-enquiry-card">
                             <div class="tk-enquiry-header">
@@ -2748,7 +2793,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                             </div>
                             <div class="tk-adv-card-body">
                                 <h4>Big Name, Big Trust</h4>
-                                <p>Be part of South India’s No.1 trusted education brand with 34+ years of operational excellence.</p>
+                                <p>Be part of South India’s highly trusted education brand with 34+ years of operational excellence.</p>
                             </div>
                         </div>
 
@@ -2758,7 +2803,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                             </div>
                             <div class="tk-adv-card-body">
                                 <h4>Start Small, Dream Big</h4>
-                                <p>Invest in your preschool with just ₹10–₹15 lakhs and scale your returns rapidly.</p>
+                                <p>Invest in your preschool with just ₹10–₹15 lakhs and build a rewarding business with high growth potential.</p>
                             </div>
                         </div>
                     </div>
@@ -2931,7 +2976,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                                 <div class="acc-content">
                                     <div class="content">
                                         <div class="text">
-                                            <i class="fa fa-hand-o-right"></i> Low investment, high returns <br>
+                                            <i class="fa fa-hand-o-right"></i> Smart investment. Strong growth potential. <br>
                                             <i class="fa fa-hand-o-right"></i> The right to use the well-known T.I.M.E. brand name 'T.I.M.E. Kids' for preschool. <br>
                                             <i class="fa fa-hand-o-right"></i> Backed by our educational expertise of over 35 years<br>
                                             <i class="fa fa-hand-o-right"></i> Continuous training and up-gradation for business partners on the business know-how. <br>
