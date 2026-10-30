@@ -49,6 +49,7 @@ function toInputDate(d: Date | null | undefined): string {
 const COLUMNS = [
     "name",
     "phone",
+    "email",
     "state",
     "city",
     "lead_type",
@@ -285,7 +286,7 @@ export default function SuperAdminLeadReport({
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Filter leads by name, phone, city, UTM..."
+                                placeholder="Filter leads by name, phone, email, city, UTM..."
                                 value={search}
                                 onChange={(e) => {
                                     setSearch(e.target.value);
