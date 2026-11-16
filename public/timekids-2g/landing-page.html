@@ -83,6 +83,14 @@
                         <input class="form-control" type="text" name="email" id="email"  placeholder="Email" />
                      </div>
 					 <input type="hidden" name="source" id="source" value="Google">
+					 <input type="hidden" name="utm_source" value="">
+					 <input type="hidden" name="utm_medium" value="">
+					 <input type="hidden" name="utm_campaign" value="">
+					 <input type="hidden" name="utm_content" value="">
+					 <input type="hidden" name="utm_term" value="">
+					 <input type="hidden" name="gclid" value="">
+					 <input type="hidden" name="gad_campaignid" value="">
+					 <input type="hidden" name="landing_page_url" value="">
 
 					 <input type="hidden" name="city" id="city" value="">
 
@@ -603,6 +611,19 @@
 			}
 		  });
 		}
+
+		function setTrackingHidden(name, value) {
+		  var el = document.querySelector('form[name="frm1"] input[name="' + name + '"]');
+		  if (el && value) el.value = value;
+		}
+		setTrackingHidden('utm_source', getQueryParamCaseInsensitive('utm_source'));
+		setTrackingHidden('utm_medium', getQueryParamCaseInsensitive('utm_medium'));
+		setTrackingHidden('utm_content', getQueryParamCaseInsensitive('utm_content'));
+		setTrackingHidden('utm_term', getQueryParamCaseInsensitive('utm_term'));
+		setTrackingHidden('gclid', getQueryParamCaseInsensitive('gclid') || getQueryParamCaseInsensitive('gbraid') || getQueryParamCaseInsensitive('wbraid'));
+		setTrackingHidden('gad_campaignid', getQueryParamCaseInsensitive('gad_campaignid') || getQueryParamCaseInsensitive('campaignid'));
+		setTrackingHidden('utm_campaign', getQueryParamCaseInsensitive('utm_campaign') || getQueryParamCaseInsensitive('utm_compaign') || getQueryParamCaseInsensitive('campaign_name') || getQueryParamCaseInsensitive('campaignname') || getQueryParamCaseInsensitive('gad_campaignid') || getQueryParamCaseInsensitive('campaignid'));
+		setTrackingHidden('landing_page_url', window.location.href.split('#')[0]);
 
 		var cityFromUrl = getQueryParamCaseInsensitive('city');
 		if (cityFromUrl) {
