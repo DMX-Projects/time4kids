@@ -35,7 +35,7 @@ $(document).ready(function () {
         var params = {};
         try {
             var search = new URLSearchParams(window.location.search || '');
-            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'form_name', 'ad_name', 'campaign_name', 'gclid'].forEach(function (key) {
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'form_name', 'ad_name', 'campaign_name', 'campaignname', 'utm_compaign', 'gad_campaignid', 'campaignid', 'gclid', 'gbraid', 'wbraid', 'gad_source'].forEach(function (key) {
                 var value = $.trim(search.get(key) || '');
                 if (value) params[key] = value;
             });
@@ -486,10 +486,10 @@ $(document).ready(function () {
             var resolvedCampaign = utm.utm_campaign || utm.form_name || utm.ad_name || utm.campaign_name || '';
             var landingUrl = window.location.href.split('#')[0];
             // Prefer full landing URL with UTMs when still present; else rebuild from stored UTMs.
-            if (landingUrl.indexOf('utm_') === -1 && (utm.utm_source || utm.utm_medium || utm.utm_campaign)) {
+            if (landingUrl.indexOf('utm_') === -1 && landingUrl.indexOf('gad_campaignid=') === -1 && (utm.utm_source || utm.utm_medium || utm.utm_campaign || utm.gad_campaignid || utm.gclid || utm.gbraid)) {
                 try {
                     var u = new URL(landingUrl, window.location.origin);
-                    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(function (k) {
+                    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gad_campaignid', 'gclid', 'gbraid', 'wbraid'].forEach(function (k) {
                         if (utm[k]) u.searchParams.set(k, utm[k]);
                     });
                     landingUrl = u.toString();
@@ -498,9 +498,12 @@ $(document).ready(function () {
             var fromGoogleAds = isGoogleAdsTraffic(landingUrl);
             var channelSource = fromGoogleAds ? 'july_lp' : campaignSource;
             if (fromGoogleAds && !resolvedCampaign) {
-                try {
-                    resolvedCampaign = new URL(landingUrl, window.location.origin).searchParams.get('gad_campaignid') || '';
-                } catch (e) {}
+                resolvedCampaign = $.trim(utm.gad_campaignid || utm.campaignid || '');
+                if (!resolvedCampaign) {
+                    try {
+                        resolvedCampaign = new URL(landingUrl, window.location.origin).searchParams.get('gad_campaignid') || '';
+                    } catch (e) {}
+                }
             }
             var payload = {
                 fullName: $.trim($name.val()),
@@ -514,7 +517,8 @@ $(document).ready(function () {
                 source: channelSource,
                 comments: campaignComments,
                 landingPageUrl: landingUrl,
-                gclid: utm.gclid || '',
+                gclid: utm.gclid || utm.gbraid || utm.wbraid || '',
+                gad_campaignid: utm.gad_campaignid || utm.campaignid || '',
                 utmSource: utm.utm_source || (fromGoogleAds ? 'google' : ''),
                 utmMedium: utm.utm_medium || (fromGoogleAds ? 'cpc' : ''),
                 utmCampaign: resolvedCampaign,

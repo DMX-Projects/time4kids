@@ -1,6 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+    (function () {
+      try {
+        var keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','utm_compaign','campaign','campaign_name','campaignname','gad_campaignid','campaignid','gclid','gbraid','wbraid','gad_source'];
+        var search = new URLSearchParams(window.location.search || '');
+        var fromUrl = {};
+        keys.forEach(function (k) {
+          var v = (search.get(k) || '').replace(/^\s+|\s+$/g, '');
+          if (v && v.charAt(0) !== '{') fromUrl[k] = v;
+        });
+        if (!Object.keys(fromUrl).length) return;
+        var stored = {};
+        try { stored = JSON.parse(sessionStorage.getItem('tk_lp_utm_v1') || '{}') || {}; } catch (e) {}
+        var merged = {};
+        Object.keys(stored).forEach(function (k) { if (stored[k]) merged[k] = stored[k]; });
+        Object.keys(fromUrl).forEach(function (k) { merged[k] = fromUrl[k]; });
+        sessionStorage.setItem('tk_lp_utm_v1', JSON.stringify(merged));
+      } catch (e) {}
+    })();
+    </script>
+
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -3140,7 +3161,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <script src="js/bootstrap.js"></script>
     <script src="js/gsap.min.js"></script>
     <script src="js/main.js"></script>
-    <script src="js/form.js?v=20260721g"></script>
+    <script src="js/form.js?v=20261116g"></script>
     <script src="js/audit-modifications.js?v=20260721e"></script>
 
 </body>

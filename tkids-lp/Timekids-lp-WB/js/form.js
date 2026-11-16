@@ -16,7 +16,7 @@ $(document).ready(function () {
         var params = {};
         try {
             var search = new URLSearchParams(window.location.search || '');
-            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid'].forEach(function (key) {
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_compaign', 'campaign', 'campaign_name', 'campaignname', 'gad_campaignid', 'campaignid', 'gclid', 'gbraid', 'wbraid', 'gad_source'].forEach(function (key) {
                 var value = $.trim(search.get(key) || '');
                 if (value) params[key] = value;
             });
@@ -453,13 +453,24 @@ $(document).ready(function () {
             // UTM Source / Medium / Campaign come only from the ad URL (e.g. utm_source=bcwebwise_meta).
             var hiddenType = $.trim($form.find('input[name="type"]').val() || '');
             var formPageName = campaignName || hiddenType || '';
-            var resolvedCampaign = utm.utm_campaign || '';
+            var resolvedCampaign = (function (u) {
+                var slug = { 'lp-tkktam': 1, 'meta-tkktam': 1, 'lp-wb': 1, 'july': 1, 'july_lp': 1, 'july_meta': 1, 'lp_wb': 1 };
+                var names = [u.utm_campaign, u.utm_compaign, u.campaign_name, u.campaignname, u.campaign];
+                var i, v;
+                for (i = 0; i < names.length; i++) {
+                    v = $.trim(names[i] || '');
+                    if (!v || slug[v.toLowerCase()] || v.charAt(0) === '{') continue;
+                    if (/^\d{5,}$/.test(v)) continue;
+                    return v;
+                }
+                return $.trim(u.gad_campaignid || u.campaignid || u.utm_campaign || '');
+            })(utm);
             var landingUrl = window.location.href.split('#')[0];
             // Prefer full landing URL with UTMs when still present; else rebuild from stored UTMs.
-            if (landingUrl.indexOf('utm_') === -1 && (utm.utm_source || utm.utm_medium || utm.utm_campaign)) {
+            if (landingUrl.indexOf('utm_') === -1 && landingUrl.indexOf('gad_campaignid=') === -1 && (utm.utm_source || utm.utm_medium || utm.utm_campaign || utm.gad_campaignid || utm.gclid || utm.gbraid)) {
                 try {
                     var u = new URL(landingUrl, window.location.origin);
-                    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid'].forEach(function (k) {
+                    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_compaign', 'campaign', 'campaign_name', 'campaignname', 'gad_campaignid', 'campaignid', 'gclid', 'gbraid', 'wbraid', 'gad_source'].forEach(function (k) {
                         if (utm[k]) u.searchParams.set(k, utm[k]);
                     });
                     landingUrl = u.toString();
@@ -478,7 +489,8 @@ $(document).ready(function () {
                 source: campaignSource,
                 comments: campaignComments,
                 landingPageUrl: landingUrl,
-                gclid: utm.gclid || '',
+                gclid: utm.gclid || utm.gbraid || utm.wbraid || '',
+                gad_campaignid: utm.gad_campaignid || utm.campaignid || '',
                 utmSource: utm.utm_source || '',
                 utmMedium: utm.utm_medium || '',
                 utmCampaign: resolvedCampaign,
