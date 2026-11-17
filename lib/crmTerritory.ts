@@ -9,6 +9,7 @@ export const CRM_EMAIL_STATE_NAMES: Record<string, readonly string[]> = {
     "Chhattisgarh",
     "Odisha",
     "West Bengal",
+    "Karnataka",
   ],
   "tejbal@timekidspreschools.com": [
     "Andhra Pradesh",
