@@ -621,6 +621,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                 (l.utm_source || "").toLowerCase().includes(search) ||
                 (l.utm_medium || "").toLowerCase().includes(search) ||
                 (l.utm_campaign || "").toLowerCase().includes(search) ||
+                (l.utm_term || "").toLowerCase().includes(search) ||
                 (l.status || "").toLowerCase().includes(search) ||
                 (l.gclid || "").toLowerCase().includes(search) ||
                 (l.description || "").toLowerCase().includes(search),
@@ -792,6 +793,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                                     <th className="p-3 border border-slate-800">utm_source</th>
                                     <th className="p-3 border border-slate-800">utm_medium</th>
                                     <th className="p-3 border border-slate-800">utm_campaign</th>
+                                    <th className="p-3 border border-slate-800">utm_term</th>
                                     <th className="p-3 border border-slate-800">status</th>
                                     <th className="p-3 border border-slate-800">created_at</th>
                                     <th className="p-3 border border-slate-800">utm_content</th>
@@ -802,7 +804,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={12} className="p-8 text-center">
+                                        <td colSpan={13} className="p-8 text-center">
                                             <div className="flex justify-center">
                                                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                                             </div>
@@ -810,7 +812,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                                     </tr>
                                 ) : paginatedAgencyLeads.length === 0 ? (
                                     <tr>
-                                        <td colSpan={12} className="p-8 text-center text-gray-500">
+                                        <td colSpan={13} className="p-8 text-center text-gray-500">
                                             No agency leads found matching the current filters.
                                         </td>
                                     </tr>
@@ -832,6 +834,7 @@ export default function ReportsView({ dateRange, city, state, source, campaign, 
                                             <td className="p-3 text-gray-600 font-mono text-xs whitespace-nowrap">{lead.utm_source || "-"}</td>
                                             <td className="p-3 text-gray-600 font-mono text-xs max-w-[150px] truncate" title={lead.utm_medium}>{lead.utm_medium || "-"}</td>
                                             <td className="p-3 text-gray-600 font-mono text-xs max-w-[150px] truncate" title={lead.utm_campaign}>{lead.utm_campaign || "-"}</td>
+                                            <td className="p-3 text-gray-600 font-mono text-xs max-w-[150px] truncate" title={lead.utm_term}>{lead.utm_term || "-"}</td>
                                             <td className="p-3 whitespace-nowrap">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border ${getStatusBadgeClass(lead.status)}`}>
                                                     {lead.status || "Untouched"}
