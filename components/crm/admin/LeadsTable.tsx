@@ -404,6 +404,7 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Source</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Medium</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Term</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 text-nowrap">Campaign Month</th>
                   {source === 'franchise' && (
@@ -492,6 +493,14 @@ export default function LeadsTable({ dateRange, city, state, centreId, status, s
                     >
                       <div className="truncate">
                         <HighlightText text={utmCampaignDisplay(lead)} highlight={debouncedSearch} />
+                      </div>
+                    </td>
+                    <td
+                      className="px-4 py-4 text-gray-600 text-sm max-w-[160px]"
+                      title={lead.utmTerm || undefined}
+                    >
+                      <div className="truncate">
+                        <HighlightText text={lead.utmTerm || '—'} highlight={debouncedSearch} />
                       </div>
                     </td>
                     <td className="px-4 py-4 text-gray-600 text-sm whitespace-nowrap">
